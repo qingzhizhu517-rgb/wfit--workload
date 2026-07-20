@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.workload.system.mapper.BizImportBatchMapper">
+    
+    <resultMap type="BizImportBatch" id="BizImportBatchResult">
+        <result property="id"    column="id"    />
+        <result property="batchNo"    column="batch_no"    />
+        <result property="importType"    column="import_type"    />
+        <result property="fileName"    column="file_name"    />
+        <result property="fileUrl"    column="file_url"    />
+        <result property="totalCount"    column="total_count"    />
+        <result property="successCount"    column="success_count"    />
+        <result property="failCount"    column="fail_count"    />
+        <result property="status"    column="status"    />
+        <result property="errorSummary"    column="error_summary"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="remark"    column="remark"    />
+    </resultMap>
+
+    <sql id="selectBizImportBatchVo">
+        select id, batch_no, import_type, file_name, file_url, total_count, success_count, fail_count, status, error_summary, create_by, create_time, update_by, update_time, remark from biz_import_batch
+    </sql>
+
+    <select id="selectBizImportBatchList" parameterType="BizImportBatch" resultMap="BizImportBatchResult">
+        <include refid="selectBizImportBatchVo"/>
+        <where>  
+            <if test="batchNo != null  and batchNo != ''"> and batch_no = #{batchNo}</if>
+            <if test="importType != null  and importType != ''"> and import_type = #{importType}</if>
+            <if test="fileName != null  and fileName != ''"> and file_name like concat('%', #{fileName}, '%')</if>
+            <if test="fileUrl != null  and fileUrl != ''"> and file_url = #{fileUrl}</if>
+            <if test="totalCount != null "> and total_count = #{totalCount}</if>
+            <if test="successCount != null "> and success_count = #{successCount}</if>
+            <if test="failCount != null "> and fail_count = #{failCount}</if>
+            <if test="status != null "> and status = #{status}</if>
+            <if test="errorSummary != null  and errorSummary != ''"> and error_summary = #{errorSummary}</if>
+        </where>
+    </select>
+    
+    <select id="selectBizImportBatchById" parameterType="Long" resultMap="BizImportBatchResult">
+        <include refid="selectBizImportBatchVo"/>
+        where id = #{id}
+    </select>
+
+    <insert id="insertBizImportBatch" parameterType="BizImportBatch" useGeneratedKeys="true" keyProperty="id">
+        insert into biz_import_batch
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="batchNo != null and batchNo != ''">batch_no,</if>
+            <if test="importType != null and importType != ''">import_type,</if>
+            <if test="fileName != null">file_name,</if>
+            <if test="fileUrl != null">file_url,</if>
+            <if test="totalCount != null">total_count,</if>
+            <if test="successCount != null">success_count,</if>
+            <if test="failCount != null">fail_count,</if>
+            <if test="status != null">status,</if>
+            <if test="errorSummary != null">error_summary,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="remark != null">remark,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="batchNo != null and batchNo != ''">#{batchNo},</if>
+            <if test="importType != null and importType != ''">#{importType},</if>
+            <if test="fileName != null">#{fileName},</if>
+            <if test="fileUrl != null">#{fileUrl},</if>
+            <if test="totalCount != null">#{totalCount},</if>
+            <if test="successCount != null">#{successCount},</if>
+            <if test="failCount != null">#{failCount},</if>
+            <if test="status != null">#{status},</if>
+            <if test="errorSummary != null">#{errorSummary},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="remark != null">#{remark},</if>
+         </trim>
+    </insert>
+
+    <update id="updateBizImportBatch" parameterType="BizImportBatch">
+        update biz_import_batch
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="batchNo != null and batchNo != ''">batch_no = #{batchNo},</if>
+            <if test="importType != null and importType != ''">import_type = #{importType},</if>
+            <if test="fileName != null">file_name = #{fileName},</if>
+            <if test="fileUrl != null">file_url = #{fileUrl},</if>
+            <if test="totalCount != null">total_count = #{totalCount},</if>
+            <if test="successCount != null">success_count = #{successCount},</if>
+            <if test="failCount != null">fail_count = #{failCount},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="errorSummary != null">error_summary = #{errorSummary},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteBizImportBatchById" parameterType="Long">
+        delete from biz_import_batch where id = #{id}
+    </delete>
+
+    <delete id="deleteBizImportBatchByIds" parameterType="String">
+        delete from biz_import_batch where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

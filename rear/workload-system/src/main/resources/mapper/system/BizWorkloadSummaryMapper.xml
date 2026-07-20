@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.workload.system.mapper.BizWorkloadSummaryMapper">
+    
+    <resultMap type="BizWorkloadSummary" id="BizWorkloadSummaryResult">
+        <result property="id"    column="id"    />
+        <result property="userId"    column="user_id"    />
+        <result property="semester"    column="semester"    />
+        <result property="academicYear"    column="academic_year"    />
+        <result property="G7"    column="G7"    />
+        <result property="G8"    column="G8"    />
+        <result property="G9"    column="G9"    />
+        <result property="G10"    column="G10"    />
+        <result property="G11"    column="G11"    />
+        <result property="totalWorkload"    column="total_workload"    />
+        <result property="ratedWorkload"    column="rated_workload"    />
+        <result property="excessWorkload"    column="excess_workload"    />
+        <result property="title"    column="title"    />
+        <result property="payRate"    column="pay_rate"    />
+        <result property="performancePay"    column="performance_pay"    />
+        <result property="isCapped"    column="is_capped"    />
+        <result property="basicTeachingStandard"    column="basic_teaching_standard"    />
+        <result property="basicTeachingMet"    column="basic_teaching_met"    />
+        <result property="status"    column="status"    />
+        <result property="teacherSign"    column="teacher_sign"    />
+        <result property="teacherSignTime"    column="teacher_sign_time"    />
+        <result property="deptLeaderSign"    column="dept_leader_sign"    />
+        <result property="deptLeaderSignTime"    column="dept_leader_sign_time"    />
+        <result property="academicAssistantSign"    column="academic_assistant_sign"    />
+        <result property="academicAssistantSignTime"    column="academic_assistant_sign_time"    />
+        <result property="lockTime"    column="lock_time"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="remark"    column="remark"    />
+    </resultMap>
+
+    <sql id="selectBizWorkloadSummaryVo">
+        select id, user_id, semester, academic_year, G7, G8, G9, G10, G11, total_workload, rated_workload, excess_workload, title, pay_rate, performance_pay, is_capped, basic_teaching_standard, basic_teaching_met, status, teacher_sign, teacher_sign_time, dept_leader_sign, dept_leader_sign_time, academic_assistant_sign, academic_assistant_sign_time, lock_time, create_by, create_time, update_by, update_time, remark from biz_workload_summary
+    </sql>
+
+    <select id="selectBizWorkloadSummaryList" parameterType="BizWorkloadSummary" resultMap="BizWorkloadSummaryResult">
+        <include refid="selectBizWorkloadSummaryVo"/>
+        <where>  
+            <if test="userId != null "> and user_id = #{userId}</if>
+            <if test="semester != null  and semester != ''"> and semester = #{semester}</if>
+            <if test="academicYear != null  and academicYear != ''"> and academic_year = #{academicYear}</if>
+            <if test="G7 != null "> and G7 = #{G7}</if>
+            <if test="G8 != null "> and G8 = #{G8}</if>
+            <if test="G9 != null "> and G9 = #{G9}</if>
+            <if test="G10 != null "> and G10 = #{G10}</if>
+            <if test="G11 != null "> and G11 = #{G11}</if>
+            <if test="totalWorkload != null "> and total_workload = #{totalWorkload}</if>
+            <if test="ratedWorkload != null "> and rated_workload = #{ratedWorkload}</if>
+            <if test="excessWorkload != null "> and excess_workload = #{excessWorkload}</if>
+            <if test="title != null  and title != ''"> and title = #{title}</if>
+            <if test="payRate != null "> and pay_rate = #{payRate}</if>
+            <if test="performancePay != null "> and performance_pay = #{performancePay}</if>
+            <if test="isCapped != null "> and is_capped = #{isCapped}</if>
+            <if test="basicTeachingStandard != null "> and basic_teaching_standard = #{basicTeachingStandard}</if>
+            <if test="basicTeachingMet != null "> and basic_teaching_met = #{basicTeachingMet}</if>
+            <if test="status != null "> and status = #{status}</if>
+            <if test="teacherSign != null  and teacherSign != ''"> and teacher_sign = #{teacherSign}</if>
+            <if test="teacherSignTime != null "> and teacher_sign_time = #{teacherSignTime}</if>
+            <if test="deptLeaderSign != null  and deptLeaderSign != ''"> and dept_leader_sign = #{deptLeaderSign}</if>
+            <if test="deptLeaderSignTime != null "> and dept_leader_sign_time = #{deptLeaderSignTime}</if>
+            <if test="academicAssistantSign != null  and academicAssistantSign != ''"> and academic_assistant_sign = #{academicAssistantSign}</if>
+            <if test="academicAssistantSignTime != null "> and academic_assistant_sign_time = #{academicAssistantSignTime}</if>
+            <if test="lockTime != null "> and lock_time = #{lockTime}</if>
+        </where>
+    </select>
+    
+    <select id="selectBizWorkloadSummaryById" parameterType="Long" resultMap="BizWorkloadSummaryResult">
+        <include refid="selectBizWorkloadSummaryVo"/>
+        where id = #{id}
+    </select>
+
+    <insert id="insertBizWorkloadSummary" parameterType="BizWorkloadSummary" useGeneratedKeys="true" keyProperty="id">
+        insert into biz_workload_summary
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="userId != null">user_id,</if>
+            <if test="semester != null and semester != ''">semester,</if>
+            <if test="academicYear != null">academic_year,</if>
+            <if test="G7 != null">G7,</if>
+            <if test="G8 != null">G8,</if>
+            <if test="G9 != null">G9,</if>
+            <if test="G10 != null">G10,</if>
+            <if test="G11 != null">G11,</if>
+            <if test="totalWorkload != null">total_workload,</if>
+            <if test="ratedWorkload != null">rated_workload,</if>
+            <if test="excessWorkload != null">excess_workload,</if>
+            <if test="title != null">title,</if>
+            <if test="payRate != null">pay_rate,</if>
+            <if test="performancePay != null">performance_pay,</if>
+            <if test="isCapped != null">is_capped,</if>
+            <if test="basicTeachingStandard != null">basic_teaching_standard,</if>
+            <if test="basicTeachingMet != null">basic_teaching_met,</if>
+            <if test="status != null">status,</if>
+            <if test="teacherSign != null">teacher_sign,</if>
+            <if test="teacherSignTime != null">teacher_sign_time,</if>
+            <if test="deptLeaderSign != null">dept_leader_sign,</if>
+            <if test="deptLeaderSignTime != null">dept_leader_sign_time,</if>
+            <if test="academicAssistantSign != null">academic_assistant_sign,</if>
+            <if test="academicAssistantSignTime != null">academic_assistant_sign_time,</if>
+            <if test="lockTime != null">lock_time,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="remark != null">remark,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="userId != null">#{userId},</if>
+            <if test="semester != null and semester != ''">#{semester},</if>
+            <if test="academicYear != null">#{academicYear},</if>
+            <if test="G7 != null">#{G7},</if>
+            <if test="G8 != null">#{G8},</if>
+            <if test="G9 != null">#{G9},</if>
+            <if test="G10 != null">#{G10},</if>
+            <if test="G11 != null">#{G11},</if>
+            <if test="totalWorkload != null">#{totalWorkload},</if>
+            <if test="ratedWorkload != null">#{ratedWorkload},</if>
+            <if test="excessWorkload != null">#{excessWorkload},</if>
+            <if test="title != null">#{title},</if>
+            <if test="payRate != null">#{payRate},</if>
+            <if test="performancePay != null">#{performancePay},</if>
+            <if test="isCapped != null">#{isCapped},</if>
+            <if test="basicTeachingStandard != null">#{basicTeachingStandard},</if>
+            <if test="basicTeachingMet != null">#{basicTeachingMet},</if>
+            <if test="status != null">#{status},</if>
+            <if test="teacherSign != null">#{teacherSign},</if>
+            <if test="teacherSignTime != null">#{teacherSignTime},</if>
+            <if test="deptLeaderSign != null">#{deptLeaderSign},</if>
+            <if test="deptLeaderSignTime != null">#{deptLeaderSignTime},</if>
+            <if test="academicAssistantSign != null">#{academicAssistantSign},</if>
+            <if test="academicAssistantSignTime != null">#{academicAssistantSignTime},</if>
+            <if test="lockTime != null">#{lockTime},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="remark != null">#{remark},</if>
+         </trim>
+    </insert>
+
+    <update id="updateBizWorkloadSummary" parameterType="BizWorkloadSummary">
+        update biz_workload_summary
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="userId != null">user_id = #{userId},</if>
+            <if test="semester != null and semester != ''">semester = #{semester},</if>
+            <if test="academicYear != null">academic_year = #{academicYear},</if>
+            <if test="G7 != null">G7 = #{G7},</if>
+            <if test="G8 != null">G8 = #{G8},</if>
+            <if test="G9 != null">G9 = #{G9},</if>
+            <if test="G10 != null">G10 = #{G10},</if>
+            <if test="G11 != null">G11 = #{G11},</if>
+            <if test="totalWorkload != null">total_workload = #{totalWorkload},</if>
+            <if test="ratedWorkload != null">rated_workload = #{ratedWorkload},</if>
+            <if test="excessWorkload != null">excess_workload = #{excessWorkload},</if>
+            <if test="title != null">title = #{title},</if>
+            <if test="payRate != null">pay_rate = #{payRate},</if>
+            <if test="performancePay != null">performance_pay = #{performancePay},</if>
+            <if test="isCapped != null">is_capped = #{isCapped},</if>
+            <if test="basicTeachingStandard != null">basic_teaching_standard = #{basicTeachingStandard},</if>
+            <if test="basicTeachingMet != null">basic_teaching_met = #{basicTeachingMet},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="teacherSign != null">teacher_sign = #{teacherSign},</if>
+            <if test="teacherSignTime != null">teacher_sign_time = #{teacherSignTime},</if>
+            <if test="deptLeaderSign != null">dept_leader_sign = #{deptLeaderSign},</if>
+            <if test="deptLeaderSignTime != null">dept_leader_sign_time = #{deptLeaderSignTime},</if>
+            <if test="academicAssistantSign != null">academic_assistant_sign = #{academicAssistantSign},</if>
+            <if test="academicAssistantSignTime != null">academic_assistant_sign_time = #{academicAssistantSignTime},</if>
+            <if test="lockTime != null">lock_time = #{lockTime},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteBizWorkloadSummaryById" parameterType="Long">
+        delete from biz_workload_summary where id = #{id}
+    </delete>
+
+    <delete id="deleteBizWorkloadSummaryByIds" parameterType="String">
+        delete from biz_workload_summary where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

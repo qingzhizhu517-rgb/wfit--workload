@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.workload.system.mapper.BizRoleAssignmentMapper">
+    
+    <resultMap type="BizRoleAssignment" id="BizRoleAssignmentResult">
+        <result property="id"    column="id"    />
+        <result property="userId"    column="user_id"    />
+        <result property="roleType"    column="role_type"    />
+        <result property="target"    column="target"    />
+        <result property="startDate"    column="start_date"    />
+        <result property="endDate"    column="end_date"    />
+        <result property="semester"    column="semester"    />
+        <result property="academicYear"    column="academic_year"    />
+        <result property="allowanceRate"    column="allowance_rate"    />
+        <result property="status"    column="status"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="remark"    column="remark"    />
+    </resultMap>
+
+    <sql id="selectBizRoleAssignmentVo">
+        select id, user_id, role_type, target, start_date, end_date, semester, academic_year, allowance_rate, status, create_by, create_time, update_by, update_time, remark from biz_role_assignment
+    </sql>
+
+    <select id="selectBizRoleAssignmentList" parameterType="BizRoleAssignment" resultMap="BizRoleAssignmentResult">
+        <include refid="selectBizRoleAssignmentVo"/>
+        <where>  
+            <if test="userId != null "> and user_id = #{userId}</if>
+            <if test="roleType != null  and roleType != ''"> and role_type = #{roleType}</if>
+            <if test="target != null  and target != ''"> and target = #{target}</if>
+            <if test="startDate != null "> and start_date = #{startDate}</if>
+            <if test="endDate != null "> and end_date = #{endDate}</if>
+            <if test="semester != null  and semester != ''"> and semester = #{semester}</if>
+            <if test="academicYear != null  and academicYear != ''"> and academic_year = #{academicYear}</if>
+            <if test="allowanceRate != null "> and allowance_rate = #{allowanceRate}</if>
+            <if test="status != null "> and status = #{status}</if>
+        </where>
+    </select>
+    
+    <select id="selectBizRoleAssignmentById" parameterType="Long" resultMap="BizRoleAssignmentResult">
+        <include refid="selectBizRoleAssignmentVo"/>
+        where id = #{id}
+    </select>
+
+    <insert id="insertBizRoleAssignment" parameterType="BizRoleAssignment" useGeneratedKeys="true" keyProperty="id">
+        insert into biz_role_assignment
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="userId != null">user_id,</if>
+            <if test="roleType != null and roleType != ''">role_type,</if>
+            <if test="target != null">target,</if>
+            <if test="startDate != null">start_date,</if>
+            <if test="endDate != null">end_date,</if>
+            <if test="semester != null">semester,</if>
+            <if test="academicYear != null">academic_year,</if>
+            <if test="allowanceRate != null">allowance_rate,</if>
+            <if test="status != null">status,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="remark != null">remark,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="userId != null">#{userId},</if>
+            <if test="roleType != null and roleType != ''">#{roleType},</if>
+            <if test="target != null">#{target},</if>
+            <if test="startDate != null">#{startDate},</if>
+            <if test="endDate != null">#{endDate},</if>
+            <if test="semester != null">#{semester},</if>
+            <if test="academicYear != null">#{academicYear},</if>
+            <if test="allowanceRate != null">#{allowanceRate},</if>
+            <if test="status != null">#{status},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="remark != null">#{remark},</if>
+         </trim>
+    </insert>
+
+    <update id="updateBizRoleAssignment" parameterType="BizRoleAssignment">
+        update biz_role_assignment
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="userId != null">user_id = #{userId},</if>
+            <if test="roleType != null and roleType != ''">role_type = #{roleType},</if>
+            <if test="target != null">target = #{target},</if>
+            <if test="startDate != null">start_date = #{startDate},</if>
+            <if test="endDate != null">end_date = #{endDate},</if>
+            <if test="semester != null">semester = #{semester},</if>
+            <if test="academicYear != null">academic_year = #{academicYear},</if>
+            <if test="allowanceRate != null">allowance_rate = #{allowanceRate},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteBizRoleAssignmentById" parameterType="Long">
+        delete from biz_role_assignment where id = #{id}
+    </delete>
+
+    <delete id="deleteBizRoleAssignmentByIds" parameterType="String">
+        delete from biz_role_assignment where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

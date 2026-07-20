@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.workload.system.mapper.BizTeacherProfileMapper">
+    
+    <resultMap type="BizTeacherProfile" id="BizTeacherProfileResult">
+        <result property="userId"    column="user_id"    />
+        <result property="title"    column="title"    />
+        <result property="teacherNature"    column="teacher_nature"    />
+        <result property="specialStatus"    column="special_status"    />
+        <result property="specialStatusStart"    column="special_status_start"    />
+        <result property="specialStatusEnd"    column="special_status_end"    />
+        <result property="enterpriseEvalResult"    column="enterprise_eval_result"    />
+        <result property="deptId"    column="dept_id"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="remark"    column="remark"    />
+    </resultMap>
+
+    <sql id="selectBizTeacherProfileVo">
+        select user_id, title, teacher_nature, special_status, special_status_start, special_status_end, enterprise_eval_result, dept_id, create_by, create_time, update_by, update_time, remark from biz_teacher_profile
+    </sql>
+
+    <select id="selectBizTeacherProfileList" parameterType="BizTeacherProfile" resultMap="BizTeacherProfileResult">
+        <include refid="selectBizTeacherProfileVo"/>
+        <where>  
+            <if test="title != null  and title != ''"> and title = #{title}</if>
+            <if test="teacherNature != null  and teacherNature != ''"> and teacher_nature = #{teacherNature}</if>
+            <if test="specialStatus != null  and specialStatus != ''"> and special_status = #{specialStatus}</if>
+            <if test="specialStatusStart != null "> and special_status_start = #{specialStatusStart}</if>
+            <if test="specialStatusEnd != null "> and special_status_end = #{specialStatusEnd}</if>
+            <if test="enterpriseEvalResult != null  and enterpriseEvalResult != ''"> and enterprise_eval_result = #{enterpriseEvalResult}</if>
+            <if test="deptId != null "> and dept_id = #{deptId}</if>
+        </where>
+    </select>
+    
+    <select id="selectBizTeacherProfileByUserId" parameterType="Long" resultMap="BizTeacherProfileResult">
+        <include refid="selectBizTeacherProfileVo"/>
+        where user_id = #{userId}
+    </select>
+
+    <insert id="insertBizTeacherProfile" parameterType="BizTeacherProfile">
+        insert into biz_teacher_profile
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="userId != null">user_id,</if>
+            <if test="title != null">title,</if>
+            <if test="teacherNature != null">teacher_nature,</if>
+            <if test="specialStatus != null">special_status,</if>
+            <if test="specialStatusStart != null">special_status_start,</if>
+            <if test="specialStatusEnd != null">special_status_end,</if>
+            <if test="enterpriseEvalResult != null">enterprise_eval_result,</if>
+            <if test="deptId != null">dept_id,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="remark != null">remark,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="userId != null">#{userId},</if>
+            <if test="title != null">#{title},</if>
+            <if test="teacherNature != null">#{teacherNature},</if>
+            <if test="specialStatus != null">#{specialStatus},</if>
+            <if test="specialStatusStart != null">#{specialStatusStart},</if>
+            <if test="specialStatusEnd != null">#{specialStatusEnd},</if>
+            <if test="enterpriseEvalResult != null">#{enterpriseEvalResult},</if>
+            <if test="deptId != null">#{deptId},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="remark != null">#{remark},</if>
+         </trim>
+    </insert>
+
+    <update id="updateBizTeacherProfile" parameterType="BizTeacherProfile">
+        update biz_teacher_profile
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="title != null">title = #{title},</if>
+            <if test="teacherNature != null">teacher_nature = #{teacherNature},</if>
+            <if test="specialStatus != null">special_status = #{specialStatus},</if>
+            <if test="specialStatusStart != null">special_status_start = #{specialStatusStart},</if>
+            <if test="specialStatusEnd != null">special_status_end = #{specialStatusEnd},</if>
+            <if test="enterpriseEvalResult != null">enterprise_eval_result = #{enterpriseEvalResult},</if>
+            <if test="deptId != null">dept_id = #{deptId},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where user_id = #{userId}
+    </update>
+
+    <delete id="deleteBizTeacherProfileByUserId" parameterType="Long">
+        delete from biz_teacher_profile where user_id = #{userId}
+    </delete>
+
+    <delete id="deleteBizTeacherProfileByUserIds" parameterType="String">
+        delete from biz_teacher_profile where user_id in 
+        <foreach item="userId" collection="array" open="(" separator="," close=")">
+            #{userId}
+        </foreach>
+    </delete>
+</mapper>

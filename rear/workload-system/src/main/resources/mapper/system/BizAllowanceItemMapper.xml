@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.workload.system.mapper.BizAllowanceItemMapper">
+    
+    <resultMap type="BizAllowanceItem" id="BizAllowanceItemResult">
+        <result property="id"    column="id"    />
+        <result property="payRecordId"    column="pay_record_id"    />
+        <result property="userId"    column="user_id"    />
+        <result property="semester"    column="semester"    />
+        <result property="feeType"    column="fee_type"    />
+        <result property="feeSubtype"    column="fee_subtype"    />
+        <result property="studentCount"    column="student_count"    />
+        <result property="durationHours"    column="duration_hours"    />
+        <result property="days"    column="days"    />
+        <result property="classCount"    column="class_count"    />
+        <result property="workloadUnits"    column="workload_units"    />
+        <result property="lectureName"    column="lecture_name"    />
+        <result property="ext"    column="ext"    />
+        <result property="amount"    column="amount"    />
+        <result property="status"    column="status"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="remark"    column="remark"    />
+    </resultMap>
+
+    <sql id="selectBizAllowanceItemVo">
+        select id, pay_record_id, user_id, semester, fee_type, fee_subtype, student_count, duration_hours, days, class_count, workload_units, lecture_name, ext, amount, status, create_by, create_time, update_by, update_time, remark from biz_allowance_item
+    </sql>
+
+    <select id="selectBizAllowanceItemList" parameterType="BizAllowanceItem" resultMap="BizAllowanceItemResult">
+        <include refid="selectBizAllowanceItemVo"/>
+        <where>  
+            <if test="payRecordId != null "> and pay_record_id = #{payRecordId}</if>
+            <if test="userId != null "> and user_id = #{userId}</if>
+            <if test="semester != null  and semester != ''"> and semester = #{semester}</if>
+            <if test="feeType != null  and feeType != ''"> and fee_type = #{feeType}</if>
+            <if test="feeSubtype != null  and feeSubtype != ''"> and fee_subtype = #{feeSubtype}</if>
+            <if test="studentCount != null "> and student_count = #{studentCount}</if>
+            <if test="durationHours != null "> and duration_hours = #{durationHours}</if>
+            <if test="days != null "> and days = #{days}</if>
+            <if test="classCount != null "> and class_count = #{classCount}</if>
+            <if test="workloadUnits != null "> and workload_units = #{workloadUnits}</if>
+            <if test="lectureName != null  and lectureName != ''"> and lecture_name like concat('%', #{lectureName}, '%')</if>
+            <if test="ext != null  and ext != ''"> and ext = #{ext}</if>
+            <if test="amount != null "> and amount = #{amount}</if>
+            <if test="status != null "> and status = #{status}</if>
+        </where>
+    </select>
+    
+    <select id="selectBizAllowanceItemById" parameterType="Long" resultMap="BizAllowanceItemResult">
+        <include refid="selectBizAllowanceItemVo"/>
+        where id = #{id}
+    </select>
+
+    <insert id="insertBizAllowanceItem" parameterType="BizAllowanceItem" useGeneratedKeys="true" keyProperty="id">
+        insert into biz_allowance_item
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="payRecordId != null">pay_record_id,</if>
+            <if test="userId != null">user_id,</if>
+            <if test="semester != null and semester != ''">semester,</if>
+            <if test="feeType != null and feeType != ''">fee_type,</if>
+            <if test="feeSubtype != null">fee_subtype,</if>
+            <if test="studentCount != null">student_count,</if>
+            <if test="durationHours != null">duration_hours,</if>
+            <if test="days != null">days,</if>
+            <if test="classCount != null">class_count,</if>
+            <if test="workloadUnits != null">workload_units,</if>
+            <if test="lectureName != null">lecture_name,</if>
+            <if test="ext != null">ext,</if>
+            <if test="amount != null">amount,</if>
+            <if test="status != null">status,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="remark != null">remark,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="payRecordId != null">#{payRecordId},</if>
+            <if test="userId != null">#{userId},</if>
+            <if test="semester != null and semester != ''">#{semester},</if>
+            <if test="feeType != null and feeType != ''">#{feeType},</if>
+            <if test="feeSubtype != null">#{feeSubtype},</if>
+            <if test="studentCount != null">#{studentCount},</if>
+            <if test="durationHours != null">#{durationHours},</if>
+            <if test="days != null">#{days},</if>
+            <if test="classCount != null">#{classCount},</if>
+            <if test="workloadUnits != null">#{workloadUnits},</if>
+            <if test="lectureName != null">#{lectureName},</if>
+            <if test="ext != null">#{ext},</if>
+            <if test="amount != null">#{amount},</if>
+            <if test="status != null">#{status},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="remark != null">#{remark},</if>
+         </trim>
+    </insert>
+
+    <update id="updateBizAllowanceItem" parameterType="BizAllowanceItem">
+        update biz_allowance_item
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="payRecordId != null">pay_record_id = #{payRecordId},</if>
+            <if test="userId != null">user_id = #{userId},</if>
+            <if test="semester != null and semester != ''">semester = #{semester},</if>
+            <if test="feeType != null and feeType != ''">fee_type = #{feeType},</if>
+            <if test="feeSubtype != null">fee_subtype = #{feeSubtype},</if>
+            <if test="studentCount != null">student_count = #{studentCount},</if>
+            <if test="durationHours != null">duration_hours = #{durationHours},</if>
+            <if test="days != null">days = #{days},</if>
+            <if test="classCount != null">class_count = #{classCount},</if>
+            <if test="workloadUnits != null">workload_units = #{workloadUnits},</if>
+            <if test="lectureName != null">lecture_name = #{lectureName},</if>
+            <if test="ext != null">ext = #{ext},</if>
+            <if test="amount != null">amount = #{amount},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteBizAllowanceItemById" parameterType="Long">
+        delete from biz_allowance_item where id = #{id}
+    </delete>
+
+    <delete id="deleteBizAllowanceItemByIds" parameterType="String">
+        delete from biz_allowance_item where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

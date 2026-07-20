@@ -1,0 +1,61 @@
+package com.workload.system.mapper;
+
+import java.util.List;
+import com.workload.system.domain.BizWlTheory;
+
+/**
+ * G1理论课明细Mapper接口
+ * 
+ * @author wflg
+ * @date 2026-07-20
+ */
+public interface BizWlTheoryMapper 
+{
+    /**
+     * 查询G1理论课明细
+     * 
+     * @param itemId G1理论课明细主键
+     * @return G1理论课明细
+     */
+    public BizWlTheory selectBizWlTheoryByItemId(Long itemId);
+
+    /**
+     * 查询G1理论课明细列表
+     * 
+     * @param bizWlTheory G1理论课明细
+     * @return G1理论课明细集合
+     */
+    public List<BizWlTheory> selectBizWlTheoryList(BizWlTheory bizWlTheory);
+
+    /**
+     * 新增G1理论课明细
+     * 
+     * @param bizWlTheory G1理论课明细
+     * @return 结果
+     */
+    public int insertBizWlTheory(BizWlTheory bizWlTheory);
+
+    /**
+     * 修改G1理论课明细
+     * 
+     * @param bizWlTheory G1理论课明细
+     * @return 结果
+     */
+    public int updateBizWlTheory(BizWlTheory bizWlTheory);
+
+    /**
+     * 删除G1理论课明细
+     * 
+     * @param itemId G1理论课明细主键
+     * @return 结果
+     */
+    public int deleteBizWlTheoryByItemId(Long itemId);
+
+    /**
+     * 批量删除G1理论课明细
+     * 
+     * @param itemIds 需要删除的数据主键集合
+     * @return 结果
+     */
+    public int deleteBizWlTheoryByItemIds(Long[] itemIds);
+}

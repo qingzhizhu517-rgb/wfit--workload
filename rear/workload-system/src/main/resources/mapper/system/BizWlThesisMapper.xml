@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.workload.system.mapper.BizWlThesisMapper">
+    
+    <resultMap type="BizWlThesis" id="BizWlThesisResult">
+        <result property="itemId"    column="item_id"    />
+        <result property="R5"    column="R5"    />
+        <result property="K5"    column="K5"    />
+        <result property="educationLevel"    column="education_level"    />
+        <result property="major"    column="major"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="remark"    column="remark"    />
+    </resultMap>
+
+    <sql id="selectBizWlThesisVo">
+        select item_id, R5, K5, education_level, major, create_by, create_time, update_by, update_time, remark from biz_wl_thesis
+    </sql>
+
+    <select id="selectBizWlThesisList" parameterType="BizWlThesis" resultMap="BizWlThesisResult">
+        <include refid="selectBizWlThesisVo"/>
+        <where>  
+            <if test="R5 != null "> and R5 = #{R5}</if>
+            <if test="K5 != null "> and K5 = #{K5}</if>
+            <if test="educationLevel != null  and educationLevel != ''"> and education_level = #{educationLevel}</if>
+            <if test="major != null  and major != ''"> and major = #{major}</if>
+        </where>
+    </select>
+    
+    <select id="selectBizWlThesisByItemId" parameterType="Long" resultMap="BizWlThesisResult">
+        <include refid="selectBizWlThesisVo"/>
+        where item_id = #{itemId}
+    </select>
+
+    <insert id="insertBizWlThesis" parameterType="BizWlThesis">
+        insert into biz_wl_thesis
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="itemId != null">item_id,</if>
+            <if test="R5 != null">R5,</if>
+            <if test="K5 != null">K5,</if>
+            <if test="educationLevel != null">education_level,</if>
+            <if test="major != null">major,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="remark != null">remark,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="itemId != null">#{itemId},</if>
+            <if test="R5 != null">#{R5},</if>
+            <if test="K5 != null">#{K5},</if>
+            <if test="educationLevel != null">#{educationLevel},</if>
+            <if test="major != null">#{major},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="remark != null">#{remark},</if>
+         </trim>
+    </insert>
+
+    <update id="updateBizWlThesis" parameterType="BizWlThesis">
+        update biz_wl_thesis
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="R5 != null">R5 = #{R5},</if>
+            <if test="K5 != null">K5 = #{K5},</if>
+            <if test="educationLevel != null">education_level = #{educationLevel},</if>
+            <if test="major != null">major = #{major},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where item_id = #{itemId}
+    </update>
+
+    <delete id="deleteBizWlThesisByItemId" parameterType="Long">
+        delete from biz_wl_thesis where item_id = #{itemId}
+    </delete>
+
+    <delete id="deleteBizWlThesisByItemIds" parameterType="String">
+        delete from biz_wl_thesis where item_id in 
+        <foreach item="itemId" collection="array" open="(" separator="," close=")">
+            #{itemId}
+        </foreach>
+    </delete>
+</mapper>

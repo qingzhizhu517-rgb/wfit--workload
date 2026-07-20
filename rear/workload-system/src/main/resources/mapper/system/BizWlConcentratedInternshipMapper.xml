@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.workload.system.mapper.BizWlConcentratedInternshipMapper">
+    
+    <resultMap type="BizWlConcentratedInternship" id="BizWlConcentratedInternshipResult">
+        <result property="itemId"    column="item_id"    />
+        <result property="W"    column="W"    />
+        <result property="R6"    column="R6"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="remark"    column="remark"    />
+    </resultMap>
+
+    <sql id="selectBizWlConcentratedInternshipVo">
+        select item_id, W, R6, create_by, create_time, update_by, update_time, remark from biz_wl_concentrated_internship
+    </sql>
+
+    <select id="selectBizWlConcentratedInternshipList" parameterType="BizWlConcentratedInternship" resultMap="BizWlConcentratedInternshipResult">
+        <include refid="selectBizWlConcentratedInternshipVo"/>
+        <where>  
+            <if test="W != null "> and W = #{W}</if>
+            <if test="R6 != null "> and R6 = #{R6}</if>
+        </where>
+    </select>
+    
+    <select id="selectBizWlConcentratedInternshipByItemId" parameterType="Long" resultMap="BizWlConcentratedInternshipResult">
+        <include refid="selectBizWlConcentratedInternshipVo"/>
+        where item_id = #{itemId}
+    </select>
+
+    <insert id="insertBizWlConcentratedInternship" parameterType="BizWlConcentratedInternship">
+        insert into biz_wl_concentrated_internship
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="itemId != null">item_id,</if>
+            <if test="W != null">W,</if>
+            <if test="R6 != null">R6,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="remark != null">remark,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="itemId != null">#{itemId},</if>
+            <if test="W != null">#{W},</if>
+            <if test="R6 != null">#{R6},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="remark != null">#{remark},</if>
+         </trim>
+    </insert>
+
+    <update id="updateBizWlConcentratedInternship" parameterType="BizWlConcentratedInternship">
+        update biz_wl_concentrated_internship
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="W != null">W = #{W},</if>
+            <if test="R6 != null">R6 = #{R6},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where item_id = #{itemId}
+    </update>
+
+    <delete id="deleteBizWlConcentratedInternshipByItemId" parameterType="Long">
+        delete from biz_wl_concentrated_internship where item_id = #{itemId}
+    </delete>
+
+    <delete id="deleteBizWlConcentratedInternshipByItemIds" parameterType="String">
+        delete from biz_wl_concentrated_internship where item_id in 
+        <foreach item="itemId" collection="array" open="(" separator="," close=")">
+            #{itemId}
+        </foreach>
+    </delete>
+</mapper>

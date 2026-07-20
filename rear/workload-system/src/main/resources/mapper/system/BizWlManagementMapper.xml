@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.workload.system.mapper.BizWlManagementMapper">
+    
+    <resultMap type="BizWlManagement" id="BizWlManagementResult">
+        <result property="itemId"    column="item_id"    />
+        <result property="assignmentId"    column="assignment_id"    />
+        <result property="roleType"    column="role_type"    />
+        <result property="proratedAmount"    column="prorated_amount"    />
+        <result property="prorationBasis"    column="proration_basis"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="remark"    column="remark"    />
+    </resultMap>
+
+    <sql id="selectBizWlManagementVo">
+        select item_id, assignment_id, role_type, prorated_amount, proration_basis, create_by, create_time, update_by, update_time, remark from biz_wl_management
+    </sql>
+
+    <select id="selectBizWlManagementList" parameterType="BizWlManagement" resultMap="BizWlManagementResult">
+        <include refid="selectBizWlManagementVo"/>
+        <where>  
+            <if test="assignmentId != null "> and assignment_id = #{assignmentId}</if>
+            <if test="roleType != null  and roleType != ''"> and role_type = #{roleType}</if>
+            <if test="proratedAmount != null "> and prorated_amount = #{proratedAmount}</if>
+            <if test="prorationBasis != null  and prorationBasis != ''"> and proration_basis = #{prorationBasis}</if>
+        </where>
+    </select>
+    
+    <select id="selectBizWlManagementByItemId" parameterType="Long" resultMap="BizWlManagementResult">
+        <include refid="selectBizWlManagementVo"/>
+        where item_id = #{itemId}
+    </select>
+
+    <insert id="insertBizWlManagement" parameterType="BizWlManagement">
+        insert into biz_wl_management
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="itemId != null">item_id,</if>
+            <if test="assignmentId != null">assignment_id,</if>
+            <if test="roleType != null">role_type,</if>
+            <if test="proratedAmount != null">prorated_amount,</if>
+            <if test="prorationBasis != null">proration_basis,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="remark != null">remark,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="itemId != null">#{itemId},</if>
+            <if test="assignmentId != null">#{assignmentId},</if>
+            <if test="roleType != null">#{roleType},</if>
+            <if test="proratedAmount != null">#{proratedAmount},</if>
+            <if test="prorationBasis != null">#{prorationBasis},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="remark != null">#{remark},</if>
+         </trim>
+    </insert>
+
+    <update id="updateBizWlManagement" parameterType="BizWlManagement">
+        update biz_wl_management
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="assignmentId != null">assignment_id = #{assignmentId},</if>
+            <if test="roleType != null">role_type = #{roleType},</if>
+            <if test="proratedAmount != null">prorated_amount = #{proratedAmount},</if>
+            <if test="prorationBasis != null">proration_basis = #{prorationBasis},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where item_id = #{itemId}
+    </update>
+
+    <delete id="deleteBizWlManagementByItemId" parameterType="Long">
+        delete from biz_wl_management where item_id = #{itemId}
+    </delete>
+
+    <delete id="deleteBizWlManagementByItemIds" parameterType="String">
+        delete from biz_wl_management where item_id in 
+        <foreach item="itemId" collection="array" open="(" separator="," close=")">
+            #{itemId}
+        </foreach>
+    </delete>
+</mapper>

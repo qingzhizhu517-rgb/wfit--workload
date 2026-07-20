@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.workload.system.mapper.BizTeachingTaskMapper">
+    
+    <resultMap type="BizTeachingTask" id="BizTeachingTaskResult">
+        <result property="id"    column="id"    />
+        <result property="userId"    column="user_id"    />
+        <result property="semester"    column="semester"    />
+        <result property="academicYear"    column="academic_year"    />
+        <result property="courseName"    column="course_name"    />
+        <result property="courseCode"    column="course_code"    />
+        <result property="educationLevel"    column="education_level"    />
+        <result property="majorCategory"    column="major_category"    />
+        <result property="courseNature"    column="course_nature"    />
+        <result property="courseLevel"    column="course_level"    />
+        <result property="courseRole"    column="course_role"    />
+        <result property="className"    column="class_name"    />
+        <result property="studentCount"    column="student_count"    />
+        <result property="theoryHours"    column="theory_hours"    />
+        <result property="practiceHours"    column="practice_hours"    />
+        <result property="repeatOrder"    column="repeat_order"    />
+        <result property="importSource"    column="import_source"    />
+        <result property="importBatch"    column="import_batch"    />
+        <result property="importTime"    column="import_time"    />
+        <result property="status"    column="status"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="remark"    column="remark"    />
+    </resultMap>
+
+    <sql id="selectBizTeachingTaskVo">
+        select id, user_id, semester, academic_year, course_name, course_code, education_level, major_category, course_nature, course_level, course_role, class_name, student_count, theory_hours, practice_hours, repeat_order, import_source, import_batch, import_time, status, create_by, create_time, update_by, update_time, remark from biz_teaching_task
+    </sql>
+
+    <select id="selectBizTeachingTaskList" parameterType="BizTeachingTask" resultMap="BizTeachingTaskResult">
+        <include refid="selectBizTeachingTaskVo"/>
+        <where>  
+            <if test="userId != null "> and user_id = #{userId}</if>
+            <if test="semester != null  and semester != ''"> and semester = #{semester}</if>
+            <if test="academicYear != null  and academicYear != ''"> and academic_year = #{academicYear}</if>
+            <if test="courseName != null  and courseName != ''"> and course_name like concat('%', #{courseName}, '%')</if>
+            <if test="courseCode != null  and courseCode != ''"> and course_code = #{courseCode}</if>
+            <if test="educationLevel != null  and educationLevel != ''"> and education_level = #{educationLevel}</if>
+            <if test="majorCategory != null  and majorCategory != ''"> and major_category = #{majorCategory}</if>
+            <if test="courseNature != null  and courseNature != ''"> and course_nature = #{courseNature}</if>
+            <if test="courseLevel != null  and courseLevel != ''"> and course_level = #{courseLevel}</if>
+            <if test="courseRole != null  and courseRole != ''"> and course_role = #{courseRole}</if>
+            <if test="className != null  and className != ''"> and class_name like concat('%', #{className}, '%')</if>
+            <if test="studentCount != null "> and student_count = #{studentCount}</if>
+            <if test="theoryHours != null "> and theory_hours = #{theoryHours}</if>
+            <if test="practiceHours != null "> and practice_hours = #{practiceHours}</if>
+            <if test="repeatOrder != null "> and repeat_order = #{repeatOrder}</if>
+            <if test="importSource != null  and importSource != ''"> and import_source = #{importSource}</if>
+            <if test="importBatch != null  and importBatch != ''"> and import_batch = #{importBatch}</if>
+            <if test="importTime != null "> and import_time = #{importTime}</if>
+            <if test="status != null "> and status = #{status}</if>
+        </where>
+    </select>
+    
+    <select id="selectBizTeachingTaskById" parameterType="Long" resultMap="BizTeachingTaskResult">
+        <include refid="selectBizTeachingTaskVo"/>
+        where id = #{id}
+    </select>
+
+    <insert id="insertBizTeachingTask" parameterType="BizTeachingTask" useGeneratedKeys="true" keyProperty="id">
+        insert into biz_teaching_task
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="userId != null">user_id,</if>
+            <if test="semester != null and semester != ''">semester,</if>
+            <if test="academicYear != null">academic_year,</if>
+            <if test="courseName != null and courseName != ''">course_name,</if>
+            <if test="courseCode != null">course_code,</if>
+            <if test="educationLevel != null and educationLevel != ''">education_level,</if>
+            <if test="majorCategory != null">major_category,</if>
+            <if test="courseNature != null">course_nature,</if>
+            <if test="courseLevel != null">course_level,</if>
+            <if test="courseRole != null">course_role,</if>
+            <if test="className != null">class_name,</if>
+            <if test="studentCount != null">student_count,</if>
+            <if test="theoryHours != null">theory_hours,</if>
+            <if test="practiceHours != null">practice_hours,</if>
+            <if test="repeatOrder != null">repeat_order,</if>
+            <if test="importSource != null">import_source,</if>
+            <if test="importBatch != null">import_batch,</if>
+            <if test="importTime != null">import_time,</if>
+            <if test="status != null">status,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="remark != null">remark,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="userId != null">#{userId},</if>
+            <if test="semester != null and semester != ''">#{semester},</if>
+            <if test="academicYear != null">#{academicYear},</if>
+            <if test="courseName != null and courseName != ''">#{courseName},</if>
+            <if test="courseCode != null">#{courseCode},</if>
+            <if test="educationLevel != null and educationLevel != ''">#{educationLevel},</if>
+            <if test="majorCategory != null">#{majorCategory},</if>
+            <if test="courseNature != null">#{courseNature},</if>
+            <if test="courseLevel != null">#{courseLevel},</if>
+            <if test="courseRole != null">#{courseRole},</if>
+            <if test="className != null">#{className},</if>
+            <if test="studentCount != null">#{studentCount},</if>
+            <if test="theoryHours != null">#{theoryHours},</if>
+            <if test="practiceHours != null">#{practiceHours},</if>
+            <if test="repeatOrder != null">#{repeatOrder},</if>
+            <if test="importSource != null">#{importSource},</if>
+            <if test="importBatch != null">#{importBatch},</if>
+            <if test="importTime != null">#{importTime},</if>
+            <if test="status != null">#{status},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="remark != null">#{remark},</if>
+         </trim>
+    </insert>
+
+    <update id="updateBizTeachingTask" parameterType="BizTeachingTask">
+        update biz_teaching_task
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="userId != null">user_id = #{userId},</if>
+            <if test="semester != null and semester != ''">semester = #{semester},</if>
+            <if test="academicYear != null">academic_year = #{academicYear},</if>
+            <if test="courseName != null and courseName != ''">course_name = #{courseName},</if>
+            <if test="courseCode != null">course_code = #{courseCode},</if>
+            <if test="educationLevel != null and educationLevel != ''">education_level = #{educationLevel},</if>
+            <if test="majorCategory != null">major_category = #{majorCategory},</if>
+            <if test="courseNature != null">course_nature = #{courseNature},</if>
+            <if test="courseLevel != null">course_level = #{courseLevel},</if>
+            <if test="courseRole != null">course_role = #{courseRole},</if>
+            <if test="className != null">class_name = #{className},</if>
+            <if test="studentCount != null">student_count = #{studentCount},</if>
+            <if test="theoryHours != null">theory_hours = #{theoryHours},</if>
+            <if test="practiceHours != null">practice_hours = #{practiceHours},</if>
+            <if test="repeatOrder != null">repeat_order = #{repeatOrder},</if>
+            <if test="importSource != null">import_source = #{importSource},</if>
+            <if test="importBatch != null">import_batch = #{importBatch},</if>
+            <if test="importTime != null">import_time = #{importTime},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteBizTeachingTaskById" parameterType="Long">
+        delete from biz_teaching_task where id = #{id}
+    </delete>
+
+    <delete id="deleteBizTeachingTaskByIds" parameterType="String">
+        delete from biz_teaching_task where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

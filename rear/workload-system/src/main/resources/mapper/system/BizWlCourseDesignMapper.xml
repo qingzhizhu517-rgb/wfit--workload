@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.workload.system.mapper.BizWlCourseDesignMapper">
+    
+    <resultMap type="BizWlCourseDesign" id="BizWlCourseDesignResult">
+        <result property="itemId"    column="item_id"    />
+        <result property="J4"    column="J4"    />
+        <result property="R4"    column="R4"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="remark"    column="remark"    />
+    </resultMap>
+
+    <sql id="selectBizWlCourseDesignVo">
+        select item_id, J4, R4, create_by, create_time, update_by, update_time, remark from biz_wl_course_design
+    </sql>
+
+    <select id="selectBizWlCourseDesignList" parameterType="BizWlCourseDesign" resultMap="BizWlCourseDesignResult">
+        <include refid="selectBizWlCourseDesignVo"/>
+        <where>  
+            <if test="J4 != null "> and J4 = #{J4}</if>
+            <if test="R4 != null "> and R4 = #{R4}</if>
+        </where>
+    </select>
+    
+    <select id="selectBizWlCourseDesignByItemId" parameterType="Long" resultMap="BizWlCourseDesignResult">
+        <include refid="selectBizWlCourseDesignVo"/>
+        where item_id = #{itemId}
+    </select>
+
+    <insert id="insertBizWlCourseDesign" parameterType="BizWlCourseDesign">
+        insert into biz_wl_course_design
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="itemId != null">item_id,</if>
+            <if test="J4 != null">J4,</if>
+            <if test="R4 != null">R4,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="remark != null">remark,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="itemId != null">#{itemId},</if>
+            <if test="J4 != null">#{J4},</if>
+            <if test="R4 != null">#{R4},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="remark != null">#{remark},</if>
+         </trim>
+    </insert>
+
+    <update id="updateBizWlCourseDesign" parameterType="BizWlCourseDesign">
+        update biz_wl_course_design
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="J4 != null">J4 = #{J4},</if>
+            <if test="R4 != null">R4 = #{R4},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where item_id = #{itemId}
+    </update>
+
+    <delete id="deleteBizWlCourseDesignByItemId" parameterType="Long">
+        delete from biz_wl_course_design where item_id = #{itemId}
+    </delete>
+
+    <delete id="deleteBizWlCourseDesignByItemIds" parameterType="String">
+        delete from biz_wl_course_design where item_id in 
+        <foreach item="itemId" collection="array" open="(" separator="," close=")">
+            #{itemId}
+        </foreach>
+    </delete>
+</mapper>

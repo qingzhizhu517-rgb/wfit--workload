@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.workload.system.mapper.BizWlTheoryMapper">
+    
+    <resultMap type="BizWlTheory" id="BizWlTheoryResult">
+        <result property="itemId"    column="item_id"    />
+        <result property="J1"    column="J1"    />
+        <result property="C1"    column="C1"    />
+        <result property="K1"    column="K1"    />
+        <result property="Q1"    column="Q1"    />
+        <result property="Q2"    column="Q2"    />
+        <result property="Q3"    column="Q3"    />
+        <result property="N"    column="N"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="remark"    column="remark"    />
+    </resultMap>
+
+    <sql id="selectBizWlTheoryVo">
+        select item_id, J1, C1, K1, Q1, Q2, Q3, N, create_by, create_time, update_by, update_time, remark from biz_wl_theory
+    </sql>
+
+    <select id="selectBizWlTheoryList" parameterType="BizWlTheory" resultMap="BizWlTheoryResult">
+        <include refid="selectBizWlTheoryVo"/>
+        <where>  
+            <if test="J1 != null "> and J1 = #{J1}</if>
+            <if test="C1 != null "> and C1 = #{C1}</if>
+            <if test="K1 != null "> and K1 = #{K1}</if>
+            <if test="Q1 != null "> and Q1 = #{Q1}</if>
+            <if test="Q2 != null "> and Q2 = #{Q2}</if>
+            <if test="Q3 != null "> and Q3 = #{Q3}</if>
+            <if test="N != null "> and N = #{N}</if>
+        </where>
+    </select>
+    
+    <select id="selectBizWlTheoryByItemId" parameterType="Long" resultMap="BizWlTheoryResult">
+        <include refid="selectBizWlTheoryVo"/>
+        where item_id = #{itemId}
+    </select>
+
+    <insert id="insertBizWlTheory" parameterType="BizWlTheory">
+        insert into biz_wl_theory
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="itemId != null">item_id,</if>
+            <if test="J1 != null">J1,</if>
+            <if test="C1 != null">C1,</if>
+            <if test="K1 != null">K1,</if>
+            <if test="Q1 != null">Q1,</if>
+            <if test="Q2 != null">Q2,</if>
+            <if test="Q3 != null">Q3,</if>
+            <if test="N != null">N,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="remark != null">remark,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="itemId != null">#{itemId},</if>
+            <if test="J1 != null">#{J1},</if>
+            <if test="C1 != null">#{C1},</if>
+            <if test="K1 != null">#{K1},</if>
+            <if test="Q1 != null">#{Q1},</if>
+            <if test="Q2 != null">#{Q2},</if>
+            <if test="Q3 != null">#{Q3},</if>
+            <if test="N != null">#{N},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="remark != null">#{remark},</if>
+         </trim>
+    </insert>
+
+    <update id="updateBizWlTheory" parameterType="BizWlTheory">
+        update biz_wl_theory
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="J1 != null">J1 = #{J1},</if>
+            <if test="C1 != null">C1 = #{C1},</if>
+            <if test="K1 != null">K1 = #{K1},</if>
+            <if test="Q1 != null">Q1 = #{Q1},</if>
+            <if test="Q2 != null">Q2 = #{Q2},</if>
+            <if test="Q3 != null">Q3 = #{Q3},</if>
+            <if test="N != null">N = #{N},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where item_id = #{itemId}
+    </update>
+
+    <delete id="deleteBizWlTheoryByItemId" parameterType="Long">
+        delete from biz_wl_theory where item_id = #{itemId}
+    </delete>
+
+    <delete id="deleteBizWlTheoryByItemIds" parameterType="String">
+        delete from biz_wl_theory where item_id in 
+        <foreach item="itemId" collection="array" open="(" separator="," close=")">
+            #{itemId}
+        </foreach>
+    </delete>
+</mapper>

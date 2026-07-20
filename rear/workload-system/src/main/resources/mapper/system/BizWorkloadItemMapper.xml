@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.workload.system.mapper.BizWorkloadItemMapper">
+    
+    <resultMap type="BizWorkloadItem" id="BizWorkloadItemResult">
+        <result property="id"    column="id"    />
+        <result property="userId"    column="user_id"    />
+        <result property="semester"    column="semester"    />
+        <result property="academicYear"    column="academic_year"    />
+        <result property="itemType"    column="item_type"    />
+        <result property="sourceType"    column="source_type"    />
+        <result property="taskId"    column="task_id"    />
+        <result property="assignmentId"    column="assignment_id"    />
+        <result property="courseName"    column="course_name"    />
+        <result property="educationLevel"    column="education_level"    />
+        <result property="majorCategory"    column="major_category"    />
+        <result property="calculatedWorkload"    column="calculated_workload"    />
+        <result property="description"    column="description"    />
+        <result property="isOverLimit"    column="is_over_limit"    />
+        <result property="deanApprovalStatus"    column="dean_approval_status"    />
+        <result property="deanApprovalBy"    column="dean_approval_by"    />
+        <result property="deanApprovalTime"    column="dean_approval_time"    />
+        <result property="appealStatus"    column="appeal_status"    />
+        <result property="appealReason"    column="appeal_reason"    />
+        <result property="appealReply"    column="appeal_reply"    />
+        <result property="status"    column="status"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="remark"    column="remark"    />
+    </resultMap>
+
+    <sql id="selectBizWorkloadItemVo">
+        select id, user_id, semester, academic_year, item_type, source_type, task_id, assignment_id, course_name, education_level, major_category, calculated_workload, description, is_over_limit, dean_approval_status, dean_approval_by, dean_approval_time, appeal_status, appeal_reason, appeal_reply, status, create_by, create_time, update_by, update_time, remark from biz_workload_item
+    </sql>
+
+    <select id="selectBizWorkloadItemList" parameterType="BizWorkloadItem" resultMap="BizWorkloadItemResult">
+        <include refid="selectBizWorkloadItemVo"/>
+        <where>  
+            <if test="userId != null "> and user_id = #{userId}</if>
+            <if test="semester != null  and semester != ''"> and semester = #{semester}</if>
+            <if test="academicYear != null  and academicYear != ''"> and academic_year = #{academicYear}</if>
+            <if test="itemType != null  and itemType != ''"> and item_type = #{itemType}</if>
+            <if test="sourceType != null  and sourceType != ''"> and source_type = #{sourceType}</if>
+            <if test="taskId != null "> and task_id = #{taskId}</if>
+            <if test="assignmentId != null "> and assignment_id = #{assignmentId}</if>
+            <if test="courseName != null  and courseName != ''"> and course_name like concat('%', #{courseName}, '%')</if>
+            <if test="educationLevel != null  and educationLevel != ''"> and education_level = #{educationLevel}</if>
+            <if test="majorCategory != null  and majorCategory != ''"> and major_category = #{majorCategory}</if>
+            <if test="calculatedWorkload != null "> and calculated_workload = #{calculatedWorkload}</if>
+            <if test="description != null  and description != ''"> and description = #{description}</if>
+            <if test="isOverLimit != null "> and is_over_limit = #{isOverLimit}</if>
+            <if test="deanApprovalStatus != null "> and dean_approval_status = #{deanApprovalStatus}</if>
+            <if test="deanApprovalBy != null  and deanApprovalBy != ''"> and dean_approval_by = #{deanApprovalBy}</if>
+            <if test="deanApprovalTime != null "> and dean_approval_time = #{deanApprovalTime}</if>
+            <if test="appealStatus != null "> and appeal_status = #{appealStatus}</if>
+            <if test="appealReason != null  and appealReason != ''"> and appeal_reason = #{appealReason}</if>
+            <if test="appealReply != null  and appealReply != ''"> and appeal_reply = #{appealReply}</if>
+            <if test="status != null "> and status = #{status}</if>
+        </where>
+    </select>
+    
+    <select id="selectBizWorkloadItemById" parameterType="Long" resultMap="BizWorkloadItemResult">
+        <include refid="selectBizWorkloadItemVo"/>
+        where id = #{id}
+    </select>
+
+    <insert id="insertBizWorkloadItem" parameterType="BizWorkloadItem" useGeneratedKeys="true" keyProperty="id">
+        insert into biz_workload_item
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="userId != null">user_id,</if>
+            <if test="semester != null and semester != ''">semester,</if>
+            <if test="academicYear != null">academic_year,</if>
+            <if test="itemType != null and itemType != ''">item_type,</if>
+            <if test="sourceType != null and sourceType != ''">source_type,</if>
+            <if test="taskId != null">task_id,</if>
+            <if test="assignmentId != null">assignment_id,</if>
+            <if test="courseName != null">course_name,</if>
+            <if test="educationLevel != null">education_level,</if>
+            <if test="majorCategory != null">major_category,</if>
+            <if test="calculatedWorkload != null">calculated_workload,</if>
+            <if test="description != null">description,</if>
+            <if test="isOverLimit != null">is_over_limit,</if>
+            <if test="deanApprovalStatus != null">dean_approval_status,</if>
+            <if test="deanApprovalBy != null">dean_approval_by,</if>
+            <if test="deanApprovalTime != null">dean_approval_time,</if>
+            <if test="appealStatus != null">appeal_status,</if>
+            <if test="appealReason != null">appeal_reason,</if>
+            <if test="appealReply != null">appeal_reply,</if>
+            <if test="status != null">status,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="remark != null">remark,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="userId != null">#{userId},</if>
+            <if test="semester != null and semester != ''">#{semester},</if>
+            <if test="academicYear != null">#{academicYear},</if>
+            <if test="itemType != null and itemType != ''">#{itemType},</if>
+            <if test="sourceType != null and sourceType != ''">#{sourceType},</if>
+            <if test="taskId != null">#{taskId},</if>
+            <if test="assignmentId != null">#{assignmentId},</if>
+            <if test="courseName != null">#{courseName},</if>
+            <if test="educationLevel != null">#{educationLevel},</if>
+            <if test="majorCategory != null">#{majorCategory},</if>
+            <if test="calculatedWorkload != null">#{calculatedWorkload},</if>
+            <if test="description != null">#{description},</if>
+            <if test="isOverLimit != null">#{isOverLimit},</if>
+            <if test="deanApprovalStatus != null">#{deanApprovalStatus},</if>
+            <if test="deanApprovalBy != null">#{deanApprovalBy},</if>
+            <if test="deanApprovalTime != null">#{deanApprovalTime},</if>
+            <if test="appealStatus != null">#{appealStatus},</if>
+            <if test="appealReason != null">#{appealReason},</if>
+            <if test="appealReply != null">#{appealReply},</if>
+            <if test="status != null">#{status},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="remark != null">#{remark},</if>
+         </trim>
+    </insert>
+
+    <update id="updateBizWorkloadItem" parameterType="BizWorkloadItem">
+        update biz_workload_item
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="userId != null">user_id = #{userId},</if>
+            <if test="semester != null and semester != ''">semester = #{semester},</if>
+            <if test="academicYear != null">academic_year = #{academicYear},</if>
+            <if test="itemType != null and itemType != ''">item_type = #{itemType},</if>
+            <if test="sourceType != null and sourceType != ''">source_type = #{sourceType},</if>
+            <if test="taskId != null">task_id = #{taskId},</if>
+            <if test="assignmentId != null">assignment_id = #{assignmentId},</if>
+            <if test="courseName != null">course_name = #{courseName},</if>
+            <if test="educationLevel != null">education_level = #{educationLevel},</if>
+            <if test="majorCategory != null">major_category = #{majorCategory},</if>
+            <if test="calculatedWorkload != null">calculated_workload = #{calculatedWorkload},</if>
+            <if test="description != null">description = #{description},</if>
+            <if test="isOverLimit != null">is_over_limit = #{isOverLimit},</if>
+            <if test="deanApprovalStatus != null">dean_approval_status = #{deanApprovalStatus},</if>
+            <if test="deanApprovalBy != null">dean_approval_by = #{deanApprovalBy},</if>
+            <if test="deanApprovalTime != null">dean_approval_time = #{deanApprovalTime},</if>
+            <if test="appealStatus != null">appeal_status = #{appealStatus},</if>
+            <if test="appealReason != null">appeal_reason = #{appealReason},</if>
+            <if test="appealReply != null">appeal_reply = #{appealReply},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteBizWorkloadItemById" parameterType="Long">
+        delete from biz_workload_item where id = #{id}
+    </delete>
+
+    <delete id="deleteBizWorkloadItemByIds" parameterType="String">
+        delete from biz_workload_item where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

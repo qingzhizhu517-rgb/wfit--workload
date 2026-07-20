@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.workload.system.mapper.BizWorkloadRuleMapper">
+    
+    <resultMap type="BizWorkloadRule" id="BizWorkloadRuleResult">
+        <result property="id"    column="id"    />
+        <result property="ruleCode"    column="rule_code"    />
+        <result property="ruleValue"    column="rule_value"    />
+        <result property="ruleDesc"    column="rule_desc"    />
+        <result property="effectiveFrom"    column="effective_from"    />
+        <result property="effectiveTo"    column="effective_to"    />
+        <result property="status"    column="status"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="remark"    column="remark"    />
+    </resultMap>
+
+    <sql id="selectBizWorkloadRuleVo">
+        select id, rule_code, rule_value, rule_desc, effective_from, effective_to, status, create_by, create_time, update_by, update_time, remark from biz_workload_rule
+    </sql>
+
+    <select id="selectBizWorkloadRuleList" parameterType="BizWorkloadRule" resultMap="BizWorkloadRuleResult">
+        <include refid="selectBizWorkloadRuleVo"/>
+        <where>  
+            <if test="ruleCode != null  and ruleCode != ''"> and rule_code = #{ruleCode}</if>
+            <if test="ruleValue != null "> and rule_value = #{ruleValue}</if>
+            <if test="ruleDesc != null  and ruleDesc != ''"> and rule_desc = #{ruleDesc}</if>
+            <if test="effectiveFrom != null "> and effective_from = #{effectiveFrom}</if>
+            <if test="effectiveTo != null "> and effective_to = #{effectiveTo}</if>
+            <if test="status != null "> and status = #{status}</if>
+        </where>
+    </select>
+    
+    <select id="selectBizWorkloadRuleById" parameterType="Long" resultMap="BizWorkloadRuleResult">
+        <include refid="selectBizWorkloadRuleVo"/>
+        where id = #{id}
+    </select>
+
+    <insert id="insertBizWorkloadRule" parameterType="BizWorkloadRule" useGeneratedKeys="true" keyProperty="id">
+        insert into biz_workload_rule
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="ruleCode != null and ruleCode != ''">rule_code,</if>
+            <if test="ruleValue != null">rule_value,</if>
+            <if test="ruleDesc != null">rule_desc,</if>
+            <if test="effectiveFrom != null">effective_from,</if>
+            <if test="effectiveTo != null">effective_to,</if>
+            <if test="status != null">status,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="remark != null">remark,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="ruleCode != null and ruleCode != ''">#{ruleCode},</if>
+            <if test="ruleValue != null">#{ruleValue},</if>
+            <if test="ruleDesc != null">#{ruleDesc},</if>
+            <if test="effectiveFrom != null">#{effectiveFrom},</if>
+            <if test="effectiveTo != null">#{effectiveTo},</if>
+            <if test="status != null">#{status},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="remark != null">#{remark},</if>
+         </trim>
+    </insert>
+
+    <update id="updateBizWorkloadRule" parameterType="BizWorkloadRule">
+        update biz_workload_rule
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="ruleCode != null and ruleCode != ''">rule_code = #{ruleCode},</if>
+            <if test="ruleValue != null">rule_value = #{ruleValue},</if>
+            <if test="ruleDesc != null">rule_desc = #{ruleDesc},</if>
+            <if test="effectiveFrom != null">effective_from = #{effectiveFrom},</if>
+            <if test="effectiveTo != null">effective_to = #{effectiveTo},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteBizWorkloadRuleById" parameterType="Long">
+        delete from biz_workload_rule where id = #{id}
+    </delete>
+
+    <delete id="deleteBizWorkloadRuleByIds" parameterType="String">
+        delete from biz_workload_rule where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>
