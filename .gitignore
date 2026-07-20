@@ -1,0 +1,23 @@
+# ---- 前端 ----
+node_modules/
+dist/
+front/**/node_modules/
+front/**/dist/
+
+# ---- 后端 ----
+target/
+rear/**/target/
+*.class
+*.jar
+!.mvn/wrapper/*.jar
+
+# ---- 日志与上传 ----
+logs/
+rear/uploadPath/
+*.log
+
+# ---- IDE / 系统 ----
+.idea/
+.vscode/
+*.iml
+.DS_Store
