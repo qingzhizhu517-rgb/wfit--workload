@@ -3,6 +3,7 @@ node_modules/
 dist/
 front/**/node_modules/
 front/**/dist/
+front/**/.vite/
 
 # ---- 后端 ----
 target/
