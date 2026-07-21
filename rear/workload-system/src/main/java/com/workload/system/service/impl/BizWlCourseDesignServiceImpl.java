@@ -4,6 +4,8 @@ import java.util.List;
 import com.workload.common.utils.DateUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import com.workload.system.calc.WorkloadCalcService;
 import com.workload.system.mapper.BizWlCourseDesignMapper;
 import com.workload.system.domain.BizWlCourseDesign;
 import com.workload.system.service.IBizWlCourseDesignService;
@@ -19,6 +21,9 @@ public class BizWlCourseDesignServiceImpl implements IBizWlCourseDesignService
 {
     @Autowired
     private BizWlCourseDesignMapper bizWlCourseDesignMapper;
+
+    @Autowired
+    private WorkloadCalcService workloadCalcService;
 
     /**
      * 查询G4课程设计明细
@@ -51,10 +56,14 @@ public class BizWlCourseDesignServiceImpl implements IBizWlCourseDesignService
      * @return 结果
      */
     @Override
+    @Transactional
     public int insertBizWlCourseDesign(BizWlCourseDesign bizWlCourseDesign)
     {
+        workloadCalcService.assertEditable(bizWlCourseDesign.getItemId());
         bizWlCourseDesign.setCreateTime(DateUtils.getNowDate());
-        return bizWlCourseDesignMapper.insertBizWlCourseDesign(bizWlCourseDesign);
+        int rows = bizWlCourseDesignMapper.insertBizWlCourseDesign(bizWlCourseDesign);
+        workloadCalcService.recalcItem(bizWlCourseDesign.getItemId());
+        return rows;
     }
 
     /**
@@ -64,10 +73,14 @@ public class BizWlCourseDesignServiceImpl implements IBizWlCourseDesignService
      * @return 结果
      */
     @Override
+    @Transactional
     public int updateBizWlCourseDesign(BizWlCourseDesign bizWlCourseDesign)
     {
+        workloadCalcService.assertEditable(bizWlCourseDesign.getItemId());
         bizWlCourseDesign.setUpdateTime(DateUtils.getNowDate());
-        return bizWlCourseDesignMapper.updateBizWlCourseDesign(bizWlCourseDesign);
+        int rows = bizWlCourseDesignMapper.updateBizWlCourseDesign(bizWlCourseDesign);
+        workloadCalcService.recalcItem(bizWlCourseDesign.getItemId());
+        return rows;
     }
 
     /**
@@ -77,9 +90,19 @@ public class BizWlCourseDesignServiceImpl implements IBizWlCourseDesignService
      * @return 结果
      */
     @Override
+    @Transactional
     public int deleteBizWlCourseDesignByItemIds(Long[] itemIds)
     {
-        return bizWlCourseDesignMapper.deleteBizWlCourseDesignByItemIds(itemIds);
+        for (Long itemId : itemIds)
+        {
+            workloadCalcService.assertEditable(itemId);
+        }
+        int rows = bizWlCourseDesignMapper.deleteBizWlCourseDesignByItemIds(itemIds);
+        for (Long itemId : itemIds)
+        {
+            workloadCalcService.onDetailDeleted(itemId);
+        }
+        return rows;
     }
 
     /**
@@ -89,8 +112,12 @@ public class BizWlCourseDesignServiceImpl implements IBizWlCourseDesignService
      * @return 结果
      */
     @Override
+    @Transactional
     public int deleteBizWlCourseDesignByItemId(Long itemId)
     {
-        return bizWlCourseDesignMapper.deleteBizWlCourseDesignByItemId(itemId);
+        workloadCalcService.assertEditable(itemId);
+        int rows = bizWlCourseDesignMapper.deleteBizWlCourseDesignByItemId(itemId);
+        workloadCalcService.onDetailDeleted(itemId);
+        return rows;
     }
 }

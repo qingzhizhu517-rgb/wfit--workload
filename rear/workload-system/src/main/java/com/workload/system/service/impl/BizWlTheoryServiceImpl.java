@@ -4,6 +4,8 @@ import java.util.List;
 import com.workload.common.utils.DateUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import com.workload.system.calc.WorkloadCalcService;
 import com.workload.system.mapper.BizWlTheoryMapper;
 import com.workload.system.domain.BizWlTheory;
 import com.workload.system.service.IBizWlTheoryService;
@@ -19,6 +21,9 @@ public class BizWlTheoryServiceImpl implements IBizWlTheoryService
 {
     @Autowired
     private BizWlTheoryMapper bizWlTheoryMapper;
+
+    @Autowired
+    private WorkloadCalcService workloadCalcService;
 
     /**
      * 查询G1理论课明细
@@ -51,10 +56,14 @@ public class BizWlTheoryServiceImpl implements IBizWlTheoryService
      * @return 结果
      */
     @Override
+    @Transactional
     public int insertBizWlTheory(BizWlTheory bizWlTheory)
     {
+        workloadCalcService.assertEditable(bizWlTheory.getItemId());
         bizWlTheory.setCreateTime(DateUtils.getNowDate());
-        return bizWlTheoryMapper.insertBizWlTheory(bizWlTheory);
+        int rows = bizWlTheoryMapper.insertBizWlTheory(bizWlTheory);
+        workloadCalcService.recalcItem(bizWlTheory.getItemId());
+        return rows;
     }
 
     /**
@@ -64,10 +73,14 @@ public class BizWlTheoryServiceImpl implements IBizWlTheoryService
      * @return 结果
      */
     @Override
+    @Transactional
     public int updateBizWlTheory(BizWlTheory bizWlTheory)
     {
+        workloadCalcService.assertEditable(bizWlTheory.getItemId());
         bizWlTheory.setUpdateTime(DateUtils.getNowDate());
-        return bizWlTheoryMapper.updateBizWlTheory(bizWlTheory);
+        int rows = bizWlTheoryMapper.updateBizWlTheory(bizWlTheory);
+        workloadCalcService.recalcItem(bizWlTheory.getItemId());
+        return rows;
     }
 
     /**
@@ -77,9 +90,19 @@ public class BizWlTheoryServiceImpl implements IBizWlTheoryService
      * @return 结果
      */
     @Override
+    @Transactional
     public int deleteBizWlTheoryByItemIds(Long[] itemIds)
     {
-        return bizWlTheoryMapper.deleteBizWlTheoryByItemIds(itemIds);
+        for (Long itemId : itemIds)
+        {
+            workloadCalcService.assertEditable(itemId);
+        }
+        int rows = bizWlTheoryMapper.deleteBizWlTheoryByItemIds(itemIds);
+        for (Long itemId : itemIds)
+        {
+            workloadCalcService.onDetailDeleted(itemId);
+        }
+        return rows;
     }
 
     /**
@@ -89,8 +112,12 @@ public class BizWlTheoryServiceImpl implements IBizWlTheoryService
      * @return 结果
      */
     @Override
+    @Transactional
     public int deleteBizWlTheoryByItemId(Long itemId)
     {
-        return bizWlTheoryMapper.deleteBizWlTheoryByItemId(itemId);
+        workloadCalcService.assertEditable(itemId);
+        int rows = bizWlTheoryMapper.deleteBizWlTheoryByItemId(itemId);
+        workloadCalcService.onDetailDeleted(itemId);
+        return rows;
     }
 }

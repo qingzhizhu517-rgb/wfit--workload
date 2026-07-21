@@ -4,6 +4,8 @@ import java.util.List;
 import com.workload.common.utils.DateUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import com.workload.system.calc.WorkloadCalcService;
 import com.workload.system.mapper.BizWlManagementMapper;
 import com.workload.system.domain.BizWlManagement;
 import com.workload.system.service.IBizWlManagementService;
@@ -19,6 +21,9 @@ public class BizWlManagementServiceImpl implements IBizWlManagementService
 {
     @Autowired
     private BizWlManagementMapper bizWlManagementMapper;
+
+    @Autowired
+    private WorkloadCalcService workloadCalcService;
 
     /**
      * 查询G11管理服务明细
@@ -51,10 +56,14 @@ public class BizWlManagementServiceImpl implements IBizWlManagementService
      * @return 结果
      */
     @Override
+    @Transactional
     public int insertBizWlManagement(BizWlManagement bizWlManagement)
     {
+        workloadCalcService.assertEditable(bizWlManagement.getItemId());
         bizWlManagement.setCreateTime(DateUtils.getNowDate());
-        return bizWlManagementMapper.insertBizWlManagement(bizWlManagement);
+        int rows = bizWlManagementMapper.insertBizWlManagement(bizWlManagement);
+        workloadCalcService.recalcItem(bizWlManagement.getItemId());
+        return rows;
     }
 
     /**
@@ -64,10 +73,14 @@ public class BizWlManagementServiceImpl implements IBizWlManagementService
      * @return 结果
      */
     @Override
+    @Transactional
     public int updateBizWlManagement(BizWlManagement bizWlManagement)
     {
+        workloadCalcService.assertEditable(bizWlManagement.getItemId());
         bizWlManagement.setUpdateTime(DateUtils.getNowDate());
-        return bizWlManagementMapper.updateBizWlManagement(bizWlManagement);
+        int rows = bizWlManagementMapper.updateBizWlManagement(bizWlManagement);
+        workloadCalcService.recalcItem(bizWlManagement.getItemId());
+        return rows;
     }
 
     /**
@@ -77,9 +90,19 @@ public class BizWlManagementServiceImpl implements IBizWlManagementService
      * @return 结果
      */
     @Override
+    @Transactional
     public int deleteBizWlManagementByItemIds(Long[] itemIds)
     {
-        return bizWlManagementMapper.deleteBizWlManagementByItemIds(itemIds);
+        for (Long itemId : itemIds)
+        {
+            workloadCalcService.assertEditable(itemId);
+        }
+        int rows = bizWlManagementMapper.deleteBizWlManagementByItemIds(itemIds);
+        for (Long itemId : itemIds)
+        {
+            workloadCalcService.onDetailDeleted(itemId);
+        }
+        return rows;
     }
 
     /**
@@ -89,8 +112,12 @@ public class BizWlManagementServiceImpl implements IBizWlManagementService
      * @return 结果
      */
     @Override
+    @Transactional
     public int deleteBizWlManagementByItemId(Long itemId)
     {
-        return bizWlManagementMapper.deleteBizWlManagementByItemId(itemId);
+        workloadCalcService.assertEditable(itemId);
+        int rows = bizWlManagementMapper.deleteBizWlManagementByItemId(itemId);
+        workloadCalcService.onDetailDeleted(itemId);
+        return rows;
     }
 }

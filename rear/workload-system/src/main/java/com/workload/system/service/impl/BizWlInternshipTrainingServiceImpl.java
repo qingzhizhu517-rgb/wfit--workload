@@ -4,6 +4,8 @@ import java.util.List;
 import com.workload.common.utils.DateUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import com.workload.system.calc.WorkloadCalcService;
 import com.workload.system.mapper.BizWlInternshipTrainingMapper;
 import com.workload.system.domain.BizWlInternshipTraining;
 import com.workload.system.service.IBizWlInternshipTrainingService;
@@ -19,6 +21,9 @@ public class BizWlInternshipTrainingServiceImpl implements IBizWlInternshipTrain
 {
     @Autowired
     private BizWlInternshipTrainingMapper bizWlInternshipTrainingMapper;
+
+    @Autowired
+    private WorkloadCalcService workloadCalcService;
 
     /**
      * 查询G3教学实习实训明细
@@ -51,10 +56,14 @@ public class BizWlInternshipTrainingServiceImpl implements IBizWlInternshipTrain
      * @return 结果
      */
     @Override
+    @Transactional
     public int insertBizWlInternshipTraining(BizWlInternshipTraining bizWlInternshipTraining)
     {
+        workloadCalcService.assertEditable(bizWlInternshipTraining.getItemId());
         bizWlInternshipTraining.setCreateTime(DateUtils.getNowDate());
-        return bizWlInternshipTrainingMapper.insertBizWlInternshipTraining(bizWlInternshipTraining);
+        int rows = bizWlInternshipTrainingMapper.insertBizWlInternshipTraining(bizWlInternshipTraining);
+        workloadCalcService.recalcItem(bizWlInternshipTraining.getItemId());
+        return rows;
     }
 
     /**
@@ -64,10 +73,14 @@ public class BizWlInternshipTrainingServiceImpl implements IBizWlInternshipTrain
      * @return 结果
      */
     @Override
+    @Transactional
     public int updateBizWlInternshipTraining(BizWlInternshipTraining bizWlInternshipTraining)
     {
+        workloadCalcService.assertEditable(bizWlInternshipTraining.getItemId());
         bizWlInternshipTraining.setUpdateTime(DateUtils.getNowDate());
-        return bizWlInternshipTrainingMapper.updateBizWlInternshipTraining(bizWlInternshipTraining);
+        int rows = bizWlInternshipTrainingMapper.updateBizWlInternshipTraining(bizWlInternshipTraining);
+        workloadCalcService.recalcItem(bizWlInternshipTraining.getItemId());
+        return rows;
     }
 
     /**
@@ -77,9 +90,19 @@ public class BizWlInternshipTrainingServiceImpl implements IBizWlInternshipTrain
      * @return 结果
      */
     @Override
+    @Transactional
     public int deleteBizWlInternshipTrainingByItemIds(Long[] itemIds)
     {
-        return bizWlInternshipTrainingMapper.deleteBizWlInternshipTrainingByItemIds(itemIds);
+        for (Long itemId : itemIds)
+        {
+            workloadCalcService.assertEditable(itemId);
+        }
+        int rows = bizWlInternshipTrainingMapper.deleteBizWlInternshipTrainingByItemIds(itemIds);
+        for (Long itemId : itemIds)
+        {
+            workloadCalcService.onDetailDeleted(itemId);
+        }
+        return rows;
     }
 
     /**
@@ -89,8 +112,12 @@ public class BizWlInternshipTrainingServiceImpl implements IBizWlInternshipTrain
      * @return 结果
      */
     @Override
+    @Transactional
     public int deleteBizWlInternshipTrainingByItemId(Long itemId)
     {
-        return bizWlInternshipTrainingMapper.deleteBizWlInternshipTrainingByItemId(itemId);
+        workloadCalcService.assertEditable(itemId);
+        int rows = bizWlInternshipTrainingMapper.deleteBizWlInternshipTrainingByItemId(itemId);
+        workloadCalcService.onDetailDeleted(itemId);
+        return rows;
     }
 }

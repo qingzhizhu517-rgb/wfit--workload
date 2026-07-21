@@ -4,6 +4,8 @@ import java.util.List;
 import com.workload.common.utils.DateUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import com.workload.system.calc.WorkloadCalcService;
 import com.workload.system.mapper.BizWlConcentratedInternshipMapper;
 import com.workload.system.domain.BizWlConcentratedInternship;
 import com.workload.system.service.IBizWlConcentratedInternshipService;
@@ -19,6 +21,9 @@ public class BizWlConcentratedInternshipServiceImpl implements IBizWlConcentrate
 {
     @Autowired
     private BizWlConcentratedInternshipMapper bizWlConcentratedInternshipMapper;
+
+    @Autowired
+    private WorkloadCalcService workloadCalcService;
 
     /**
      * 查询G6集中实习明细
@@ -51,10 +56,14 @@ public class BizWlConcentratedInternshipServiceImpl implements IBizWlConcentrate
      * @return 结果
      */
     @Override
+    @Transactional
     public int insertBizWlConcentratedInternship(BizWlConcentratedInternship bizWlConcentratedInternship)
     {
+        workloadCalcService.assertEditable(bizWlConcentratedInternship.getItemId());
         bizWlConcentratedInternship.setCreateTime(DateUtils.getNowDate());
-        return bizWlConcentratedInternshipMapper.insertBizWlConcentratedInternship(bizWlConcentratedInternship);
+        int rows = bizWlConcentratedInternshipMapper.insertBizWlConcentratedInternship(bizWlConcentratedInternship);
+        workloadCalcService.recalcItem(bizWlConcentratedInternship.getItemId());
+        return rows;
     }
 
     /**
@@ -64,10 +73,14 @@ public class BizWlConcentratedInternshipServiceImpl implements IBizWlConcentrate
      * @return 结果
      */
     @Override
+    @Transactional
     public int updateBizWlConcentratedInternship(BizWlConcentratedInternship bizWlConcentratedInternship)
     {
+        workloadCalcService.assertEditable(bizWlConcentratedInternship.getItemId());
         bizWlConcentratedInternship.setUpdateTime(DateUtils.getNowDate());
-        return bizWlConcentratedInternshipMapper.updateBizWlConcentratedInternship(bizWlConcentratedInternship);
+        int rows = bizWlConcentratedInternshipMapper.updateBizWlConcentratedInternship(bizWlConcentratedInternship);
+        workloadCalcService.recalcItem(bizWlConcentratedInternship.getItemId());
+        return rows;
     }
 
     /**
@@ -77,9 +90,19 @@ public class BizWlConcentratedInternshipServiceImpl implements IBizWlConcentrate
      * @return 结果
      */
     @Override
+    @Transactional
     public int deleteBizWlConcentratedInternshipByItemIds(Long[] itemIds)
     {
-        return bizWlConcentratedInternshipMapper.deleteBizWlConcentratedInternshipByItemIds(itemIds);
+        for (Long itemId : itemIds)
+        {
+            workloadCalcService.assertEditable(itemId);
+        }
+        int rows = bizWlConcentratedInternshipMapper.deleteBizWlConcentratedInternshipByItemIds(itemIds);
+        for (Long itemId : itemIds)
+        {
+            workloadCalcService.onDetailDeleted(itemId);
+        }
+        return rows;
     }
 
     /**
@@ -89,8 +112,12 @@ public class BizWlConcentratedInternshipServiceImpl implements IBizWlConcentrate
      * @return 结果
      */
     @Override
+    @Transactional
     public int deleteBizWlConcentratedInternshipByItemId(Long itemId)
     {
-        return bizWlConcentratedInternshipMapper.deleteBizWlConcentratedInternshipByItemId(itemId);
+        workloadCalcService.assertEditable(itemId);
+        int rows = bizWlConcentratedInternshipMapper.deleteBizWlConcentratedInternshipByItemId(itemId);
+        workloadCalcService.onDetailDeleted(itemId);
+        return rows;
     }
 }

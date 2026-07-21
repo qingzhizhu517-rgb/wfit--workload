@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import com.workload.system.mapper.BizWorkloadRuleMapper;
 import com.workload.system.domain.BizWorkloadRule;
 import com.workload.system.service.IBizWorkloadRuleService;
+import com.workload.system.calc.rule.RuleParamService;
 
 /**
  * 全局核算规则参数Service业务层处理
@@ -19,6 +20,9 @@ public class BizWorkloadRuleServiceImpl implements IBizWorkloadRuleService
 {
     @Autowired
     private BizWorkloadRuleMapper bizWorkloadRuleMapper;
+
+    @Autowired
+    private RuleParamService ruleParamService;
 
     /**
      * 查询全局核算规则参数
@@ -54,7 +58,9 @@ public class BizWorkloadRuleServiceImpl implements IBizWorkloadRuleService
     public int insertBizWorkloadRule(BizWorkloadRule bizWorkloadRule)
     {
         bizWorkloadRule.setCreateTime(DateUtils.getNowDate());
-        return bizWorkloadRuleMapper.insertBizWorkloadRule(bizWorkloadRule);
+        int rows = bizWorkloadRuleMapper.insertBizWorkloadRule(bizWorkloadRule);
+        ruleParamService.evict(bizWorkloadRule.getRuleCode());
+        return rows;
     }
 
     /**
@@ -67,7 +73,15 @@ public class BizWorkloadRuleServiceImpl implements IBizWorkloadRuleService
     public int updateBizWorkloadRule(BizWorkloadRule bizWorkloadRule)
     {
         bizWorkloadRule.setUpdateTime(DateUtils.getNowDate());
-        return bizWorkloadRuleMapper.updateBizWorkloadRule(bizWorkloadRule);
+        // 先查旧行：ruleCode 可能被改，新旧编码缓存都要失效
+        BizWorkloadRule old = bizWorkloadRuleMapper.selectBizWorkloadRuleById(bizWorkloadRule.getId());
+        int rows = bizWorkloadRuleMapper.updateBizWorkloadRule(bizWorkloadRule);
+        if (old != null)
+        {
+            ruleParamService.evict(old.getRuleCode());
+        }
+        ruleParamService.evict(bizWorkloadRule.getRuleCode());
+        return rows;
     }
 
     /**
@@ -79,6 +93,14 @@ public class BizWorkloadRuleServiceImpl implements IBizWorkloadRuleService
     @Override
     public int deleteBizWorkloadRuleByIds(Long[] ids)
     {
+        for (Long id : ids)
+        {
+            BizWorkloadRule old = bizWorkloadRuleMapper.selectBizWorkloadRuleById(id);
+            if (old != null)
+            {
+                ruleParamService.evict(old.getRuleCode());
+            }
+        }
         return bizWorkloadRuleMapper.deleteBizWorkloadRuleByIds(ids);
     }
 
@@ -91,6 +113,11 @@ public class BizWorkloadRuleServiceImpl implements IBizWorkloadRuleService
     @Override
     public int deleteBizWorkloadRuleById(Long id)
     {
+        BizWorkloadRule old = bizWorkloadRuleMapper.selectBizWorkloadRuleById(id);
+        if (old != null)
+        {
+            ruleParamService.evict(old.getRuleCode());
+        }
         return bizWorkloadRuleMapper.deleteBizWorkloadRuleById(id);
     }
 }

@@ -4,6 +4,8 @@ import java.util.List;
 import com.workload.common.utils.DateUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import com.workload.system.calc.WorkloadCalcService;
 import com.workload.system.mapper.BizWlPracticeMapper;
 import com.workload.system.domain.BizWlPractice;
 import com.workload.system.service.IBizWlPracticeService;
@@ -19,6 +21,9 @@ public class BizWlPracticeServiceImpl implements IBizWlPracticeService
 {
     @Autowired
     private BizWlPracticeMapper bizWlPracticeMapper;
+
+    @Autowired
+    private WorkloadCalcService workloadCalcService;
 
     /**
      * 查询G2课内实践明细
@@ -51,10 +56,14 @@ public class BizWlPracticeServiceImpl implements IBizWlPracticeService
      * @return 结果
      */
     @Override
+    @Transactional
     public int insertBizWlPractice(BizWlPractice bizWlPractice)
     {
+        workloadCalcService.assertEditable(bizWlPractice.getItemId());
         bizWlPractice.setCreateTime(DateUtils.getNowDate());
-        return bizWlPracticeMapper.insertBizWlPractice(bizWlPractice);
+        int rows = bizWlPracticeMapper.insertBizWlPractice(bizWlPractice);
+        workloadCalcService.recalcItem(bizWlPractice.getItemId());
+        return rows;
     }
 
     /**
@@ -64,10 +73,14 @@ public class BizWlPracticeServiceImpl implements IBizWlPracticeService
      * @return 结果
      */
     @Override
+    @Transactional
     public int updateBizWlPractice(BizWlPractice bizWlPractice)
     {
+        workloadCalcService.assertEditable(bizWlPractice.getItemId());
         bizWlPractice.setUpdateTime(DateUtils.getNowDate());
-        return bizWlPracticeMapper.updateBizWlPractice(bizWlPractice);
+        int rows = bizWlPracticeMapper.updateBizWlPractice(bizWlPractice);
+        workloadCalcService.recalcItem(bizWlPractice.getItemId());
+        return rows;
     }
 
     /**
@@ -77,9 +90,19 @@ public class BizWlPracticeServiceImpl implements IBizWlPracticeService
      * @return 结果
      */
     @Override
+    @Transactional
     public int deleteBizWlPracticeByItemIds(Long[] itemIds)
     {
-        return bizWlPracticeMapper.deleteBizWlPracticeByItemIds(itemIds);
+        for (Long itemId : itemIds)
+        {
+            workloadCalcService.assertEditable(itemId);
+        }
+        int rows = bizWlPracticeMapper.deleteBizWlPracticeByItemIds(itemIds);
+        for (Long itemId : itemIds)
+        {
+            workloadCalcService.onDetailDeleted(itemId);
+        }
+        return rows;
     }
 
     /**
@@ -89,8 +112,12 @@ public class BizWlPracticeServiceImpl implements IBizWlPracticeService
      * @return 结果
      */
     @Override
+    @Transactional
     public int deleteBizWlPracticeByItemId(Long itemId)
     {
-        return bizWlPracticeMapper.deleteBizWlPracticeByItemId(itemId);
+        workloadCalcService.assertEditable(itemId);
+        int rows = bizWlPracticeMapper.deleteBizWlPracticeByItemId(itemId);
+        workloadCalcService.onDetailDeleted(itemId);
+        return rows;
     }
 }

@@ -4,6 +4,8 @@ import java.util.List;
 import com.workload.common.utils.DateUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import com.workload.system.calc.WorkloadCalcService;
 import com.workload.system.mapper.BizWlThesisMapper;
 import com.workload.system.domain.BizWlThesis;
 import com.workload.system.service.IBizWlThesisService;
@@ -19,6 +21,9 @@ public class BizWlThesisServiceImpl implements IBizWlThesisService
 {
     @Autowired
     private BizWlThesisMapper bizWlThesisMapper;
+
+    @Autowired
+    private WorkloadCalcService workloadCalcService;
 
     /**
      * 查询G5毕业论文明细
@@ -51,10 +56,14 @@ public class BizWlThesisServiceImpl implements IBizWlThesisService
      * @return 结果
      */
     @Override
+    @Transactional
     public int insertBizWlThesis(BizWlThesis bizWlThesis)
     {
+        workloadCalcService.assertEditable(bizWlThesis.getItemId());
         bizWlThesis.setCreateTime(DateUtils.getNowDate());
-        return bizWlThesisMapper.insertBizWlThesis(bizWlThesis);
+        int rows = bizWlThesisMapper.insertBizWlThesis(bizWlThesis);
+        workloadCalcService.recalcItem(bizWlThesis.getItemId());
+        return rows;
     }
 
     /**
@@ -64,10 +73,14 @@ public class BizWlThesisServiceImpl implements IBizWlThesisService
      * @return 结果
      */
     @Override
+    @Transactional
     public int updateBizWlThesis(BizWlThesis bizWlThesis)
     {
+        workloadCalcService.assertEditable(bizWlThesis.getItemId());
         bizWlThesis.setUpdateTime(DateUtils.getNowDate());
-        return bizWlThesisMapper.updateBizWlThesis(bizWlThesis);
+        int rows = bizWlThesisMapper.updateBizWlThesis(bizWlThesis);
+        workloadCalcService.recalcItem(bizWlThesis.getItemId());
+        return rows;
     }
 
     /**
@@ -77,9 +90,19 @@ public class BizWlThesisServiceImpl implements IBizWlThesisService
      * @return 结果
      */
     @Override
+    @Transactional
     public int deleteBizWlThesisByItemIds(Long[] itemIds)
     {
-        return bizWlThesisMapper.deleteBizWlThesisByItemIds(itemIds);
+        for (Long itemId : itemIds)
+        {
+            workloadCalcService.assertEditable(itemId);
+        }
+        int rows = bizWlThesisMapper.deleteBizWlThesisByItemIds(itemIds);
+        for (Long itemId : itemIds)
+        {
+            workloadCalcService.onDetailDeleted(itemId);
+        }
+        return rows;
     }
 
     /**
@@ -89,8 +112,12 @@ public class BizWlThesisServiceImpl implements IBizWlThesisService
      * @return 结果
      */
     @Override
+    @Transactional
     public int deleteBizWlThesisByItemId(Long itemId)
     {
-        return bizWlThesisMapper.deleteBizWlThesisByItemId(itemId);
+        workloadCalcService.assertEditable(itemId);
+        int rows = bizWlThesisMapper.deleteBizWlThesisByItemId(itemId);
+        workloadCalcService.onDetailDeleted(itemId);
+        return rows;
     }
 }
