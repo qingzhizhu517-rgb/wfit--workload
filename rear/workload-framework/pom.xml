@@ -53,6 +53,16 @@
             <artifactId>oshi-core</artifactId>
         </dependency>
 
+        <!-- JWT 运行时实现（api 由 workload-common 传递） -->
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-impl</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-jackson</artifactId>
+        </dependency>
+
         <!-- 系统模块-->
         <dependency>
             <groupId>com.workload</groupId>

@@ -5,6 +5,12 @@ front/**/node_modules/
 front/**/dist/
 front/**/.vite/
 
+# ---- 环境变量（防敏感信息入库，模板用 .env.*.example） ----
+.env
+.env.production
+.env.staging
+!*.example
+
 # ---- 后端 ----
 target/
 rear/**/target/
