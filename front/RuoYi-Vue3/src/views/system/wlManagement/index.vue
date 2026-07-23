@@ -1,29 +1,16 @@
 <template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="68px">
-      <el-form-item label="FK biz_role_assignment" prop="assignmentId">
-        <el-input
-          v-model="queryParams.assignmentId"
-          placeholder="请输入FK biz_role_assignment"
-          clearable
-          @keyup.enter="handleQuery"
-        />
+      <el-form-item label="明细ID" prop="itemId">
+        <el-input v-model="queryParams.itemId" placeholder="请输入明细ID" clearable style="width: 160px" @keyup.enter="handleQuery" />
       </el-form-item>
-      <el-form-item label="按任职区间折算学时" prop="proratedAmount">
-        <el-input
-          v-model="queryParams.proratedAmount"
-          placeholder="请输入按任职区间折算学时"
-          clearable
-          @keyup.enter="handleQuery"
-        />
+      <el-form-item label="任职ID" prop="assignmentId">
+        <el-input v-model="queryParams.assignmentId" placeholder="请输入任职ID" clearable style="width: 160px" @keyup.enter="handleQuery" />
       </el-form-item>
-      <el-form-item label="折算说明" prop="prorationBasis">
-        <el-input
-          v-model="queryParams.prorationBasis"
-          placeholder="请输入折算说明"
-          clearable
-          @keyup.enter="handleQuery"
-        />
+      <el-form-item label="岗位" prop="roleType">
+        <el-select v-model="queryParams.roleType" placeholder="请选择岗位" clearable style="width: 150px">
+          <el-option v-for="o in roleTypeOptions" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
       </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
@@ -33,99 +20,82 @@
 
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button
-          type="primary"
-          plain
-          icon="Plus"
-          @click="handleAdd"
-          v-hasPermi="['system:wlManagement:add']"
-        >新增</el-button>
+        <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['system:wlManagement:add']">新增</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button
-          type="success"
-          plain
-          icon="Edit"
-          :disabled="single"
-          @click="handleUpdate"
-          v-hasPermi="['system:wlManagement:edit']"
-        >修改</el-button>
+        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['system:wlManagement:edit']">修改</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button
-          type="danger"
-          plain
-          icon="Delete"
-          :disabled="multiple"
-          @click="handleDelete"
-          v-hasPermi="['system:wlManagement:remove']"
-        >删除</el-button>
+        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['system:wlManagement:remove']">删除</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button
-          type="warning"
-          plain
-          icon="Download"
-          @click="handleExport"
-          v-hasPermi="['system:wlManagement:export']"
-        >导出</el-button>
+        <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['system:wlManagement:export']">导出</el-button>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
+    <el-alert type="info" :closable="false" class="mb8" title="本明细由 G11 生成器按岗位任职区间自动折算写入，工作量 = 折算学时；多岗叠加与学期封顶 180 在汇总层处理" />
+
     <el-table v-loading="loading" :data="wlManagementList" @selection-change="handleSelectionChange">
-      <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="${comment}" align="center" prop="itemId" />
-      <el-table-column label="FK biz_role_assignment" align="center" prop="assignmentId" />
-      <el-table-column label="${comment}" align="center" prop="roleType" />
-      <el-table-column label="按任职区间折算学时" align="center" prop="proratedAmount" />
-      <el-table-column label="折算说明" align="center" prop="prorationBasis" />
-      <el-table-column label="${comment}" align="center" prop="remark" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column type="selection" width="50" align="center" />
+      <el-table-column label="明细ID" align="center" prop="itemId" width="90" />
+      <el-table-column label="任职ID" align="center" prop="assignmentId" width="90" />
+      <el-table-column label="岗位" align="center" prop="roleType" width="110">
+        <template #default="scope">
+          <biz-tag :value="scope.row.roleType" :map="roleTypeMap" />
+        </template>
+      </el-table-column>
+      <el-table-column label="折算学时" align="center" prop="proratedAmount" width="110">
+        <template #default="scope">
+          <span class="coef-main">{{ scope.row.proratedAmount }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="折算说明" align="center" prop="prorationBasis" min-width="180" show-overflow-tooltip>
+        <template #default="scope">{{ scope.row.prorationBasis || '-' }}</template>
+      </el-table-column>
+      <el-table-column label="备注" align="center" prop="remark" min-width="120" show-overflow-tooltip>
+        <template #default="scope">{{ scope.row.remark || '-' }}</template>
+      </el-table-column>
+      <el-table-column label="操作" align="center" width="140" fixed="right" class-name="small-padding fixed-width">
         <template #default="scope">
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['system:wlManagement:edit']">修改</el-button>
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['system:wlManagement:remove']">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
-    
-    <pagination
-      v-show="total>0"
-      :total="total"
-      v-model:page="queryParams.pageNum"
-      v-model:limit="queryParams.pageSize"
-      @pagination="getList"
-    />
+
+    <pagination v-show="total>0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
     <!-- 添加或修改G11管理服务明细对话框 -->
-    <el-dialog :title="title" v-model="open" width="500px" append-to-body>
+    <el-dialog :title="title" v-model="open" width="560px" append-to-body>
       <el-form ref="wlManagementRef" :model="form" :rules="rules" label-width="100px">
-        <el-row>
-          <el-col :span="24">
-            <el-form-item label="FK biz_role_assignment" prop="assignmentId">
-              <el-input v-model="form.assignmentId" placeholder="请输入FK biz_role_assignment" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="24">
-            <el-form-item label="按任职区间折算学时" prop="proratedAmount">
-              <el-input v-model="form.proratedAmount" placeholder="请输入按任职区间折算学时" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="24">
-            <el-form-item label="折算说明" prop="prorationBasis">
-              <el-input v-model="form.prorationBasis" placeholder="请输入折算说明" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="24">
-            <el-form-item label="${comment}" prop="remark">
-              <el-input v-model="form.remark" type="textarea" placeholder="请输入内容" />
-            </el-form-item>
-          </el-col>
-        </el-row>
+        <el-form-item label="明细ID" prop="itemId">
+          <el-input-number v-model="form.itemId" :min="1" controls-position="right" :disabled="title.startsWith('修改')" style="width: 100%" />
+          <div class="form-tip">关联「工作量明细」主表的 ID，一般由核算引擎自动生成</div>
+        </el-form-item>
+        <el-form-item label="任职ID" prop="assignmentId">
+          <el-input-number v-model="form.assignmentId" :min="1" controls-position="right" style="width: 100%" />
+          <div class="form-tip">关联「岗位任职」表的 ID</div>
+        </el-form-item>
+        <el-form-item label="岗位" prop="roleType">
+          <el-select v-model="form.roleType" placeholder="请选择岗位" style="width: 100%">
+            <el-option v-for="o in roleTypeOptions" :key="o.value" :label="o.label" :value="o.value" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="折算学时" prop="proratedAmount">
+          <el-input-number v-model="form.proratedAmount" :min="0" :precision="2" controls-position="right" style="width: 100%" />
+          <div class="form-tip">按任职区间折算后的管理服务工作量</div>
+        </el-form-item>
+        <el-form-item label="折算说明" prop="prorationBasis">
+          <el-input v-model="form.prorationBasis" type="textarea" :rows="2" maxlength="200" show-word-limit placeholder="如：标准60学时 × 9个月/12个月" />
+        </el-form-item>
+        <el-form-item label="备注" prop="remark">
+          <el-input v-model="form.remark" type="textarea" :rows="2" maxlength="500" show-word-limit placeholder="请输入备注" />
+        </el-form-item>
       </el-form>
       <template #footer>
         <div class="dialog-footer">
-          <el-button type="primary" @click="submitForm">确 定</el-button>
+          <el-button type="primary" :loading="submitLoading" @click="submitForm">确 定</el-button>
           <el-button @click="cancel">取 消</el-button>
         </div>
       </template>
@@ -135,11 +105,17 @@
 
 <script setup name="WlManagement">
 import { listWlManagement, getWlManagement, delWlManagement, addWlManagement, updateWlManagement } from "@/api/system/wlManagement"
+import { roleTypeOptions } from '@/utils/bizDict'
 
 const { proxy } = getCurrentInstance()
 
+const roleTypeMap = Object.fromEntries(
+  roleTypeOptions.map(o => [o.value, { label: o.label, type: 'primary' }])
+)
+
 const wlManagementList = ref([])
 const open = ref(false)
+const submitLoading = ref(false)
 const loading = ref(true)
 const showSearch = ref(true)
 const ids = ref([])
@@ -153,18 +129,14 @@ const data = reactive({
   queryParams: {
     pageNum: 1,
     pageSize: 10,
+    itemId: null,
     assignmentId: null,
-    roleType: null,
-    proratedAmount: null,
-    prorationBasis: null,
+    roleType: null
   },
   rules: {
-    assignmentId: [
-      { required: true, message: "FK biz_role_assignment不能为空", trigger: "blur" }
-    ],
-    proratedAmount: [
-      { required: true, message: "按任职区间折算学时不能为空", trigger: "blur" }
-    ],
+    itemId: [{ required: true, message: "明细ID不能为空", trigger: "blur" }],
+    assignmentId: [{ required: true, message: "任职ID不能为空", trigger: "blur" }],
+    proratedAmount: [{ required: true, message: "折算学时不能为空", trigger: "blur" }]
   }
 })
 
@@ -194,10 +166,6 @@ function reset() {
     roleType: null,
     proratedAmount: null,
     prorationBasis: null,
-    createBy: null,
-    createTime: null,
-    updateBy: null,
-    updateTime: null,
     remark: null
   }
   proxy.resetForm("wlManagementRef")
@@ -244,19 +212,15 @@ function handleUpdate(row) {
 function submitForm() {
   proxy.$refs["wlManagementRef"].validate(valid => {
     if (valid) {
-      if (form.value.itemId != null) {
-        updateWlManagement(form.value).then(() => {
-          proxy.$modal.msgSuccess("修改成功")
-          open.value = false
-          getList()
-        })
-      } else {
-        addWlManagement(form.value).then(() => {
-          proxy.$modal.msgSuccess("新增成功")
-          open.value = false
-          getList()
-        })
-      }
+      submitLoading.value = true
+      const req = title.value.startsWith('修改') ? updateWlManagement(form.value) : addWlManagement(form.value)
+      req.then(() => {
+        proxy.$modal.msgSuccess(title.value.startsWith('修改') ? "修改成功" : "新增成功")
+        open.value = false
+        getList()
+      }).finally(() => {
+        submitLoading.value = false
+      })
     }
   })
 }
@@ -264,7 +228,7 @@ function submitForm() {
 /** 删除按钮操作 */
 function handleDelete(row) {
   const _itemIds = row.itemId || ids.value
-  proxy.$modal.confirm('是否确认删除G11管理服务明细编号为"' + _itemIds + '"的数据项？').then(function() {
+  proxy.$modal.confirm('是否确认删除明细ID为"' + _itemIds + '"的数据项？').then(function() {
     return delWlManagement(_itemIds)
   }).then(() => {
     getList()
@@ -281,3 +245,10 @@ function handleExport() {
 
 getList()
 </script>
+
+<style scoped>
+.coef-main {
+  font-weight: 600;
+  color: var(--el-color-primary);
+}
+</style>

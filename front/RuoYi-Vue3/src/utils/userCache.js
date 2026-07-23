@@ -1,0 +1,40 @@
+import { ref } from 'vue'
+import { listUserSimple } from '@/api/system/user'
+
+/**
+ * 用户简要信息全局缓存：所有业务页面共享一次请求
+ * userMap: { [userId]: { userId, userName, nickName, deptId, deptName } }
+ */
+const userMap = ref({})
+const userList = ref([])
+let loadingPromise = null
+
+export function useUserMap() {
+  if (!loadingPromise) {
+    loadingPromise = listUserSimple().then(res => {
+      const list = res.data || []
+      userList.value = list
+      const map = {}
+      list.forEach(u => { map[u.userId] = u })
+      userMap.value = map
+      return map
+    }).catch(() => {
+      loadingPromise = null
+    })
+  }
+
+  /** 表格展示：张三（2025001） */
+  const userLabel = (userId) => {
+    if (userId === null || userId === undefined || userId === '') return '-'
+    const u = userMap.value[userId]
+    return u ? `${u.nickName}（${u.userName}）` : String(userId)
+  }
+
+  /** 仅姓名 */
+  const userName = (userId) => userMap.value[userId]?.nickName || (userId ?? '-')
+
+  /** 院部名 */
+  const deptName = (userId) => userMap.value[userId]?.deptName || '-'
+
+  return { userMap, userList, userLabel, userName, deptName }
+}

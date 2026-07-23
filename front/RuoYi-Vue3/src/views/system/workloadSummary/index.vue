@@ -1,197 +1,16 @@
 <template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="68px">
-      <el-form-item label="${comment}" prop="userId">
-        <el-input
-          v-model="queryParams.userId"
-          placeholder="请输入${comment}"
-          clearable
-          @keyup.enter="handleQuery"
-        />
+      <el-form-item label="教师" prop="userId">
+        <user-select v-model="queryParams.userId" style="width: 200px" />
       </el-form-item>
-      <el-form-item label="${comment}" prop="semester">
-        <el-input
-          v-model="queryParams.semester"
-          placeholder="请输入${comment}"
-          clearable
-          @keyup.enter="handleQuery"
-        />
+      <el-form-item label="学年学期" prop="semester">
+        <el-input v-model="queryParams.semester" placeholder="如 2025-2026-1" clearable style="width: 150px" @keyup.enter="handleQuery" />
       </el-form-item>
-      <el-form-item label="${comment}" prop="academicYear">
-        <el-input
-          v-model="queryParams.academicYear"
-          placeholder="请输入${comment}"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="第一课堂=G1+G2+G3+G4+G5+G6" prop="G7">
-        <el-input
-          v-model="queryParams.G7"
-          placeholder="请输入第一课堂=G1+G2+G3+G4+G5+G6"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="第二课堂" prop="G8">
-        <el-input
-          v-model="queryParams.G8"
-          placeholder="请输入第二课堂"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="其他" prop="G9">
-        <el-input
-          v-model="queryParams.G9"
-          placeholder="请输入其他"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="教学合计=G7+G8+G9" prop="G10">
-        <el-input
-          v-model="queryParams.G10"
-          placeholder="请输入教学合计=G7+G8+G9"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="管理服务" prop="G11">
-        <el-input
-          v-model="queryParams.G11"
-          placeholder="请输入管理服务"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="总工作量=G10+G11" prop="totalWorkload">
-        <el-input
-          v-model="queryParams.totalWorkload"
-          placeholder="请输入总工作量=G10+G11"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="额定(统一180)" prop="ratedWorkload">
-        <el-input
-          v-model="queryParams.ratedWorkload"
-          placeholder="请输入额定(统一180)"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="超额定=max(0,total-rated)" prop="excessWorkload">
-        <el-input
-          v-model="queryParams.excessWorkload"
-          placeholder="请输入超额定=max(0,total-rated)"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="职称快照" prop="title">
-        <el-input
-          v-model="queryParams.title"
-          placeholder="请输入职称快照"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="单位酬金快照" prop="payRate">
-        <el-input
-          v-model="queryParams.payRate"
-          placeholder="请输入单位酬金快照"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="绩效酬金=(min(total,540)-180)*rate" prop="performancePay">
-        <el-input
-          v-model="queryParams.performancePay"
-          placeholder="请输入绩效酬金=(min(total,540)-180)*rate"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="触200%封顶" prop="isCapped">
-        <el-input
-          v-model="queryParams.isCapped"
-          placeholder="请输入触200%封顶"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="第五条达标标准/学期" prop="basicTeachingStandard">
-        <el-input
-          v-model="queryParams.basicTeachingStandard"
-          placeholder="请输入第五条达标标准/学期"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="达标G10&gt;=standard" prop="basicTeachingMet">
-        <el-input
-          v-model="queryParams.basicTeachingMet"
-          placeholder="请输入达标G10&gt;=standard"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="${comment}" prop="teacherSign">
-        <el-input
-          v-model="queryParams.teacherSign"
-          placeholder="请输入${comment}"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="${comment}" prop="teacherSignTime">
-        <el-date-picker clearable
-          v-model="queryParams.teacherSignTime"
-          type="date"
-          value-format="YYYY-MM-DD"
-          placeholder="请选择${comment}">
-        </el-date-picker>
-      </el-form-item>
-      <el-form-item label="${comment}" prop="deptLeaderSign">
-        <el-input
-          v-model="queryParams.deptLeaderSign"
-          placeholder="请输入${comment}"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="${comment}" prop="deptLeaderSignTime">
-        <el-date-picker clearable
-          v-model="queryParams.deptLeaderSignTime"
-          type="date"
-          value-format="YYYY-MM-DD"
-          placeholder="请选择${comment}">
-        </el-date-picker>
-      </el-form-item>
-      <el-form-item label="${comment}" prop="academicAssistantSign">
-        <el-input
-          v-model="queryParams.academicAssistantSign"
-          placeholder="请输入${comment}"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="${comment}" prop="academicAssistantSignTime">
-        <el-date-picker clearable
-          v-model="queryParams.academicAssistantSignTime"
-          type="date"
-          value-format="YYYY-MM-DD"
-          placeholder="请选择${comment}">
-        </el-date-picker>
-      </el-form-item>
-      <el-form-item label="${comment}" prop="lockTime">
-        <el-date-picker clearable
-          v-model="queryParams.lockTime"
-          type="date"
-          value-format="YYYY-MM-DD"
-          placeholder="请选择${comment}">
-        </el-date-picker>
+      <el-form-item label="状态" prop="status">
+        <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 120px">
+          <el-option v-for="(v, k) in summaryStatusMap" :key="k" :label="v.label" :value="Number(k)" />
+        </el-select>
       </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
@@ -201,99 +20,76 @@
 
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button
-          type="primary"
-          plain
-          icon="Plus"
-          @click="handleAdd"
-          v-hasPermi="['system:workloadSummary:add']"
-        >新增</el-button>
+        <el-tooltip content="重算明细→汇总→酬金，需先在搜索栏选择教师和学期" placement="top">
+          <el-button type="primary" plain icon="Cpu" :loading="calcLoading" @click="handleRecalcAll" v-hasPermi="['system:workloadSummary:edit']">一键核算</el-button>
+        </el-tooltip>
       </el-col>
       <el-col :span="1.5">
-        <el-button
-          type="success"
-          plain
-          icon="Edit"
-          :disabled="single"
-          @click="handleUpdate"
-          v-hasPermi="['system:workloadSummary:edit']"
-        >修改</el-button>
+        <el-tooltip content="不落库仿真预览汇总结果" placement="top">
+          <el-button type="info" plain icon="View" @click="handlePreview" v-hasPermi="['system:workloadSummary:query']">汇总预览</el-button>
+        </el-tooltip>
       </el-col>
       <el-col :span="1.5">
-        <el-button
-          type="danger"
-          plain
-          icon="Delete"
-          :disabled="multiple"
-          @click="handleDelete"
-          v-hasPermi="['system:workloadSummary:remove']"
-        >删除</el-button>
+        <el-tooltip content="按搜索栏学期，由岗位任职批量生成 G11 管理服务明细" placement="top">
+          <el-button type="warning" plain icon="MagicStick" @click="handleGenG11" v-hasPermi="['system:workloadItem:add']">生成G11</el-button>
+        </el-tooltip>
       </el-col>
       <el-col :span="1.5">
-        <el-button
-          type="warning"
-          plain
-          icon="Download"
-          @click="handleExport"
-          v-hasPermi="['system:workloadSummary:export']"
-        >导出</el-button>
+        <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['system:workloadSummary:export']">导出</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['system:workloadSummary:remove']">删除</el-button>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
     <el-table v-loading="loading" :data="workloadSummaryList" @selection-change="handleSelectionChange">
-      <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="${comment}" align="center" prop="id" />
-      <el-table-column label="${comment}" align="center" prop="userId" />
-      <el-table-column label="${comment}" align="center" prop="semester" />
-      <el-table-column label="${comment}" align="center" prop="academicYear" />
-      <el-table-column label="第一课堂=G1+G2+G3+G4+G5+G6" align="center" prop="G7" />
-      <el-table-column label="第二课堂" align="center" prop="G8" />
-      <el-table-column label="其他" align="center" prop="G9" />
-      <el-table-column label="教学合计=G7+G8+G9" align="center" prop="G10" />
-      <el-table-column label="管理服务" align="center" prop="G11" />
-      <el-table-column label="总工作量=G10+G11" align="center" prop="totalWorkload" />
-      <el-table-column label="额定(统一180)" align="center" prop="ratedWorkload" />
-      <el-table-column label="超额定=max(0,total-rated)" align="center" prop="excessWorkload" />
-      <el-table-column label="职称快照" align="center" prop="title" />
-      <el-table-column label="单位酬金快照" align="center" prop="payRate" />
-      <el-table-column label="绩效酬金=(min(total,540)-180)*rate" align="center" prop="performancePay" />
-      <el-table-column label="触200%封顶" align="center" prop="isCapped" />
-      <el-table-column label="第五条达标标准/学期" align="center" prop="basicTeachingStandard" />
-      <el-table-column label="达标G10&gt;=standard" align="center" prop="basicTeachingMet" />
-      <el-table-column label="0草稿/1已公示/2已审核/3已锁定" align="center" prop="status" />
-      <el-table-column label="${comment}" align="center" prop="teacherSign" />
-      <el-table-column label="${comment}" align="center" prop="teacherSignTime" width="180">
+      <el-table-column type="selection" width="50" align="center" />
+      <el-table-column label="教师" align="center" prop="userId" width="150" fixed="left">
+        <template #default="scope">{{ userLabel(scope.row.userId) }}</template>
+      </el-table-column>
+      <el-table-column label="学年学期" align="center" prop="semester" width="105" fixed="left" />
+      <el-table-column label="G7 第一课堂" align="center" prop="G7" width="95" />
+      <el-table-column label="G8 第二课堂" align="center" prop="G8" width="95" />
+      <el-table-column label="G9 其他" align="center" prop="G9" width="85" />
+      <el-table-column label="G10 教学合计" align="center" prop="G10" width="100" />
+      <el-table-column label="G11 管理服务" align="center" prop="G11" width="100" />
+      <el-table-column label="总工作量" align="center" prop="totalWorkload" width="90">
         <template #default="scope">
-          <span>{{ parseTime(scope.row.teacherSignTime, '{y}-{m}-{d}') }}</span>
+          <span class="total-num">{{ scope.row.totalWorkload }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="${comment}" align="center" prop="deptLeaderSign" />
-      <el-table-column label="${comment}" align="center" prop="deptLeaderSignTime" width="180">
+      <el-table-column label="额定" align="center" prop="ratedWorkload" width="70" />
+      <el-table-column label="超额" align="center" prop="excessWorkload" width="80">
         <template #default="scope">
-          <span>{{ parseTime(scope.row.deptLeaderSignTime, '{y}-{m}-{d}') }}</span>
+          <span :class="{ 'excess-num': Number(scope.row.excessWorkload) > 0 }">{{ scope.row.excessWorkload }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="${comment}" align="center" prop="academicAssistantSign" />
-      <el-table-column label="${comment}" align="center" prop="academicAssistantSignTime" width="180">
+      <el-table-column label="绩效酬金(元)" align="center" prop="performancePay" width="110">
         <template #default="scope">
-          <span>{{ parseTime(scope.row.academicAssistantSignTime, '{y}-{m}-{d}') }}</span>
+          {{ formatAmount(scope.row.performancePay) }}
+          <el-tag v-if="scope.row.isCapped === 1" type="danger" size="small" disable-transitions>封顶</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="${comment}" align="center" prop="lockTime" width="180">
+      <el-table-column label="基本教学达标" align="center" prop="basicTeachingMet" width="100">
         <template #default="scope">
-          <span>{{ parseTime(scope.row.lockTime, '{y}-{m}-{d}') }}</span>
+          <biz-tag :value="scope.row.basicTeachingMet" :map="metStatusMap" />
         </template>
       </el-table-column>
-      <el-table-column label="${comment}" align="center" prop="remark" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column label="状态" align="center" prop="status" width="85">
         <template #default="scope">
-          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['system:workloadSummary:edit']">修改</el-button>
+          <biz-tag :value="scope.row.status" :map="summaryStatusMap" />
+        </template>
+      </el-table-column>
+      <el-table-column label="操作" align="center" width="210" fixed="right" class-name="small-padding fixed-width">
+        <template #default="scope">
+          <el-button link type="primary" icon="Refresh" @click="handleRecalcSummary(scope.row)" v-hasPermi="['system:workloadSummary:edit']">重算</el-button>
+          <el-button link type="primary" icon="View" @click="handleDetail(scope.row)" v-hasPermi="['system:workloadSummary:query']">详情</el-button>
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['system:workloadSummary:remove']">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
-    
+
     <pagination
       v-show="total>0"
       :total="total"
@@ -302,224 +98,120 @@
       @pagination="getList"
     />
 
-    <!-- 添加或修改学期工作量汇总对话框 -->
-    <el-dialog :title="title" v-model="open" width="500px" append-to-body>
-      <el-form ref="workloadSummaryRef" :model="form" :rules="rules" label-width="100px">
-        <el-row>
-          <el-col :span="24">
-            <el-form-item label="${comment}" prop="userId">
-              <el-input v-model="form.userId" placeholder="请输入${comment}" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="24">
-            <el-form-item label="${comment}" prop="semester">
-              <el-input v-model="form.semester" placeholder="请输入${comment}" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="24">
-            <el-form-item label="${comment}" prop="academicYear">
-              <el-input v-model="form.academicYear" placeholder="请输入${comment}" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="24">
-            <el-form-item label="第一课堂=G1+G2+G3+G4+G5+G6" prop="G7">
-              <el-input v-model="form.G7" placeholder="请输入第一课堂=G1+G2+G3+G4+G5+G6" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="24">
-            <el-form-item label="第二课堂" prop="G8">
-              <el-input v-model="form.G8" placeholder="请输入第二课堂" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="24">
-            <el-form-item label="其他" prop="G9">
-              <el-input v-model="form.G9" placeholder="请输入其他" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="24">
-            <el-form-item label="教学合计=G7+G8+G9" prop="G10">
-              <el-input v-model="form.G10" placeholder="请输入教学合计=G7+G8+G9" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="24">
-            <el-form-item label="管理服务" prop="G11">
-              <el-input v-model="form.G11" placeholder="请输入管理服务" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="24">
-            <el-form-item label="总工作量=G10+G11" prop="totalWorkload">
-              <el-input v-model="form.totalWorkload" placeholder="请输入总工作量=G10+G11" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="24">
-            <el-form-item label="额定(统一180)" prop="ratedWorkload">
-              <el-input v-model="form.ratedWorkload" placeholder="请输入额定(统一180)" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="24">
-            <el-form-item label="超额定=max(0,total-rated)" prop="excessWorkload">
-              <el-input v-model="form.excessWorkload" placeholder="请输入超额定=max(0,total-rated)" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="24">
-            <el-form-item label="职称快照" prop="title">
-              <el-input v-model="form.title" placeholder="请输入职称快照" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="24">
-            <el-form-item label="单位酬金快照" prop="payRate">
-              <el-input v-model="form.payRate" placeholder="请输入单位酬金快照" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="24">
-            <el-form-item label="绩效酬金=(min(total,540)-180)*rate" prop="performancePay">
-              <el-input v-model="form.performancePay" placeholder="请输入绩效酬金=(min(total,540)-180)*rate" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="24">
-            <el-form-item label="触200%封顶" prop="isCapped">
-              <el-input v-model="form.isCapped" placeholder="请输入触200%封顶" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="24">
-            <el-form-item label="第五条达标标准/学期" prop="basicTeachingStandard">
-              <el-input v-model="form.basicTeachingStandard" placeholder="请输入第五条达标标准/学期" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="24">
-            <el-form-item label="达标G10&gt;=standard" prop="basicTeachingMet">
-              <el-input v-model="form.basicTeachingMet" placeholder="请输入达标G10&gt;=standard" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="24">
-            <el-form-item label="${comment}" prop="teacherSign">
-              <el-input v-model="form.teacherSign" placeholder="请输入${comment}" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="24">
-            <el-form-item label="${comment}" prop="teacherSignTime">
-              <el-date-picker clearable
-                v-model="form.teacherSignTime"
-                type="date"
-                value-format="YYYY-MM-DD"
-                placeholder="请选择${comment}">
-              </el-date-picker>
-            </el-form-item>
-          </el-col>
-          <el-col :span="24">
-            <el-form-item label="${comment}" prop="deptLeaderSign">
-              <el-input v-model="form.deptLeaderSign" placeholder="请输入${comment}" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="24">
-            <el-form-item label="${comment}" prop="deptLeaderSignTime">
-              <el-date-picker clearable
-                v-model="form.deptLeaderSignTime"
-                type="date"
-                value-format="YYYY-MM-DD"
-                placeholder="请选择${comment}">
-              </el-date-picker>
-            </el-form-item>
-          </el-col>
-          <el-col :span="24">
-            <el-form-item label="${comment}" prop="academicAssistantSign">
-              <el-input v-model="form.academicAssistantSign" placeholder="请输入${comment}" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="24">
-            <el-form-item label="${comment}" prop="academicAssistantSignTime">
-              <el-date-picker clearable
-                v-model="form.academicAssistantSignTime"
-                type="date"
-                value-format="YYYY-MM-DD"
-                placeholder="请选择${comment}">
-              </el-date-picker>
-            </el-form-item>
-          </el-col>
-          <el-col :span="24">
-            <el-form-item label="${comment}" prop="lockTime">
-              <el-date-picker clearable
-                v-model="form.lockTime"
-                type="date"
-                value-format="YYYY-MM-DD"
-                placeholder="请选择${comment}">
-              </el-date-picker>
-            </el-form-item>
-          </el-col>
-          <el-col :span="24">
-            <el-form-item label="${comment}" prop="remark">
-              <el-input v-model="form.remark" type="textarea" placeholder="请输入内容" />
-            </el-form-item>
-          </el-col>
-        </el-row>
+    <!-- 汇总详情抽屉 -->
+    <el-drawer v-model="detailOpen" title="学期汇总详情" size="480px">
+      <el-descriptions :column="1" border v-if="detailRow">
+        <el-descriptions-item label="教师">{{ userLabel(detailRow.userId) }}</el-descriptions-item>
+        <el-descriptions-item label="学年学期">{{ detailRow.semester }}</el-descriptions-item>
+        <el-descriptions-item label="职称快照">{{ detailRow.title || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="单位酬金快照">{{ detailRow.payRate ?? '-' }} 元</el-descriptions-item>
+        <el-descriptions-item label="G7 第一课堂">{{ detailRow.G7 }}</el-descriptions-item>
+        <el-descriptions-item label="G8 第二课堂">{{ detailRow.G8 }}</el-descriptions-item>
+        <el-descriptions-item label="G9 其他">{{ detailRow.G9 }}</el-descriptions-item>
+        <el-descriptions-item label="G10 教学合计">{{ detailRow.G10 }}</el-descriptions-item>
+        <el-descriptions-item label="G11 管理服务">{{ detailRow.G11 }}</el-descriptions-item>
+        <el-descriptions-item label="总工作量">{{ detailRow.totalWorkload }}</el-descriptions-item>
+        <el-descriptions-item label="额定工作量">{{ detailRow.ratedWorkload }}</el-descriptions-item>
+        <el-descriptions-item label="超额工作量">{{ detailRow.excessWorkload }}</el-descriptions-item>
+        <el-descriptions-item label="绩效酬金">{{ formatAmount(detailRow.performancePay) }} 元</el-descriptions-item>
+        <el-descriptions-item label="是否触顶">
+          <biz-tag :value="detailRow.isCapped" :map="yesNoMap" />
+        </el-descriptions-item>
+        <el-descriptions-item label="达标标准">{{ detailRow.basicTeachingStandard ?? '-' }}</el-descriptions-item>
+        <el-descriptions-item label="是否达标">
+          <biz-tag :value="detailRow.basicTeachingMet" :map="metStatusMap" />
+        </el-descriptions-item>
+        <el-descriptions-item label="状态">
+          <biz-tag :value="detailRow.status" :map="summaryStatusMap" />
+        </el-descriptions-item>
+        <el-descriptions-item label="教师确认">{{ detailRow.teacherSign || '未确认' }}<span v-if="detailRow.teacherSignTime">（{{ parseTime(detailRow.teacherSignTime, '{y}-{m}-{d}') }}）</span></el-descriptions-item>
+        <el-descriptions-item label="院部审核">{{ detailRow.deptLeaderSign || '未审核' }}<span v-if="detailRow.deptLeaderSignTime">（{{ parseTime(detailRow.deptLeaderSignTime, '{y}-{m}-{d}') }}）</span></el-descriptions-item>
+        <el-descriptions-item label="教务确认">{{ detailRow.academicAssistantSign || '未确认' }}<span v-if="detailRow.academicAssistantSignTime">（{{ parseTime(detailRow.academicAssistantSignTime, '{y}-{m}-{d}') }}）</span></el-descriptions-item>
+        <el-descriptions-item label="锁定时间">{{ detailRow.lockTime ? parseTime(detailRow.lockTime) : '未锁定' }}</el-descriptions-item>
+        <el-descriptions-item label="备注">{{ detailRow.remark || '-' }}</el-descriptions-item>
+      </el-descriptions>
+    </el-drawer>
+
+    <!-- 汇总预览对话框 -->
+    <el-dialog title="汇总预览（不落库）" v-model="previewOpen" width="560px" append-to-body>
+      <el-form :inline="true" class="preview-form">
+        <el-form-item label="教师">
+          <user-select v-model="previewQuery.userId" style="width: 200px" />
+        </el-form-item>
+        <el-form-item label="学年学期">
+          <el-input v-model="previewQuery.semester" placeholder="如 2025-2026-1" style="width: 150px" />
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" icon="View" :loading="previewLoading" @click="doPreview">预览</el-button>
+        </el-form-item>
       </el-form>
-      <template #footer>
-        <div class="dialog-footer">
-          <el-button type="primary" @click="submitForm">确 定</el-button>
-          <el-button @click="cancel">取 消</el-button>
-        </div>
+      <template v-if="previewData">
+        <el-alert
+          v-if="previewData.unconfirmedCount > 0"
+          type="warning"
+          :title="`注意：该教师本学期还有 ${previewData.unconfirmedCount} 条明细未核对确认，预览结果不含冻结口径`"
+          :closable="false"
+          class="mb12"
+        />
+        <el-descriptions :column="2" border v-if="previewData.summary">
+          <el-descriptions-item label="G7 第一课堂">{{ previewData.summary.G7 }}</el-descriptions-item>
+          <el-descriptions-item label="G8 第二课堂">{{ previewData.summary.G8 }}</el-descriptions-item>
+          <el-descriptions-item label="G9 其他">{{ previewData.summary.G9 }}</el-descriptions-item>
+          <el-descriptions-item label="G10 教学合计">{{ previewData.summary.G10 }}</el-descriptions-item>
+          <el-descriptions-item label="G11 管理服务">{{ previewData.summary.G11 }}</el-descriptions-item>
+          <el-descriptions-item label="总工作量"><b>{{ previewData.summary.totalWorkload }}</b></el-descriptions-item>
+          <el-descriptions-item label="额定">{{ previewData.summary.ratedWorkload }}</el-descriptions-item>
+          <el-descriptions-item label="超额">{{ previewData.summary.excessWorkload }}</el-descriptions-item>
+          <el-descriptions-item label="绩效酬金">{{ formatAmount(previewData.summary.performancePay) }} 元</el-descriptions-item>
+          <el-descriptions-item label="是否达标">
+            <biz-tag :value="previewData.summary.basicTeachingMet" :map="metStatusMap" />
+          </el-descriptions-item>
+        </el-descriptions>
+        <el-empty v-else description="暂无汇总数据，请先录入工作量明细" :image-size="80" />
       </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup name="WorkloadSummary">
-import { listWorkloadSummary, getWorkloadSummary, delWorkloadSummary, addWorkloadSummary, updateWorkloadSummary } from "@/api/system/workloadSummary"
+import { listWorkloadSummary, delWorkloadSummary } from "@/api/system/workloadSummary"
+import { recalcSummary, recalcAll, previewSummary, genG11 } from "@/api/system/calc"
+import UserSelect from '@/components/UserSelect/index.vue'
+import { useUserMap } from '@/utils/userCache'
+import { summaryStatusMap, yesNoMap, formatAmount } from '@/utils/bizDict'
 
 const { proxy } = getCurrentInstance()
+const { userLabel } = useUserMap()
+
+const metStatusMap = { 1: { label: '已达标', type: 'success' }, 0: { label: '未达标', type: 'danger' } }
 
 const workloadSummaryList = ref([])
-const open = ref(false)
 const loading = ref(true)
+const calcLoading = ref(false)
 const showSearch = ref(true)
 const ids = ref([])
-const single = ref(true)
 const multiple = ref(true)
 const total = ref(0)
-const title = ref("")
+
+const detailOpen = ref(false)
+const detailRow = ref(null)
+
+const previewOpen = ref(false)
+const previewLoading = ref(false)
+const previewData = ref(null)
+const previewQuery = reactive({ userId: null, semester: null })
 
 const data = reactive({
-  form: {},
   queryParams: {
     pageNum: 1,
     pageSize: 10,
     userId: null,
     semester: null,
-    academicYear: null,
-    G7: null,
-    G8: null,
-    G9: null,
-    G10: null,
-    G11: null,
-    totalWorkload: null,
-    ratedWorkload: null,
-    excessWorkload: null,
-    title: null,
-    payRate: null,
-    performancePay: null,
-    isCapped: null,
-    basicTeachingStandard: null,
-    basicTeachingMet: null,
-    status: null,
-    teacherSign: null,
-    teacherSignTime: null,
-    deptLeaderSign: null,
-    deptLeaderSignTime: null,
-    academicAssistantSign: null,
-    academicAssistantSignTime: null,
-    lockTime: null,
-  },
-  rules: {
-    userId: [
-      { required: true, message: "$comment不能为空", trigger: "blur" }
-    ],
-    semester: [
-      { required: true, message: "$comment不能为空", trigger: "blur" }
-    ],
+    status: null
   }
 })
 
-const { queryParams, form, rules } = toRefs(data)
+const { queryParams } = toRefs(data)
 
 /** 查询学期工作量汇总列表 */
 function getList() {
@@ -529,50 +221,6 @@ function getList() {
     total.value = response.total
     loading.value = false
   })
-}
-
-// 取消按钮
-function cancel() {
-  open.value = false
-  reset()
-}
-
-// 表单重置
-function reset() {
-  form.value = {
-    id: null,
-    userId: null,
-    semester: null,
-    academicYear: null,
-    G7: null,
-    G8: null,
-    G9: null,
-    G10: null,
-    G11: null,
-    totalWorkload: null,
-    ratedWorkload: null,
-    excessWorkload: null,
-    title: null,
-    payRate: null,
-    performancePay: null,
-    isCapped: null,
-    basicTeachingStandard: null,
-    basicTeachingMet: null,
-    status: null,
-    teacherSign: null,
-    teacherSignTime: null,
-    deptLeaderSign: null,
-    deptLeaderSignTime: null,
-    academicAssistantSign: null,
-    academicAssistantSignTime: null,
-    lockTime: null,
-    createBy: null,
-    createTime: null,
-    updateBy: null,
-    updateTime: null,
-    remark: null
-  }
-  proxy.resetForm("workloadSummaryRef")
 }
 
 /** 搜索按钮操作 */
@@ -590,53 +238,92 @@ function resetQuery() {
 // 多选框选中数据
 function handleSelectionChange(selection) {
   ids.value = selection.map(item => item.id)
-  single.value = selection.length != 1
   multiple.value = !selection.length
 }
 
-/** 新增按钮操作 */
-function handleAdd() {
-  reset()
-  open.value = true
-  title.value = "添加学期工作量汇总"
+/** 校验教师+学期已选 */
+function checkTeacherSemester() {
+  const { userId, semester } = queryParams.value
+  if (!userId || !semester) {
+    proxy.$modal.alertWarning('请先在搜索栏选择「教师」并填写「学年学期」')
+    return null
+  }
+  return { userId, semester }
 }
 
-/** 修改按钮操作 */
-function handleUpdate(row) {
-  reset()
-  const _id = row.id || ids.value
-  getWorkloadSummary(_id).then(response => {
-    form.value = response.data
-    open.value = true
-    title.value = "修改学期工作量汇总"
+/** 重算单行汇总 */
+function handleRecalcSummary(row) {
+  proxy.$modal.confirm(`确认重算「${userLabel(row.userId)}」${row.semester} 学期汇总吗？`).then(function() {
+    return recalcSummary(row.userId, row.semester)
+  }).then((res) => {
+    getList()
+    const unconfirmed = res.data?.unconfirmedCount
+    proxy.$modal.msgSuccess(unconfirmed > 0 ? `重算完成，尚有 ${unconfirmed} 条明细未核对` : '重算完成')
+  }).catch(() => {})
+}
+
+/** 一键核算：明细→汇总→酬金 */
+function handleRecalcAll() {
+  const checked = checkTeacherSemester()
+  if (!checked) return
+  proxy.$modal.confirm(`确认对「${userLabel(checked.userId)}」${checked.semester} 执行一键核算吗？将依次重算明细、汇总与酬金。`).then(function() {
+    calcLoading.value = true
+    return recalcAll(checked.userId, checked.semester)
+  }).then((res) => {
+    getList()
+    const count = res.data?.recalcItemCount ?? 0
+    proxy.$modal.msgSuccess(`核算完成，共重算 ${count} 条明细`)
+  }).catch(() => {}).finally(() => {
+    calcLoading.value = false
   })
 }
 
-/** 提交按钮 */
-function submitForm() {
-  proxy.$refs["workloadSummaryRef"].validate(valid => {
-    if (valid) {
-      if (form.value.id != null) {
-        updateWorkloadSummary(form.value).then(() => {
-          proxy.$modal.msgSuccess("修改成功")
-          open.value = false
-          getList()
-        })
-      } else {
-        addWorkloadSummary(form.value).then(() => {
-          proxy.$modal.msgSuccess("新增成功")
-          open.value = false
-          getList()
-        })
-      }
-    }
+/** 生成 G11 管理服务明细 */
+function handleGenG11() {
+  const { semester } = queryParams.value
+  if (!semester) {
+    proxy.$modal.alertWarning('请先在搜索栏填写「学年学期」')
+    return
+  }
+  proxy.$modal.confirm(`确认按 ${semester} 学期的岗位任职记录批量生成 G11 明细吗？`).then(function() {
+    return genG11(semester, queryParams.value.userId)
+  }).then((res) => {
+    proxy.$modal.msgSuccess(`生成完成，共 ${res.data ?? 0} 条 G11 明细`)
+  }).catch(() => {})
+}
+
+/** 打开汇总预览 */
+function handlePreview() {
+  previewQuery.userId = queryParams.value.userId
+  previewQuery.semester = queryParams.value.semester
+  previewData.value = null
+  previewOpen.value = true
+}
+
+/** 执行预览 */
+function doPreview() {
+  if (!previewQuery.userId || !previewQuery.semester) {
+    proxy.$modal.alertWarning('请选择教师并填写学年学期')
+    return
+  }
+  previewLoading.value = true
+  previewSummary(previewQuery.userId, previewQuery.semester).then(res => {
+    previewData.value = res.data
+  }).finally(() => {
+    previewLoading.value = false
   })
+}
+
+/** 详情 */
+function handleDetail(row) {
+  detailRow.value = row
+  detailOpen.value = true
 }
 
 /** 删除按钮操作 */
 function handleDelete(row) {
   const _ids = row.id || ids.value
-  proxy.$modal.confirm('是否确认删除学期工作量汇总编号为"' + _ids + '"的数据项？').then(function() {
+  proxy.$modal.confirm('是否确认删除选中的学期汇总记录？').then(function() {
     return delWorkloadSummary(_ids)
   }).then(() => {
     getList()
@@ -653,3 +340,20 @@ function handleExport() {
 
 getList()
 </script>
+
+<style scoped>
+.total-num {
+  font-weight: 700;
+  color: var(--el-color-primary);
+}
+.excess-num {
+  font-weight: 600;
+  color: var(--el-color-warning);
+}
+.mb12 {
+  margin-bottom: 12px;
+}
+.preview-form {
+  margin-bottom: 8px;
+}
+</style>

@@ -10,6 +10,14 @@ export function listUser(query) {
   })
 }
 
+// 查询用户简要列表（教师选择器用，登录即可访问）
+export function listUserSimple() {
+  return request({
+    url: '/system/user/simpleList',
+    method: 'get'
+  })
+}
+
 // 查询用户详细
 export function getUser(userId) {
   return request({

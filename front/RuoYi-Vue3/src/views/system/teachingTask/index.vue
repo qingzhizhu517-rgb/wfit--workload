@@ -1,149 +1,24 @@
 <template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="68px">
-      <el-form-item label="教师ID" prop="userId">
-        <el-input
-          v-model="queryParams.userId"
-          placeholder="请输入教师ID"
-          clearable
-          @keyup.enter="handleQuery"
-        />
+      <el-form-item label="教师" prop="userId">
+        <user-select v-model="queryParams.userId" style="width: 200px" />
       </el-form-item>
-      <el-form-item label="学年学期(如2025-2026-1)" prop="semester">
-        <el-input
-          v-model="queryParams.semester"
-          placeholder="请输入学年学期(如2025-2026-1)"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="${comment}" prop="academicYear">
-        <el-input
-          v-model="queryParams.academicYear"
-          placeholder="请输入${comment}"
-          clearable
-          @keyup.enter="handleQuery"
-        />
+      <el-form-item label="学年学期" prop="semester">
+        <el-input v-model="queryParams.semester" placeholder="如 2025-2026-1" clearable style="width: 160px" @keyup.enter="handleQuery" />
       </el-form-item>
       <el-form-item label="课程名称" prop="courseName">
-        <el-input
-          v-model="queryParams.courseName"
-          placeholder="请输入课程名称"
-          clearable
-          @keyup.enter="handleQuery"
-        />
+        <el-input v-model="queryParams.courseName" placeholder="请输入课程名称" clearable style="width: 180px" @keyup.enter="handleQuery" />
       </el-form-item>
-      <el-form-item label="课程代码" prop="courseCode">
-        <el-input
-          v-model="queryParams.courseCode"
-          placeholder="请输入课程代码"
-          clearable
-          @keyup.enter="handleQuery"
-        />
+      <el-form-item label="课程层次" prop="educationLevel">
+        <el-select v-model="queryParams.educationLevel" placeholder="请选择" clearable style="width: 150px">
+          <el-option v-for="o in educationLevelOptions" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
       </el-form-item>
-      <el-form-item label="本科(含专升本)/专科" prop="educationLevel">
-        <el-input
-          v-model="queryParams.educationLevel"
-          placeholder="请输入本科(含专升本)/专科"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="理工类/文史类/艺术类/其他" prop="majorCategory">
-        <el-input
-          v-model="queryParams.majorCategory"
-          placeholder="请输入理工类/文史类/艺术类/其他"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="必修/选修" prop="courseNature">
-        <el-input
-          v-model="queryParams.courseNature"
-          placeholder="请输入必修/选修"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="省级一流/校级精品/其他" prop="courseLevel">
-        <el-input
-          v-model="queryParams.courseLevel"
-          placeholder="请输入省级一流/校级精品/其他"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="主持人/团队前3/独立" prop="courseRole">
-        <el-input
-          v-model="queryParams.courseRole"
-          placeholder="请输入主持人/团队前3/独立"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="${comment}" prop="className">
-        <el-input
-          v-model="queryParams.className"
-          placeholder="请输入${comment}"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="合堂人数" prop="studentCount">
-        <el-input
-          v-model="queryParams.studentCount"
-          placeholder="请输入合堂人数"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="理论学时J1" prop="theoryHours">
-        <el-input
-          v-model="queryParams.theoryHours"
-          placeholder="请输入理论学时J1"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="实践学时J2" prop="practiceHours">
-        <el-input
-          v-model="queryParams.practiceHours"
-          placeholder="请输入实践学时J2"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="同名课第几次(1/2/3+ -&gt; C1 1.0/0.9/0.8)" prop="repeatOrder">
-        <el-input
-          v-model="queryParams.repeatOrder"
-          placeholder="请输入同名课第几次(1/2/3+ -&gt; C1 1.0/0.9/0.8)"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="${comment}" prop="importSource">
-        <el-input
-          v-model="queryParams.importSource"
-          placeholder="请输入${comment}"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="${comment}" prop="importBatch">
-        <el-input
-          v-model="queryParams.importBatch"
-          placeholder="请输入${comment}"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="${comment}" prop="importTime">
-        <el-date-picker clearable
-          v-model="queryParams.importTime"
-          type="date"
-          value-format="YYYY-MM-DD"
-          placeholder="请选择${comment}">
-        </el-date-picker>
+      <el-form-item label="课程类别" prop="majorCategory">
+        <el-select v-model="queryParams.majorCategory" placeholder="请选择" clearable style="width: 130px">
+          <el-option v-for="o in majorCategoryOptions" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
       </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
@@ -153,81 +28,54 @@
 
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button
-          type="primary"
-          plain
-          icon="Plus"
-          @click="handleAdd"
-          v-hasPermi="['system:teachingTask:add']"
-        >新增</el-button>
+        <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['system:teachingTask:add']">新增</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button
-          type="success"
-          plain
-          icon="Edit"
-          :disabled="single"
-          @click="handleUpdate"
-          v-hasPermi="['system:teachingTask:edit']"
-        >修改</el-button>
+        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['system:teachingTask:edit']">修改</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button
-          type="danger"
-          plain
-          icon="Delete"
-          :disabled="multiple"
-          @click="handleDelete"
-          v-hasPermi="['system:teachingTask:remove']"
-        >删除</el-button>
+        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['system:teachingTask:remove']">删除</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button
-          type="warning"
-          plain
-          icon="Download"
-          @click="handleExport"
-          v-hasPermi="['system:teachingTask:export']"
-        >导出</el-button>
+        <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['system:teachingTask:export']">导出</el-button>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
     <el-table v-loading="loading" :data="teachingTaskList" @selection-change="handleSelectionChange">
-      <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="${comment}" align="center" prop="id" />
-      <el-table-column label="教师ID" align="center" prop="userId" />
-      <el-table-column label="学年学期(如2025-2026-1)" align="center" prop="semester" />
-      <el-table-column label="${comment}" align="center" prop="academicYear" />
-      <el-table-column label="课程名称" align="center" prop="courseName" />
-      <el-table-column label="课程代码" align="center" prop="courseCode" />
-      <el-table-column label="本科(含专升本)/专科" align="center" prop="educationLevel" />
-      <el-table-column label="理工类/文史类/艺术类/其他" align="center" prop="majorCategory" />
-      <el-table-column label="必修/选修" align="center" prop="courseNature" />
-      <el-table-column label="省级一流/校级精品/其他" align="center" prop="courseLevel" />
-      <el-table-column label="主持人/团队前3/独立" align="center" prop="courseRole" />
-      <el-table-column label="${comment}" align="center" prop="className" />
-      <el-table-column label="合堂人数" align="center" prop="studentCount" />
-      <el-table-column label="理论学时J1" align="center" prop="theoryHours" />
-      <el-table-column label="实践学时J2" align="center" prop="practiceHours" />
-      <el-table-column label="同名课第几次(1/2/3+ -&gt; C1 1.0/0.9/0.8)" align="center" prop="repeatOrder" />
-      <el-table-column label="${comment}" align="center" prop="importSource" />
-      <el-table-column label="${comment}" align="center" prop="importBatch" />
-      <el-table-column label="${comment}" align="center" prop="importTime" width="180">
+      <el-table-column type="selection" width="50" align="center" />
+      <el-table-column label="ID" align="center" prop="id" width="70" />
+      <el-table-column label="教师" align="center" prop="userId" width="160">
+        <template #default="scope">{{ userLabel(scope.row.userId) }}</template>
+      </el-table-column>
+      <el-table-column label="学年学期" align="center" prop="semester" width="110" />
+      <el-table-column label="课程名称" align="center" prop="courseName" min-width="160" show-overflow-tooltip />
+      <el-table-column label="课程代码" align="center" prop="courseCode" width="100">
+        <template #default="scope">{{ scope.row.courseCode || '-' }}</template>
+      </el-table-column>
+      <el-table-column label="层次" align="center" prop="educationLevel" width="80" />
+      <el-table-column label="类别" align="center" prop="majorCategory" width="90" />
+      <el-table-column label="性质" align="center" prop="courseNature" width="70" />
+      <el-table-column label="合堂人数" align="center" prop="studentCount" width="90" />
+      <el-table-column label="理论J1" align="center" prop="theoryHours" width="80" />
+      <el-table-column label="实践J2" align="center" prop="practiceHours" width="80" />
+      <el-table-column label="重复次" align="center" prop="repeatOrder" width="70" />
+      <el-table-column label="状态" align="center" prop="status" width="80">
         <template #default="scope">
-          <span>{{ parseTime(scope.row.importTime, '{y}-{m}-{d}') }}</span>
+          <biz-tag :value="scope.row.status" :map="normalStatusMap" />
         </template>
       </el-table-column>
-      <el-table-column label="${comment}" align="center" prop="status" />
-      <el-table-column label="${comment}" align="center" prop="remark" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column label="导入批次" align="center" prop="importBatch" width="130" show-overflow-tooltip>
+        <template #default="scope">{{ scope.row.importBatch || '-' }}</template>
+      </el-table-column>
+      <el-table-column label="操作" align="center" width="140" fixed="right" class-name="small-padding fixed-width">
         <template #default="scope">
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['system:teachingTask:edit']">修改</el-button>
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['system:teachingTask:remove']">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
-    
+
     <pagination
       v-show="total>0"
       :total="total"
@@ -237,107 +85,99 @@
     />
 
     <!-- 添加或修改导入教学任务对话框 -->
-    <el-dialog :title="title" v-model="open" width="500px" append-to-body>
-      <el-form ref="teachingTaskRef" :model="form" :rules="rules" label-width="100px">
-        <el-row>
-          <el-col :span="24">
-            <el-form-item label="教师ID" prop="userId">
-              <el-input v-model="form.userId" placeholder="请输入教师ID" />
+    <el-dialog :title="title" v-model="open" width="720px" append-to-body>
+      <el-form ref="teachingTaskRef" :model="form" :rules="rules" label-width="90px">
+        <el-divider content-position="left">基本信息</el-divider>
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="教师" prop="userId">
+              <user-select v-model="form.userId" />
             </el-form-item>
           </el-col>
-          <el-col :span="24">
-            <el-form-item label="学年学期(如2025-2026-1)" prop="semester">
-              <el-input v-model="form.semester" placeholder="请输入学年学期(如2025-2026-1)" />
+          <el-col :span="12">
+            <el-form-item label="学年学期" prop="semester">
+              <el-input v-model="form.semester" placeholder="如 2025-2026-1" maxlength="20" />
             </el-form-item>
           </el-col>
-          <el-col :span="24">
-            <el-form-item label="${comment}" prop="academicYear">
-              <el-input v-model="form.academicYear" placeholder="请输入${comment}" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="24">
+          <el-col :span="12">
             <el-form-item label="课程名称" prop="courseName">
-              <el-input v-model="form.courseName" placeholder="请输入课程名称" />
+              <el-input v-model="form.courseName" placeholder="请输入课程名称" maxlength="100" />
             </el-form-item>
           </el-col>
-          <el-col :span="24">
+          <el-col :span="12">
             <el-form-item label="课程代码" prop="courseCode">
-              <el-input v-model="form.courseCode" placeholder="请输入课程代码" />
+              <el-input v-model="form.courseCode" placeholder="请输入课程代码" maxlength="50" />
             </el-form-item>
           </el-col>
-          <el-col :span="24">
-            <el-form-item label="本科(含专升本)/专科" prop="educationLevel">
-              <el-input v-model="form.educationLevel" placeholder="请输入本科(含专升本)/专科" />
+          <el-col :span="12">
+            <el-form-item label="课程层次" prop="educationLevel">
+              <el-select v-model="form.educationLevel" placeholder="请选择" style="width: 100%">
+                <el-option v-for="o in educationLevelOptions" :key="o.value" :label="o.label" :value="o.value" />
+              </el-select>
             </el-form-item>
           </el-col>
-          <el-col :span="24">
-            <el-form-item label="理工类/文史类/艺术类/其他" prop="majorCategory">
-              <el-input v-model="form.majorCategory" placeholder="请输入理工类/文史类/艺术类/其他" />
+          <el-col :span="12">
+            <el-form-item label="课程类别" prop="majorCategory">
+              <el-select v-model="form.majorCategory" placeholder="请选择" style="width: 100%">
+                <el-option v-for="o in majorCategoryOptions" :key="o.value" :label="o.label" :value="o.value" />
+              </el-select>
             </el-form-item>
           </el-col>
-          <el-col :span="24">
-            <el-form-item label="必修/选修" prop="courseNature">
-              <el-input v-model="form.courseNature" placeholder="请输入必修/选修" />
+        </el-row>
+        <el-divider content-position="left">核算要素</el-divider>
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="课程性质" prop="courseNature">
+              <el-radio-group v-model="form.courseNature">
+                <el-radio v-for="o in courseNatureOptions" :key="o.value" :value="o.value">{{ o.label }}</el-radio>
+              </el-radio-group>
             </el-form-item>
           </el-col>
-          <el-col :span="24">
-            <el-form-item label="省级一流/校级精品/其他" prop="courseLevel">
-              <el-input v-model="form.courseLevel" placeholder="请输入省级一流/校级精品/其他" />
+          <el-col :span="12">
+            <el-form-item label="课程级别" prop="courseLevel">
+              <el-select v-model="form.courseLevel" placeholder="请选择" style="width: 100%">
+                <el-option v-for="o in courseLevelOptions" :key="o.value" :label="o.label" :value="o.value" />
+              </el-select>
             </el-form-item>
           </el-col>
-          <el-col :span="24">
-            <el-form-item label="主持人/团队前3/独立" prop="courseRole">
-              <el-input v-model="form.courseRole" placeholder="请输入主持人/团队前3/独立" />
+          <el-col :span="12">
+            <el-form-item label="课程角色" prop="courseRole">
+              <el-select v-model="form.courseRole" placeholder="请选择" style="width: 100%">
+                <el-option v-for="o in courseRoleOptions" :key="o.value" :label="o.label" :value="o.value" />
+              </el-select>
             </el-form-item>
           </el-col>
-          <el-col :span="24">
-            <el-form-item label="${comment}" prop="className">
-              <el-input v-model="form.className" placeholder="请输入${comment}" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="24">
+          <el-col :span="12">
             <el-form-item label="合堂人数" prop="studentCount">
-              <el-input v-model="form.studentCount" placeholder="请输入合堂人数" />
+              <el-input-number v-model="form.studentCount" :min="0" :max="9999" controls-position="right" style="width: 100%" />
             </el-form-item>
           </el-col>
-          <el-col :span="24">
-            <el-form-item label="理论学时J1" prop="theoryHours">
-              <el-input v-model="form.theoryHours" placeholder="请输入理论学时J1" />
+          <el-col :span="12">
+            <el-form-item label="理论学时" prop="theoryHours">
+              <el-input-number v-model="form.theoryHours" :min="0" :precision="1" controls-position="right" style="width: 100%" />
             </el-form-item>
           </el-col>
-          <el-col :span="24">
-            <el-form-item label="实践学时J2" prop="practiceHours">
-              <el-input v-model="form.practiceHours" placeholder="请输入实践学时J2" />
+          <el-col :span="12">
+            <el-form-item label="实践学时" prop="practiceHours">
+              <el-input-number v-model="form.practiceHours" :min="0" :precision="1" controls-position="right" style="width: 100%" />
             </el-form-item>
           </el-col>
-          <el-col :span="24">
-            <el-form-item label="同名课第几次(1/2/3+ -&gt; C1 1.0/0.9/0.8)" prop="repeatOrder">
-              <el-input v-model="form.repeatOrder" placeholder="请输入同名课第几次(1/2/3+ -&gt; C1 1.0/0.9/0.8)" />
+          <el-col :span="12">
+            <el-form-item label="重复次序" prop="repeatOrder">
+              <el-input-number v-model="form.repeatOrder" :min="1" :max="10" controls-position="right" style="width: 100%" />
+            </el-form-item>
+            <div class="form-tip">同名课第几次讲授：1→系数1.0，2→0.9，3及以上→0.8</div>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="班级名称" prop="className">
+              <el-input v-model="form.className" placeholder="如 计科2301/2302合堂" maxlength="100" />
             </el-form-item>
           </el-col>
+        </el-row>
+        <el-row :gutter="16">
           <el-col :span="24">
-            <el-form-item label="${comment}" prop="importSource">
-              <el-input v-model="form.importSource" placeholder="请输入${comment}" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="24">
-            <el-form-item label="${comment}" prop="importBatch">
-              <el-input v-model="form.importBatch" placeholder="请输入${comment}" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="24">
-            <el-form-item label="${comment}" prop="importTime">
-              <el-date-picker clearable
-                v-model="form.importTime"
-                type="date"
-                value-format="YYYY-MM-DD"
-                placeholder="请选择${comment}">
-              </el-date-picker>
-            </el-form-item>
-          </el-col>
-          <el-col :span="24">
-            <el-form-item label="${comment}" prop="remark">
-              <el-input v-model="form.remark" type="textarea" placeholder="请输入内容" />
+            <el-form-item label="备注" prop="remark">
+              <el-input v-model="form.remark" type="textarea" :rows="2" maxlength="500" show-word-limit placeholder="请输入备注" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -354,8 +194,15 @@
 
 <script setup name="TeachingTask">
 import { listTeachingTask, getTeachingTask, delTeachingTask, addTeachingTask, updateTeachingTask } from "@/api/system/teachingTask"
+import UserSelect from '@/components/UserSelect/index.vue'
+import { useUserMap } from '@/utils/userCache'
+import {
+  educationLevelOptions, majorCategoryOptions, courseNatureOptions,
+  courseLevelOptions, courseRoleOptions, normalStatusMap
+} from '@/utils/bizDict'
 
 const { proxy } = getCurrentInstance()
+const { userLabel } = useUserMap()
 
 const teachingTaskList = ref([])
 const open = ref(false)
@@ -374,37 +221,18 @@ const data = reactive({
     pageSize: 10,
     userId: null,
     semester: null,
-    academicYear: null,
     courseName: null,
-    courseCode: null,
     educationLevel: null,
-    majorCategory: null,
-    courseNature: null,
-    courseLevel: null,
-    courseRole: null,
-    className: null,
-    studentCount: null,
-    theoryHours: null,
-    practiceHours: null,
-    repeatOrder: null,
-    importSource: null,
-    importBatch: null,
-    importTime: null,
-    status: null,
+    majorCategory: null
   },
   rules: {
-    userId: [
-      { required: true, message: "教师ID不能为空", trigger: "blur" }
-    ],
+    userId: [{ required: true, message: "请选择教师", trigger: "change" }],
     semester: [
-      { required: true, message: "学年学期(如2025-2026-1)不能为空", trigger: "blur" }
+      { required: true, message: "请输入学年学期", trigger: "blur" },
+      { pattern: /^\d{4}-\d{4}-[12]$/, message: "格式如 2025-2026-1", trigger: "blur" }
     ],
-    courseName: [
-      { required: true, message: "课程名称不能为空", trigger: "blur" }
-    ],
-    educationLevel: [
-      { required: true, message: "本科(含专升本)/专科不能为空", trigger: "blur" }
-    ],
+    courseName: [{ required: true, message: "请输入课程名称", trigger: "blur" }],
+    educationLevel: [{ required: true, message: "请选择课程层次", trigger: "change" }]
   }
 })
 
@@ -435,20 +263,20 @@ function reset() {
     academicYear: null,
     courseName: null,
     courseCode: null,
-    educationLevel: null,
-    majorCategory: null,
-    courseNature: null,
-    courseLevel: null,
-    courseRole: null,
+    educationLevel: '本科',
+    majorCategory: '理工类',
+    courseNature: '必修',
+    courseLevel: '其他',
+    courseRole: '独立',
     className: null,
-    studentCount: null,
+    studentCount: 0,
     theoryHours: null,
     practiceHours: null,
-    repeatOrder: null,
+    repeatOrder: 1,
     importSource: null,
     importBatch: null,
     importTime: null,
-    status: null,
+    status: 1,
     createBy: null,
     createTime: null,
     updateBy: null,
@@ -481,7 +309,7 @@ function handleSelectionChange(selection) {
 function handleAdd() {
   reset()
   open.value = true
-  title.value = "添加导入教学任务"
+  title.value = "添加教学任务"
 }
 
 /** 修改按钮操作 */
@@ -491,7 +319,7 @@ function handleUpdate(row) {
   getTeachingTask(_id).then(response => {
     form.value = response.data
     open.value = true
-    title.value = "修改导入教学任务"
+    title.value = "修改教学任务"
   })
 }
 
@@ -519,7 +347,7 @@ function submitForm() {
 /** 删除按钮操作 */
 function handleDelete(row) {
   const _ids = row.id || ids.value
-  proxy.$modal.confirm('是否确认删除导入教学任务编号为"' + _ids + '"的数据项？').then(function() {
+  proxy.$modal.confirm('是否确认删除选中的教学任务？删除后需重新核算对应明细。').then(function() {
     return delTeachingTask(_ids)
   }).then(() => {
     getList()
@@ -536,3 +364,12 @@ function handleExport() {
 
 getList()
 </script>
+
+<style scoped>
+.form-tip {
+  margin: -14px 0 10px 90px;
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+  line-height: 1.4;
+}
+</style>

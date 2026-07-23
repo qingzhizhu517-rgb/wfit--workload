@@ -1,59 +1,20 @@
 <template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="68px">
-      <el-form-item label="${comment}" prop="userId">
-        <el-input
-          v-model="queryParams.userId"
-          placeholder="请输入${comment}"
-          clearable
-          @keyup.enter="handleQuery"
-        />
+      <el-form-item label="教师" prop="userId">
+        <user-select v-model="queryParams.userId" style="width: 200px" @keyup.enter="handleQuery" />
       </el-form-item>
-      <el-form-item label="目标班级或范围" prop="target">
-        <el-input
-          v-model="queryParams.target"
-          placeholder="请输入目标班级或范围"
-          clearable
-          @keyup.enter="handleQuery"
-        />
+      <el-form-item label="岗位" prop="roleType">
+        <el-select v-model="queryParams.roleType" placeholder="请选择岗位" clearable style="width: 150px">
+          <el-option v-for="o in roleTypeOptions" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
       </el-form-item>
-      <el-form-item label="任职起" prop="startDate">
-        <el-date-picker clearable
-          v-model="queryParams.startDate"
-          type="date"
-          value-format="YYYY-MM-DD"
-          placeholder="请选择任职起">
-        </el-date-picker>
-      </el-form-item>
-      <el-form-item label="任职止(NULL=至今)" prop="endDate">
-        <el-date-picker clearable
-          v-model="queryParams.endDate"
-          type="date"
-          value-format="YYYY-MM-DD"
-          placeholder="请选择任职止(NULL=至今)">
-        </el-date-picker>
-      </el-form-item>
-      <el-form-item label="${comment}" prop="semester">
-        <el-input
-          v-model="queryParams.semester"
-          placeholder="请输入${comment}"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="${comment}" prop="academicYear">
+      <el-form-item label="学年" prop="academicYear">
         <el-input
           v-model="queryParams.academicYear"
-          placeholder="请输入${comment}"
+          placeholder="如 2025-2026"
           clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="该岗位标准学时/学年" prop="allowanceRate">
-        <el-input
-          v-model="queryParams.allowanceRate"
-          placeholder="请输入该岗位标准学时/学年"
-          clearable
+          style="width: 140px"
           @keyup.enter="handleQuery"
         />
       </el-form-item>
@@ -65,75 +26,59 @@
 
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button
-          type="primary"
-          plain
-          icon="Plus"
-          @click="handleAdd"
-          v-hasPermi="['system:roleAssignment:add']"
-        >新增</el-button>
+        <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['system:roleAssignment:add']">新增</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button
-          type="success"
-          plain
-          icon="Edit"
-          :disabled="single"
-          @click="handleUpdate"
-          v-hasPermi="['system:roleAssignment:edit']"
-        >修改</el-button>
+        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['system:roleAssignment:edit']">修改</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button
-          type="danger"
-          plain
-          icon="Delete"
-          :disabled="multiple"
-          @click="handleDelete"
-          v-hasPermi="['system:roleAssignment:remove']"
-        >删除</el-button>
+        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['system:roleAssignment:remove']">删除</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button
-          type="warning"
-          plain
-          icon="Download"
-          @click="handleExport"
-          v-hasPermi="['system:roleAssignment:export']"
-        >导出</el-button>
+        <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['system:roleAssignment:export']">导出</el-button>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
     <el-table v-loading="loading" :data="roleAssignmentList" @selection-change="handleSelectionChange">
-      <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="${comment}" align="center" prop="id" />
-      <el-table-column label="${comment}" align="center" prop="userId" />
-      <el-table-column label="班主任/系主任/教研室主任/专业负责人/俱乐部经理/实验人员/督导/中层副职/心理中心" align="center" prop="roleType" />
-      <el-table-column label="目标班级或范围" align="center" prop="target" />
-      <el-table-column label="任职起" align="center" prop="startDate" width="180">
+      <el-table-column type="selection" width="50" align="center" />
+      <el-table-column label="教师" align="center" prop="userId" width="160">
+        <template #default="scope">{{ userLabel(scope.row.userId) }}</template>
+      </el-table-column>
+      <el-table-column label="岗位" align="center" prop="roleType" width="110">
         <template #default="scope">
-          <span>{{ parseTime(scope.row.startDate, '{y}-{m}-{d}') }}</span>
+          <biz-tag :value="scope.row.roleType" :map="roleTypeMap" />
         </template>
       </el-table-column>
-      <el-table-column label="任职止(NULL=至今)" align="center" prop="endDate" width="180">
+      <el-table-column label="目标班级或范围" align="center" prop="target" min-width="140" show-overflow-tooltip>
+        <template #default="scope">{{ scope.row.target || '-' }}</template>
+      </el-table-column>
+      <el-table-column label="任职区间" align="center" width="200">
         <template #default="scope">
-          <span>{{ parseTime(scope.row.endDate, '{y}-{m}-{d}') }}</span>
+          <span>{{ parseTime(scope.row.startDate, '{y}-{m}-{d}') }} ~ {{ scope.row.endDate ? parseTime(scope.row.endDate, '{y}-{m}-{d}') : '至今' }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="${comment}" align="center" prop="semester" />
-      <el-table-column label="${comment}" align="center" prop="academicYear" />
-      <el-table-column label="该岗位标准学时/学年" align="center" prop="allowanceRate" />
-      <el-table-column label="${comment}" align="center" prop="status" />
-      <el-table-column label="${comment}" align="center" prop="remark" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column label="学年" align="center" prop="academicYear" width="100">
+        <template #default="scope">{{ scope.row.academicYear || '-' }}</template>
+      </el-table-column>
+      <el-table-column label="标准学时/学年" align="center" prop="allowanceRate" width="120">
+        <template #default="scope">
+          <span class="rate-num">{{ scope.row.allowanceRate }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="状态" align="center" prop="status" width="90">
+        <template #default="scope">
+          <biz-tag :value="scope.row.status" :map="normalStatusMap" />
+        </template>
+      </el-table-column>
+      <el-table-column label="操作" align="center" width="140" fixed="right" class-name="small-padding fixed-width">
         <template #default="scope">
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['system:roleAssignment:edit']">修改</el-button>
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['system:roleAssignment:remove']">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
-    
+
     <pagination
       v-show="total>0"
       :total="total"
@@ -143,64 +88,57 @@
     />
 
     <!-- 添加或修改岗位任职对话框 -->
-    <el-dialog :title="title" v-model="open" width="500px" append-to-body>
-      <el-form ref="roleAssignmentRef" :model="form" :rules="rules" label-width="100px">
-        <el-row>
+    <el-dialog :title="title" v-model="open" width="620px" append-to-body>
+      <el-form ref="roleAssignmentRef" :model="form" :rules="rules" label-width="110px">
+        <el-row :gutter="16">
           <el-col :span="24">
-            <el-form-item label="${comment}" prop="userId">
-              <el-input v-model="form.userId" placeholder="请输入${comment}" />
+            <el-form-item label="教师" prop="userId">
+              <user-select v-model="form.userId" />
             </el-form-item>
           </el-col>
-          <el-col :span="24">
-            <el-form-item label="目标班级或范围" prop="target">
-              <el-input v-model="form.target" placeholder="请输入目标班级或范围" />
+          <el-col :span="12">
+            <el-form-item label="岗位" prop="roleType">
+              <el-select v-model="form.roleType" placeholder="请选择岗位" style="width: 100%">
+                <el-option v-for="o in roleTypeOptions" :key="o.value" :label="o.label" :value="o.value" />
+              </el-select>
             </el-form-item>
           </el-col>
-          <el-col :span="24">
+          <el-col :span="12">
+            <el-form-item label="目标范围" prop="target">
+              <el-input v-model="form.target" maxlength="100" placeholder="如：23级软件1班" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
             <el-form-item label="任职起" prop="startDate">
-              <el-date-picker clearable
-                v-model="form.startDate"
-                type="date"
-                value-format="YYYY-MM-DD"
-                placeholder="请选择任职起">
-              </el-date-picker>
+              <el-date-picker clearable v-model="form.startDate" type="date" value-format="YYYY-MM-DD" placeholder="开始日期" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="任职止" prop="endDate">
+              <el-date-picker clearable v-model="form.endDate" type="date" value-format="YYYY-MM-DD" placeholder="留空表示至今" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="学年" prop="academicYear">
+              <el-input v-model="form.academicYear" placeholder="如 2025-2026" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="标准学时" prop="allowanceRate">
+              <el-input-number v-model="form.allowanceRate" :min="0" :precision="2" controls-position="right" style="width: 100%" />
             </el-form-item>
           </el-col>
           <el-col :span="24">
-            <el-form-item label="任职止(NULL=至今)" prop="endDate">
-              <el-date-picker clearable
-                v-model="form.endDate"
-                type="date"
-                value-format="YYYY-MM-DD"
-                placeholder="请选择任职止(NULL=至今)">
-              </el-date-picker>
-            </el-form-item>
-          </el-col>
-          <el-col :span="24">
-            <el-form-item label="${comment}" prop="semester">
-              <el-input v-model="form.semester" placeholder="请输入${comment}" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="24">
-            <el-form-item label="${comment}" prop="academicYear">
-              <el-input v-model="form.academicYear" placeholder="请输入${comment}" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="24">
-            <el-form-item label="该岗位标准学时/学年" prop="allowanceRate">
-              <el-input v-model="form.allowanceRate" placeholder="请输入该岗位标准学时/学年" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="24">
-            <el-form-item label="${comment}" prop="remark">
-              <el-input v-model="form.remark" type="textarea" placeholder="请输入内容" />
+            <el-form-item label="备注" prop="remark">
+              <el-input v-model="form.remark" type="textarea" :rows="2" maxlength="500" show-word-limit placeholder="请输入备注" />
             </el-form-item>
           </el-col>
         </el-row>
+        <div class="form-tip">标准学时：该岗位每学年折算的管理服务工作量（G11），按任职区间自动折算到学期</div>
       </el-form>
       <template #footer>
         <div class="dialog-footer">
-          <el-button type="primary" @click="submitForm">确 定</el-button>
+          <el-button type="primary" :loading="submitLoading" @click="submitForm">确 定</el-button>
           <el-button @click="cancel">取 消</el-button>
         </div>
       </template>
@@ -210,11 +148,20 @@
 
 <script setup name="RoleAssignment">
 import { listRoleAssignment, getRoleAssignment, delRoleAssignment, addRoleAssignment, updateRoleAssignment } from "@/api/system/roleAssignment"
+import UserSelect from '@/components/UserSelect/index.vue'
+import { useUserMap } from '@/utils/userCache'
+import { roleTypeOptions, normalStatusMap } from '@/utils/bizDict'
 
 const { proxy } = getCurrentInstance()
+const { userLabel } = useUserMap()
+
+const roleTypeMap = Object.fromEntries(
+  roleTypeOptions.map(o => [o.value, { label: o.label, type: 'primary' }])
+)
 
 const roleAssignmentList = ref([])
 const open = ref(false)
+const submitLoading = ref(false)
 const loading = ref(true)
 const showSearch = ref(true)
 const ids = ref([])
@@ -230,27 +177,14 @@ const data = reactive({
     pageSize: 10,
     userId: null,
     roleType: null,
-    target: null,
-    startDate: null,
-    endDate: null,
-    semester: null,
-    academicYear: null,
-    allowanceRate: null,
-    status: null,
+    academicYear: null
   },
   rules: {
-    userId: [
-      { required: true, message: "$comment不能为空", trigger: "blur" }
-    ],
-    roleType: [
-      { required: true, message: "班主任/系主任/教研室主任/专业负责人/俱乐部经理/实验人员/督导/中层副职/心理中心不能为空", trigger: "change" }
-    ],
-    startDate: [
-      { required: true, message: "任职起不能为空", trigger: "blur" }
-    ],
-    allowanceRate: [
-      { required: true, message: "该岗位标准学时/学年不能为空", trigger: "blur" }
-    ],
+    userId: [{ required: true, message: "请选择教师", trigger: "change" }],
+    roleType: [{ required: true, message: "请选择岗位", trigger: "change" }],
+    startDate: [{ required: true, message: "任职起日期不能为空", trigger: "change" }],
+    allowanceRate: [{ required: true, message: "标准学时不能为空", trigger: "blur" }],
+    academicYear: [{ pattern: /^\d{4}-\d{4}$/, message: "格式如 2025-2026", trigger: "blur" }]
   }
 })
 
@@ -284,11 +218,7 @@ function reset() {
     semester: null,
     academicYear: null,
     allowanceRate: null,
-    status: null,
-    createBy: null,
-    createTime: null,
-    updateBy: null,
-    updateTime: null,
+    status: 1,
     remark: null
   }
   proxy.resetForm("roleAssignmentRef")
@@ -335,19 +265,15 @@ function handleUpdate(row) {
 function submitForm() {
   proxy.$refs["roleAssignmentRef"].validate(valid => {
     if (valid) {
-      if (form.value.id != null) {
-        updateRoleAssignment(form.value).then(() => {
-          proxy.$modal.msgSuccess("修改成功")
-          open.value = false
-          getList()
-        })
-      } else {
-        addRoleAssignment(form.value).then(() => {
-          proxy.$modal.msgSuccess("新增成功")
-          open.value = false
-          getList()
-        })
-      }
+      submitLoading.value = true
+      const req = form.value.id != null ? updateRoleAssignment(form.value) : addRoleAssignment(form.value)
+      req.then(() => {
+        proxy.$modal.msgSuccess(form.value.id != null ? "修改成功" : "新增成功")
+        open.value = false
+        getList()
+      }).finally(() => {
+        submitLoading.value = false
+      })
     }
   })
 }
@@ -355,7 +281,7 @@ function submitForm() {
 /** 删除按钮操作 */
 function handleDelete(row) {
   const _ids = row.id || ids.value
-  proxy.$modal.confirm('是否确认删除岗位任职编号为"' + _ids + '"的数据项？').then(function() {
+  proxy.$modal.confirm('是否确认删除选中的岗位任职记录？').then(function() {
     return delRoleAssignment(_ids)
   }).then(() => {
     getList()
@@ -372,3 +298,10 @@ function handleExport() {
 
 getList()
 </script>
+
+<style scoped>
+.rate-num {
+  font-weight: 600;
+  color: var(--el-color-primary);
+}
+</style>

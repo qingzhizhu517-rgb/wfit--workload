@@ -65,6 +65,30 @@ public class SysUserController extends BaseController
         return getDataTable(list);
     }
 
+    /**
+     * 用户简要列表（教师选择器/姓名展示用，登录即可访问）
+     * 返回 userId/userName/nickName/deptId/deptName
+     */
+    @GetMapping("/simpleList")
+    public AjaxResult simpleList()
+    {
+        List<SysUser> list = userService.selectUserList(new SysUser());
+        List<java.util.Map<String, Object>> data = list.stream()
+                .filter(u -> u.getUserId() != null)
+                .map(u ->
+                {
+                    java.util.Map<String, Object> m = new java.util.HashMap<>();
+                    m.put("userId", u.getUserId());
+                    m.put("userName", u.getUserName());
+                    m.put("nickName", u.getNickName());
+                    m.put("deptId", u.getDeptId());
+                    m.put("deptName", u.getDept() == null ? null : u.getDept().getDeptName());
+                    return m;
+                })
+                .collect(Collectors.toList());
+        return success(data);
+    }
+
     @Log(title = "用户管理", businessType = BusinessType.EXPORT)
     @PreAuthorize("@ss.hasPermi('system:user:export')")
     @PostMapping("/export")

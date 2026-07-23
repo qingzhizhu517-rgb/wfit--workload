@@ -1,53 +1,23 @@
 <template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="68px">
-      <el-form-item label="职称(教授/副教授/讲师/助教/未定级)" prop="title">
-        <el-input
-          v-model="queryParams.title"
-          placeholder="请输入职称(教授/副教授/讲师/助教/未定级)"
-          clearable
-          @keyup.enter="handleQuery"
-        />
+      <el-form-item label="教师" prop="userId">
+        <user-select v-model="queryParams.userId" style="width: 200px" @keyup.enter="handleQuery" />
       </el-form-item>
-      <el-form-item label="人员性质(专任/外聘/校企/银龄/青州外聘)" prop="teacherNature">
-        <el-input
-          v-model="queryParams.teacherNature"
-          placeholder="请输入人员性质(专任/外聘/校企/银龄/青州外聘)"
-          clearable
-          @keyup.enter="handleQuery"
-        />
+      <el-form-item label="职称" prop="title">
+        <el-select v-model="queryParams.title" placeholder="请选择职称" clearable style="width: 140px">
+          <el-option v-for="o in teacherTitleOptions" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
       </el-form-item>
-      <el-form-item label="特殊状态起" prop="specialStatusStart">
-        <el-date-picker clearable
-          v-model="queryParams.specialStatusStart"
-          type="date"
-          value-format="YYYY-MM-DD"
-          placeholder="请选择特殊状态起">
-        </el-date-picker>
+      <el-form-item label="人员性质" prop="teacherNature">
+        <el-select v-model="queryParams.teacherNature" placeholder="请选择人员性质" clearable style="width: 140px">
+          <el-option v-for="o in teacherNatureOptions" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
       </el-form-item>
-      <el-form-item label="特殊状态止" prop="specialStatusEnd">
-        <el-date-picker clearable
-          v-model="queryParams.specialStatusEnd"
-          type="date"
-          value-format="YYYY-MM-DD"
-          placeholder="请选择特殊状态止">
-        </el-date-picker>
-      </el-form-item>
-      <el-form-item label="校企考核结果(优秀/合格/不合格)" prop="enterpriseEvalResult">
-        <el-input
-          v-model="queryParams.enterpriseEvalResult"
-          placeholder="请输入校企考核结果(优秀/合格/不合格)"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="院部(sys_dept.dept_id)" prop="deptId">
-        <el-input
-          v-model="queryParams.deptId"
-          placeholder="请输入院部(sys_dept.dept_id)"
-          clearable
-          @keyup.enter="handleQuery"
-        />
+      <el-form-item label="特殊状态" prop="specialStatus">
+        <el-select v-model="queryParams.specialStatus" placeholder="请选择特殊状态" clearable style="width: 140px">
+          <el-option v-for="o in specialStatusOptions" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
       </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
@@ -57,73 +27,59 @@
 
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button
-          type="primary"
-          plain
-          icon="Plus"
-          @click="handleAdd"
-          v-hasPermi="['system:teacherProfile:add']"
-        >新增</el-button>
+        <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['system:teacherProfile:add']">新增</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button
-          type="success"
-          plain
-          icon="Edit"
-          :disabled="single"
-          @click="handleUpdate"
-          v-hasPermi="['system:teacherProfile:edit']"
-        >修改</el-button>
+        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['system:teacherProfile:edit']">修改</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button
-          type="danger"
-          plain
-          icon="Delete"
-          :disabled="multiple"
-          @click="handleDelete"
-          v-hasPermi="['system:teacherProfile:remove']"
-        >删除</el-button>
+        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['system:teacherProfile:remove']">删除</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button
-          type="warning"
-          plain
-          icon="Download"
-          @click="handleExport"
-          v-hasPermi="['system:teacherProfile:export']"
-        >导出</el-button>
+        <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['system:teacherProfile:export']">导出</el-button>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
     <el-table v-loading="loading" :data="teacherProfileList" @selection-change="handleSelectionChange">
-      <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="教师ID(关联sys_user.user_id)" align="center" prop="userId" />
-      <el-table-column label="职称(教授/副教授/讲师/助教/未定级)" align="center" prop="title" />
-      <el-table-column label="人员性质(专任/外聘/校企/银龄/青州外聘)" align="center" prop="teacherNature" />
-      <el-table-column label="特殊状态(正常/产假/在职读博/访学)" align="center" prop="specialStatus" />
-      <el-table-column label="特殊状态起" align="center" prop="specialStatusStart" width="180">
+      <el-table-column type="selection" width="50" align="center" />
+      <el-table-column label="教师" align="center" prop="userId" width="160">
+        <template #default="scope">{{ userLabel(scope.row.userId) }}</template>
+      </el-table-column>
+      <el-table-column label="院部" align="center" prop="deptId" min-width="140">
+        <template #default="scope">{{ deptName(scope.row.userId) }}</template>
+      </el-table-column>
+      <el-table-column label="职称" align="center" prop="title" width="100" />
+      <el-table-column label="人员性质" align="center" prop="teacherNature" width="100" />
+      <el-table-column label="特殊状态" align="center" prop="specialStatus" width="100">
         <template #default="scope">
-          <span>{{ parseTime(scope.row.specialStatusStart, '{y}-{m}-{d}') }}</span>
+          <biz-tag :value="scope.row.specialStatus" :map="specialStatusMap" />
         </template>
       </el-table-column>
-      <el-table-column label="特殊状态止" align="center" prop="specialStatusEnd" width="180">
+      <el-table-column label="状态起" align="center" prop="specialStatusStart" width="110">
         <template #default="scope">
-          <span>{{ parseTime(scope.row.specialStatusEnd, '{y}-{m}-{d}') }}</span>
+          <span>{{ parseTime(scope.row.specialStatusStart, '{y}-{m}-{d}') || '-' }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="校企考核结果(优秀/合格/不合格)" align="center" prop="enterpriseEvalResult" />
-      <el-table-column label="院部(sys_dept.dept_id)" align="center" prop="deptId" />
-      <el-table-column label="备注" align="center" prop="remark" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column label="状态止" align="center" prop="specialStatusEnd" width="110">
+        <template #default="scope">
+          <span>{{ parseTime(scope.row.specialStatusEnd, '{y}-{m}-{d}') || '-' }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="校企考核" align="center" prop="enterpriseEvalResult" width="90">
+        <template #default="scope">{{ scope.row.enterpriseEvalResult || '-' }}</template>
+      </el-table-column>
+      <el-table-column label="备注" align="center" prop="remark" min-width="120" show-overflow-tooltip>
+        <template #default="scope">{{ scope.row.remark || '-' }}</template>
+      </el-table-column>
+      <el-table-column label="操作" align="center" width="140" fixed="right" class-name="small-padding fixed-width">
         <template #default="scope">
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['system:teacherProfile:edit']">修改</el-button>
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['system:teacherProfile:remove']">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
-    
+
     <pagination
       v-show="total>0"
       :total="total"
@@ -133,52 +89,55 @@
     />
 
     <!-- 添加或修改教师业务档案对话框 -->
-    <el-dialog :title="title" v-model="open" width="500px" append-to-body>
-      <el-form ref="teacherProfileRef" :model="form" :rules="rules" label-width="100px">
-        <el-row>
+    <el-dialog :title="title" v-model="open" width="640px" append-to-body>
+      <el-form ref="teacherProfileRef" :model="form" :rules="rules" label-width="90px">
+        <el-row :gutter="16">
           <el-col :span="24">
-            <el-form-item label="职称(教授/副教授/讲师/助教/未定级)" prop="title">
-              <el-input v-model="form.title" placeholder="请输入职称(教授/副教授/讲师/助教/未定级)" />
+            <el-form-item label="教师" prop="userId">
+              <user-select v-model="form.userId" :disabled="form.userId != null" @select="onTeacherSelect" />
             </el-form-item>
           </el-col>
-          <el-col :span="24">
-            <el-form-item label="人员性质(专任/外聘/校企/银龄/青州外聘)" prop="teacherNature">
-              <el-input v-model="form.teacherNature" placeholder="请输入人员性质(专任/外聘/校企/银龄/青州外聘)" />
+          <el-col :span="12">
+            <el-form-item label="职称" prop="title">
+              <el-select v-model="form.title" placeholder="请选择职称" style="width: 100%">
+                <el-option v-for="o in teacherTitleOptions" :key="o.value" :label="o.label" :value="o.value" />
+              </el-select>
             </el-form-item>
           </el-col>
-          <el-col :span="24">
-            <el-form-item label="特殊状态起" prop="specialStatusStart">
-              <el-date-picker clearable
-                v-model="form.specialStatusStart"
-                type="date"
-                value-format="YYYY-MM-DD"
-                placeholder="请选择特殊状态起">
-              </el-date-picker>
+          <el-col :span="12">
+            <el-form-item label="人员性质" prop="teacherNature">
+              <el-select v-model="form.teacherNature" placeholder="请选择人员性质" style="width: 100%">
+                <el-option v-for="o in teacherNatureOptions" :key="o.value" :label="o.label" :value="o.value" />
+              </el-select>
             </el-form-item>
           </el-col>
-          <el-col :span="24">
-            <el-form-item label="特殊状态止" prop="specialStatusEnd">
-              <el-date-picker clearable
-                v-model="form.specialStatusEnd"
-                type="date"
-                value-format="YYYY-MM-DD"
-                placeholder="请选择特殊状态止">
-              </el-date-picker>
+          <el-col :span="12">
+            <el-form-item label="特殊状态" prop="specialStatus">
+              <el-select v-model="form.specialStatus" placeholder="请选择特殊状态" style="width: 100%">
+                <el-option v-for="o in specialStatusOptions" :key="o.value" :label="o.label" :value="o.value" />
+              </el-select>
             </el-form-item>
           </el-col>
-          <el-col :span="24">
-            <el-form-item label="校企考核结果(优秀/合格/不合格)" prop="enterpriseEvalResult">
-              <el-input v-model="form.enterpriseEvalResult" placeholder="请输入校企考核结果(优秀/合格/不合格)" />
+          <el-col :span="12">
+            <el-form-item label="校企考核" prop="enterpriseEvalResult">
+              <el-select v-model="form.enterpriseEvalResult" placeholder="请选择考核结果" clearable style="width: 100%">
+                <el-option v-for="o in enterpriseEvalOptions" :key="o.value" :label="o.label" :value="o.value" />
+              </el-select>
             </el-form-item>
           </el-col>
-          <el-col :span="24">
-            <el-form-item label="院部(sys_dept.dept_id)" prop="deptId">
-              <el-input v-model="form.deptId" placeholder="请输入院部(sys_dept.dept_id)" />
+          <el-col :span="12">
+            <el-form-item label="状态起" prop="specialStatusStart">
+              <el-date-picker clearable v-model="form.specialStatusStart" type="date" value-format="YYYY-MM-DD" placeholder="开始日期" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="状态止" prop="specialStatusEnd">
+              <el-date-picker clearable v-model="form.specialStatusEnd" type="date" value-format="YYYY-MM-DD" placeholder="结束日期" style="width: 100%" />
             </el-form-item>
           </el-col>
           <el-col :span="24">
             <el-form-item label="备注" prop="remark">
-              <el-input v-model="form.remark" type="textarea" placeholder="请输入内容" />
+              <el-input v-model="form.remark" type="textarea" :rows="2" maxlength="500" show-word-limit placeholder="请输入备注" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -195,8 +154,21 @@
 
 <script setup name="TeacherProfile">
 import { listTeacherProfile, getTeacherProfile, delTeacherProfile, addTeacherProfile, updateTeacherProfile } from "@/api/system/teacherProfile"
+import UserSelect from '@/components/UserSelect/index.vue'
+import { useUserMap } from '@/utils/userCache'
+import {
+  teacherTitleOptions, teacherNatureOptions, specialStatusOptions, enterpriseEvalOptions
+} from '@/utils/bizDict'
 
 const { proxy } = getCurrentInstance()
+const { userLabel, deptName } = useUserMap()
+
+const specialStatusMap = {
+  '正常': { label: '正常', type: 'success' },
+  '产假': { label: '产假', type: 'warning' },
+  '在职读博': { label: '在职读博', type: 'warning' },
+  '访学': { label: '访学', type: 'primary' }
+}
 
 const teacherProfileList = ref([])
 const open = ref(false)
@@ -213,15 +185,14 @@ const data = reactive({
   queryParams: {
     pageNum: 1,
     pageSize: 10,
+    userId: null,
     title: null,
     teacherNature: null,
-    specialStatus: null,
-    specialStatusStart: null,
-    specialStatusEnd: null,
-    enterpriseEvalResult: null,
-    deptId: null,
+    specialStatus: null
   },
   rules: {
+    userId: [{ required: true, message: "请选择教师", trigger: "change" }],
+    title: [{ required: true, message: "请选择职称", trigger: "change" }]
   }
 })
 
@@ -248,8 +219,8 @@ function reset() {
   form.value = {
     userId: null,
     title: null,
-    teacherNature: null,
-    specialStatus: null,
+    teacherNature: '专任',
+    specialStatus: '正常',
     specialStatusStart: null,
     specialStatusEnd: null,
     enterpriseEvalResult: null,
@@ -261,6 +232,11 @@ function reset() {
     remark: null
   }
   proxy.resetForm("teacherProfileRef")
+}
+
+/** 选择教师后自动带出院部 */
+function onTeacherSelect(user) {
+  form.value.deptId = user?.deptId ?? null
 }
 
 /** 搜索按钮操作 */
@@ -304,7 +280,7 @@ function handleUpdate(row) {
 function submitForm() {
   proxy.$refs["teacherProfileRef"].validate(valid => {
     if (valid) {
-      if (form.value.userId != null) {
+      if (form.value.userId != null && title.value.startsWith("修改")) {
         updateTeacherProfile(form.value).then(() => {
           proxy.$modal.msgSuccess("修改成功")
           open.value = false
@@ -324,7 +300,7 @@ function submitForm() {
 /** 删除按钮操作 */
 function handleDelete(row) {
   const _userIds = row.userId || ids.value
-  proxy.$modal.confirm('是否确认删除教师业务档案编号为"' + _userIds + '"的数据项？').then(function() {
+  proxy.$modal.confirm('是否确认删除所选教师业务档案？').then(function() {
     return delTeacherProfile(_userIds)
   }).then(() => {
     getList()

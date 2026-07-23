@@ -1,53 +1,16 @@
 <template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="68px">
-      <el-form-item label="${comment}" prop="userId">
-        <el-input
-          v-model="queryParams.userId"
-          placeholder="请输入${comment}"
-          clearable
-          @keyup.enter="handleQuery"
-        />
+      <el-form-item label="教师" prop="userId">
+        <user-select v-model="queryParams.userId" style="width: 200px" />
       </el-form-item>
-      <el-form-item label="${comment}" prop="semester">
-        <el-input
-          v-model="queryParams.semester"
-          placeholder="请输入${comment}"
-          clearable
-          @keyup.enter="handleQuery"
-        />
+      <el-form-item label="学年学期" prop="semester">
+        <el-input v-model="queryParams.semester" placeholder="如 2025-2026-1" clearable style="width: 150px" @keyup.enter="handleQuery" />
       </el-form-item>
-      <el-form-item label="FK biz_workload_summary" prop="summaryId">
-        <el-input
-          v-model="queryParams.summaryId"
-          placeholder="请输入FK biz_workload_summary"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="课时/绩效酬金" prop="courseHourPay">
-        <el-input
-          v-model="queryParams.courseHourPay"
-          placeholder="请输入课时/绩效酬金"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="其他酬金合计A+B+C+D+E+F+G" prop="otherPayTotal">
-        <el-input
-          v-model="queryParams.otherPayTotal"
-          placeholder="请输入其他酬金合计A+B+C+D+E+F+G"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="总金额(四舍五入取整)" prop="totalPay">
-        <el-input
-          v-model="queryParams.totalPay"
-          placeholder="请输入总金额(四舍五入取整)"
-          clearable
-          @keyup.enter="handleQuery"
-        />
+      <el-form-item label="状态" prop="status">
+        <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 120px">
+          <el-option v-for="(v, k) in payStatusMap" :key="k" :label="v.label" :value="Number(k)" />
+        </el-select>
       </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
@@ -57,65 +20,60 @@
 
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button
-          type="primary"
-          plain
-          icon="Plus"
-          @click="handleAdd"
-          v-hasPermi="['system:payRecord:add']"
-        >新增</el-button>
+        <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['system:payRecord:add']">新增</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button
-          type="success"
-          plain
-          icon="Edit"
-          :disabled="single"
-          @click="handleUpdate"
-          v-hasPermi="['system:payRecord:edit']"
-        >修改</el-button>
+        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['system:payRecord:edit']">修改</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button
-          type="danger"
-          plain
-          icon="Delete"
-          :disabled="multiple"
-          @click="handleDelete"
-          v-hasPermi="['system:payRecord:remove']"
-        >删除</el-button>
+        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['system:payRecord:remove']">删除</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button
-          type="warning"
-          plain
-          icon="Download"
-          @click="handleExport"
-          v-hasPermi="['system:payRecord:export']"
-        >导出</el-button>
+        <el-tooltip content="按搜索栏选中的教师+学期重算酬金（需先重算汇总）" placement="top">
+          <el-button type="primary" plain icon="Cpu" :loading="calcLoading" @click="handleRecalcPay" v-hasPermi="['system:payRecord:edit']">重算酬金</el-button>
+        </el-tooltip>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['system:payRecord:export']">导出</el-button>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
     <el-table v-loading="loading" :data="payRecordList" @selection-change="handleSelectionChange">
-      <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="${comment}" align="center" prop="id" />
-      <el-table-column label="${comment}" align="center" prop="userId" />
-      <el-table-column label="${comment}" align="center" prop="semester" />
-      <el-table-column label="FK biz_workload_summary" align="center" prop="summaryId" />
-      <el-table-column label="课时/绩效酬金" align="center" prop="courseHourPay" />
-      <el-table-column label="其他酬金合计A+B+C+D+E+F+G" align="center" prop="otherPayTotal" />
-      <el-table-column label="总金额(四舍五入取整)" align="center" prop="totalPay" />
-      <el-table-column label="${comment}" align="center" prop="status" />
-      <el-table-column label="${comment}" align="center" prop="remark" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column type="selection" width="50" align="center" />
+      <el-table-column label="ID" align="center" prop="id" width="70" />
+      <el-table-column label="教师" align="center" prop="userId" width="160">
+        <template #default="scope">{{ userLabel(scope.row.userId) }}</template>
+      </el-table-column>
+      <el-table-column label="学年学期" align="center" prop="semester" width="110" />
+      <el-table-column label="课时/绩效酬金" align="right" prop="courseHourPay" width="120">
+        <template #default="scope">{{ formatAmount(scope.row.courseHourPay) }}</template>
+      </el-table-column>
+      <el-table-column label="其他酬金合计" align="right" prop="otherPayTotal" width="120">
+        <template #default="scope">{{ formatAmount(scope.row.otherPayTotal) }}</template>
+      </el-table-column>
+      <el-table-column label="总金额(元)" align="right" prop="totalPay" width="120">
         <template #default="scope">
+          <span class="pay-total">{{ formatAmount(scope.row.totalPay, 0) }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="状态" align="center" prop="status" width="90">
+        <template #default="scope">
+          <biz-tag :value="scope.row.status" :map="payStatusMap" />
+        </template>
+      </el-table-column>
+      <el-table-column label="备注" align="center" prop="remark" min-width="120" show-overflow-tooltip>
+        <template #default="scope">{{ scope.row.remark || '-' }}</template>
+      </el-table-column>
+      <el-table-column label="操作" align="center" width="220" fixed="right" class-name="small-padding fixed-width">
+        <template #default="scope">
+          <el-button link type="primary" icon="Tickets" @click="goAllowance(scope.row)">酬金明细</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['system:payRecord:edit']">修改</el-button>
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['system:payRecord:remove']">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
-    
+
     <pagination
       v-show="total>0"
       :total="total"
@@ -125,42 +83,45 @@
     />
 
     <!-- 添加或修改酬金汇总对话框 -->
-    <el-dialog :title="title" v-model="open" width="500px" append-to-body>
-      <el-form ref="payRecordRef" :model="form" :rules="rules" label-width="100px">
-        <el-row>
-          <el-col :span="24">
-            <el-form-item label="${comment}" prop="userId">
-              <el-input v-model="form.userId" placeholder="请输入${comment}" />
+    <el-dialog :title="title" v-model="open" width="640px" append-to-body>
+      <el-form ref="payRecordRef" :model="form" :rules="rules" label-width="110px">
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="教师" prop="userId">
+              <user-select v-model="form.userId" />
             </el-form-item>
           </el-col>
-          <el-col :span="24">
-            <el-form-item label="${comment}" prop="semester">
-              <el-input v-model="form.semester" placeholder="请输入${comment}" />
+          <el-col :span="12">
+            <el-form-item label="学年学期" prop="semester">
+              <el-input v-model="form.semester" placeholder="如 2025-2026-1" maxlength="20" />
             </el-form-item>
           </el-col>
-          <el-col :span="24">
-            <el-form-item label="FK biz_workload_summary" prop="summaryId">
-              <el-input v-model="form.summaryId" placeholder="请输入FK biz_workload_summary" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="24">
+          <el-col :span="12">
             <el-form-item label="课时/绩效酬金" prop="courseHourPay">
-              <el-input v-model="form.courseHourPay" placeholder="请输入课时/绩效酬金" />
+              <el-input-number v-model="form.courseHourPay" :min="0" :precision="2" controls-position="right" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="其他酬金合计" prop="otherPayTotal">
+              <el-input-number v-model="form.otherPayTotal" :min="0" :precision="2" controls-position="right" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="总金额" prop="totalPay">
+              <el-input-number v-model="form.totalPay" :min="0" :precision="0" controls-position="right" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="状态" prop="status">
+              <el-radio-group v-model="form.status">
+                <el-radio :value="0">未发放</el-radio>
+                <el-radio :value="1">已发放</el-radio>
+              </el-radio-group>
             </el-form-item>
           </el-col>
           <el-col :span="24">
-            <el-form-item label="其他酬金合计A+B+C+D+E+F+G" prop="otherPayTotal">
-              <el-input v-model="form.otherPayTotal" placeholder="请输入其他酬金合计A+B+C+D+E+F+G" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="24">
-            <el-form-item label="总金额(四舍五入取整)" prop="totalPay">
-              <el-input v-model="form.totalPay" placeholder="请输入总金额(四舍五入取整)" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="24">
-            <el-form-item label="${comment}" prop="remark">
-              <el-input v-model="form.remark" type="textarea" placeholder="请输入内容" />
+            <el-form-item label="备注" prop="remark">
+              <el-input v-model="form.remark" type="textarea" :rows="2" maxlength="500" show-word-limit placeholder="请输入备注" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -177,12 +138,22 @@
 
 <script setup name="PayRecord">
 import { listPayRecord, getPayRecord, delPayRecord, addPayRecord, updatePayRecord } from "@/api/system/payRecord"
+import { recalcPay } from "@/api/system/calc"
+import UserSelect from '@/components/UserSelect/index.vue'
+import { useUserMap } from '@/utils/userCache'
+import { formatAmount } from '@/utils/bizDict'
+import { useRouter } from 'vue-router'
 
 const { proxy } = getCurrentInstance()
+const { userLabel } = useUserMap()
+const router = useRouter()
+
+const payStatusMap = { 0: { label: '未发放', type: 'info' }, 1: { label: '已发放', type: 'success' } }
 
 const payRecordList = ref([])
 const open = ref(false)
 const loading = ref(true)
+const calcLoading = ref(false)
 const showSearch = ref(true)
 const ids = ref([])
 const single = ref(true)
@@ -197,19 +168,14 @@ const data = reactive({
     pageSize: 10,
     userId: null,
     semester: null,
-    summaryId: null,
-    courseHourPay: null,
-    otherPayTotal: null,
-    totalPay: null,
-    status: null,
+    status: null
   },
   rules: {
-    userId: [
-      { required: true, message: "$comment不能为空", trigger: "blur" }
-    ],
+    userId: [{ required: true, message: "请选择教师", trigger: "change" }],
     semester: [
-      { required: true, message: "$comment不能为空", trigger: "blur" }
-    ],
+      { required: true, message: "请输入学年学期", trigger: "blur" },
+      { pattern: /^\d{4}-\d{4}-[12]$/, message: "格式如 2025-2026-1", trigger: "blur" }
+    ]
   }
 })
 
@@ -238,10 +204,10 @@ function reset() {
     userId: null,
     semester: null,
     summaryId: null,
-    courseHourPay: null,
-    otherPayTotal: null,
-    totalPay: null,
-    status: null,
+    courseHourPay: 0,
+    otherPayTotal: 0,
+    totalPay: 0,
+    status: 0,
     createBy: null,
     createTime: null,
     updateBy: null,
@@ -274,7 +240,7 @@ function handleSelectionChange(selection) {
 function handleAdd() {
   reset()
   open.value = true
-  title.value = "添加酬金汇总"
+  title.value = "添加酬金记录"
 }
 
 /** 修改按钮操作 */
@@ -284,7 +250,7 @@ function handleUpdate(row) {
   getPayRecord(_id).then(response => {
     form.value = response.data
     open.value = true
-    title.value = "修改酬金汇总"
+    title.value = "修改酬金记录"
   })
 }
 
@@ -312,12 +278,35 @@ function submitForm() {
 /** 删除按钮操作 */
 function handleDelete(row) {
   const _ids = row.id || ids.value
-  proxy.$modal.confirm('是否确认删除酬金汇总编号为"' + _ids + '"的数据项？').then(function() {
+  proxy.$modal.confirm('是否确认删除选中的酬金记录？').then(function() {
     return delPayRecord(_ids)
   }).then(() => {
     getList()
     proxy.$modal.msgSuccess("删除成功")
   }).catch(() => {})
+}
+
+/** 重算酬金 */
+function handleRecalcPay() {
+  const { userId, semester } = queryParams.value
+  if (!userId || !semester) {
+    proxy.$modal.alertWarning('请先在搜索栏选择「教师」并填写「学年学期」')
+    return
+  }
+  proxy.$modal.confirm(`确认重算「${userLabel(userId)}」${semester} 学期的酬金吗？需先完成汇总重算。`).then(function() {
+    calcLoading.value = true
+    return recalcPay(userId, semester)
+  }).then(() => {
+    getList()
+    proxy.$modal.msgSuccess("酬金重算完成")
+  }).catch(() => {}).finally(() => {
+    calcLoading.value = false
+  })
+}
+
+/** 跳转其他酬金明细 */
+function goAllowance(row) {
+  router.push({ path: '/workload/allowanceItem', query: { userId: row.userId, semester: row.semester } })
 }
 
 /** 导出按钮操作 */
@@ -329,3 +318,10 @@ function handleExport() {
 
 getList()
 </script>
+
+<style scoped>
+.pay-total {
+  font-weight: 700;
+  color: var(--el-color-danger);
+}
+</style>

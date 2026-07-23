@@ -1,66 +1,119 @@
 <template>
   <div class="teacher-dashboard">
+    <!-- 欢迎区 -->
     <el-row :gutter="20" class="mb20">
       <el-col :span="24">
         <el-card shadow="hover" class="welcome-card">
           <div class="user-info">
-            <el-avatar :size="60" src="https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png" />
+            <el-avatar :size="56" :src="userStore.avatar" />
             <div class="info-text">
-              <h2>张老师，您好！祝您今天工作顺利。</h2>
-              <p class="role-desc">当前岗位：讲师 | 所属院系：大数据学院 | 额定工作量：240 学时/学年</p>
+              <h2>{{ userStore.nickName || userStore.name }} 老师，您好</h2>
+              <p class="role-desc">
+                <el-tag v-for="role in userStore.roles" :key="role" size="small" style="margin-right: 6px;">
+                  {{ role }}
+                </el-tag>
+                <span v-if="stats.ratedWorkload > 0">
+                  额定工作量：{{ formatNumber(stats.ratedWorkload) }} 标准学时
+                </span>
+              </p>
             </div>
           </div>
         </el-card>
       </el-col>
     </el-row>
 
+    <!-- 3 数据卡片 -->
     <el-row :gutter="20" class="mb20">
       <el-col :xs="12" :sm="12" :lg="8">
-        <el-card shadow="hover" class="data-card info-bg">
-          <div class="card-header">本学期承担课程</div>
-          <div class="card-value">3 <span class="unit">门</span></div>
-          <div class="card-bottom">计划总学时：128 学时</div>
-        </el-card>
+        <div class="stat-card card-info" @click="router.push('/system/teachingTask')">
+          <div class="stat-label">本学期承担课程</div>
+          <div class="stat-value">
+            <span class="stat-big">{{ stats.courseCount ?? '--' }}</span>
+            <span class="stat-unit" v-if="stats.courseCount != null">门</span>
+          </div>
+          <div class="stat-footer">
+            共 {{ formatNumber(stats.totalWorkload) }} 标准学时
+          </div>
+        </div>
       </el-col>
-      
+
       <el-col :xs="12" :sm="12" :lg="8">
-        <el-card shadow="hover" class="data-card success-bg">
-          <div class="card-header">本学期已核算工作量</div>
-          <div class="card-value">156.5 <span class="unit">标准学时</span></div>
-          <div class="card-bottom">折算后较原计划增加 28.5 学时</div>
-        </el-card>
+        <div class="stat-card card-success" @click="router.push('/system/workloadItem')">
+          <div class="stat-label">已核算工作量</div>
+          <div class="stat-value">
+            <span class="stat-big">{{ formatNumber(stats.totalWorkload) }}</span>
+            <span class="stat-unit" v-if="stats.totalWorkload != null">标准学时</span>
+          </div>
+          <div class="stat-footer">
+            <template v-if="stats.excessWorkload > 0">
+              超额 {{ formatNumber(stats.excessWorkload) }} 学时
+            </template>
+            <template v-else-if="stats.totalWorkload != null">
+              暂未超额
+            </template>
+          </div>
+        </div>
       </el-col>
 
       <el-col :xs="24" :sm="24" :lg="8">
-        <el-card shadow="hover" class="data-card warning-bg">
-          <div class="card-header">预计超工作量绩效(税前)</div>
-          <div class="card-value">¥ 0.00</div> 
-          <div class="card-bottom">注：超出每学期180学时或学年240学时后计算</div>
-        </el-card>
+        <div class="stat-card card-warning" @click="router.push('/system/payRecord')">
+          <div class="stat-label">预计超工作量绩效</div>
+          <div class="stat-value">
+            <span class="stat-big">¥ {{ formatMoney(stats.performancePay) }}</span>
+          </div>
+          <div class="stat-footer">
+            <template v-if="stats.isCapped">
+              <el-tag type="warning" size="small">已达上限 (540学时)</el-tag>
+            </template>
+            <template v-else-if="stats.summaryStatus">
+              汇总状态：
+              <el-tag size="small" :type="summaryTagType(stats.summaryStatus)">
+                {{ summaryLabel(stats.summaryStatus) }}
+              </el-tag>
+            </template>
+            <template v-else>超出额定后方计算</template>
+          </div>
+        </div>
       </el-col>
     </el-row>
 
+    <!-- 近期明细 + 学期汇总 -->
     <el-row :gutter="20">
       <el-col :xs="24" :lg="16">
         <el-card shadow="hover">
           <template #header>
             <div class="card-title">
               <span>近期工作量核算明细</span>
-              <el-button type="primary" link>查看全部明细 >></el-button>
+              <el-button type="primary" link @click="router.push('/system/workloadItem')">
+                查看全部 &gt;&gt;
+              </el-button>
             </div>
           </template>
-          <el-table :data="recentWorkloads" style="width: 100%" size="small">
-            <el-table-column prop="courseName" label="课程名称" min-width="120" />
-            <el-table-column prop="courseType" label="类型" width="80">
-               <template #default="scope">
-                 <el-tag :type="scope.row.courseType === '理论课' ? '' : 'success'">{{ scope.row.courseType }}</el-tag>
-               </template>
+          <el-table
+            :data="recentItems"
+            style="width: 100%"
+            size="small"
+            v-loading="itemLoading"
+            empty-text="暂无核算明细"
+          >
+            <el-table-column prop="typeCode" label="类型" width="100">
+              <template #default="{ row }">
+                <el-tag size="small" :type="typeTagType(row.typeCode)">
+                  {{ row.typeName || row.typeCode }}
+                </el-tag>
+              </template>
             </el-table-column>
-            <el-table-column prop="baseHours" label="计划学时" width="80" align="center" />
-            <el-table-column prop="coefficient" label="综合系数" width="80" align="center" />
-            <el-table-column prop="finalHours" label="核算学时" width="100" align="center">
-              <template #default="scope">
-                <strong style="color: #67C23A;">{{ scope.row.finalHours }}</strong>
+            <el-table-column prop="sourceDesc" label="来源" min-width="140" show-overflow-tooltip />
+            <el-table-column prop="calculatedWorkload" label="核算学时" width="110" align="center">
+              <template #default="{ row }">
+                <strong style="color: #409eff;">{{ formatNumber(row.calculatedWorkload) }}</strong>
+              </template>
+            </el-table-column>
+            <el-table-column prop="status" label="状态" width="90" align="center">
+              <template #default="{ row }">
+                <el-tag size="small" :type="statusTagType(row.status)">
+                  {{ statusLabel(row.status) }}
+                </el-tag>
               </template>
             </el-table-column>
           </el-table>
@@ -68,16 +121,63 @@
       </el-col>
 
       <el-col :xs="24" :lg="8">
+        <el-card shadow="hover" class="mb20">
+          <template #header>
+            <div class="card-title">
+              <span>学期达标情况</span>
+            </div>
+          </template>
+          <div class="goal-panel" v-if="stats.totalWorkload != null">
+            <div class="goal-row">
+              <span class="goal-label">额定工作量</span>
+              <span class="goal-value">{{ formatNumber(stats.ratedWorkload) }}</span>
+            </div>
+            <el-divider style="margin: 10px 0" />
+            <div class="goal-row">
+              <span class="goal-label">已核算</span>
+              <span class="goal-value" style="color: #409eff;">{{ formatNumber(stats.totalWorkload) }}</span>
+            </div>
+            <el-divider style="margin: 10px 0" />
+            <div class="goal-row">
+              <span class="goal-label">超额</span>
+              <span class="goal-value" :style="{ color: stats.excessWorkload > 0 ? '#67c23a' : '#909399' }">
+                {{ formatNumber(stats.excessWorkload) }}
+              </span>
+            </div>
+            <el-divider style="margin: 10px 0" />
+            <div class="goal-row">
+              <span class="goal-label">是否达标</span>
+              <el-tag size="small" :type="stats.basicTeachingMet ? 'success' : 'info'">
+                {{ stats.basicTeachingMet ? '已达标' : '核算中' }}
+              </el-tag>
+            </div>
+          </div>
+          <el-empty v-else description="暂无汇总数据" :image-size="60" />
+        </el-card>
+
         <el-card shadow="hover">
           <template #header>
             <div class="card-title">
-              <span>服务指南</span>
+              <span>快捷操作</span>
             </div>
           </template>
           <div class="action-list">
-            <el-button type="primary" plain class="action-btn" icon="Document">查看学校工作量管理办法</el-button>
-            <el-button type="warning" plain class="action-btn" icon="Warning">对核算结果有异议？发起申诉</el-button>
-            <el-button type="success" plain class="action-btn" icon="Download">下载个人工作量证明</el-button>
+            <el-button type="primary" plain class="action-btn" icon="Document" @click="router.push('/system/workloadRule')">
+              查看工作量计算规则
+            </el-button>
+            <el-button
+              type="warning"
+              plain
+              class="action-btn"
+              icon="Warning"
+              @click="router.push('/system/workloadItem?appealStatus=1')"
+            >
+              <span>对核算结果有异议？发起申诉</span>
+              <el-badge v-if="stats.appealCount" :value="stats.appealCount" style="margin-left: 8px" />
+            </el-button>
+            <el-button type="success" plain class="action-btn" icon="Download" @click="handleExport">
+              导出个人工作量证明
+            </el-button>
           </div>
         </el-card>
       </el-col>
@@ -86,110 +186,187 @@
 </template>
 
 <script setup name="TeacherDashboard">
-import { ref } from 'vue'
+import { ref, reactive, onMounted, getCurrentInstance } from 'vue'
+import { useRouter } from 'vue-router'
+import { Document, Warning, Download } from '@element-plus/icons-vue'
+import { getTeacherStats } from '@/api/system/dashboard'
+import { listWorkloadItem } from '@/api/system/workloadItem'
+import useUserStore from '@/store/modules/user'
 
-// 模拟最近的核算数据
-const recentWorkloads = ref([
-  {
-    courseName: 'Java企业级应用开发',
-    courseType: '理论课',
-    baseHours: 48,
-    coefficient: 1.1, // 必修课系数
-    finalHours: 52.8
-  },
-  {
-    courseName: '数据库系统原理',
-    courseType: '理论课',
-    baseHours: 32,
-    coefficient: 1.2, // 合堂150人以上等系数
-    finalHours: 38.4
-  },
-  {
-    courseName: 'Web前端开发实践',
-    courseType: '实践课',
-    baseHours: 16,
-    coefficient: 0.9,
-    finalHours: 14.4
+const router = useRouter()
+const userStore = useUserStore()
+const { proxy } = getCurrentInstance()
+
+const itemLoading = ref(false)
+const recentItems = ref([])
+
+const stats = reactive({
+  courseCount: 0,
+  itemCount: 0,
+  totalWorkload: 0,
+  excessWorkload: 0,
+  performancePay: 0,
+  ratedWorkload: 0,
+  summaryStatus: 0,
+  isCapped: 0,
+  basicTeachingMet: 0,
+  appealCount: 0
+})
+
+function formatNumber(val) {
+  if (val == null) return '--'
+  return Number(val).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+function formatMoney(val) {
+  if (val == null) return '--'
+  return Number(val).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+function statusLabel(status) {
+  const map = { 0: '草稿', 1: '已核对', 2: '有异议', 3: '已驳回' }
+  return map[status] ?? status
+}
+
+function statusTagType(status) {
+  const map = { 0: 'info', 1: 'success', 2: 'warning', 3: 'danger' }
+  return map[status] ?? ''
+}
+
+function typeTagType(code) {
+  if (!code) return ''
+  const c = String(code)
+  if (c.startsWith('G1') || c.startsWith('G2')) return ''
+  if (c.startsWith('G3') || c.startsWith('G4') || c.startsWith('G6')) return 'success'
+  if (c.startsWith('G5') || c.startsWith('G11')) return 'warning'
+  return ''
+}
+
+function summaryLabel(status) {
+  const map = { 0: '草稿', 1: '已公示', 2: '已审核', 3: '已锁定' }
+  return map[status] ?? status
+}
+
+function summaryTagType(status) {
+  const map = { 0: 'info', 1: 'warning', 2: 'success', 3: 'danger' }
+  return map[status] ?? ''
+}
+
+async function fetchStats() {
+  try {
+    const res = await getTeacherStats()
+    Object.assign(stats, res.data)
+  } catch (e) {
+    proxy.$modal.msgError('获取统计数据失败')
   }
-])
+}
+
+async function fetchRecentItems() {
+  itemLoading.value = true
+  try {
+    const res = await listWorkloadItem({ pageSize: 5, pageNum: 1 })
+    recentItems.value = (res.rows || []).map(r => ({
+      ...r,
+      sourceDesc: r.courseName || r.sourceDesc || `明细 #${r.id}`
+    }))
+  } catch (e) {
+    // silently ignore
+  } finally {
+    itemLoading.value = false
+  }
+}
+
+function handleExport() {
+  proxy.$modal.msgSuccess('导出功能开发中，敬请期待')
+}
+
+onMounted(() => {
+  fetchStats()
+  fetchRecentItems()
+})
 </script>
 
 <style scoped lang="scss">
 .teacher-dashboard {
-  .mb20 {
-    margin-bottom: 20px;
-  }
-  
+  padding: 20px;
+  background-color: #f0f2f5;
+  min-height: calc(100vh - 84px);
+
+  .mb20 { margin-bottom: 20px; }
+
   .welcome-card {
-    background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+    background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
     .user-info {
       display: flex;
       align-items: center;
-      padding: 10px 0;
-      
+      padding: 6px 0;
       .info-text {
-        margin-left: 20px;
-        h2 {
-          margin: 0 0 10px 0;
-          color: #303133;
-          font-size: 22px;
-        }
-        .role-desc {
-          margin: 0;
-          color: #606266;
-          font-size: 14px;
-        }
+        margin-left: 16px;
+        h2 { margin: 0 0 8px 0; color: #303133; font-size: 20px; font-weight: 600; }
+        .role-desc { margin: 0; color: #606266; font-size: 13px; display: flex; align-items: center; }
       }
     }
   }
 
-  .data-card {
+  .stat-card {
+    padding: 20px 24px;
+    border-radius: 10px;
     color: #fff;
-    border: none;
-    
-    &.info-bg { background: linear-gradient(to right, #4facfe 0%, #00f2fe 100%); }
-    &.success-bg { background: linear-gradient(to right, #43e97b 0%, #38f9d7 100%); }
-    &.warning-bg { background: linear-gradient(to right, #fa709a 0%, #fee140 100%); }
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, .08);
+    min-height: 120px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
 
-    .card-header {
-      font-size: 16px;
-      opacity: 0.9;
-      margin-bottom: 15px;
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, .15);
     }
-    .card-value {
-      font-size: 32px;
-      font-weight: bold;
-      margin-bottom: 15px;
-      .unit {
-        font-size: 14px;
-        font-weight: normal;
-        opacity: 0.8;
-      }
-    }
-    .card-bottom {
-      font-size: 12px;
-      opacity: 0.8;
-      border-top: 1px solid rgba(255,255,255,0.2);
-      padding-top: 10px;
-    }
+
+    &.card-info    { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    &.card-success { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: #1a3a2a; }
+    &.card-warning { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); color: #3a2a1a; }
+
+    .stat-label   { font-size: 15px; opacity: 0.9; }
+    .stat-value   { margin: 8px 0; display: flex; align-items: baseline; gap: 6px; }
+    .stat-big     { font-size: 30px; font-weight: bold; }
+    .stat-unit    { font-size: 14px; opacity: 0.75; }
+    .stat-footer  { font-size: 12px; opacity: 0.8; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.2); }
   }
 
   .card-title {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-weight: bold;
+    font-weight: 600;
+    font-size: 15px;
+  }
+
+  .goal-panel {
+    .goal-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 14px;
+      .goal-label { color: #606266; }
+      .goal-value { font-weight: 600; font-size: 16px; }
+    }
   }
 
   .action-list {
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 12px;
     .action-btn {
       margin: 0;
       justify-content: flex-start;
-      padding-left: 20px;
+      padding-left: 18px;
+      height: 46px;
     }
   }
+
+  :deep(.el-card) { border-radius: 8px; }
 }
 </style>

@@ -1,101 +1,21 @@
 <template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="68px">
-      <el-form-item label="${comment}" prop="userId">
-        <el-input
-          v-model="queryParams.userId"
-          placeholder="请输入${comment}"
-          clearable
-          @keyup.enter="handleQuery"
-        />
+      <el-form-item label="教师" prop="userId">
+        <user-select v-model="queryParams.userId" style="width: 200px" />
       </el-form-item>
-      <el-form-item label="${comment}" prop="semester">
-        <el-input
-          v-model="queryParams.semester"
-          placeholder="请输入${comment}"
-          clearable
-          @keyup.enter="handleQuery"
-        />
+      <el-form-item label="学年学期" prop="semester">
+        <el-input v-model="queryParams.semester" placeholder="如 2025-2026-1" clearable style="width: 150px" @keyup.enter="handleQuery" />
       </el-form-item>
-      <el-form-item label="${comment}" prop="academicYear">
-        <el-input
-          v-model="queryParams.academicYear"
-          placeholder="请输入${comment}"
-          clearable
-          @keyup.enter="handleQuery"
-        />
+      <el-form-item label="工作量类别" prop="itemType">
+        <el-select v-model="queryParams.itemType" placeholder="请选择类别" clearable style="width: 150px">
+          <el-option v-for="o in itemTypeOptions" :key="o.value" :label="o.label" :value="o.value" />
+        </el-select>
       </el-form-item>
-      <el-form-item label="FK biz_teaching_task" prop="taskId">
-        <el-input
-          v-model="queryParams.taskId"
-          placeholder="请输入FK biz_teaching_task"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="FK biz_role_assignment(G11)" prop="assignmentId">
-        <el-input
-          v-model="queryParams.assignmentId"
-          placeholder="请输入FK biz_role_assignment(G11)"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="${comment}" prop="courseName">
-        <el-input
-          v-model="queryParams.courseName"
-          placeholder="请输入${comment}"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="${comment}" prop="educationLevel">
-        <el-input
-          v-model="queryParams.educationLevel"
-          placeholder="请输入${comment}"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="${comment}" prop="majorCategory">
-        <el-input
-          v-model="queryParams.majorCategory"
-          placeholder="请输入${comment}"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="最终核算工作量" prop="calculatedWorkload">
-        <el-input
-          v-model="queryParams.calculatedWorkload"
-          placeholder="请输入最终核算工作量"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="指导人数超标(G5/G6)" prop="isOverLimit">
-        <el-input
-          v-model="queryParams.isOverLimit"
-          placeholder="请输入指导人数超标(G5/G6)"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="${comment}" prop="deanApprovalBy">
-        <el-input
-          v-model="queryParams.deanApprovalBy"
-          placeholder="请输入${comment}"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="${comment}" prop="deanApprovalTime">
-        <el-date-picker clearable
-          v-model="queryParams.deanApprovalTime"
-          type="date"
-          value-format="YYYY-MM-DD"
-          placeholder="请选择${comment}">
-        </el-date-picker>
+      <el-form-item label="状态" prop="status">
+        <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 120px">
+          <el-option v-for="(v, k) in workloadItemStatusMap" :key="k" :label="v.label" :value="Number(k)" />
+        </el-select>
       </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
@@ -105,82 +25,80 @@
 
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button
-          type="primary"
-          plain
-          icon="Plus"
-          @click="handleAdd"
-          v-hasPermi="['system:workloadItem:add']"
-        >新增</el-button>
+        <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['system:workloadItem:add']">新增</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button
-          type="success"
-          plain
-          icon="Edit"
-          :disabled="single"
-          @click="handleUpdate"
-          v-hasPermi="['system:workloadItem:edit']"
-        >修改</el-button>
+        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['system:workloadItem:edit']">修改</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button
-          type="danger"
-          plain
-          icon="Delete"
-          :disabled="multiple"
-          @click="handleDelete"
-          v-hasPermi="['system:workloadItem:remove']"
-        >删除</el-button>
+        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['system:workloadItem:remove']">删除</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button
-          type="warning"
-          plain
-          icon="Download"
-          @click="handleExport"
-          v-hasPermi="['system:workloadItem:export']"
-        >导出</el-button>
+        <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['system:workloadItem:export']">导出</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-tooltip content="按搜索栏选中的教师+学期，重算全部未冻结明细" placement="top">
+          <el-button type="primary" plain icon="Refresh" :loading="recalcLoading" @click="handleRecalcSemester" v-hasPermi="['system:workloadItem:edit']">重算学期明细</el-button>
+        </el-tooltip>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
     <el-table v-loading="loading" :data="workloadItemList" @selection-change="handleSelectionChange">
-      <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="${comment}" align="center" prop="id" />
-      <el-table-column label="${comment}" align="center" prop="userId" />
-      <el-table-column label="${comment}" align="center" prop="semester" />
-      <el-table-column label="${comment}" align="center" prop="academicYear" />
-      <el-table-column label="G1..G9,G11" align="center" prop="itemType" />
-      <el-table-column label="IMPORT/MANUAL" align="center" prop="sourceType" />
-      <el-table-column label="FK biz_teaching_task" align="center" prop="taskId" />
-      <el-table-column label="FK biz_role_assignment(G11)" align="center" prop="assignmentId" />
-      <el-table-column label="${comment}" align="center" prop="courseName" />
-      <el-table-column label="${comment}" align="center" prop="educationLevel" />
-      <el-table-column label="${comment}" align="center" prop="majorCategory" />
-      <el-table-column label="最终核算工作量" align="center" prop="calculatedWorkload" />
-      <el-table-column label="G8/G9说明" align="center" prop="description" />
-      <el-table-column label="指导人数超标(G5/G6)" align="center" prop="isOverLimit" />
-      <el-table-column label="0未审批/1通过/2驳回" align="center" prop="deanApprovalStatus" />
-      <el-table-column label="${comment}" align="center" prop="deanApprovalBy" />
-      <el-table-column label="${comment}" align="center" prop="deanApprovalTime" width="180">
+      <el-table-column type="selection" width="50" align="center" />
+      <el-table-column label="ID" align="center" prop="id" width="70" />
+      <el-table-column label="教师" align="center" prop="userId" width="150">
+        <template #default="scope">{{ userLabel(scope.row.userId) }}</template>
+      </el-table-column>
+      <el-table-column label="学年学期" align="center" prop="semester" width="105" />
+      <el-table-column label="类别" align="center" prop="itemType" width="110">
         <template #default="scope">
-          <span>{{ parseTime(scope.row.deanApprovalTime, '{y}-{m}-{d}') }}</span>
+          <biz-tag :value="scope.row.itemType" :map="itemTypeMap" />
         </template>
       </el-table-column>
-      <el-table-column label="0无/1申诉中/2已处理/3已驳回" align="center" prop="appealStatus" />
-      <el-table-column label="${comment}" align="center" prop="appealReason" />
-      <el-table-column label="${comment}" align="center" prop="appealReply" />
-      <el-table-column label="0草稿/1已核对/2有异议/3已驳回" align="center" prop="status" />
-      <el-table-column label="${comment}" align="center" prop="remark" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column label="来源" align="center" prop="sourceType" width="90">
         <template #default="scope">
+          <biz-tag :value="scope.row.sourceType" :map="sourceTypeMap" />
+        </template>
+      </el-table-column>
+      <el-table-column label="课程/事项" align="center" prop="courseName" min-width="150" show-overflow-tooltip>
+        <template #default="scope">{{ scope.row.courseName || scope.row.description || '-' }}</template>
+      </el-table-column>
+      <el-table-column label="核算工作量" align="center" prop="calculatedWorkload" width="100">
+        <template #default="scope">
+          <span class="workload-num">{{ scope.row.calculatedWorkload }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="超标" align="center" prop="isOverLimit" width="70">
+        <template #default="scope">
+          <biz-tag v-if="scope.row.isOverLimit === 1" :value="1" :map="yesNoMap" />
+          <span v-else>-</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="院部审批" align="center" prop="deanApprovalStatus" width="90">
+        <template #default="scope">
+          <biz-tag :value="scope.row.deanApprovalStatus" :map="approvalStatusMap" />
+        </template>
+      </el-table-column>
+      <el-table-column label="申诉" align="center" prop="appealStatus" width="80">
+        <template #default="scope">
+          <biz-tag :value="scope.row.appealStatus" :map="appealStatusMap" />
+        </template>
+      </el-table-column>
+      <el-table-column label="状态" align="center" prop="status" width="85">
+        <template #default="scope">
+          <biz-tag :value="scope.row.status" :map="workloadItemStatusMap" />
+        </template>
+      </el-table-column>
+      <el-table-column label="操作" align="center" width="210" fixed="right" class-name="small-padding fixed-width">
+        <template #default="scope">
+          <el-button link type="primary" icon="Refresh" @click="handleRecalcItem(scope.row)" v-hasPermi="['system:workloadItem:edit']">重算</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['system:workloadItem:edit']">修改</el-button>
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['system:workloadItem:remove']">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
-    
+
     <pagination
       v-show="total>0"
       :total="total"
@@ -189,93 +107,59 @@
       @pagination="getList"
     />
 
-    <!-- 添加或修改工作量明细主表对话框 -->
-    <el-dialog :title="title" v-model="open" width="500px" append-to-body>
-      <el-form ref="workloadItemRef" :model="form" :rules="rules" label-width="100px">
-        <el-row>
-          <el-col :span="24">
-            <el-form-item label="${comment}" prop="userId">
-              <el-input v-model="form.userId" placeholder="请输入${comment}" />
+    <!-- 添加或修改工作量明细对话框 -->
+    <el-dialog :title="title" v-model="open" width="680px" append-to-body>
+      <el-form ref="workloadItemRef" :model="form" :rules="rules" label-width="90px">
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="教师" prop="userId">
+              <user-select v-model="form.userId" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="学年学期" prop="semester">
+              <el-input v-model="form.semester" placeholder="如 2025-2026-1" maxlength="20" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="类别" prop="itemType">
+              <el-select v-model="form.itemType" placeholder="请选择类别" style="width: 100%">
+                <el-option v-for="o in itemTypeOptions" :key="o.value" :label="o.label" :value="o.value" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="核算工作量" prop="calculatedWorkload">
+              <el-input-number v-model="form.calculatedWorkload" :min="0" :precision="2" controls-position="right" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="课程名称" prop="courseName">
+              <el-input v-model="form.courseName" placeholder="课程类工作量填写" maxlength="100" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="6">
+            <el-form-item label="层次" prop="educationLevel" label-width="60px">
+              <el-select v-model="form.educationLevel" placeholder="请选择" clearable style="width: 100%">
+                <el-option v-for="o in educationLevelOptions" :key="o.value" :label="o.label" :value="o.value" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="6">
+            <el-form-item label="类别" prop="majorCategory" label-width="60px">
+              <el-select v-model="form.majorCategory" placeholder="请选择" clearable style="width: 100%">
+                <el-option v-for="o in majorCategoryOptions" :key="o.value" :label="o.label" :value="o.value" />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="24">
-            <el-form-item label="${comment}" prop="semester">
-              <el-input v-model="form.semester" placeholder="请输入${comment}" />
+            <el-form-item label="事项说明" prop="description">
+              <el-input v-model="form.description" type="textarea" :rows="2" maxlength="500" show-word-limit placeholder="G8/G9 等其他工作量请填写说明" />
             </el-form-item>
           </el-col>
           <el-col :span="24">
-            <el-form-item label="${comment}" prop="academicYear">
-              <el-input v-model="form.academicYear" placeholder="请输入${comment}" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="24">
-            <el-form-item label="FK biz_teaching_task" prop="taskId">
-              <el-input v-model="form.taskId" placeholder="请输入FK biz_teaching_task" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="24">
-            <el-form-item label="FK biz_role_assignment(G11)" prop="assignmentId">
-              <el-input v-model="form.assignmentId" placeholder="请输入FK biz_role_assignment(G11)" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="24">
-            <el-form-item label="${comment}" prop="courseName">
-              <el-input v-model="form.courseName" placeholder="请输入${comment}" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="24">
-            <el-form-item label="${comment}" prop="educationLevel">
-              <el-input v-model="form.educationLevel" placeholder="请输入${comment}" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="24">
-            <el-form-item label="${comment}" prop="majorCategory">
-              <el-input v-model="form.majorCategory" placeholder="请输入${comment}" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="24">
-            <el-form-item label="最终核算工作量" prop="calculatedWorkload">
-              <el-input v-model="form.calculatedWorkload" placeholder="请输入最终核算工作量" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="24">
-            <el-form-item label="G8/G9说明" prop="description">
-              <el-input v-model="form.description" type="textarea" placeholder="请输入内容" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="24">
-            <el-form-item label="指导人数超标(G5/G6)" prop="isOverLimit">
-              <el-input v-model="form.isOverLimit" placeholder="请输入指导人数超标(G5/G6)" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="24">
-            <el-form-item label="${comment}" prop="deanApprovalBy">
-              <el-input v-model="form.deanApprovalBy" placeholder="请输入${comment}" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="24">
-            <el-form-item label="${comment}" prop="deanApprovalTime">
-              <el-date-picker clearable
-                v-model="form.deanApprovalTime"
-                type="date"
-                value-format="YYYY-MM-DD"
-                placeholder="请选择${comment}">
-              </el-date-picker>
-            </el-form-item>
-          </el-col>
-          <el-col :span="24">
-            <el-form-item label="${comment}" prop="appealReason">
-              <el-input v-model="form.appealReason" type="textarea" placeholder="请输入内容" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="24">
-            <el-form-item label="${comment}" prop="appealReply">
-              <el-input v-model="form.appealReply" type="textarea" placeholder="请输入内容" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="24">
-            <el-form-item label="${comment}" prop="remark">
-              <el-input v-model="form.remark" type="textarea" placeholder="请输入内容" />
+            <el-form-item label="备注" prop="remark">
+              <el-input v-model="form.remark" type="textarea" :rows="2" maxlength="500" show-word-limit placeholder="请输入备注" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -292,12 +176,24 @@
 
 <script setup name="WorkloadItem">
 import { listWorkloadItem, getWorkloadItem, delWorkloadItem, addWorkloadItem, updateWorkloadItem } from "@/api/system/workloadItem"
+import { recalcItem, recalcItems } from "@/api/system/calc"
+import UserSelect from '@/components/UserSelect/index.vue'
+import { useUserMap } from '@/utils/userCache'
+import {
+  itemTypeOptions, educationLevelOptions, majorCategoryOptions,
+  workloadItemStatusMap, approvalStatusMap, appealStatusMap, yesNoMap
+} from '@/utils/bizDict'
 
 const { proxy } = getCurrentInstance()
+const { userLabel } = useUserMap()
+
+const itemTypeMap = Object.fromEntries(itemTypeOptions.map(o => [o.value, { label: o.label, type: 'primary' }]))
+const sourceTypeMap = { IMPORT: { label: '导入', type: 'info' }, MANUAL: { label: '手工', type: 'success' } }
 
 const workloadItemList = ref([])
 const open = ref(false)
 const loading = ref(true)
+const recalcLoading = ref(false)
 const showSearch = ref(true)
 const ids = ref([])
 const single = ref(true)
@@ -312,41 +208,17 @@ const data = reactive({
     pageSize: 10,
     userId: null,
     semester: null,
-    academicYear: null,
     itemType: null,
-    sourceType: null,
-    taskId: null,
-    assignmentId: null,
-    courseName: null,
-    educationLevel: null,
-    majorCategory: null,
-    calculatedWorkload: null,
-    description: null,
-    isOverLimit: null,
-    deanApprovalStatus: null,
-    deanApprovalBy: null,
-    deanApprovalTime: null,
-    appealStatus: null,
-    appealReason: null,
-    appealReply: null,
-    status: null,
+    status: null
   },
   rules: {
-    userId: [
-      { required: true, message: "$comment不能为空", trigger: "blur" }
-    ],
+    userId: [{ required: true, message: "请选择教师", trigger: "change" }],
     semester: [
-      { required: true, message: "$comment不能为空", trigger: "blur" }
+      { required: true, message: "请输入学年学期", trigger: "blur" },
+      { pattern: /^\d{4}-\d{4}-[12]$/, message: "格式如 2025-2026-1", trigger: "blur" }
     ],
-    itemType: [
-      { required: true, message: "G1..G9,G11不能为空", trigger: "change" }
-    ],
-    sourceType: [
-      { required: true, message: "IMPORT/MANUAL不能为空", trigger: "change" }
-    ],
-    calculatedWorkload: [
-      { required: true, message: "最终核算工作量不能为空", trigger: "blur" }
-    ],
+    itemType: [{ required: true, message: "请选择工作量类别", trigger: "change" }],
+    calculatedWorkload: [{ required: true, message: "请输入核算工作量", trigger: "blur" }]
   }
 })
 
@@ -376,7 +248,7 @@ function reset() {
     semester: null,
     academicYear: null,
     itemType: null,
-    sourceType: null,
+    sourceType: 'MANUAL',
     taskId: null,
     assignmentId: null,
     courseName: null,
@@ -384,14 +256,14 @@ function reset() {
     majorCategory: null,
     calculatedWorkload: null,
     description: null,
-    isOverLimit: null,
-    deanApprovalStatus: null,
+    isOverLimit: 0,
+    deanApprovalStatus: 0,
     deanApprovalBy: null,
     deanApprovalTime: null,
-    appealStatus: null,
+    appealStatus: 0,
     appealReason: null,
     appealReply: null,
-    status: null,
+    status: 0,
     createBy: null,
     createTime: null,
     updateBy: null,
@@ -424,7 +296,7 @@ function handleSelectionChange(selection) {
 function handleAdd() {
   reset()
   open.value = true
-  title.value = "添加工作量明细主表"
+  title.value = "添加工作量明细"
 }
 
 /** 修改按钮操作 */
@@ -434,7 +306,7 @@ function handleUpdate(row) {
   getWorkloadItem(_id).then(response => {
     form.value = response.data
     open.value = true
-    title.value = "修改工作量明细主表"
+    title.value = "修改工作量明细"
   })
 }
 
@@ -462,12 +334,40 @@ function submitForm() {
 /** 删除按钮操作 */
 function handleDelete(row) {
   const _ids = row.id || ids.value
-  proxy.$modal.confirm('是否确认删除工作量明细主表编号为"' + _ids + '"的数据项？').then(function() {
+  proxy.$modal.confirm('是否确认删除选中的工作量明细？').then(function() {
     return delWorkloadItem(_ids)
   }).then(() => {
     getList()
     proxy.$modal.msgSuccess("删除成功")
   }).catch(() => {})
+}
+
+/** 单条重算 */
+function handleRecalcItem(row) {
+  proxy.$modal.confirm(`确认重算「${userLabel(row.userId)}」的明细 #${row.id} 吗？`).then(function() {
+    return recalcItem(row.id)
+  }).then(() => {
+    getList()
+    proxy.$modal.msgSuccess("重算完成")
+  }).catch(() => {})
+}
+
+/** 按教师+学期批量重算 */
+function handleRecalcSemester() {
+  const { userId, semester } = queryParams.value
+  if (!userId || !semester) {
+    proxy.$modal.alertWarning('请先在搜索栏选择「教师」并填写「学年学期」')
+    return
+  }
+  proxy.$modal.confirm(`确认重算「${userLabel(userId)}」${semester} 学期全部未冻结明细吗？`).then(function() {
+    recalcLoading.value = true
+    return recalcItems(userId, semester)
+  }).then((res) => {
+    getList()
+    proxy.$modal.msgSuccess(`重算完成，共 ${res.data ?? 0} 条明细`)
+  }).catch(() => {}).finally(() => {
+    recalcLoading.value = false
+  })
 }
 
 /** 导出按钮操作 */
@@ -479,3 +379,10 @@ function handleExport() {
 
 getList()
 </script>
+
+<style scoped>
+.workload-num {
+  font-weight: 600;
+  color: var(--el-color-primary);
+}
+</style>
