@@ -37,6 +37,9 @@
         <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['system:teachingTask:remove']">删除</el-button>
       </el-col>
       <el-col :span="1.5">
+        <el-button type="info" plain icon="Upload2" @click="handleImport" v-hasPermi="['system:teachingTask:import']">Excel导入</el-button>
+      </el-col>
+      <el-col :span="1.5">
         <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['system:teachingTask:export']">导出</el-button>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
@@ -83,6 +86,47 @@
       v-model:limit="queryParams.pageSize"
       @pagination="getList"
     />
+
+    <!-- Excel 导入对话框 -->
+    <el-dialog title="Excel 导入教学任务" v-model="importOpen" width="500px" append-to-body>
+      <el-upload
+        ref="uploadRef"
+        :auto-upload="false"
+        :limit="1"
+        accept=".xlsx,.xls"
+        :on-exceed="handleExceed"
+        :on-change="handleFileChange"
+        :file-list="importFileList"
+        drag
+      >
+        <el-icon class="el-icon--upload"><upload-filled /></el-icon>
+        <div class="el-upload__text">将 Excel 文件拖到此处，或<em>点击上传</em></div>
+        <template #tip>
+          <div class="el-upload__tip">
+            <el-button type="primary" link @click="handleDownloadTemplate">下载导入模板</el-button>
+            <span style="margin-left: 8px; color: #999;">仅支持 .xlsx / .xls 文件</span>
+          </div>
+        </template>
+      </el-upload>
+      <div v-if="importResult" style="margin-top: 16px;">
+        <el-alert :type="importResult.failCount > 0 ? 'warning' : 'success'" :closable="false">
+          <template #title>
+            导入完成：成功 <b>{{ importResult.successCount }}</b> 条，
+            失败 <b>{{ importResult.failCount }}</b> 条，
+            跳过 <b>{{ importResult.skipCount }}</b> 条
+          </template>
+        </el-alert>
+        <div v-if="importResult.errors && importResult.errors.length > 0" style="margin-top: 8px; max-height: 200px; overflow-y: auto;">
+          <p v-for="(err, idx) in importResult.errors" :key="idx" style="color: #e6a23c; font-size: 13px; margin: 4px 0;">
+            {{ err }}
+          </p>
+        </div>
+      </div>
+      <template #footer>
+        <el-button @click="importOpen = false">关闭</el-button>
+        <el-button type="primary" :loading="importLoading" @click="submitImport">开始导入</el-button>
+      </template>
+    </el-dialog>
 
     <!-- 添加或修改导入教学任务对话框 -->
     <el-dialog :title="title" v-model="open" width="720px" append-to-body>
@@ -193,9 +237,10 @@
 </template>
 
 <script setup name="TeachingTask">
-import { listTeachingTask, getTeachingTask, delTeachingTask, addTeachingTask, updateTeachingTask } from "@/api/system/teachingTask"
+import { listTeachingTask, getTeachingTask, delTeachingTask, addTeachingTask, updateTeachingTask, importTeachingTask } from "@/api/system/teachingTask"
 import UserSelect from '@/components/UserSelect/index.vue'
 import { useUserMap } from '@/utils/userCache'
+import { UploadFilled } from '@element-plus/icons-vue'
 import {
   educationLevelOptions, majorCategoryOptions, courseNatureOptions,
   courseLevelOptions, courseRoleOptions, normalStatusMap
@@ -213,6 +258,13 @@ const single = ref(true)
 const multiple = ref(true)
 const total = ref(0)
 const title = ref("")
+
+// 导入相关
+const importOpen = ref(false)
+const importLoading = ref(false)
+const importFileList = ref([])
+const importResult = ref(null)
+const importFile = ref(null)
 
 const data = reactive({
   form: {},
@@ -360,6 +412,50 @@ function handleExport() {
   proxy.download('system/teachingTask/export', {
     ...queryParams.value
   }, `teachingTask_${new Date().getTime()}.xlsx`)
+}
+
+/** Excel 导入按钮操作 */
+function handleImport() {
+  importFileList.value = []
+  importResult.value = null
+  importFile.value = null
+  importOpen.value = true
+}
+
+/** 文件选择 */
+function handleFileChange(file) {
+  importFile.value = file.raw
+}
+
+/** 文件数量超出限制 */
+function handleExceed() {
+  proxy.$modal.msgWarning('只能上传 1 个文件，请先移除已选文件')
+}
+
+/** 下载导入模板 */
+function handleDownloadTemplate() {
+  proxy.download('system/teachingTask/importTemplate', {}, '教学任务导入模板.xlsx')
+}
+
+/** 提交导入 */
+function submitImport() {
+  if (!importFile.value) {
+    proxy.$modal.msgWarning('请先选择 Excel 文件')
+    return
+  }
+  importLoading.value = true
+  importResult.value = null
+  importTeachingTask(importFile.value).then(response => {
+    importResult.value = response.data
+    importLoading.value = false
+    if (response.data.failCount === 0) {
+      proxy.$modal.msgSuccess(`导入成功，共 ${response.data.successCount} 条`)
+      getList()
+    }
+  }).catch(err => {
+    importLoading.value = false
+    proxy.$modal.msgError('导入失败: ' + (err.message || '未知错误'))
+  })
 }
 
 getList()

@@ -80,3 +80,21 @@ export function formatAmount(v, digits = 2) {
 export function dash(v) {
   return v === null || v === undefined || v === '' ? '-' : v
 }
+
+/**
+ * 根据当前日期推算学年学期
+ * 规则：9月~次年1月 = 第一学期，2月~8月 = 第二学期
+ * @returns {string} 如 '2025-2026-1'
+ */
+export function getCurrentSemester() {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = now.getMonth() + 1 // 1-12
+  if (month >= 9) {
+    return `${year}-${year + 1}-1`
+  } else if (month >= 2) {
+    return `${year - 1}-${year}-2`
+  } else {
+    return `${year - 1}-${year}-1`
+  }
+}

@@ -42,3 +42,14 @@ export function delTeachingTask(id) {
     method: 'delete'
   })
 }
+
+// Excel 导入教学任务
+export function importTeachingTask(file) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request({
+    url: '/system/teachingTask/importExcel',
+    method: 'post',
+    data: formData
+  })
+}
