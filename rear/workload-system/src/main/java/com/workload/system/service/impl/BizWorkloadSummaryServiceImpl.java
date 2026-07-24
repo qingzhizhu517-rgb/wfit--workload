@@ -84,7 +84,7 @@ public class BizWorkloadSummaryServiceImpl implements IBizWorkloadSummaryService
 
     /**
      * 删除学期工作量汇总信息
-     * 
+     *
      * @param id 学期工作量汇总主键
      * @return 结果
      */
@@ -92,5 +92,18 @@ public class BizWorkloadSummaryServiceImpl implements IBizWorkloadSummaryService
     public int deleteBizWorkloadSummaryById(Long id)
     {
         return bizWorkloadSummaryMapper.deleteBizWorkloadSummaryById(id);
+    }
+
+    /**
+     * 按教师+学期查询汇总
+     */
+    @Override
+    public BizWorkloadSummary selectBizWorkloadSummaryByUserAndSemester(Long userId, String semester)
+    {
+        BizWorkloadSummary query = new BizWorkloadSummary();
+        query.setUserId(userId);
+        query.setSemester(semester);
+        List<BizWorkloadSummary> list = bizWorkloadSummaryMapper.selectBizWorkloadSummaryList(query);
+        return (list != null && !list.isEmpty()) ? list.get(0) : null;
     }
 }

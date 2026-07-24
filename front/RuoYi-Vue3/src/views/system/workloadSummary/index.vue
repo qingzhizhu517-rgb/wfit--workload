@@ -81,10 +81,15 @@
           <biz-tag :value="scope.row.status" :map="summaryStatusMap" />
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" width="210" fixed="right" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" width="280" fixed="right" class-name="small-padding fixed-width">
         <template #default="scope">
           <el-button link type="primary" icon="Refresh" @click="handleRecalcSummary(scope.row)" v-hasPermi="['system:workloadSummary:edit']">重算</el-button>
           <el-button link type="primary" icon="View" @click="handleDetail(scope.row)" v-hasPermi="['system:workloadSummary:query']">详情</el-button>
+          <el-button v-if="scope.row.status === 0" link type="success" icon="Promotion" @click="handleSubmit(scope.row)" v-hasPermi="['system:audit:submit']">提交</el-button>
+          <el-button v-if="scope.row.status === 1" link type="success" icon="Select" @click="handleApprove(scope.row)" v-hasPermi="['system:audit:approve']">通过</el-button>
+          <el-button v-if="scope.row.status === 1" link type="warning" icon="Close" @click="handleReject(scope.row)" v-hasPermi="['system:audit:reject']">驳回</el-button>
+          <el-button v-if="scope.row.status === 2" link type="primary" icon="EditPen" @click="handleSign(scope.row)" v-hasPermi="['system:audit:sign']">签字</el-button>
+          <el-button v-if="scope.row.status === 3" link type="info" icon="Unlock" @click="handleUnlock(scope.row)" v-hasPermi="['system:audit:unlock']">解锁</el-button>
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['system:workloadSummary:remove']">删除</el-button>
         </template>
       </el-table-column>
@@ -176,6 +181,7 @@
 <script setup name="WorkloadSummary">
 import { listWorkloadSummary, delWorkloadSummary } from "@/api/system/workloadSummary"
 import { recalcSummary, recalcAll, previewSummary, genG11 } from "@/api/system/calc"
+import { auditSubmit, auditApprove, auditReject, auditSign, auditUnlock } from "@/api/system/audit"
 import UserSelect from '@/components/UserSelect/index.vue'
 import { useUserMap } from '@/utils/userCache'
 import { summaryStatusMap, yesNoMap, formatAmount } from '@/utils/bizDict'
@@ -336,6 +342,61 @@ function handleExport() {
   proxy.download('system/workloadSummary/export', {
     ...queryParams.value
   }, `workloadSummary_${new Date().getTime()}.xlsx`)
+}
+
+/** 提交审核 */
+function handleSubmit(row) {
+  proxy.$modal.confirm(`确认提交「${userLabel(row.userId)}」${row.semester} 的工作量汇总审核？`).then(() => {
+    return auditSubmit(row.id)
+  }).then(() => {
+    getList()
+    proxy.$modal.msgSuccess('已提交审核')
+  }).catch(() => {})
+}
+
+/** 审核通过 */
+function handleApprove(row) {
+  proxy.$modal.confirm(`确认审核通过「${userLabel(row.userId)}」${row.semester} 的工作量汇总？`).then(() => {
+    return auditApprove(row.id)
+  }).then(() => {
+    getList()
+    proxy.$modal.msgSuccess('审核通过，已转院领导签字')
+  }).catch(() => {})
+}
+
+/** 驳回 */
+function handleReject(row) {
+  proxy.$modal.prompt('请输入驳回原因（可选）', '驳回', {
+    confirmButtonText: '确定驳回',
+    cancelButtonText: '取消',
+    inputPattern: null,
+    inputErrorMessage: ''
+  }).then(({ value }) => {
+    return auditReject(row.id, value || '')
+  }).then(() => {
+    getList()
+    proxy.$modal.msgSuccess('已驳回，退回填报中')
+  }).catch(() => {})
+}
+
+/** 院领导签字 */
+function handleSign(row) {
+  proxy.$modal.confirm(`确认签字确认「${userLabel(row.userId)}」${row.semester} 的工作量汇总？签字后将锁定。`).then(() => {
+    return auditSign(row.id)
+  }).then(() => {
+    getList()
+    proxy.$modal.msgSuccess('签字确认完成，汇总已锁定')
+  }).catch(() => {})
+}
+
+/** 解锁 */
+function handleUnlock(row) {
+  proxy.$modal.confirm(`确认解锁「${userLabel(row.userId)}」${row.semester} 的工作量汇总？解锁后可重新编辑。`).then(() => {
+    return auditUnlock(row.id)
+  }).then(() => {
+    getList()
+    proxy.$modal.msgSuccess('已解锁')
+  }).catch(() => {})
 }
 
 getList()

@@ -21,11 +21,16 @@ public interface IBizWorkloadSummaryService
 
     /**
      * 查询学期工作量汇总列表
-     * 
+     *
      * @param bizWorkloadSummary 学期工作量汇总
      * @return 学期工作量汇总集合
      */
     public List<BizWorkloadSummary> selectBizWorkloadSummaryList(BizWorkloadSummary bizWorkloadSummary);
+
+    /**
+     * 按教师+学期查询汇总
+     */
+    public BizWorkloadSummary selectBizWorkloadSummaryByUserAndSemester(Long userId, String semester);
 
     /**
      * 新增学期工作量汇总
