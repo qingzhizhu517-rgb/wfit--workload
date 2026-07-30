@@ -38,6 +38,9 @@
         <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['system:workloadSummary:export']">导出</el-button>
       </el-col>
       <el-col :span="1.5">
+        <el-button type="success" plain icon="Promotion" :disabled="multiple" @click="handleBatchSubmit" v-hasPermi="['system:audit:submit']">批量提交</el-button>
+      </el-col>
+      <el-col :span="1.5">
         <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['system:workloadSummary:remove']">删除</el-button>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
@@ -181,7 +184,7 @@
 <script setup name="WorkloadSummary">
 import { listWorkloadSummary, delWorkloadSummary } from "@/api/system/workloadSummary"
 import { recalcSummary, recalcAll, previewSummary, genG11 } from "@/api/system/calc"
-import { auditSubmit, auditApprove, auditReject, auditSign, auditUnlock } from "@/api/system/audit"
+import { auditSubmit, auditApprove, auditReject, auditSign, auditUnlock, auditBatchSubmit } from "@/api/system/audit"
 import UserSelect from '@/components/UserSelect/index.vue'
 import { useUserMap } from '@/utils/userCache'
 import { summaryStatusMap, yesNoMap, formatAmount } from '@/utils/bizDict'
@@ -396,6 +399,16 @@ function handleUnlock(row) {
   }).then(() => {
     getList()
     proxy.$modal.msgSuccess('已解锁')
+  }).catch(() => {})
+}
+
+/** 批量提交审核 */
+function handleBatchSubmit() {
+  proxy.$modal.confirm(`确认批量提交选中的 ${ids.value.length} 条汇总记录审核？`).then(() => {
+    return auditBatchSubmit(ids.value)
+  }).then(() => {
+    getList()
+    proxy.$modal.msgSuccess('批量提交成功')
   }).catch(() => {})
 }
 
