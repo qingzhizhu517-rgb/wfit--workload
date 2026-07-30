@@ -191,6 +191,7 @@ import { useRouter } from 'vue-router'
 import { Document, Warning, Download } from '@element-plus/icons-vue'
 import { getTeacherStats } from '@/api/system/dashboard'
 import { listWorkloadItem } from '@/api/system/workloadItem'
+import { exportPersonalWorkload } from '@/api/system/export'
 import useUserStore from '@/store/modules/user'
 
 const router = useRouter()
@@ -277,7 +278,27 @@ async function fetchRecentItems() {
 }
 
 function handleExport() {
-  proxy.$modal.msgSuccess('导出功能开发中，敬请期待')
+  proxy.$prompt('请输入学年学期（如 2025-2026-1）', '导出个人工作量明细', {
+    confirmButtonText: '导出',
+    cancelButtonText: '取消',
+    inputPattern: /^\d{4}-\d{4}-[12]$/,
+    inputErrorMessage: '格式如 2025-2026-1',
+    inputPlaceholder: '2025-2026-1'
+  }).then(({ value }) => {
+    proxy.$modal.loading('正在导出...')
+    exportPersonalWorkload({ userId: userStore.id, semester: value }).then(res => {
+      const blob = new Blob([res], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `工作量明细_${userStore.nickName || userStore.id}_${value}.xlsx`
+      link.click()
+      window.URL.revokeObjectURL(url)
+      proxy.$modal.closeLoading()
+    }).catch(() => {
+      proxy.$modal.closeLoading()
+    })
+  }).catch(() => {})
 }
 
 onMounted(() => {

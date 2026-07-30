@@ -79,8 +79,8 @@
             <el-button type="success" plain icon="Edit" @click="router.push('/system/workloadItem')">
               录入特殊工作量
             </el-button>
-            <el-button type="warning" plain icon="Download" @click="router.push('/system/workloadSummary')">
-              导出附件一报表
+            <el-button type="warning" plain icon="Download" @click="handleExportPaySummary">
+              导出绩效酬金统计表
             </el-button>
             <el-button type="info" plain icon="Setting" @click="router.push('/system/workloadRule')">
               基础系数配置
@@ -145,6 +145,7 @@ import {
   Download, Setting, WarningFilled, ArrowRight, Clock, Money
 } from '@element-plus/icons-vue'
 import { getAdminStats, getCollegeStats } from '@/api/system/dashboard'
+import { exportPaySummary } from '@/api/system/export'
 
 const router = useRouter()
 const { proxy } = getCurrentInstance()
@@ -188,6 +189,30 @@ async function fetchStats() {
   } finally {
     loading.value = false
   }
+}
+
+function handleExportPaySummary() {
+  proxy.$prompt('请输入学年学期（如 2025-2026-1）', '导出绩效酬金统计表', {
+    confirmButtonText: '导出',
+    cancelButtonText: '取消',
+    inputPattern: /^\d{4}-\d{4}-[12]$/,
+    inputErrorMessage: '格式如 2025-2026-1',
+    inputPlaceholder: '2025-2026-1'
+  }).then(({ value }) => {
+    proxy.$modal.loading('正在导出...')
+    exportPaySummary({ semester: value }).then(res => {
+      const blob = new Blob([res], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `绩效酬金统计_${value}.xlsx`
+      link.click()
+      window.URL.revokeObjectURL(url)
+      proxy.$modal.closeLoading()
+    }).catch(() => {
+      proxy.$modal.closeLoading()
+    })
+  }).catch(() => {})
 }
 
 async function fetchCollegeStats() {
