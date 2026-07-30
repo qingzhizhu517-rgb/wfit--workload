@@ -306,7 +306,7 @@ function handleRecalcPay() {
 
 /** 跳转其他酬金明细 */
 function goAllowance(row) {
-  router.push({ path: '/workload/allowanceItem', query: { userId: row.userId, semester: row.semester } })
+  router.push({ path: '/system/allowanceItem', query: { userId: row.userId, semester: row.semester } })
 }
 
 /** 导出按钮操作 */
