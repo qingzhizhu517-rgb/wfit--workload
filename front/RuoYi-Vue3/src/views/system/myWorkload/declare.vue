@@ -37,8 +37,8 @@
             </el-form-item>
           </el-col>
           <el-col :span="12" v-if="form.itemType === 'G11'">
-            <el-form-item label="岗位类型" prop="description">
-              <el-select v-model="form.description" placeholder="请选择岗位" style="width: 100%">
+            <el-form-item label="岗位类型" prop="positionType">
+              <el-select v-model="form.positionType" placeholder="请选择岗位" style="width: 100%">
                 <el-option label="班主任" value="班主任" />
                 <el-option label="教研室主任" value="教研室主任" />
                 <el-option label="系主任" value="系主任" />
@@ -132,6 +132,7 @@ const form = ref({
   itemType: 'G8',
   courseName: '',
   calculatedWorkload: null,
+  positionType: '',
   description: '',
   remark: ''
 })
@@ -160,7 +161,7 @@ const namePlaceholder = computed(() => {
 })
 
 function onTypeChange() {
-  form.value.description = ''
+  form.value.positionType = ''
   form.value.courseName = ''
 }
 
@@ -182,6 +183,10 @@ function submitForm() {
       sourceType: 'SELF',
       status: 0
     }
+    // G11: 将岗位类型合并到 description
+    if (data.itemType === 'G11' && data.positionType) {
+      data.description = data.positionType + (data.description ? ' - ' + data.description : '')
+    }
     addWorkloadItem(data).then(() => {
       proxy.$modal.msgSuccess('申报成功')
       submitting.value = false
@@ -199,6 +204,7 @@ function resetForm() {
     itemType: 'G8',
     courseName: '',
     calculatedWorkload: null,
+    positionType: '',
     description: '',
     remark: ''
   }
