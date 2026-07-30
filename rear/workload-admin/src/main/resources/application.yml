@@ -96,8 +96,8 @@ spring:
 token:
   # 令牌自定义标识
   header: Authorization
-  # 令牌密钥
-  secret: abcdefghijklmnopqrstuvwxyz1234567890
+  # 令牌密钥（HS512 要求至少 64 字节）
+  secret: /utUJnBW3LzgzgrdrszvrZgSljnkSkkoIhlYC1MbUadWsnrzIoLRnW0Rq0OdUtS6
   # 令牌有效期（默认30分钟）
   expireTime: 30
 
@@ -128,7 +128,7 @@ springdoc:
     - group: 'default'
       display-name: '测试模块'
       paths-to-match: '/**'
-      packages-to-scan: com.workload.web.controller.tool
+      packages-to-scan: com.workload.system.controller
 
 # 防盗链配置
 referer:
