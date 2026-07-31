@@ -5,7 +5,7 @@
         <user-select v-model="queryParams.userId" style="width: 200px" />
       </el-form-item>
       <el-form-item label="学年学期" prop="semester">
-        <el-input v-model="queryParams.semester" placeholder="如 2025-2026-1" clearable style="width: 150px" @keyup.enter="handleQuery" />
+        <semester-select v-model="queryParams.semester" width="170px" />
       </el-form-item>
       <el-form-item label="状态" prop="status">
         <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 120px">
@@ -84,16 +84,25 @@
           <biz-tag :value="scope.row.status" :map="summaryStatusMap" />
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" width="280" fixed="right" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" width="220" fixed="right" class-name="small-padding fixed-width">
         <template #default="scope">
-          <el-button link type="primary" icon="Refresh" @click="handleRecalcSummary(scope.row)" v-hasPermi="['system:workloadSummary:edit']">重算</el-button>
           <el-button link type="primary" icon="View" @click="handleDetail(scope.row)" v-hasPermi="['system:workloadSummary:query']">详情</el-button>
+          <!-- 审批操作按钮：根据状态显示 -->
           <el-button v-if="scope.row.status === 0" link type="success" icon="Promotion" @click="handleSubmit(scope.row)" v-hasPermi="['system:audit:submit']">提交</el-button>
           <el-button v-if="scope.row.status === 1" link type="success" icon="Select" @click="handleApprove(scope.row)" v-hasPermi="['system:audit:approve']">通过</el-button>
           <el-button v-if="scope.row.status === 1" link type="warning" icon="Close" @click="handleReject(scope.row)" v-hasPermi="['system:audit:reject']">驳回</el-button>
           <el-button v-if="scope.row.status === 2" link type="primary" icon="EditPen" @click="handleSign(scope.row)" v-hasPermi="['system:audit:sign']">签字</el-button>
           <el-button v-if="scope.row.status === 3" link type="info" icon="Unlock" @click="handleUnlock(scope.row)" v-hasPermi="['system:audit:unlock']">解锁</el-button>
-          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['system:workloadSummary:remove']">删除</el-button>
+          <!-- 更多操作下拉 -->
+          <el-dropdown v-hasPermi="['system:workloadSummary:edit']" @command="(cmd) => handleMoreCmd(cmd, scope.row)" trigger="click">
+            <el-button link type="primary" icon="MoreFilled" />
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="recalc" icon="Refresh">重算</el-dropdown-item>
+                <el-dropdown-item command="delete" icon="Delete" divided>删除</el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
         </template>
       </el-table-column>
     </el-table>
@@ -107,8 +116,8 @@
     />
 
     <!-- 汇总详情抽屉 -->
-    <el-drawer v-model="detailOpen" title="学期汇总详情" size="480px">
-      <el-descriptions :column="1" border v-if="detailRow">
+    <el-drawer v-model="detailOpen" title="学期汇总详情" size="640px">
+      <el-descriptions :column="2" border v-if="detailRow">
         <el-descriptions-item label="教师">{{ userLabel(detailRow.userId) }}</el-descriptions-item>
         <el-descriptions-item label="学年学期">{{ detailRow.semester }}</el-descriptions-item>
         <el-descriptions-item label="职称快照">{{ detailRow.title || '-' }}</el-descriptions-item>
@@ -147,7 +156,7 @@
           <user-select v-model="previewQuery.userId" style="width: 200px" />
         </el-form-item>
         <el-form-item label="学年学期">
-          <el-input v-model="previewQuery.semester" placeholder="如 2025-2026-1" style="width: 150px" />
+          <semester-select v-model="previewQuery.semester" width="170px" />
         </el-form-item>
         <el-form-item>
           <el-button type="primary" icon="View" :loading="previewLoading" @click="doPreview">预览</el-button>
@@ -186,6 +195,7 @@ import { listWorkloadSummary, delWorkloadSummary } from "@/api/system/workloadSu
 import { recalcSummary, recalcAll, previewSummary, genG11 } from "@/api/system/calc"
 import { auditSubmit, auditApprove, auditReject, auditSign, auditUnlock, auditBatchSubmit } from "@/api/system/audit"
 import UserSelect from '@/components/UserSelect/index.vue'
+import SemesterSelect from '@/components/SemesterSelect/index.vue'
 import { useUserMap } from '@/utils/userCache'
 import { summaryStatusMap, yesNoMap, formatAmount } from '@/utils/bizDict'
 
@@ -400,6 +410,15 @@ function handleUnlock(row) {
     getList()
     proxy.$modal.msgSuccess('已解锁')
   }).catch(() => {})
+}
+
+/** 更多操作下拉命令 */
+function handleMoreCmd(cmd, row) {
+  if (cmd === 'recalc') {
+    handleRecalcSummary(row)
+  } else if (cmd === 'delete') {
+    handleDelete(row)
+  }
 }
 
 /** 批量提交审核 */

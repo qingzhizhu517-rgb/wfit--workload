@@ -5,7 +5,7 @@
         <user-select v-model="queryParams.userId" style="width: 200px" />
       </el-form-item>
       <el-form-item label="学年学期" prop="semester">
-        <el-input v-model="queryParams.semester" placeholder="如 2025-2026-1" clearable style="width: 150px" @keyup.enter="handleQuery" />
+        <semester-select v-model="queryParams.semester" width="170px" />
       </el-form-item>
       <el-form-item label="工作量类别" prop="itemType">
         <el-select v-model="queryParams.itemType" placeholder="请选择类别" clearable style="width: 150px">
@@ -46,7 +46,7 @@
 
     <el-table v-loading="loading" :data="workloadItemList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="50" align="center" />
-      <el-table-column label="ID" align="center" prop="id" width="70" />
+
       <el-table-column label="教师" align="center" prop="userId" width="150">
         <template #default="scope">{{ userLabel(scope.row.userId) }}</template>
       </el-table-column>
@@ -118,7 +118,7 @@
           </el-col>
           <el-col :span="12">
             <el-form-item label="学年学期" prop="semester">
-              <el-input v-model="form.semester" placeholder="如 2025-2026-1" maxlength="20" />
+              <semester-select v-model="form.semester" width="100%" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -178,6 +178,7 @@
 import { listWorkloadItem, getWorkloadItem, delWorkloadItem, addWorkloadItem, updateWorkloadItem } from "@/api/system/workloadItem"
 import { recalcItem, recalcItems } from "@/api/system/calc"
 import UserSelect from '@/components/UserSelect/index.vue'
+import SemesterSelect from '@/components/SemesterSelect/index.vue'
 import { useUserMap } from '@/utils/userCache'
 import {
   itemTypeOptions, educationLevelOptions, majorCategoryOptions,

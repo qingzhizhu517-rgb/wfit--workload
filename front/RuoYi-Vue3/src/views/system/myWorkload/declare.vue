@@ -12,7 +12,7 @@
         <el-row :gutter="24">
           <el-col :span="12">
             <el-form-item label="学年学期" prop="semester">
-              <el-input v-model="form.semester" placeholder="如 2025-2026-1" maxlength="20" />
+              <semester-select v-model="form.semester" width="100%" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -34,6 +34,7 @@
             <el-form-item label="核定工作量" prop="calculatedWorkload">
               <el-input-number v-model="form.calculatedWorkload" :min="0.1" :precision="1"
                                controls-position="right" style="width: 100%" />
+              <div class="form-tip">请根据管理办法填写核定学时，G8/G9 由教务处确认</div>
             </el-form-item>
           </el-col>
           <el-col :span="12" v-if="form.itemType === 'G11'">
@@ -91,7 +92,11 @@
             <el-tag :type="statusTagMap[scope.row.status]" size="small">{{ statusLabelMap[scope.row.status] }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="申报时间" prop="createTime" width="160" />
+        <el-table-column label="申报时间" width="160">
+          <template #default="scope">
+            {{ scope.row.createTime ? scope.row.createTime.replace('T', ' ').substring(0, 16) : '-' }}
+          </template>
+        </el-table-column>
         <el-table-column label="操作" width="100" align="center">
           <template #default="scope">
             <el-button link type="danger" size="small" icon="Delete"
@@ -110,6 +115,7 @@
 <script setup name="MyWorkloadDeclare">
 import { listWorkloadItem, addWorkloadItem, delWorkloadItem } from "@/api/system/workloadItem"
 import { getCurrentSemester } from "@/utils/bizDict"
+import SemesterSelect from '@/components/SemesterSelect/index.vue'
 import useUserStore from '@/store/modules/user'
 
 const { proxy } = getCurrentInstance()
@@ -138,13 +144,11 @@ const form = ref({
 })
 
 const rules = {
-  semester: [
-    { required: true, message: '请输入学年学期', trigger: 'blur' },
-    { pattern: /^\d{4}-\d{4}-[12]$/, message: '格式如 2025-2026-1', trigger: 'blur' }
-  ],
+  semester: [{ required: true, message: '请选择学年学期', trigger: 'change' }],
   itemType: [{ required: true, message: '请选择工作量类别', trigger: 'change' }],
   courseName: [{ required: true, message: '请输入项目名称', trigger: 'blur' }],
-  calculatedWorkload: [{ required: true, message: '请输入核定工作量', trigger: 'blur' }]
+  calculatedWorkload: [{ required: true, message: '请输入核定工作量', trigger: 'blur' }],
+  positionType: [{ required: true, message: '请选择岗位类型', trigger: 'change' }]
 }
 
 const typeTagMap = { G8: 'success', G9: 'warning', G11: 'primary' }
@@ -175,6 +179,12 @@ function getMyList() {
 }
 
 function submitForm() {
+  // G11 时动态校验岗位类型
+  if (form.value.itemType === 'G11') {
+    rules.positionType[0].required = true
+  } else {
+    rules.positionType[0].required = false
+  }
   proxy.$refs['declareRef'].validate(valid => {
     if (!valid) return
     submitting.value = true
@@ -226,5 +236,20 @@ getMyList()
 <style scoped>
 :deep(.el-card__header) {
   padding: 12px 20px;
+}
+
+.form-tip {
+  font-size: 12px;
+  color: #909399;
+  line-height: 1.2;
+  margin-top: 4px;
+}
+
+:deep(.el-form-item) {
+  margin-bottom: 18px;
+}
+
+:deep(.el-divider) {
+  margin: 16px 0;
 }
 </style>
