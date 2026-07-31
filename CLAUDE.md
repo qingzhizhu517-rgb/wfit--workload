@@ -143,6 +143,7 @@ mysql -u root -p wflg_workload < rear/sql/05_biz_menu.sql
 - 数据库: `127.0.0.1:3306/wflg_workload`，用户 `root`，密码 `123456` (application-druid.yml)
 - Redis: `localhost:6379`，无密码
 - 文件上传路径: `rear/uploadPath/`
+- 前端开发端口: `3000` (vite.config.js)
 - 前端 API 代理: 开发环境默认代理到 `http://localhost:8084`
 - 学期校历: `application.yml` 的 `wl.semester` 节点
 

@@ -96,7 +96,7 @@ npm install --registry=https://registry.npmmirror.com
 npm run dev
 ```
 
-前端开发服务器默认运行在 http://localhost:80。
+前端开发服务器默认运行在 http://localhost:3000。
 
 ### 默认账号
 
