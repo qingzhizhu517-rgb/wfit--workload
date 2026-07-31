@@ -134,8 +134,8 @@ INSERT INTO biz_wl_course_design (item_id, J4, R4) VALUES
 -- 7.2 G5 毕业论文明细（biz_wl_thesis）
 -- -----------------------------------------------------------
 INSERT INTO biz_wl_thesis (item_id, R5, K5, education_level, major) VALUES
--- 李四: 指导10人文史类本科论文 (公式: R5 × K5 = 10 × 9 = 90.0)
-(602, 10, 9.00, '本科', '文史类');
+-- 李四: 指导10人文史类本科论文 (公式: R5 × K5 = 10 × 6 = 60.0)
+(602, 10, 6.00, '本科', '文史类');
 
 -- -----------------------------------------------------------
 -- 7.3 G6 集中实习明细（biz_wl_concentrated_internship）

@@ -137,7 +137,7 @@
 </template>
 
 <script setup name="AdminDashboard">
-import { ref, reactive, onMounted, nextTick, getCurrentInstance } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, nextTick, getCurrentInstance } from 'vue'
 import { useRouter } from 'vue-router'
 import * as echarts from 'echarts'
 import {
@@ -328,6 +328,14 @@ onMounted(async () => {
   await fetchStats()
   await fetchCollegeStats()
   window.addEventListener('resize', handleResize)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize)
+  if (chartInstance) {
+    chartInstance.dispose()
+    chartInstance = null
+  }
 })
 </script>
 

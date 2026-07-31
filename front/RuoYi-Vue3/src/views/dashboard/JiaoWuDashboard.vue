@@ -131,7 +131,7 @@
 </template>
 
 <script setup name="JiaoWuDashboard">
-import { ref, reactive, onMounted, getCurrentInstance } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, getCurrentInstance } from 'vue'
 import { useRouter } from 'vue-router'
 import * as echarts from 'echarts'
 import {
@@ -153,6 +153,12 @@ let chartInstance = null
 
 const pendingCount = ref(0)
 const pendingList = ref([])
+const auditCounts = reactive({
+  pending: 0,    // 教务助理待审
+  signed: 0,     // 院领导待签
+  completed: 0,  // 已完结
+  draft: 0       // 填报中
+})
 
 const stats = reactive({
   taskCount: 0,
@@ -195,6 +201,23 @@ async function fetchPendingList() {
   }
 }
 
+async function fetchAuditCounts() {
+  try {
+    const statuses = [
+      { key: 'draft', status: 0 },
+      { key: 'pending', status: 1 },
+      { key: 'signed', status: 2 },
+      { key: 'completed', status: 3 }
+    ]
+    for (const s of statuses) {
+      const res = await listWorkloadSummary({ auditStatus: s.status, pageNum: 1, pageSize: 1 })
+      auditCounts[s.key] = res.total || 0
+    }
+  } catch (e) {
+    // ignore
+  }
+}
+
 function handleExportPaySummary() {
   proxy.$prompt('请输入学年学期（如 2025-2026-1）', '导出绩效酬金统计表', {
     confirmButtonText: '导出',
@@ -226,10 +249,10 @@ function renderChart() {
   }
 
   const auditData = [
-    { value: pendingCount.value, name: '教务助理待审', itemStyle: { color: '#e6a23c' } },
-    { value: 0, name: '院领导待签', itemStyle: { color: '#409eff' } },
-    { value: 0, name: '已完结', itemStyle: { color: '#67c23a' } },
-    { value: 0, name: '填报中', itemStyle: { color: '#909399' } }
+    { value: auditCounts.draft, name: '填报中', itemStyle: { color: '#909399' } },
+    { value: auditCounts.pending, name: '教务助理待审', itemStyle: { color: '#e6a23c' } },
+    { value: auditCounts.signed, name: '院领导待签', itemStyle: { color: '#409eff' } },
+    { value: auditCounts.completed, name: '已完结', itemStyle: { color: '#67c23a' } }
   ]
 
   let option
@@ -272,8 +295,17 @@ function handleResize() {
 onMounted(async () => {
   await fetchStats()
   await fetchPendingList()
+  await fetchAuditCounts()
   renderChart()
   window.addEventListener('resize', handleResize)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize)
+  if (chartInstance) {
+    chartInstance.dispose()
+    chartInstance = null
+  }
 })
 </script>
 

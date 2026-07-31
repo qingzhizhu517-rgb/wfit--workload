@@ -94,12 +94,12 @@
           <el-button v-if="scope.row.status === 2" link type="primary" icon="EditPen" @click="handleSign(scope.row)" v-hasPermi="['system:audit:sign']">签字</el-button>
           <el-button v-if="scope.row.status === 3" link type="info" icon="Unlock" @click="handleUnlock(scope.row)" v-hasPermi="['system:audit:unlock']">解锁</el-button>
           <!-- 更多操作下拉 -->
-          <el-dropdown v-hasPermi="['system:workloadSummary:edit']" @command="(cmd) => handleMoreCmd(cmd, scope.row)" trigger="click">
+          <el-dropdown @command="(cmd) => handleMoreCmd(cmd, scope.row)" trigger="click">
             <el-button link type="primary" icon="MoreFilled" />
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item command="recalc" icon="Refresh">重算</el-dropdown-item>
-                <el-dropdown-item command="delete" icon="Delete" divided>删除</el-dropdown-item>
+                <el-dropdown-item command="recalc" icon="Refresh" v-hasPermi="['system:workloadSummary:edit']">重算</el-dropdown-item>
+                <el-dropdown-item command="delete" icon="Delete" divided v-hasPermi="['system:workloadSummary:remove']">删除</el-dropdown-item>
               </el-dropdown-menu>
             </template>
           </el-dropdown>
