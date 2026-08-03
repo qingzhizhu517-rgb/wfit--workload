@@ -56,7 +56,9 @@ wfit/
 │   │       ├── 02_biz_seed.sql        # 种子数据（字典11条、规则39条、费率4条）
 │   │       ├── 03_calc_rules.sql      # 补充规则（G11 封顶、酬金 A-G 费率）
 │   │       ├── 04_biz_test_data.sql   # 测试数据（6教师+9教学任务+12明细+4汇总）
-│   │       └── 05_biz_menu.sql        # 业务菜单 SQL（19 子菜单 + 按钮权限）
+│   │       ├── 05_biz_menu.sql        # 业务菜单 SQL（19 子菜单 + 按钮权限）
+│   │       ├── 06_test_accounts.sql   # 测试账号
+│   │       └── 07_fix_test_data.sql   # 测试数据修复脚本
 │   └── front/RuoYi-Vue3/             # 前端 Vue 3 项目
 │       └── src/
 │           ├── api/system/            # 31 个业务 API 文件
@@ -119,12 +121,15 @@ mvn spring-boot:run -pl workload-admin
 # 安装依赖
 npm install --registry=https://registry.npmmirror.com
 
-# 开发服务器 (默认 http://localhost:80)
+# 开发服务器 (端口 3000，见 vite.config.js)
 npm run dev
 
 # 生产构建
 npm run build:prod
 ```
+
+- API 代理：开发环境所有 `/dev-api` 前缀请求会代理到 `http://localhost:8084`（去掉前缀）
+- Swagger UI 代理：`/v3/api-docs/*` 直接透传到后端
 
 ### 数据库初始化
 
@@ -135,7 +140,14 @@ mysql -u root -p wflg_workload < rear/sql/02_biz_seed.sql
 mysql -u root -p wflg_workload < rear/sql/03_calc_rules.sql
 mysql -u root -p wflg_workload < rear/sql/04_biz_test_data.sql
 mysql -u root -p wflg_workload < rear/sql/05_biz_menu.sql
+# 可选：测试账号和修复脚本
+mysql -u root -p wflg_workload < rear/sql/06_test_accounts.sql
+mysql -u root -p wflg_workload < rear/sql/07_fix_test_data.sql
 ```
+
+## 测试
+
+项目当前无自动化测试套件（`spring-boot-starter-test` 未引入）。验证方式为启动后端 + 前端，通过 Swagger UI 或前端页面手动测试。
 
 ## 配置要点
 

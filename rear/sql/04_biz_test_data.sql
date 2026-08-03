@@ -145,6 +145,21 @@ INSERT INTO biz_wl_concentrated_internship (item_id, W, R6) VALUES
 (603, 4.00, 15);
 
 -- -----------------------------------------------------------
+-- 7.4 岗位任职（biz_role_assignment）
+-- -----------------------------------------------------------
+INSERT INTO biz_role_assignment (id, user_id, role_type, target, start_date, end_date, allowance_rate, semester, status) VALUES
+(1, 4, '班主任', '英语2301班', '2025-09-01', '2026-01-15', 180.00, '2025-2026-1', 0),
+(2, 3, '教研室主任', '数学教研室', '2025-09-01', '2026-01-15', 120.00, '2025-2026-1', 0)
+ON DUPLICATE KEY UPDATE target=VALUES(target);
+
+-- -----------------------------------------------------------
+-- 7.5 G11 管理服务明细（biz_wl_management）
+-- -----------------------------------------------------------
+INSERT INTO biz_wl_management (item_id, assignment_id, role_type, prorated_amount, proration_basis) VALUES
+-- 李四: 班主任, 按任职天数折算 (公式: 标准学时 × 任职天数/学期天数)
+(511, 1, '班主任', 180.00, '标准180学时 × 全学期任职');
+
+-- -----------------------------------------------------------
 -- 8. 触发计算引擎重算（通过直接更新汇总表模拟）
 --    实际生产中应调用 /system/calc/recalcSummary 接口
 -- -----------------------------------------------------------
