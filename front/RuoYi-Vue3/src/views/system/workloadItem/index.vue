@@ -46,6 +46,11 @@
 
     <el-table v-loading="loading" :data="workloadItemList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="50" align="center" />
+      <el-table-column label="序号" align="center" width="60">
+        <template #default="scope">
+          {{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}
+        </template>
+      </el-table-column>
 
       <el-table-column label="教师" align="center" prop="userId" width="150">
         <template #default="scope">{{ userLabel(scope.row.userId) }}</template>
@@ -90,8 +95,9 @@
           <biz-tag :value="scope.row.status" :map="workloadItemStatusMap" />
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" width="210" fixed="right" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" width="270" fixed="right" class-name="small-padding fixed-width">
         <template #default="scope">
+          <el-button link type="primary" icon="View" @click="handleDetail(scope.row)">详情</el-button>
           <el-button link type="primary" icon="Refresh" @click="handleRecalcItem(scope.row)" v-hasPermi="['system:workloadItem:edit']">重算</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['system:workloadItem:edit']">修改</el-button>
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['system:workloadItem:remove']">删除</el-button>
@@ -106,6 +112,52 @@
       v-model:limit="queryParams.pageSize"
       @pagination="getList"
     />
+
+    <!-- 查看详情对话框 -->
+    <el-dialog title="工作量明细详情" v-model="detailOpen" width="600px" append-to-body>
+      <el-descriptions :column="2" border>
+        <el-descriptions-item label="明细ID">{{ detailData.id }}</el-descriptions-item>
+        <el-descriptions-item label="教师">{{ userLabel(detailData.userId) }}</el-descriptions-item>
+        <el-descriptions-item label="学年学期">{{ detailData.semester }}</el-descriptions-item>
+        <el-descriptions-item label="类别">
+          <biz-tag :value="detailData.itemType" :map="itemTypeMap" />
+        </el-descriptions-item>
+        <el-descriptions-item label="来源">
+          <biz-tag :value="detailData.sourceType" :map="sourceTypeMap" />
+        </el-descriptions-item>
+        <el-descriptions-item label="核算工作量">
+          <span class="workload-num">{{ detailData.calculatedWorkload }}</span>
+        </el-descriptions-item>
+        <el-descriptions-item label="课程/事项" :span="2">{{ detailData.courseName || detailData.description || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="层次">{{ detailData.educationLevel || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="专业类别">{{ detailData.majorCategory || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="超标">
+          <biz-tag v-if="detailData.isOverLimit === 1" :value="1" :map="yesNoMap" />
+          <span v-else>否</span>
+        </el-descriptions-item>
+        <el-descriptions-item label="状态">
+          <biz-tag :value="detailData.status" :map="workloadItemStatusMap" />
+        </el-descriptions-item>
+        <el-descriptions-item label="院部审批">
+          <biz-tag :value="detailData.deanApprovalStatus" :map="approvalStatusMap" />
+        </el-descriptions-item>
+        <el-descriptions-item label="申诉状态">
+          <biz-tag :value="detailData.appealStatus" :map="appealStatusMap" />
+        </el-descriptions-item>
+        <el-descriptions-item label="教学任务ID">{{ detailData.taskId || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="岗位任职ID">{{ detailData.assignmentId || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="申诉原因" :span="2">{{ detailData.appealReason || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="申诉回复" :span="2">{{ detailData.appealReply || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="备注" :span="2">{{ detailData.remark || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="创建时间">{{ detailData.createTime || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="更新时间">{{ detailData.updateTime || '-' }}</el-descriptions-item>
+      </el-descriptions>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="detailOpen = false">关 闭</el-button>
+        </div>
+      </template>
+    </el-dialog>
 
     <!-- 添加或修改工作量明细对话框 -->
     <el-dialog :title="title" v-model="open" width="680px" append-to-body>
@@ -193,6 +245,8 @@ const sourceTypeMap = { IMPORT: { label: '导入', type: 'info' }, MANUAL: { lab
 
 const workloadItemList = ref([])
 const open = ref(false)
+const detailOpen = ref(false)
+const detailData = ref({})
 const loading = ref(true)
 const recalcLoading = ref(false)
 const showSearch = ref(true)
@@ -308,6 +362,14 @@ function handleUpdate(row) {
     form.value = response.data
     open.value = true
     title.value = "修改工作量明细"
+  })
+}
+
+/** 查看详情 */
+function handleDetail(row) {
+  getWorkloadItem(row.id).then(response => {
+    detailData.value = response.data
+    detailOpen.value = true
   })
 }
 

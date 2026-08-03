@@ -79,6 +79,11 @@
       </template>
 
       <el-table v-loading="listLoading" :data="myList" stripe>
+        <el-table-column label="序号" align="center" width="60">
+          <template #default="scope">
+            {{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}
+          </template>
+        </el-table-column>
         <el-table-column label="学期" prop="semester" width="120" />
         <el-table-column label="类别" prop="itemType" width="80">
           <template #default="scope">
@@ -97,8 +102,9 @@
             {{ scope.row.createTime ? scope.row.createTime.replace('T', ' ').substring(0, 16) : '-' }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="100" align="center">
+        <el-table-column label="操作" width="160" align="center">
           <template #default="scope">
+            <el-button link type="primary" size="small" icon="View" @click="handleDetail(scope.row)">详情</el-button>
             <el-button link type="danger" size="small" icon="Delete"
                        v-if="scope.row.status === 0"
                        @click="handleDelete(scope.row)">撤回</el-button>
@@ -109,11 +115,39 @@
       <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum"
                   v-model:limit="queryParams.pageSize" @pagination="getMyList" />
     </el-card>
+
+    <!-- 查看详情对话框 -->
+    <el-dialog title="申报详情" v-model="detailOpen" width="560px" append-to-body>
+      <el-descriptions :column="2" border>
+        <el-descriptions-item label="明细ID">{{ detailData.id }}</el-descriptions-item>
+        <el-descriptions-item label="类别">
+          <el-tag :type="typeTagMap[detailData.itemType]" size="small">{{ detailData.itemType }}</el-tag>
+        </el-descriptions-item>
+        <el-descriptions-item label="学期">{{ detailData.semester }}</el-descriptions-item>
+        <el-descriptions-item label="核定工作量">
+          <span style="font-weight: 600; color: var(--el-color-primary);">{{ detailData.calculatedWorkload }}</span>
+        </el-descriptions-item>
+        <el-descriptions-item label="项目名称" :span="2">{{ detailData.courseName || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="状态">
+          <el-tag :type="statusTagMap[detailData.status]" size="small">{{ statusLabelMap[detailData.status] }}</el-tag>
+        </el-descriptions-item>
+        <el-descriptions-item label="来源">{{ detailData.sourceType || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="说明" :span="2">{{ detailData.description || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="备注" :span="2">{{ detailData.remark || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="申报时间">{{ detailData.createTime || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="更新时间">{{ detailData.updateTime || '-' }}</el-descriptions-item>
+      </el-descriptions>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="detailOpen = false">关 闭</el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup name="MyWorkloadDeclare">
-import { listWorkloadItem, addWorkloadItem, delWorkloadItem } from "@/api/system/workloadItem"
+import { listWorkloadItem, getWorkloadItem, addWorkloadItem, delWorkloadItem } from "@/api/system/workloadItem"
 import { getCurrentSemester } from "@/utils/bizDict"
 import SemesterSelect from '@/components/SemesterSelect/index.vue'
 import useUserStore from '@/store/modules/user'
@@ -125,6 +159,8 @@ const myList = ref([])
 const listLoading = ref(true)
 const submitting = ref(false)
 const total = ref(0)
+const detailOpen = ref(false)
+const detailData = ref({})
 
 const queryParams = ref({
   pageNum: 1,
@@ -219,6 +255,13 @@ function resetForm() {
     remark: ''
   }
   proxy.resetForm('declareRef')
+}
+
+function handleDetail(row) {
+  getWorkloadItem(row.id).then(res => {
+    detailData.value = res.data
+    detailOpen.value = true
+  })
 }
 
 function handleDelete(row) {
