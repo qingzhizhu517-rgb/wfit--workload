@@ -190,7 +190,7 @@ async function fetchStats() {
 
 async function fetchPendingList() {
   try {
-    const res = await listWorkloadSummary({ auditStatus: 1, pageNum: 1, pageSize: 5 })
+    const res = await listWorkloadSummary({ status: 1, pageNum: 1, pageSize: 5 })
     pendingList.value = (res.rows || []).map(item => ({
       ...item,
       auditStatusLabel: '教务助理待审'
@@ -210,7 +210,7 @@ async function fetchAuditCounts() {
       { key: 'completed', status: 3 }
     ]
     for (const s of statuses) {
-      const res = await listWorkloadSummary({ auditStatus: s.status, pageNum: 1, pageSize: 1 })
+      const res = await listWorkloadSummary({ status: s.status, pageNum: 1, pageSize: 1 })
       auditCounts[s.key] = res.total || 0
     }
   } catch (e) {

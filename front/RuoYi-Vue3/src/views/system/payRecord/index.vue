@@ -301,9 +301,9 @@ function handleRecalcPay() {
     proxy.$modal.alertWarning(isTeacher.value ? '请先填写「学年学期」' : '请先在搜索栏选择「教师」并填写「学年学期」')
     return
   }
-  proxy.$modal.confirm(`确认重算「${userLabel(userId)}」${semester} 学期的酬金吗？需先完成汇总重算。`).then(function() {
+  proxy.$modal.confirm(`确认重算「${userLabel(uid)}」${semester} 学期的酬金吗？需先完成汇总重算。`).then(function() {
     calcLoading.value = true
-    return recalcPay(userId, semester)
+    return recalcPay(uid, semester)
   }).then(() => {
     getList()
     proxy.$modal.msgSuccess("酬金重算完成")

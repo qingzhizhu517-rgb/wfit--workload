@@ -183,8 +183,8 @@ async function fetchStats() {
 
 async function fetchPendingList() {
   try {
-    // 待签字 = auditStatus=2 (院领导待签)
-    const res = await listWorkloadSummary({ auditStatus: 2, pageNum: 1, pageSize: 5 })
+    // 待签字 = status=2 (院领导待签)
+    const res = await listWorkloadSummary({ status: 2, pageNum: 1, pageSize: 5 })
     pendingList.value = res.rows || []
     pendingSignCount.value = res.total || 0
   } catch (e) {
@@ -201,7 +201,7 @@ async function fetchAuditCounts() {
       { key: 'completed', status: 3 }
     ]
     for (const s of statuses) {
-      const res = await listWorkloadSummary({ auditStatus: s.status, pageNum: 1, pageSize: 1 })
+      const res = await listWorkloadSummary({ status: s.status, pageNum: 1, pageSize: 1 })
       auditCounts[s.key] = res.total || 0
     }
     completedCount.value = auditCounts.completed

@@ -42,8 +42,9 @@ public class BizPayRecordController extends BaseController
     @GetMapping("/list")
     public TableDataInfo list(BizPayRecord bizPayRecord)
     {
-        // 教师角色只能查看自己的数据
-        if (SecurityUtils.hasRole("teacher"))
+        // 教师角色只能查看自己的数据（不用 hasRole，避免 admin 绕过）
+        if (!SecurityUtils.isAdmin() && SecurityUtils.getLoginUser().getUser().getRoles().stream()
+                .anyMatch(r -> "teacher".equals(r.getRoleKey())))
         {
             bizPayRecord.setUserId(SecurityUtils.getUserId());
         }
@@ -61,7 +62,8 @@ public class BizPayRecordController extends BaseController
     public void export(HttpServletResponse response, BizPayRecord bizPayRecord)
     {
         // 教师角色只能导出自己的数据
-        if (SecurityUtils.hasRole("teacher"))
+        if (!SecurityUtils.isAdmin() && SecurityUtils.getLoginUser().getUser().getRoles().stream()
+                .anyMatch(r -> "teacher".equals(r.getRoleKey())))
         {
             bizPayRecord.setUserId(SecurityUtils.getUserId());
         }
