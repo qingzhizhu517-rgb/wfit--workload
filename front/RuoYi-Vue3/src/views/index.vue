@@ -16,7 +16,9 @@ onMounted(() => {
 
   if (roles.includes('admin')) {
     target = '/admin/dashboard'
-  } else if (roles.includes('jiaowu') || roles.includes('assistant') || roles.includes('leader')) {
+  } else if (roles.includes('leader')) {
+    target = '/leader/dashboard'
+  } else if (roles.includes('jiaowu') || roles.includes('assistant')) {
     target = '/jiaowu/dashboard'
   }
 

@@ -96,7 +96,22 @@ export const constantRoutes = [
         component: () => import('@/views/dashboard/JiaoWuDashboard.vue'),
         name: 'JiaoWuDashboard',
         meta: { title: '教务工作台', icon: 'education' },
-        roles: ['jiaowu', 'assistant', 'leader']
+        roles: ['jiaowu', 'assistant']
+      }
+    ]
+  },
+  // 院领导仪表盘
+  {
+    path: '/leader',
+    component: Layout,
+    hidden: true,
+    children: [
+      {
+        path: 'dashboard',
+        component: () => import('@/views/dashboard/LeaderDashboard.vue'),
+        name: 'LeaderDashboard',
+        meta: { title: '院领导工作台', icon: 'education' },
+        roles: ['leader']
       }
     ]
   },
