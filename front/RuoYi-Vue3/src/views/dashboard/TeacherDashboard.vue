@@ -285,12 +285,12 @@ function handleExport() {
     inputPlaceholder: '2025-2026-1'
   }).then(({ value }) => {
     proxy.$modal.loading('正在导出...')
-    exportPersonalWorkload({ userId: userStore.id, semester: value }).then(res => {
+    exportPersonalWorkload({ userId: currentUserId.value, semester: value }).then(res => {
       const blob = new Blob([res], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
       const url = window.URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
-      link.download = `工作量明细_${userStore.nickName || userStore.id}_${value}.xlsx`
+      link.download = `工作量明细_${userStore.nickName || currentUserId.value}_${value}.xlsx`
       link.click()
       window.URL.revokeObjectURL(url)
       proxy.$modal.closeLoading()

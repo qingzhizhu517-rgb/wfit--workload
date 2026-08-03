@@ -249,6 +249,7 @@ function getList() {
   listWorkloadSummary(queryParams.value).then(response => {
     workloadSummaryList.value = response.rows
     total.value = response.total
+  }).catch(() => {}).finally(() => {
     loading.value = false
   })
 }
