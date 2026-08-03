@@ -19,6 +19,7 @@ import com.workload.common.enums.BusinessType;
 import com.workload.system.domain.BizPayRecord;
 import com.workload.system.service.IBizPayRecordService;
 import com.workload.common.utils.poi.ExcelUtil;
+import com.workload.common.utils.SecurityUtils;
 import com.workload.common.core.page.TableDataInfo;
 
 /**
@@ -41,6 +42,11 @@ public class BizPayRecordController extends BaseController
     @GetMapping("/list")
     public TableDataInfo list(BizPayRecord bizPayRecord)
     {
+        // 教师角色只能查看自己的数据
+        if (SecurityUtils.hasRole("teacher"))
+        {
+            bizPayRecord.setUserId(SecurityUtils.getUserId());
+        }
         startPage();
         List<BizPayRecord> list = bizPayRecordService.selectBizPayRecordList(bizPayRecord);
         return getDataTable(list);
@@ -54,6 +60,11 @@ public class BizPayRecordController extends BaseController
     @PostMapping("/export")
     public void export(HttpServletResponse response, BizPayRecord bizPayRecord)
     {
+        // 教师角色只能导出自己的数据
+        if (SecurityUtils.hasRole("teacher"))
+        {
+            bizPayRecord.setUserId(SecurityUtils.getUserId());
+        }
         List<BizPayRecord> list = bizPayRecordService.selectBizPayRecordList(bizPayRecord);
         ExcelUtil<BizPayRecord> util = new ExcelUtil<BizPayRecord>(BizPayRecord.class);
         util.exportExcel(response, list, "酬金汇总数据");

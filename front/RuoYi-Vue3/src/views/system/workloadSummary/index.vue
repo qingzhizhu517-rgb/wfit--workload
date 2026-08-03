@@ -1,7 +1,7 @@
 <template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="68px">
-      <el-form-item label="教师" prop="userId">
+      <el-form-item v-if="!isTeacher" label="教师" prop="userId">
         <user-select v-model="queryParams.userId" style="width: 200px" />
       </el-form-item>
       <el-form-item label="学年学期" prop="semester">
@@ -19,36 +19,38 @@
     </el-form>
 
     <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5">
-        <el-tooltip content="重算明细→汇总→酬金，需先在搜索栏选择教师和学期" placement="top">
-          <el-button type="primary" plain icon="Cpu" :loading="calcLoading" @click="handleRecalcAll" v-hasPermi="['system:workloadSummary:edit']">一键核算</el-button>
-        </el-tooltip>
-      </el-col>
+      <template v-if="!isTeacher && !isLeader">
+        <el-col :span="1.5">
+          <el-tooltip content="重算明细→汇总→酬金，需先在搜索栏选择教师和学期" placement="top">
+            <el-button type="primary" plain icon="Cpu" :loading="calcLoading" @click="handleRecalcAll" v-hasPermi="['system:workloadSummary:edit']">一键核算</el-button>
+          </el-tooltip>
+        </el-col>
+        <el-col :span="1.5">
+          <el-tooltip content="按搜索栏学期，由岗位任职批量生成 G11 管理服务明细" placement="top">
+            <el-button type="warning" plain icon="MagicStick" @click="handleGenG11" v-hasPermi="['system:workloadItem:add']">生成G11</el-button>
+          </el-tooltip>
+        </el-col>
+        <el-col :span="1.5">
+          <el-button type="success" plain icon="Promotion" :disabled="multiple" @click="handleBatchSubmit" v-hasPermi="['system:audit:submit']">批量提交</el-button>
+        </el-col>
+        <el-col :span="1.5">
+          <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['system:workloadSummary:remove']">删除</el-button>
+        </el-col>
+      </template>
       <el-col :span="1.5">
         <el-tooltip content="不落库仿真预览汇总结果" placement="top">
           <el-button type="info" plain icon="View" @click="handlePreview" v-hasPermi="['system:workloadSummary:query']">汇总预览</el-button>
         </el-tooltip>
       </el-col>
       <el-col :span="1.5">
-        <el-tooltip content="按搜索栏学期，由岗位任职批量生成 G11 管理服务明细" placement="top">
-          <el-button type="warning" plain icon="MagicStick" @click="handleGenG11" v-hasPermi="['system:workloadItem:add']">生成G11</el-button>
-        </el-tooltip>
-      </el-col>
-      <el-col :span="1.5">
         <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['system:workloadSummary:export']">导出</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button type="success" plain icon="Promotion" :disabled="multiple" @click="handleBatchSubmit" v-hasPermi="['system:audit:submit']">批量提交</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['system:workloadSummary:remove']">删除</el-button>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
     <el-table v-loading="loading" :data="workloadSummaryList" @selection-change="handleSelectionChange">
-      <el-table-column type="selection" width="50" align="center" />
-      <el-table-column label="教师" align="center" prop="userId" width="150" fixed="left">
+      <el-table-column v-if="!isTeacher" type="selection" width="50" align="center" />
+      <el-table-column v-if="!isTeacher" label="教师" align="center" prop="userId" width="150" fixed="left">
         <template #default="scope">{{ userLabel(scope.row.userId) }}</template>
       </el-table-column>
       <el-table-column label="学年学期" align="center" prop="semester" width="105" fixed="left" />
@@ -84,25 +86,29 @@
           <biz-tag :value="scope.row.status" :map="summaryStatusMap" />
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" width="220" fixed="right" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" :width="isTeacher ? 100 : 220" fixed="right" class-name="small-padding fixed-width">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleDetail(scope.row)" v-hasPermi="['system:workloadSummary:query']">详情</el-button>
-          <!-- 审批操作按钮：根据状态显示 -->
-          <el-button v-if="scope.row.status === 0" link type="success" icon="Promotion" @click="handleSubmit(scope.row)" v-hasPermi="['system:audit:submit']">提交</el-button>
-          <el-button v-if="scope.row.status === 1" link type="success" icon="Select" @click="handleApprove(scope.row)" v-hasPermi="['system:audit:approve']">通过</el-button>
-          <el-button v-if="scope.row.status === 1" link type="warning" icon="Close" @click="handleReject(scope.row)" v-hasPermi="['system:audit:reject']">驳回</el-button>
-          <el-button v-if="scope.row.status === 2" link type="primary" icon="EditPen" @click="handleSign(scope.row)" v-hasPermi="['system:audit:sign']">签字</el-button>
-          <el-button v-if="scope.row.status === 3" link type="info" icon="Unlock" @click="handleUnlock(scope.row)" v-hasPermi="['system:audit:unlock']">解锁</el-button>
-          <!-- 更多操作下拉 -->
-          <el-dropdown @command="(cmd) => handleMoreCmd(cmd, scope.row)" trigger="click">
-            <el-button link type="primary" icon="MoreFilled" />
-            <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item command="recalc" icon="Refresh" v-hasPermi="['system:workloadSummary:edit']">重算</el-dropdown-item>
-                <el-dropdown-item command="delete" icon="Delete" divided v-hasPermi="['system:workloadSummary:remove']">删除</el-dropdown-item>
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
+          <!-- 教师只能提交 -->
+          <el-button v-if="isTeacher && scope.row.status === 0" link type="success" icon="Promotion" @click="handleSubmit(scope.row)" v-hasPermi="['system:audit:submit']">提交</el-button>
+          <!-- 教务/院领导审批操作 -->
+          <template v-if="!isTeacher">
+            <el-button v-if="scope.row.status === 0" link type="success" icon="Promotion" @click="handleSubmit(scope.row)" v-hasPermi="['system:audit:submit']">提交</el-button>
+            <el-button v-if="scope.row.status === 1" link type="success" icon="Select" @click="handleApprove(scope.row)" v-hasPermi="['system:audit:approve']">通过</el-button>
+            <el-button v-if="scope.row.status === 1" link type="warning" icon="Close" @click="handleReject(scope.row)" v-hasPermi="['system:audit:reject']">驳回</el-button>
+            <el-button v-if="scope.row.status === 2" link type="primary" icon="EditPen" @click="handleSign(scope.row)" v-hasPermi="['system:audit:sign']">签字</el-button>
+            <el-button v-if="scope.row.status === 3" link type="info" icon="Unlock" @click="handleUnlock(scope.row)" v-hasPermi="['system:audit:unlock']">解锁</el-button>
+            <!-- 更多操作下拉 -->
+            <el-dropdown @command="(cmd) => handleMoreCmd(cmd, scope.row)" trigger="click">
+              <el-button link type="primary" icon="MoreFilled" />
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item command="recalc" icon="Refresh" v-hasPermi="['system:workloadSummary:edit']">重算</el-dropdown-item>
+                  <el-dropdown-item command="delete" icon="Delete" divided v-hasPermi="['system:workloadSummary:remove']">删除</el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
+          </template>
         </template>
       </el-table-column>
     </el-table>
@@ -152,7 +158,7 @@
     <!-- 汇总预览对话框 -->
     <el-dialog title="汇总预览（不落库）" v-model="previewOpen" width="560px" append-to-body>
       <el-form :inline="true" class="preview-form">
-        <el-form-item label="教师">
+        <el-form-item v-if="!isTeacher" label="教师">
           <user-select v-model="previewQuery.userId" style="width: 200px" />
         </el-form-item>
         <el-form-item label="学年学期">
@@ -198,9 +204,14 @@ import UserSelect from '@/components/UserSelect/index.vue'
 import SemesterSelect from '@/components/SemesterSelect/index.vue'
 import { useUserMap } from '@/utils/userCache'
 import { summaryStatusMap, yesNoMap, formatAmount } from '@/utils/bizDict'
+import useUserStore from '@/store/modules/user'
 
 const { proxy } = getCurrentInstance()
 const { userLabel } = useUserMap()
+const userStore = useUserStore()
+
+const isTeacher = computed(() => userStore.roles.includes('teacher'))
+const isLeader = computed(() => userStore.roles.includes('leader'))
 
 const metStatusMap = { 1: { label: '已达标', type: 'success' }, 0: { label: '未达标', type: 'danger' } }
 
@@ -263,11 +274,12 @@ function handleSelectionChange(selection) {
 /** 校验教师+学期已选 */
 function checkTeacherSemester() {
   const { userId, semester } = queryParams.value
-  if (!userId || !semester) {
-    proxy.$modal.alertWarning('请先在搜索栏选择「教师」并填写「学年学期」')
+  const uid = isTeacher.value ? userStore.id : userId
+  if (!uid || !semester) {
+    proxy.$modal.alertWarning(isTeacher.value ? '请先填写「学年学期」' : '请先在搜索栏选择「教师」并填写「学年学期」')
     return null
   }
-  return { userId, semester }
+  return { userId: uid, semester }
 }
 
 /** 重算单行汇总 */
@@ -313,7 +325,7 @@ function handleGenG11() {
 
 /** 打开汇总预览 */
 function handlePreview() {
-  previewQuery.userId = queryParams.value.userId
+  previewQuery.userId = isTeacher.value ? userStore.id : queryParams.value.userId
   previewQuery.semester = queryParams.value.semester
   previewData.value = null
   previewOpen.value = true

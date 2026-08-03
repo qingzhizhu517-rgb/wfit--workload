@@ -1,7 +1,7 @@
 <template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="68px">
-      <el-form-item label="教师" prop="userId">
+      <el-form-item v-if="!isTeacher" label="教师" prop="userId">
         <user-select v-model="queryParams.userId" style="width: 200px" />
       </el-form-item>
       <el-form-item label="学年学期" prop="semester">
@@ -19,20 +19,22 @@
     </el-form>
 
     <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5">
-        <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['system:payRecord:add']">新增</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['system:payRecord:edit']">修改</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['system:payRecord:remove']">删除</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-tooltip content="按搜索栏选中的教师+学期重算酬金（需先重算汇总）" placement="top">
-          <el-button type="primary" plain icon="Cpu" :loading="calcLoading" @click="handleRecalcPay" v-hasPermi="['system:payRecord:edit']">重算酬金</el-button>
-        </el-tooltip>
-      </el-col>
+      <template v-if="!isTeacher">
+        <el-col :span="1.5">
+          <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['system:payRecord:add']">新增</el-button>
+        </el-col>
+        <el-col :span="1.5">
+          <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['system:payRecord:edit']">修改</el-button>
+        </el-col>
+        <el-col :span="1.5">
+          <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['system:payRecord:remove']">删除</el-button>
+        </el-col>
+        <el-col :span="1.5">
+          <el-tooltip content="按搜索栏选中的教师+学期重算酬金（需先重算汇总）" placement="top">
+            <el-button type="primary" plain icon="Cpu" :loading="calcLoading" @click="handleRecalcPay" v-hasPermi="['system:payRecord:edit']">重算酬金</el-button>
+          </el-tooltip>
+        </el-col>
+      </template>
       <el-col :span="1.5">
         <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['system:payRecord:export']">导出</el-button>
       </el-col>
@@ -40,9 +42,8 @@
     </el-row>
 
     <el-table v-loading="loading" :data="payRecordList" @selection-change="handleSelectionChange">
-      <el-table-column type="selection" width="50" align="center" />
-      <el-table-column label="ID" align="center" prop="id" width="70" />
-      <el-table-column label="教师" align="center" prop="userId" width="160">
+      <el-table-column v-if="!isTeacher" type="selection" width="50" align="center" />
+      <el-table-column v-if="!isTeacher" label="教师" align="center" prop="userId" width="160">
         <template #default="scope">{{ userLabel(scope.row.userId) }}</template>
       </el-table-column>
       <el-table-column label="学年学期" align="center" prop="semester" width="110" />
@@ -65,11 +66,13 @@
       <el-table-column label="备注" align="center" prop="remark" min-width="120" show-overflow-tooltip>
         <template #default="scope">{{ scope.row.remark || '-' }}</template>
       </el-table-column>
-      <el-table-column label="操作" align="center" width="220" fixed="right" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" :width="isTeacher ? 80 : 220" fixed="right" class-name="small-padding fixed-width">
         <template #default="scope">
-          <el-button link type="primary" icon="Tickets" @click="goAllowance(scope.row)">酬金明细</el-button>
-          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['system:payRecord:edit']">修改</el-button>
-          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['system:payRecord:remove']">删除</el-button>
+          <template v-if="!isTeacher">
+            <el-button link type="primary" icon="Tickets" @click="goAllowance(scope.row)">酬金明细</el-button>
+            <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['system:payRecord:edit']">修改</el-button>
+            <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['system:payRecord:remove']">删除</el-button>
+          </template>
         </template>
       </el-table-column>
     </el-table>
@@ -143,10 +146,14 @@ import UserSelect from '@/components/UserSelect/index.vue'
 import { useUserMap } from '@/utils/userCache'
 import { formatAmount } from '@/utils/bizDict'
 import { useRouter } from 'vue-router'
+import useUserStore from '@/store/modules/user'
 
 const { proxy } = getCurrentInstance()
 const { userLabel } = useUserMap()
 const router = useRouter()
+const userStore = useUserStore()
+
+const isTeacher = computed(() => userStore.roles.includes('teacher'))
 
 const payStatusMap = { 0: { label: '未发放', type: 'info' }, 1: { label: '已发放', type: 'success' } }
 
@@ -289,8 +296,9 @@ function handleDelete(row) {
 /** 重算酬金 */
 function handleRecalcPay() {
   const { userId, semester } = queryParams.value
-  if (!userId || !semester) {
-    proxy.$modal.alertWarning('请先在搜索栏选择「教师」并填写「学年学期」')
+  const uid = isTeacher.value ? userStore.id : userId
+  if (!uid || !semester) {
+    proxy.$modal.alertWarning(isTeacher.value ? '请先填写「学年学期」' : '请先在搜索栏选择「教师」并填写「学年学期」')
     return
   }
   proxy.$modal.confirm(`确认重算「${userLabel(userId)}」${semester} 学期的酬金吗？需先完成汇总重算。`).then(function() {
