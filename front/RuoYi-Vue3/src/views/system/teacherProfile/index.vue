@@ -43,7 +43,12 @@
 
     <el-table v-loading="loading" :data="teacherProfileList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="50" align="center" />
-      <el-table-column label="教师" align="center" prop="userId" width="160">
+      <el-table-column label="序号" align="center" width="60">
+        <template #default="scope">
+          {{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}
+        </template>
+      </el-table-column>
+      <el-table-column label="教师" align="center" prop="userId" width="120">
         <template #default="scope">{{ userLabel(scope.row.userId) }}</template>
       </el-table-column>
       <el-table-column label="院部" align="center" prop="deptId" min-width="140">
@@ -56,24 +61,9 @@
           <biz-tag :value="scope.row.specialStatus" :map="specialStatusMap" />
         </template>
       </el-table-column>
-      <el-table-column label="状态起" align="center" prop="specialStatusStart" width="110">
+      <el-table-column label="操作" align="center" width="180" fixed="right" class-name="small-padding fixed-width">
         <template #default="scope">
-          <span>{{ parseTime(scope.row.specialStatusStart, '{y}-{m}-{d}') || '-' }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="状态止" align="center" prop="specialStatusEnd" width="110">
-        <template #default="scope">
-          <span>{{ parseTime(scope.row.specialStatusEnd, '{y}-{m}-{d}') || '-' }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="校企考核" align="center" prop="enterpriseEvalResult" width="90">
-        <template #default="scope">{{ scope.row.enterpriseEvalResult || '-' }}</template>
-      </el-table-column>
-      <el-table-column label="备注" align="center" prop="remark" min-width="120" show-overflow-tooltip>
-        <template #default="scope">{{ scope.row.remark || '-' }}</template>
-      </el-table-column>
-      <el-table-column label="操作" align="center" width="140" fixed="right" class-name="small-padding fixed-width">
-        <template #default="scope">
+          <el-button link type="primary" icon="View" @click="handleDetail(scope.row)">详情</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['system:teacherProfile:edit']">修改</el-button>
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['system:teacherProfile:remove']">删除</el-button>
         </template>
@@ -87,6 +77,30 @@
       v-model:limit="queryParams.pageSize"
       @pagination="getList"
     />
+
+    <!-- 查看详情对话框 -->
+    <el-dialog title="教师档案详情" v-model="detailOpen" width="580px" append-to-body>
+      <el-descriptions :column="2" border>
+        <el-descriptions-item label="教师">{{ userLabel(detailData.userId) }}</el-descriptions-item>
+        <el-descriptions-item label="院部">{{ deptName(detailData.userId) }}</el-descriptions-item>
+        <el-descriptions-item label="职称">{{ detailData.title || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="人员性质">{{ detailData.teacherNature || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="特殊状态">
+          <biz-tag :value="detailData.specialStatus" :map="specialStatusMap" />
+        </el-descriptions-item>
+        <el-descriptions-item label="校企考核">{{ detailData.enterpriseEvalResult || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="状态起">{{ parseTime(detailData.specialStatusStart, '{y}-{m}-{d}') || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="状态止">{{ parseTime(detailData.specialStatusEnd, '{y}-{m}-{d}') || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="备注" :span="2">{{ detailData.remark || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="创建时间">{{ detailData.createTime || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="更新时间">{{ detailData.updateTime || '-' }}</el-descriptions-item>
+      </el-descriptions>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="detailOpen = false">关 闭</el-button>
+        </div>
+      </template>
+    </el-dialog>
 
     <!-- 添加或修改教师业务档案对话框 -->
     <el-dialog :title="title" v-model="open" width="640px" append-to-body>
@@ -172,6 +186,8 @@ const specialStatusMap = {
 
 const teacherProfileList = ref([])
 const open = ref(false)
+const detailOpen = ref(false)
+const detailData = ref({})
 const loading = ref(true)
 const showSearch = ref(true)
 const ids = ref([])
@@ -273,6 +289,14 @@ function handleUpdate(row) {
     form.value = response.data
     open.value = true
     title.value = "修改教师业务档案"
+  })
+}
+
+/** 查看详情 */
+function handleDetail(row) {
+  getTeacherProfile(row.userId).then(response => {
+    detailData.value = response.data
+    detailOpen.value = true
   })
 }
 
