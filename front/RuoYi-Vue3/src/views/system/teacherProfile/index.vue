@@ -36,6 +36,9 @@
         <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['system:teacherProfile:remove']">删除</el-button>
       </el-col>
       <el-col :span="1.5">
+        <el-button type="info" plain icon="Upload2" @click="handleImport" v-hasPermi="['system:teacherProfile:import']">导入</el-button>
+      </el-col>
+      <el-col :span="1.5">
         <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['system:teacherProfile:export']">导出</el-button>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
@@ -98,6 +101,41 @@
       <template #footer>
         <div class="dialog-footer">
           <el-button @click="detailOpen = false">关 闭</el-button>
+        </div>
+      </template>
+    </el-dialog>
+
+    <!-- 导入对话框 -->
+    <el-dialog :title="upload.title" v-model="upload.open" width="400px" append-to-body>
+      <el-upload
+        ref="uploadRef"
+        :limit="1"
+        accept=".xlsx, .xls"
+        :headers="upload.headers"
+        :action="upload.url + '?updateSupport=' + upload.updateSupport"
+        :disabled="upload.isUploading"
+        :on-progress="handleFileUploadProgress"
+        :on-success="handleFileSuccess"
+        :on-error="handleFileError"
+        :auto-upload="false"
+        drag
+      >
+        <el-icon class="el-icon--upload"><upload-filled /></el-icon>
+        <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
+        <template #tip>
+          <div class="el-upload__tip text-center">
+            <div class="el-upload__tip">
+              <el-checkbox v-model="upload.updateSupport" />是否更新已经存在的用户档案
+            </div>
+            <span>仅允许导入 xls、xlsx 格式文件。</span>
+            <el-link type="primary" :underline="false" style="font-size:12px;vertical-align: baseline;" @click="importTemplate">下载模板</el-link>
+          </div>
+        </template>
+      </el-upload>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button type="primary" @click="submitFileForm">确 定</el-button>
+          <el-button @click="upload.open = false">取 消</el-button>
         </div>
       </template>
     </el-dialog>
@@ -170,6 +208,7 @@
 import { listTeacherProfile, getTeacherProfile, delTeacherProfile, addTeacherProfile, updateTeacherProfile } from "@/api/system/teacherProfile"
 import UserSelect from '@/components/UserSelect/index.vue'
 import { useUserMap } from '@/utils/userCache'
+import { getToken } from "@/utils/auth"
 import {
   teacherTitleOptions, teacherNatureOptions, specialStatusOptions, enterpriseEvalOptions
 } from '@/utils/bizDict'
@@ -195,6 +234,15 @@ const single = ref(true)
 const multiple = ref(true)
 const total = ref(0)
 const title = ref("")
+
+const upload = reactive({
+  open: false,
+  title: "导入教师档案",
+  isUploading: false,
+  updateSupport: 0,
+  headers: { Authorization: "Bearer " + getToken() },
+  url: import.meta.env.VITE_APP_BASE_API + "/system/teacherProfile/importData"
+})
 
 const data = reactive({
   form: {},
@@ -337,6 +385,42 @@ function handleExport() {
   proxy.download('system/teacherProfile/export', {
     ...queryParams.value
   }, `teacherProfile_${new Date().getTime()}.xlsx`)
+}
+
+/** 导入按钮操作 */
+function handleImport() {
+  upload.title = "导入教师档案"
+  upload.open = true
+}
+
+/** 下载模板操作 */
+function importTemplate() {
+  proxy.download('system/teacherProfile/importTemplate', {}, `teacherProfile_template.xlsx`)
+}
+
+/** 文件上传中处理 */
+function handleFileUploadProgress(event, file, fileList) {
+  upload.isUploading = true
+}
+
+/** 文件上传成功处理 */
+function handleFileSuccess(response, file, fileList) {
+  upload.open = false
+  upload.isUploading = false
+  proxy.$refs["uploadRef"].clearFiles()
+  proxy.$alert("<div style='overflow: auto;overflow-x: hidden;max-height: 70vh;padding: 10px 20px 0;'>" + response.msg + "</div>", "导入结果", { dangerouslyUseHTMLString: true })
+  getList()
+}
+
+/** 文件上传失败处理 */
+function handleFileError(err, file, fileList) {
+  upload.isUploading = false
+  proxy.$modal.msgError("导入失败，请检查文件格式或网络连接")
+}
+
+/** 提交上传文件 */
+function submitFileForm() {
+  proxy.$refs["uploadRef"].submit()
 }
 
 getList()

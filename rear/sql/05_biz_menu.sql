@@ -72,6 +72,8 @@ INSERT INTO sys_menu(menu_id, menu_name, parent_id, order_num, path, component, 
 VALUES(20014, '教师档案删除', 2001, 4, '', '', '', '', 1, 0, 'F', '0', '0', 'system:teacherProfile:remove', '#', 'admin', sysdate(), '', NULL, '');
 INSERT INTO sys_menu(menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark)
 VALUES(20015, '教师档案导出', 2001, 5, '', '', '', '', 1, 0, 'F', '0', '0', 'system:teacherProfile:export', '#', 'admin', sysdate(), '', NULL, '');
+INSERT INTO sys_menu(menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark)
+VALUES(20016, '教师档案导入', 2001, 6, '', '', '', '', 1, 0, 'F', '0', '0', 'system:teacherProfile:import', '#', 'admin', sysdate(), '', NULL, '');
 
 -- 教学任务
 INSERT INTO sys_menu(menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark)
