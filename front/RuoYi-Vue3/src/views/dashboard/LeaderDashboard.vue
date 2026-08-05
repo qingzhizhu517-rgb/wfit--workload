@@ -13,7 +13,7 @@
     <!-- 4 统计卡片 -->
     <el-row :gutter="20" class="panel-group">
       <el-col :xs="12" :sm="12" :lg="6" class="card-panel-col">
-        <div class="card-panel" @click="router.push('/system/workloadSummary')">
+        <div class="card-panel" @click="router.push('/workload/workloadSummary')">
           <div class="card-panel-icon-wrapper icon-pending">
             <el-icon :size="36"><Clock /></el-icon>
           </div>
@@ -27,7 +27,7 @@
       </el-col>
 
       <el-col :xs="12" :sm="12" :lg="6" class="card-panel-col">
-        <div class="card-panel" @click="router.push('/system/workloadSummary')">
+        <div class="card-panel" @click="router.push('/workload/workloadSummary')">
           <div class="card-panel-icon-wrapper icon-done">
             <el-icon :size="36"><CircleCheck /></el-icon>
           </div>
@@ -39,7 +39,7 @@
       </el-col>
 
       <el-col :xs="12" :sm="12" :lg="6" class="card-panel-col">
-        <div class="card-panel" @click="router.push('/system/workloadSummary')">
+        <div class="card-panel" @click="router.push('/workload/workloadSummary')">
           <div class="card-panel-icon-wrapper icon-total">
             <el-icon :size="36"><DataLine /></el-icon>
           </div>
@@ -51,7 +51,7 @@
       </el-col>
 
       <el-col :xs="12" :sm="12" :lg="6" class="card-panel-col">
-        <div class="card-panel" @click="router.push('/system/payRecord')">
+        <div class="card-panel" @click="router.push('/workload/payRecord')">
           <div class="card-panel-icon-wrapper icon-pay">
             <el-icon :size="36"><Money /></el-icon>
           </div>
@@ -73,7 +73,7 @@
             </div>
           </template>
           <div class="quick-links">
-            <el-button type="primary" plain icon="Checked" @click="router.push('/system/workloadSummary')">
+            <el-button type="primary" plain icon="Checked" @click="router.push('/workload/workloadSummary')">
               审批学期汇总
             </el-button>
             <el-button type="success" plain icon="Download" @click="handleExportPaySummary">
@@ -92,7 +92,7 @@
           </template>
           <div class="todo-list" v-loading="loading">
             <div v-for="item in pendingList" :key="item.id" class="todo-item todo-warning"
-              @click="router.push('/system/workloadSummary')">
+              @click="router.push('/workload/workloadSummary')">
               <el-icon><WarningFilled /></el-icon>
               <span>{{ item.userName }} — {{ item.semester }}</span>
               <el-icon class="arrow-right"><ArrowRight /></el-icon>

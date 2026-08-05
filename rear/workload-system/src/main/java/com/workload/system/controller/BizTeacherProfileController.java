@@ -76,8 +76,9 @@ public class BizTeacherProfileController extends BaseController
     @PostMapping("/importData")
     public AjaxResult importData(MultipartFile file, @RequestParam(defaultValue = "false") boolean updateSupport) throws Exception
     {
+        // 使用 batchSize=1，确保每行独立事务，单行失败不影响其他行
         ImportResult result = ExcelReadUtil.read(file.getInputStream(), TeacherProfileImportDTO.class,
-                rows -> teacherProfileImportService.importTeacherProfiles(rows, file.getOriginalFilename(), updateSupport));
+                rows -> teacherProfileImportService.importTeacherProfiles(rows, file.getOriginalFilename(), updateSupport), 1);
         return success(result);
     }
 
@@ -86,7 +87,7 @@ public class BizTeacherProfileController extends BaseController
      */
     @PreAuthorize("@ss.hasPermi('system:teacherProfile:import')")
     @Log(title = "教师档案导入模板", businessType = BusinessType.EXPORT)
-    @PostMapping("/importTemplate")
+    @GetMapping("/importTemplate")
     public void importTemplate(HttpServletResponse response) throws Exception
     {
         response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");

@@ -25,7 +25,7 @@
     <!-- 3 数据卡片 -->
     <el-row :gutter="20" class="mb20">
       <el-col :xs="12" :sm="12" :lg="8">
-        <div class="stat-card card-info" @click="router.push('/system/workloadSummary')">
+        <div class="stat-card card-info" @click="router.push('/workload/workloadSummary')">
           <div class="stat-label">本学期承担课程</div>
           <div class="stat-value">
             <span class="stat-big">{{ stats.courseCount ?? '--' }}</span>
@@ -38,7 +38,7 @@
       </el-col>
 
       <el-col :xs="12" :sm="12" :lg="8">
-        <div class="stat-card card-success" @click="router.push('/system/workloadSummary')">
+        <div class="stat-card card-success" @click="router.push('/workload/workloadSummary')">
           <div class="stat-label">已核算工作量</div>
           <div class="stat-value">
             <span class="stat-big">{{ formatNumber(stats.totalWorkload) }}</span>
@@ -56,7 +56,7 @@
       </el-col>
 
       <el-col :xs="24" :sm="24" :lg="8">
-        <div class="stat-card card-warning" @click="router.push('/system/payRecord')">
+        <div class="stat-card card-warning" @click="router.push('/workload/payRecord')">
           <div class="stat-label">预计超工作量绩效</div>
           <div class="stat-value">
             <span class="stat-big">¥ {{ formatMoney(stats.performancePay) }}</span>
@@ -84,7 +84,7 @@
           <template #header>
             <div class="card-title">
               <span>近期工作量核算明细</span>
-              <el-button type="primary" link @click="router.push('/system/workloadSummary')">
+              <el-button type="primary" link @click="router.push('/workload/workloadSummary')">
                 查看全部 &gt;&gt;
               </el-button>
             </div>
@@ -162,13 +162,13 @@
             </div>
           </template>
           <div class="action-list">
-            <el-button type="primary" plain class="action-btn" icon="Edit" @click="router.push('/system/myWorkload')">
+            <el-button type="primary" plain class="action-btn" icon="Edit" @click="router.push('/workload/myWorkload')">
               自主申报工作量
             </el-button>
-            <el-button type="success" plain class="action-btn" icon="DataLine" @click="router.push('/system/workloadSummary')">
+            <el-button type="success" plain class="action-btn" icon="DataLine" @click="router.push('/workload/workloadSummary')">
               查看学期汇总
             </el-button>
-            <el-button type="info" plain class="action-btn" icon="Money" @click="router.push('/system/payRecord')">
+            <el-button type="info" plain class="action-btn" icon="Money" @click="router.push('/workload/payRecord')">
               查看酬金记录
             </el-button>
             <el-button type="warning" plain class="action-btn" icon="Download" @click="handleExport">

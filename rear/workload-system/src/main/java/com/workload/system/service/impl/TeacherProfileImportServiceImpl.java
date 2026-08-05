@@ -1,8 +1,8 @@
 package com.workload.system.service.impl;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,7 +46,7 @@ public class TeacherProfileImportServiceImpl implements ITeacherProfileImportSer
     private BizTeacherProfileMapper teacherProfileMapper;
 
     /** 部门名称缓存，避免 N+1 查询 */
-    private final Map<String, Long> deptCache = new HashMap<>();
+    private final Map<String, Long> deptCache = new ConcurrentHashMap<>();
 
     @Override
     public void importTeacherProfiles(List<TeacherProfileImportDTO> rows, String fileName, boolean updateSupport)

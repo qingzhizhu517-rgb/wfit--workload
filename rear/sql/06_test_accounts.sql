@@ -22,7 +22,10 @@ VALUES (5, '院领导', 'leader', 5, '2', 1, 1, '0', '0', 'admin', NOW(), '', NU
 ON DUPLICATE KEY UPDATE role_name='院领导', role_key='leader', status='0', del_flag='0';
 
 -- 4. 清除旧的角色菜单分配（可重复执行）
-DELETE FROM sys_role_menu WHERE role_id IN (3, 4, 5) AND menu_id >= 2000;
+DELETE FROM sys_role_menu WHERE role_id IN (1, 3, 4, 5) AND menu_id >= 2000;
+
+-- 4.1 管理员角色（role_id=1）— 拥有全部业务菜单
+INSERT INTO sys_role_menu(role_id, menu_id) SELECT 1, menu_id FROM sys_menu WHERE menu_id >= 2000;
 
 -- 5. 教务助理角色的菜单权限（role_id=3）— 数据管理、核算、导入、审批
 INSERT INTO sys_role_menu(role_id, menu_id) VALUES
