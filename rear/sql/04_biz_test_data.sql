@@ -78,7 +78,16 @@ INSERT INTO biz_workload_item (id, user_id, semester, academic_year, item_type, 
 (510, 3, '2025-2026-1', '2025-2026', 'G8', 'MANUAL', NULL, '指导ACM竞赛', NULL, NULL, 20.00, 0),
 
 -- 李四 G11 自主申报（班主任）
-(511, 4, '2025-2026-1', '2025-2026', 'G11', 'MANUAL', NULL, '英语2301班班主任', NULL, NULL, 180.00, 0)
+(511, 4, '2025-2026-1', '2025-2026', 'G11', 'MANUAL', NULL, '英语2301班班主任', NULL, NULL, 180.00, 0),
+
+-- 张三 G4 课程设计
+(601, 3, '2025-2026-1', '2025-2026', 'G4', 'IMPORT', NULL, '数据结构课程设计', NULL, NULL, 0.00, 0),
+
+-- 李四 G5 毕业论文
+(602, 4, '2025-2026-1', '2025-2026', 'G5', 'IMPORT', NULL, '英语专业毕业论文指导', NULL, NULL, 0.00, 0),
+
+-- 王五 G6 集中实习
+(603, 5, '2025-2026-1', '2025-2026', 'G6', 'IMPORT', NULL, '计算机专业集中实习', NULL, NULL, 0.00, 0)
 ON DUPLICATE KEY UPDATE course_name=VALUES(course_name);
 
 -- -----------------------------------------------------------
@@ -115,23 +124,59 @@ INSERT INTO biz_wl_internship_training (item_id, T, D, K, Q1, Q2, Q3) VALUES
 (508, 20.00, 4.00, 1.00, 1.00, 1.00, 1.00);
 
 -- -----------------------------------------------------------
+-- 7.1 G4 课程设计明细（biz_wl_course_design）
+-- -----------------------------------------------------------
+INSERT INTO biz_wl_course_design (item_id, J4, R4) VALUES
+-- 张三: 数据结构课程设计 (2学分, 15人, 公式: J4 × min(R4,20) × 0.4 = 2×15×0.4 = 12.0)
+(601, 2.00, 15);
+
+-- -----------------------------------------------------------
+-- 7.2 G5 毕业论文明细（biz_wl_thesis）
+-- -----------------------------------------------------------
+INSERT INTO biz_wl_thesis (item_id, R5, K5, education_level, major) VALUES
+-- 李四: 指导10人文史类本科论文 (公式: R5 × K5 = 10 × 6 = 60.0)
+(602, 10, 6.00, '本科', '文史类');
+
+-- -----------------------------------------------------------
+-- 7.3 G6 集中实习明细（biz_wl_concentrated_internship）
+-- -----------------------------------------------------------
+INSERT INTO biz_wl_concentrated_internship (item_id, W, R6) VALUES
+-- 王五: 集中实习4周, 指导15人 (公式: W × min(R6,20) × 0.4 = 4×15×0.4 = 24.0)
+(603, 4.00, 15);
+
+-- -----------------------------------------------------------
+-- 7.4 岗位任职（biz_role_assignment）
+-- -----------------------------------------------------------
+INSERT INTO biz_role_assignment (id, user_id, role_type, target, start_date, end_date, allowance_rate, semester, status) VALUES
+(1, 4, '班主任', '英语2301班', '2025-09-01', '2026-01-15', 180.00, '2025-2026-1', 0),
+(2, 3, '教研室主任', '数学教研室', '2025-09-01', '2026-01-15', 120.00, '2025-2026-1', 0)
+ON DUPLICATE KEY UPDATE target=VALUES(target);
+
+-- -----------------------------------------------------------
+-- 7.5 G11 管理服务明细（biz_wl_management）
+-- -----------------------------------------------------------
+INSERT INTO biz_wl_management (item_id, assignment_id, role_type, prorated_amount, proration_basis) VALUES
+-- 李四: 班主任, 按任职天数折算 (公式: 标准学时 × 任职天数/学期天数)
+(511, 1, '班主任', 180.00, '标准180学时 × 全学期任职');
+
+-- -----------------------------------------------------------
 -- 8. 触发计算引擎重算（通过直接更新汇总表模拟）
 --    实际生产中应调用 /system/calc/recalcSummary 接口
 -- -----------------------------------------------------------
 
--- 张三汇总: G1=75.68+52.8+47.52=176.0, G2=28.8, G8=20 → total=224.8, excess=0 (未达240额定)
+-- 张三汇总: G1=176.0, G2=28.8, G4=12.0, G8=20 → G7=216.8, total=236.8, 教授额定128, excess=108.8
 INSERT INTO biz_workload_summary (id, user_id, semester, academic_year, title, rated_workload, basic_teaching_standard, basic_teaching_met, total_workload, G7, G8, G9, G10, G11, excess_workload, pay_rate, performance_pay, is_capped, status) VALUES
-(101, 3, '2025-2026-1', '2025-2026', '教授', 128.00, 128.00, 1, 224.80, 204.80, 20.00, 0.00, 224.80, 0.00, 96.80, 70.00, 6776.00, 0, 0)
+(101, 3, '2025-2026-1', '2025-2026', '教授', 128.00, 128.00, 1, 236.80, 216.80, 20.00, 0.00, 236.80, 0.00, 108.80, 70.00, 7616.00, 0, 0)
 ON DUPLICATE KEY UPDATE total_workload=VALUES(total_workload);
 
--- 李四汇总: G1=52.8+52.8=105.6, G11=180 → total=285.6, excess=105.6
+-- 李四汇总: G1=105.6, G5=90.0, G11=180 → G7=195.6, total=375.6, excess=135.6
 INSERT INTO biz_workload_summary (id, user_id, semester, academic_year, title, rated_workload, basic_teaching_standard, basic_teaching_met, total_workload, G7, G8, G9, G10, G11, excess_workload, pay_rate, performance_pay, is_capped, status) VALUES
-(102, 4, '2025-2026-1', '2025-2026', '副教授', 240.00, 240.00, 1, 285.60, 105.60, 0.00, 0.00, 105.60, 180.00, 45.60, 60.00, 2736.00, 0, 0)
+(102, 4, '2025-2026-1', '2025-2026', '副教授', 240.00, 240.00, 1, 375.60, 195.60, 0.00, 0.00, 195.60, 180.00, 135.60, 60.00, 8136.00, 0, 0)
 ON DUPLICATE KEY UPDATE total_workload=VALUES(total_workload);
 
--- 王五汇总: G1=92.4, G3=160 → total=252.4, excess=12.4
+-- 王五汇总: G1=92.4, G3=160, G6=24.0 → G7=276.4, total=276.4, excess=36.4
 INSERT INTO biz_workload_summary (id, user_id, semester, academic_year, title, rated_workload, basic_teaching_standard, basic_teaching_met, total_workload, G7, G8, G9, G10, G11, excess_workload, pay_rate, performance_pay, is_capped, status) VALUES
-(103, 5, '2025-2026-1', '2025-2026', '讲师', 240.00, 240.00, 1, 252.40, 252.40, 0.00, 0.00, 252.40, 0.00, 12.40, 50.00, 620.00, 0, 0)
+(103, 5, '2025-2026-1', '2025-2026', '讲师', 240.00, 240.00, 1, 276.40, 276.40, 0.00, 0.00, 276.40, 0.00, 36.40, 50.00, 1820.00, 0, 0)
 ON DUPLICATE KEY UPDATE total_workload=VALUES(total_workload);
 
 -- 赵六汇总: G1=32, total=32, 未达192额定 → 无超额

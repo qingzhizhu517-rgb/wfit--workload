@@ -5,7 +5,7 @@
         <user-select v-model="queryParams.userId" style="width: 200px" />
       </el-form-item>
       <el-form-item label="学年学期" prop="semester">
-        <el-input v-model="queryParams.semester" placeholder="如 2025-2026-1" clearable style="width: 160px" @keyup.enter="handleQuery" />
+        <semester-select v-model="queryParams.semester" width="170px" />
       </el-form-item>
       <el-form-item label="课程名称" prop="courseName">
         <el-input v-model="queryParams.courseName" placeholder="请输入课程名称" clearable style="width: 180px" @keyup.enter="handleQuery" />
@@ -47,7 +47,7 @@
 
     <el-table v-loading="loading" :data="teachingTaskList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="50" align="center" />
-      <el-table-column label="ID" align="center" prop="id" width="70" />
+
       <el-table-column label="教师" align="center" prop="userId" width="160">
         <template #default="scope">{{ userLabel(scope.row.userId) }}</template>
       </el-table-column>
@@ -140,7 +140,7 @@
           </el-col>
           <el-col :span="12">
             <el-form-item label="学年学期" prop="semester">
-              <el-input v-model="form.semester" placeholder="如 2025-2026-1" maxlength="20" />
+              <semester-select v-model="form.semester" width="100%" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -239,6 +239,7 @@
 <script setup name="TeachingTask">
 import { listTeachingTask, getTeachingTask, delTeachingTask, addTeachingTask, updateTeachingTask, importTeachingTask } from "@/api/system/teachingTask"
 import UserSelect from '@/components/UserSelect/index.vue'
+import SemesterSelect from '@/components/SemesterSelect/index.vue'
 import { useUserMap } from '@/utils/userCache'
 import { UploadFilled } from '@element-plus/icons-vue'
 import {

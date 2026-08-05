@@ -36,6 +36,9 @@
         <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['system:teacherProfile:remove']">删除</el-button>
       </el-col>
       <el-col :span="1.5">
+        <el-button type="info" plain icon="Upload2" @click="handleImport" v-hasPermi="['system:teacherProfile:import']">导入</el-button>
+      </el-col>
+      <el-col :span="1.5">
         <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['system:teacherProfile:export']">导出</el-button>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
@@ -43,7 +46,12 @@
 
     <el-table v-loading="loading" :data="teacherProfileList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="50" align="center" />
-      <el-table-column label="教师" align="center" prop="userId" width="160">
+      <el-table-column label="序号" align="center" width="60">
+        <template #default="scope">
+          {{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}
+        </template>
+      </el-table-column>
+      <el-table-column label="教师" align="center" prop="userId" width="120">
         <template #default="scope">{{ userLabel(scope.row.userId) }}</template>
       </el-table-column>
       <el-table-column label="院部" align="center" prop="deptId" min-width="140">
@@ -56,24 +64,9 @@
           <biz-tag :value="scope.row.specialStatus" :map="specialStatusMap" />
         </template>
       </el-table-column>
-      <el-table-column label="状态起" align="center" prop="specialStatusStart" width="110">
+      <el-table-column label="操作" align="center" width="180" fixed="right" class-name="small-padding fixed-width">
         <template #default="scope">
-          <span>{{ parseTime(scope.row.specialStatusStart, '{y}-{m}-{d}') || '-' }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="状态止" align="center" prop="specialStatusEnd" width="110">
-        <template #default="scope">
-          <span>{{ parseTime(scope.row.specialStatusEnd, '{y}-{m}-{d}') || '-' }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="校企考核" align="center" prop="enterpriseEvalResult" width="90">
-        <template #default="scope">{{ scope.row.enterpriseEvalResult || '-' }}</template>
-      </el-table-column>
-      <el-table-column label="备注" align="center" prop="remark" min-width="120" show-overflow-tooltip>
-        <template #default="scope">{{ scope.row.remark || '-' }}</template>
-      </el-table-column>
-      <el-table-column label="操作" align="center" width="140" fixed="right" class-name="small-padding fixed-width">
-        <template #default="scope">
+          <el-button link type="primary" icon="View" @click="handleDetail(scope.row)">详情</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['system:teacherProfile:edit']">修改</el-button>
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['system:teacherProfile:remove']">删除</el-button>
         </template>
@@ -87,6 +80,65 @@
       v-model:limit="queryParams.pageSize"
       @pagination="getList"
     />
+
+    <!-- 查看详情对话框 -->
+    <el-dialog title="教师档案详情" v-model="detailOpen" width="580px" append-to-body>
+      <el-descriptions :column="2" border>
+        <el-descriptions-item label="教师">{{ userLabel(detailData.userId) }}</el-descriptions-item>
+        <el-descriptions-item label="院部">{{ deptName(detailData.userId) }}</el-descriptions-item>
+        <el-descriptions-item label="职称">{{ detailData.title || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="人员性质">{{ detailData.teacherNature || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="特殊状态">
+          <biz-tag :value="detailData.specialStatus" :map="specialStatusMap" />
+        </el-descriptions-item>
+        <el-descriptions-item label="校企考核">{{ detailData.enterpriseEvalResult || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="状态起">{{ parseTime(detailData.specialStatusStart, '{y}-{m}-{d}') || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="状态止">{{ parseTime(detailData.specialStatusEnd, '{y}-{m}-{d}') || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="备注" :span="2">{{ detailData.remark || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="创建时间">{{ detailData.createTime || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="更新时间">{{ detailData.updateTime || '-' }}</el-descriptions-item>
+      </el-descriptions>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="detailOpen = false">关 闭</el-button>
+        </div>
+      </template>
+    </el-dialog>
+
+    <!-- 导入对话框 -->
+    <el-dialog :title="upload.title" v-model="upload.open" width="400px" append-to-body>
+      <el-upload
+        ref="uploadRef"
+        :limit="1"
+        accept=".xlsx, .xls"
+        :headers="upload.headers"
+        :action="upload.url + '?updateSupport=' + upload.updateSupport"
+        :disabled="upload.isUploading"
+        :on-progress="handleFileUploadProgress"
+        :on-success="handleFileSuccess"
+        :on-error="handleFileError"
+        :auto-upload="false"
+        drag
+      >
+        <el-icon class="el-icon--upload"><upload-filled /></el-icon>
+        <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
+        <template #tip>
+          <div class="el-upload__tip text-center">
+            <div class="el-upload__tip">
+              <el-checkbox v-model="upload.updateSupport" />是否更新已经存在的用户档案
+            </div>
+            <span>仅允许导入 xls、xlsx 格式文件。</span>
+            <el-link type="primary" :underline="false" style="font-size:12px;vertical-align: baseline;" @click="importTemplate">下载模板</el-link>
+          </div>
+        </template>
+      </el-upload>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button type="primary" @click="submitFileForm">确 定</el-button>
+          <el-button @click="upload.open = false">取 消</el-button>
+        </div>
+      </template>
+    </el-dialog>
 
     <!-- 添加或修改教师业务档案对话框 -->
     <el-dialog :title="title" v-model="open" width="640px" append-to-body>
@@ -156,6 +208,7 @@
 import { listTeacherProfile, getTeacherProfile, delTeacherProfile, addTeacherProfile, updateTeacherProfile } from "@/api/system/teacherProfile"
 import UserSelect from '@/components/UserSelect/index.vue'
 import { useUserMap } from '@/utils/userCache'
+import { getToken } from "@/utils/auth"
 import {
   teacherTitleOptions, teacherNatureOptions, specialStatusOptions, enterpriseEvalOptions
 } from '@/utils/bizDict'
@@ -172,6 +225,8 @@ const specialStatusMap = {
 
 const teacherProfileList = ref([])
 const open = ref(false)
+const detailOpen = ref(false)
+const detailData = ref({})
 const loading = ref(true)
 const showSearch = ref(true)
 const ids = ref([])
@@ -179,6 +234,15 @@ const single = ref(true)
 const multiple = ref(true)
 const total = ref(0)
 const title = ref("")
+
+const upload = reactive({
+  open: false,
+  title: "导入教师档案",
+  isUploading: false,
+  updateSupport: 0,
+  headers: { Authorization: "Bearer " + getToken() },
+  url: import.meta.env.VITE_APP_BASE_API + "/system/teacherProfile/importData"
+})
 
 const data = reactive({
   form: {},
@@ -276,6 +340,14 @@ function handleUpdate(row) {
   })
 }
 
+/** 查看详情 */
+function handleDetail(row) {
+  getTeacherProfile(row.userId).then(response => {
+    detailData.value = response.data
+    detailOpen.value = true
+  })
+}
+
 /** 提交按钮 */
 function submitForm() {
   proxy.$refs["teacherProfileRef"].validate(valid => {
@@ -313,6 +385,42 @@ function handleExport() {
   proxy.download('system/teacherProfile/export', {
     ...queryParams.value
   }, `teacherProfile_${new Date().getTime()}.xlsx`)
+}
+
+/** 导入按钮操作 */
+function handleImport() {
+  upload.title = "导入教师档案"
+  upload.open = true
+}
+
+/** 下载模板操作 */
+function importTemplate() {
+  proxy.download('system/teacherProfile/importTemplate', {}, `teacherProfile_template.xlsx`)
+}
+
+/** 文件上传中处理 */
+function handleFileUploadProgress(event, file, fileList) {
+  upload.isUploading = true
+}
+
+/** 文件上传成功处理 */
+function handleFileSuccess(response, file, fileList) {
+  upload.open = false
+  upload.isUploading = false
+  proxy.$refs["uploadRef"].clearFiles()
+  proxy.$alert("<div style='overflow: auto;overflow-x: hidden;max-height: 70vh;padding: 10px 20px 0;'>" + response.msg + "</div>", "导入结果", { dangerouslyUseHTMLString: true })
+  getList()
+}
+
+/** 文件上传失败处理 */
+function handleFileError(err, file, fileList) {
+  upload.isUploading = false
+  proxy.$modal.msgError("导入失败，请检查文件格式或网络连接")
+}
+
+/** 提交上传文件 */
+function submitFileForm() {
+  proxy.$refs["uploadRef"].submit()
 }
 
 getList()

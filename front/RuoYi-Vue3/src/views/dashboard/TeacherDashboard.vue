@@ -25,7 +25,7 @@
     <!-- 3 数据卡片 -->
     <el-row :gutter="20" class="mb20">
       <el-col :xs="12" :sm="12" :lg="8">
-        <div class="stat-card card-info" @click="router.push('/system/teachingTask')">
+        <div class="stat-card card-info" @click="router.push('/workload/workloadSummary')">
           <div class="stat-label">本学期承担课程</div>
           <div class="stat-value">
             <span class="stat-big">{{ stats.courseCount ?? '--' }}</span>
@@ -38,7 +38,7 @@
       </el-col>
 
       <el-col :xs="12" :sm="12" :lg="8">
-        <div class="stat-card card-success" @click="router.push('/system/workloadItem')">
+        <div class="stat-card card-success" @click="router.push('/workload/workloadSummary')">
           <div class="stat-label">已核算工作量</div>
           <div class="stat-value">
             <span class="stat-big">{{ formatNumber(stats.totalWorkload) }}</span>
@@ -56,7 +56,7 @@
       </el-col>
 
       <el-col :xs="24" :sm="24" :lg="8">
-        <div class="stat-card card-warning" @click="router.push('/system/payRecord')">
+        <div class="stat-card card-warning" @click="router.push('/workload/payRecord')">
           <div class="stat-label">预计超工作量绩效</div>
           <div class="stat-value">
             <span class="stat-big">¥ {{ formatMoney(stats.performancePay) }}</span>
@@ -84,7 +84,7 @@
           <template #header>
             <div class="card-title">
               <span>近期工作量核算明细</span>
-              <el-button type="primary" link @click="router.push('/system/workloadItem')">
+              <el-button type="primary" link @click="router.push('/workload/workloadSummary')">
                 查看全部 &gt;&gt;
               </el-button>
             </div>
@@ -162,21 +162,17 @@
             </div>
           </template>
           <div class="action-list">
-            <el-button type="primary" plain class="action-btn" icon="Document" @click="router.push('/system/workloadRule')">
-              查看工作量计算规则
+            <el-button type="primary" plain class="action-btn" icon="Edit" @click="router.push('/workload/myWorkload')">
+              自主申报工作量
             </el-button>
-            <el-button
-              type="warning"
-              plain
-              class="action-btn"
-              icon="Warning"
-              @click="router.push('/system/workloadItem?appealStatus=1')"
-            >
-              <span>对核算结果有异议？发起申诉</span>
-              <el-badge v-if="stats.appealCount" :value="stats.appealCount" style="margin-left: 8px" />
+            <el-button type="success" plain class="action-btn" icon="DataLine" @click="router.push('/workload/workloadSummary')">
+              查看学期汇总
             </el-button>
-            <el-button type="success" plain class="action-btn" icon="Download" @click="handleExport">
-              导出个人工作量证明
+            <el-button type="info" plain class="action-btn" icon="Money" @click="router.push('/workload/payRecord')">
+              查看酬金记录
+            </el-button>
+            <el-button type="warning" plain class="action-btn" icon="Download" @click="handleExport">
+              导出个人工作量明细
             </el-button>
           </div>
         </el-card>
@@ -186,16 +182,20 @@
 </template>
 
 <script setup name="TeacherDashboard">
-import { ref, reactive, onMounted, getCurrentInstance } from 'vue'
+import { ref, reactive, computed, onMounted, getCurrentInstance } from 'vue'
 import { useRouter } from 'vue-router'
 import { Document, Warning, Download } from '@element-plus/icons-vue'
 import { getTeacherStats } from '@/api/system/dashboard'
 import { listWorkloadItem } from '@/api/system/workloadItem'
+import { exportPersonalWorkload } from '@/api/system/export'
 import useUserStore from '@/store/modules/user'
 
 const router = useRouter()
 const userStore = useUserStore()
 const { proxy } = getCurrentInstance()
+
+// 从 userStore 获取当前用户 ID（兼容不同字段名）
+const currentUserId = computed(() => userStore.id || userStore.userId)
 
 const itemLoading = ref(false)
 const recentItems = ref([])
@@ -264,10 +264,10 @@ async function fetchStats() {
 async function fetchRecentItems() {
   itemLoading.value = true
   try {
-    const res = await listWorkloadItem({ pageSize: 5, pageNum: 1 })
+    const res = await listWorkloadItem({ pageSize: 5, pageNum: 1, userId: currentUserId.value })
     recentItems.value = (res.rows || []).map(r => ({
       ...r,
-      sourceDesc: r.courseName || r.sourceDesc || `明细 #${r.id}`
+      sourceDesc: r.courseName || r.description || `明细 #${r.id}`
     }))
   } catch (e) {
     // silently ignore
@@ -277,7 +277,27 @@ async function fetchRecentItems() {
 }
 
 function handleExport() {
-  proxy.$modal.msgSuccess('导出功能开发中，敬请期待')
+  proxy.$prompt('请输入学年学期（如 2025-2026-1）', '导出个人工作量明细', {
+    confirmButtonText: '导出',
+    cancelButtonText: '取消',
+    inputPattern: /^\d{4}-\d{4}-[12]$/,
+    inputErrorMessage: '格式如 2025-2026-1',
+    inputPlaceholder: '2025-2026-1'
+  }).then(({ value }) => {
+    proxy.$modal.loading('正在导出...')
+    exportPersonalWorkload({ userId: currentUserId.value, semester: value }).then(res => {
+      const blob = new Blob([res], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `工作量明细_${userStore.nickName || currentUserId.value}_${value}.xlsx`
+      link.click()
+      window.URL.revokeObjectURL(url)
+      proxy.$modal.closeLoading()
+    }).catch(() => {
+      proxy.$modal.closeLoading()
+    })
+  }).catch(() => {})
 }
 
 onMounted(() => {

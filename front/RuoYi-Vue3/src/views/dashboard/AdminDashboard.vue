@@ -13,7 +13,7 @@
     <!-- 4 统计卡片 -->
     <el-row :gutter="20" class="panel-group">
       <el-col :xs="12" :sm="12" :lg="6" class="card-panel-col">
-        <div class="card-panel" @click="router.push('/system/teachingTask')">
+        <div class="card-panel" @click="router.push('/workload/teachingTask')">
           <div class="card-panel-icon-wrapper icon-tasks">
             <el-icon :size="36"><Document /></el-icon>
           </div>
@@ -25,7 +25,7 @@
       </el-col>
 
       <el-col :xs="12" :sm="12" :lg="6" class="card-panel-col">
-        <div class="card-panel" @click="router.push('/system/workloadItem')">
+        <div class="card-panel" @click="router.push('/workload/workloadItem')">
           <div class="card-panel-icon-wrapper icon-workload">
             <el-icon :size="36"><DataLine /></el-icon>
           </div>
@@ -37,7 +37,7 @@
       </el-col>
 
       <el-col :xs="12" :sm="12" :lg="6" class="card-panel-col">
-        <div class="card-panel" @click="router.push('/system/teacherProfile')">
+        <div class="card-panel" @click="router.push('/workload/teacherProfile')">
           <div class="card-panel-icon-wrapper icon-teacher">
             <el-icon :size="36"><User /></el-icon>
           </div>
@@ -49,7 +49,7 @@
       </el-col>
 
       <el-col :xs="12" :sm="12" :lg="6" class="card-panel-col">
-        <div class="card-panel" @click="router.push('/system/workloadItem?appealStatus=1')">
+        <div class="card-panel" @click="router.push('/workload/workloadItem?appealStatus=1')">
           <div class="card-panel-icon-wrapper icon-warning">
             <el-icon :size="36"><Warning /></el-icon>
           </div>
@@ -73,16 +73,16 @@
             </div>
           </template>
           <div class="quick-links">
-            <el-button type="primary" plain icon="Upload" @click="router.push('/system/importBatch')">
+            <el-button type="primary" plain icon="Upload" @click="router.push('/workload/importBatch')">
               导入教务处Excel
             </el-button>
-            <el-button type="success" plain icon="Edit" @click="router.push('/system/workloadItem')">
+            <el-button type="success" plain icon="Edit" @click="router.push('/workload/workloadItem')">
               录入特殊工作量
             </el-button>
-            <el-button type="warning" plain icon="Download" @click="router.push('/system/workloadSummary')">
-              导出附件一报表
+            <el-button type="warning" plain icon="Download" @click="handleExportPaySummary">
+              导出绩效酬金统计表
             </el-button>
-            <el-button type="info" plain icon="Setting" @click="router.push('/system/workloadRule')">
+            <el-button type="info" plain icon="Setting" @click="router.push('/workload/workloadRule')">
               基础系数配置
             </el-button>
           </div>
@@ -96,17 +96,17 @@
             </div>
           </template>
           <div class="todo-list" v-loading="loading">
-            <div v-if="stats.appealCount > 0" class="todo-item todo-warning" @click="router.push('/system/workloadItem?appealStatus=1')">
+            <div v-if="stats.appealCount > 0" class="todo-item todo-warning" @click="router.push('/workload/workloadItem?appealStatus=1')">
               <el-icon><WarningFilled /></el-icon>
               <span>{{ stats.appealCount }} 条工作量异议待处理</span>
               <el-icon class="arrow-right"><ArrowRight /></el-icon>
             </div>
-            <div class="todo-item todo-info" @click="router.push('/system/workloadSummary')">
+            <div class="todo-item todo-info" @click="router.push('/workload/workloadSummary')">
               <el-icon><Clock /></el-icon>
               <span>{{ stats.summaryCount ?? 0 }} 条学期汇总记录</span>
               <el-icon class="arrow-right"><ArrowRight /></el-icon>
             </div>
-            <div class="todo-item todo-success" v-if="stats.totalExcess > 0" @click="router.push('/system/payRecord')">
+            <div class="todo-item todo-success" v-if="stats.totalExcess > 0" @click="router.push('/workload/payRecord')">
               <el-icon><Money /></el-icon>
               <span>超工作量酬金合计 ¥{{ formatMoney(stats.totalPay) }}</span>
               <el-icon class="arrow-right"><ArrowRight /></el-icon>
@@ -137,7 +137,7 @@
 </template>
 
 <script setup name="AdminDashboard">
-import { ref, reactive, onMounted, nextTick, getCurrentInstance } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, nextTick, getCurrentInstance } from 'vue'
 import { useRouter } from 'vue-router'
 import * as echarts from 'echarts'
 import {
@@ -145,6 +145,7 @@ import {
   Download, Setting, WarningFilled, ArrowRight, Clock, Money
 } from '@element-plus/icons-vue'
 import { getAdminStats, getCollegeStats } from '@/api/system/dashboard'
+import { exportPaySummary } from '@/api/system/export'
 
 const router = useRouter()
 const { proxy } = getCurrentInstance()
@@ -188,6 +189,30 @@ async function fetchStats() {
   } finally {
     loading.value = false
   }
+}
+
+function handleExportPaySummary() {
+  proxy.$prompt('请输入学年学期（如 2025-2026-1）', '导出绩效酬金统计表', {
+    confirmButtonText: '导出',
+    cancelButtonText: '取消',
+    inputPattern: /^\d{4}-\d{4}-[12]$/,
+    inputErrorMessage: '格式如 2025-2026-1',
+    inputPlaceholder: '2025-2026-1'
+  }).then(({ value }) => {
+    proxy.$modal.loading('正在导出...')
+    exportPaySummary({ semester: value }).then(res => {
+      const blob = new Blob([res], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `绩效酬金统计_${value}.xlsx`
+      link.click()
+      window.URL.revokeObjectURL(url)
+      proxy.$modal.closeLoading()
+    }).catch(() => {
+      proxy.$modal.closeLoading()
+    })
+  }).catch(() => {})
 }
 
 async function fetchCollegeStats() {
@@ -303,6 +328,14 @@ onMounted(async () => {
   await fetchStats()
   await fetchCollegeStats()
   window.addEventListener('resize', handleResize)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize)
+  if (chartInstance) {
+    chartInstance.dispose()
+    chartInstance = null
+  }
 })
 </script>
 

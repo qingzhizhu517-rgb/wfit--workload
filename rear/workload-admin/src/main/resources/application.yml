@@ -7,7 +7,7 @@ ruoyi:
   # 版权年份
   copyrightYear: 2026
   # 文件路径 示例（ Windows配置D:/ruoyi/uploadPath，Linux配置 /home/ruoyi/uploadPath）
-  profile: /Users/a1/Desktop/wfit/WFIT_workload/rear/uploadPath
+  profile: ./uploadPath
   # 获取ip地址开关
   addressEnabled: false
   # 验证码类型 math 数字计算 char 字符验证
@@ -41,7 +41,7 @@ logging:
 user:
   password:
     # 密码最大错误次数
-    maxRetryCount: 20
+    maxRetryCount: 30
     # 密码锁定时间（默认10分钟）
     lockTime: 10
 
@@ -96,8 +96,8 @@ spring:
 token:
   # 令牌自定义标识
   header: Authorization
-  # 令牌密钥
-  secret: abcdefghijklmnopqrstuvwxyz1234567890
+  # 令牌密钥（HS512 要求至少 64 字节）
+  secret: /utUJnBW3LzgzgrdrszvrZgSljnkSkkoIhlYC1MbUadWsnrzIoLRnW0Rq0OdUtS6
   # 令牌有效期（默认30分钟）
   expireTime: 30
 
@@ -128,7 +128,7 @@ springdoc:
     - group: 'default'
       display-name: '测试模块'
       paths-to-match: '/**'
-      packages-to-scan: com.workload.web.controller.tool
+      packages-to-scan: com.workload.system.controller
 
 # 防盗链配置
 referer:

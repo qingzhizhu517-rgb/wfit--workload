@@ -19,6 +19,7 @@ import com.workload.common.enums.BusinessType;
 import com.workload.system.domain.BizWorkloadItem;
 import com.workload.system.service.IBizWorkloadItemService;
 import com.workload.common.utils.poi.ExcelUtil;
+import com.workload.common.utils.SecurityUtils;
 import com.workload.common.core.page.TableDataInfo;
 
 /**
@@ -41,6 +42,12 @@ public class BizWorkloadItemController extends BaseController
     @GetMapping("/list")
     public TableDataInfo list(BizWorkloadItem bizWorkloadItem)
     {
+        // 教师角色只能查看自己的数据（不用 hasRole，避免 admin 绕过）
+        if (!SecurityUtils.isAdmin() && SecurityUtils.getLoginUser().getUser().getRoles().stream()
+                .anyMatch(r -> "teacher".equals(r.getRoleKey())))
+        {
+            bizWorkloadItem.setUserId(SecurityUtils.getUserId());
+        }
         startPage();
         List<BizWorkloadItem> list = bizWorkloadItemService.selectBizWorkloadItemList(bizWorkloadItem);
         return getDataTable(list);
@@ -54,6 +61,12 @@ public class BizWorkloadItemController extends BaseController
     @PostMapping("/export")
     public void export(HttpServletResponse response, BizWorkloadItem bizWorkloadItem)
     {
+        // 教师角色只能导出自己的数据
+        if (!SecurityUtils.isAdmin() && SecurityUtils.getLoginUser().getUser().getRoles().stream()
+                .anyMatch(r -> "teacher".equals(r.getRoleKey())))
+        {
+            bizWorkloadItem.setUserId(SecurityUtils.getUserId());
+        }
         List<BizWorkloadItem> list = bizWorkloadItemService.selectBizWorkloadItemList(bizWorkloadItem);
         ExcelUtil<BizWorkloadItem> util = new ExcelUtil<BizWorkloadItem>(BizWorkloadItem.class);
         util.exportExcel(response, list, "工作量明细主表数据");
