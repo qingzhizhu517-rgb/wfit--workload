@@ -5,8 +5,8 @@
 -- ============================================================
 
 -- 先删除可能存在的旧数据（可重复执行）
-DELETE FROM sys_role_menu WHERE menu_id >= 2000 AND menu_id < 3000;
-DELETE FROM sys_menu WHERE menu_id >= 2000 AND menu_id < 3000;
+DELETE FROM sys_role_menu WHERE menu_id >= 2000 AND menu_id < 30000;
+DELETE FROM sys_menu WHERE menu_id >= 2000 AND menu_id < 30000;
 
 -- 一级目录：工作量管理
 INSERT INTO sys_menu(menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark)
