@@ -87,9 +87,10 @@ public class BizTeacherProfileController extends BaseController
     @PreAuthorize("@ss.hasPermi('system:teacherProfile:import')")
     @Log(title = "教师档案导入模板", businessType = BusinessType.EXPORT)
     @PostMapping("/importTemplate")
-    public void importTemplate(HttpServletResponse response)
+    public void importTemplate(HttpServletResponse response) throws Exception
     {
-        ExcelUtil<TeacherProfileImportDTO> util = new ExcelUtil<TeacherProfileImportDTO>(TeacherProfileImportDTO.class);
+        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        response.setHeader("Content-Disposition", "attachment;filename=teacherProfileTemplate.xlsx");
         // 添加示例数据行
         List<TeacherProfileImportDTO> example = new java.util.ArrayList<>();
         TeacherProfileImportDTO sample = new TeacherProfileImportDTO();
@@ -101,7 +102,9 @@ public class BizTeacherProfileController extends BaseController
         sample.setPhonenumber("13800138000");
         sample.setEmail("zhangsan@example.com");
         example.add(sample);
-        util.exportExcel(response, example, "教师档案导入模板");
+        com.alibaba.excel.EasyExcel.write(response.getOutputStream(), TeacherProfileImportDTO.class)
+                .sheet("教师档案导入模板")
+                .doWrite(example);
     }
 
     /**
