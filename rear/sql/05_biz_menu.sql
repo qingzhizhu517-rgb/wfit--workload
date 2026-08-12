@@ -129,6 +129,10 @@ VALUES(20210, '导出个人工作量', 2020, 10, '', '', '', '', 1, 0, 'F', '0',
 INSERT INTO sys_menu(menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark)
 VALUES(20211, '导出酬金统计', 2020, 11, '', '', '', '', 1, 0, 'F', '0', '0', 'system:export:paySummary', '#', 'admin', sysdate(), '', NULL, '');
 
+-- 教师确认（08_review_fixes.sql 同步登记，字段完全一致）
+INSERT INTO sys_menu(menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark)
+VALUES(20215, '教师确认', 2020, 12, '', '', '', '', 1, 0, 'F', '0', '0', 'system:audit:teacherConfirm', '#', 'admin', sysdate(), '', NULL, '');
+
 -- 酬金记录
 INSERT INTO sys_menu(menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark)
 VALUES(20212, '酬金记录查询', 2021, 1, '', '', '', '', 1, 0, 'F', '0', '0', 'system:payRecord:query', '#', 'admin', sysdate(), '', NULL, '');
