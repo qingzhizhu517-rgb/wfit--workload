@@ -27,20 +27,22 @@ export function useDashboard() {
   }
 
   async function fetchAuditCounts() {
-    try {
-      const statuses = [
-        { key: 'draft', status: 0 },
-        { key: 'pending', status: 1 },
-        { key: 'signed', status: 2 },
-        { key: 'completed', status: 3 }
-      ]
-      for (const s of statuses) {
-        const res = await listWorkloadSummary({ status: s.status, pageNum: 1, pageSize: 1 })
-        auditCounts[s.key] = res.total || 0
-      }
-    } catch (e) {
-      // ignore
-    }
+    const statuses = [
+      { key: 'draft', status: 0 },
+      { key: 'pending', status: 1 },
+      { key: 'signed', status: 2 },
+      { key: 'completed', status: 3 }
+    ]
+    // 并行请求各状态计数，单个失败不影响其他面板
+    await Promise.all(statuses.map(s =>
+      listWorkloadSummary({ status: s.status, pageNum: 1, pageSize: 1 })
+        .then(res => {
+          auditCounts[s.key] = res.total || 0
+        })
+        .catch(() => {
+          // ignore
+        })
+    ))
   }
 
   function handleExportPaySummary() {

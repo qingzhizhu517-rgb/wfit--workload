@@ -40,10 +40,7 @@
           <el-col :span="12" v-if="form.itemType === 'G11'">
             <el-form-item label="岗位类型" prop="positionType">
               <el-select v-model="form.positionType" placeholder="请选择岗位" style="width: 100%">
-                <el-option label="班主任" value="班主任" />
-                <el-option label="教研室主任" value="教研室主任" />
-                <el-option label="系主任" value="系主任" />
-                <el-option label="其他管理岗位" value="其他管理岗位" />
+                <el-option v-for="item in roleTypeOptions" :key="item.value" :label="item.label" :value="item.value" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -148,7 +145,7 @@
 
 <script setup name="MyWorkloadDeclare">
 import { listWorkloadItem, getWorkloadItem, addWorkloadItem, delWorkloadItem } from "@/api/system/workloadItem"
-import { getCurrentSemester } from "@/utils/bizDict"
+import { getCurrentSemester, roleTypeOptions } from "@/utils/bizDict"
 import SemesterSelect from '@/components/SemesterSelect/index.vue'
 import useUserStore from '@/store/modules/user'
 

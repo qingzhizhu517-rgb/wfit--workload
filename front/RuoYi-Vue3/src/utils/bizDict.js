@@ -58,7 +58,7 @@ export const appealStatusMap = {
   0: st('无', 'info'), 1: st('申诉中', 'warning'), 2: st('已处理', 'success'), 3: st('已驳回', 'danger')
 }
 export const summaryStatusMap = {
-  0: st('草稿', 'info'), 1: st('已公示', 'primary'), 2: st('已审核', 'success'), 3: st('已锁定', 'warning')
+  0: st('填报中', 'info'), 1: st('待教务审核', 'primary'), 2: st('待院领导签字', 'warning'), 3: st('已完结', 'success')
 }
 export const importBatchStatusMap = {
   0: st('解析中', 'warning'), 1: st('待确认', 'primary'), 2: st('已导入', 'success'), 3: st('已驳回', 'danger'), 4: st('失败', 'danger')

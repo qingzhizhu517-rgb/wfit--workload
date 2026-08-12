@@ -89,8 +89,9 @@
       <el-table-column label="操作" align="center" :width="isTeacher ? 100 : 220" fixed="right" class-name="small-padding fixed-width">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleDetail(scope.row)" v-hasPermi="['system:workloadSummary:query']">详情</el-button>
-          <!-- 教师只能提交 -->
+          <!-- 教师只能提交，或在审批中确认本人工作量 -->
           <el-button v-if="isTeacher && scope.row.status === 0" link type="success" icon="Promotion" @click="handleSubmit(scope.row)" v-hasPermi="['system:audit:submit']">提交</el-button>
+          <el-button v-if="isTeacher && (scope.row.status === 1 || scope.row.status === 2) && scope.row.userId === userStore.id" link type="primary" icon="Select" @click="handleTeacherConfirm(scope.row)" v-hasPermi="['system:audit:teacherConfirm']">确认工作量</el-button>
           <!-- 教务/院领导审批操作 -->
           <template v-if="!isTeacher">
             <el-button v-if="scope.row.status === 0" link type="success" icon="Promotion" @click="handleSubmit(scope.row)" v-hasPermi="['system:audit:submit']">提交</el-button>
@@ -199,7 +200,7 @@
 <script setup name="WorkloadSummary">
 import { listWorkloadSummary, delWorkloadSummary } from "@/api/system/workloadSummary"
 import { recalcSummary, recalcAll, previewSummary, genG11 } from "@/api/system/calc"
-import { auditSubmit, auditApprove, auditReject, auditSign, auditUnlock, auditBatchSubmit } from "@/api/system/audit"
+import { auditSubmit, auditApprove, auditReject, auditSign, auditUnlock, auditBatchSubmit, auditTeacherConfirm } from "@/api/system/audit"
 import UserSelect from '@/components/UserSelect/index.vue'
 import SemesterSelect from '@/components/SemesterSelect/index.vue'
 import { useUserMap } from '@/utils/userCache'
@@ -380,6 +381,16 @@ function handleSubmit(row) {
   }).catch(() => {})
 }
 
+/** 教师确认工作量 */
+function handleTeacherConfirm(row) {
+  proxy.$modal.confirm(`确认本人 ${row.semester} 学期的工作量汇总吗？`).then(() => {
+    return auditTeacherConfirm(row.id)
+  }).then(() => {
+    getList()
+    proxy.$modal.msgSuccess('已确认工作量')
+  }).catch(() => {})
+}
+
 /** 审核通过 */
 function handleApprove(row) {
   proxy.$modal.confirm(`确认审核通过「${userLabel(row.userId)}」${row.semester} 的工作量汇总？`).then(() => {
@@ -407,11 +418,11 @@ function handleReject(row) {
 
 /** 院领导签字 */
 function handleSign(row) {
-  proxy.$modal.confirm(`确认签字确认「${userLabel(row.userId)}」${row.semester} 的工作量汇总？签字后将锁定。`).then(() => {
+  proxy.$modal.confirm(`确认签字确认「${userLabel(row.userId)}」${row.semester} 的工作量汇总？签字后汇总将完结。`).then(() => {
     return auditSign(row.id)
   }).then(() => {
     getList()
-    proxy.$modal.msgSuccess('签字确认完成，汇总已锁定')
+    proxy.$modal.msgSuccess('签字确认完成，汇总已完结')
   }).catch(() => {})
 }
 

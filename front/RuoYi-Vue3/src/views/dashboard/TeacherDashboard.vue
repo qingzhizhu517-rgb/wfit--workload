@@ -243,12 +243,12 @@ function typeTagType(code) {
 }
 
 function summaryLabel(status) {
-  const map = { 0: '草稿', 1: '已公示', 2: '已审核', 3: '已锁定' }
+  const map = { 0: '填报中', 1: '待教务审核', 2: '待院领导签字', 3: '已完结' }
   return map[status] ?? status
 }
 
 function summaryTagType(status) {
-  const map = { 0: 'info', 1: 'warning', 2: 'success', 3: 'danger' }
+  const map = { 0: 'info', 1: 'primary', 2: 'warning', 3: 'success' }
   return map[status] ?? ''
 }
 

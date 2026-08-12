@@ -53,3 +53,12 @@ export function auditBatchSubmit(ids) {
     params: { ids: ids.join(',') }
   })
 }
+
+// 教师确认工作量（待教务审核/待院领导签字阶段）
+export function auditTeacherConfirm(id) {
+  return request({
+    url: '/system/audit/teacherConfirm',
+    method: 'post',
+    params: { id }
+  })
+}
