@@ -108,7 +108,7 @@
             </div>
             <div class="todo-item todo-success" v-if="stats.totalExcess > 0" @click="router.push('/workload/payRecord')">
               <el-icon><Money /></el-icon>
-              <span>超工作量酬金合计 ¥{{ formatMoney(stats.totalPay) }}</span>
+              <span>超工作量酬金合计 ¥{{ formatAmount(stats.totalPay) }}</span>
               <el-icon class="arrow-right"><ArrowRight /></el-icon>
             </div>
             <el-empty v-if="!stats.appealCount && !stats.summaryCount && !stats.totalExcess"
@@ -146,7 +146,7 @@ import {
 } from '@element-plus/icons-vue'
 import { getAdminStats, getCollegeStats } from '@/api/system/dashboard'
 import { useDashboard } from '@/composable/useDashboard'
-import { getCurrentSemester } from '@/utils/bizDict'
+import { getCurrentSemester, formatAmount } from '@/utils/bizDict'
 
 const router = useRouter()
 const { proxy } = getCurrentInstance()
@@ -154,8 +154,8 @@ const { proxy } = getCurrentInstance()
 /** 学期兜底：后端未返回学期时按当前日期推算，避免硬编码 */
 const fallbackSemester = getCurrentSemester()
 
-/** 金额格式化与绩效酬金表导出复用仪表盘共享逻辑 */
-const { formatMoney, handleExportPaySummary } = useDashboard()
+/** 绩效酬金表导出复用仪表盘共享逻辑，金额格式化统一用 bizDict.formatAmount */
+const { handleExportPaySummary } = useDashboard()
 
 const loading = ref(false)
 const chartLoading = ref(false)

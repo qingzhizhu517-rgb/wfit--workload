@@ -44,21 +44,29 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="teacherProfileList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="teacherProfileList" empty-text="暂无数据" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="50" align="center" />
       <el-table-column label="序号" align="center" width="60">
         <template #default="scope">
           {{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}
         </template>
       </el-table-column>
-      <el-table-column label="教师" align="center" prop="userId" width="120">
+      <el-table-column label="教师" align="center" prop="userId" width="150">
         <template #default="scope">{{ userLabel(scope.row.userId) }}</template>
       </el-table-column>
-      <el-table-column label="院部" align="center" prop="deptId" min-width="140">
+      <el-table-column label="院部" align="center" prop="deptId" min-width="140" show-overflow-tooltip>
         <template #default="scope">{{ deptName(scope.row.userId) }}</template>
       </el-table-column>
-      <el-table-column label="职称" align="center" prop="title" width="100" />
-      <el-table-column label="人员性质" align="center" prop="teacherNature" width="100" />
+      <el-table-column label="职称" align="center" prop="title" width="100">
+        <template #default="scope">
+          <biz-tag :value="scope.row.title" :map="teacherTitleMap" />
+        </template>
+      </el-table-column>
+      <el-table-column label="人员性质" align="center" prop="teacherNature" width="100">
+        <template #default="scope">
+          <biz-tag :value="scope.row.teacherNature" :map="teacherNatureMap" />
+        </template>
+      </el-table-column>
       <el-table-column label="特殊状态" align="center" prop="specialStatus" width="100">
         <template #default="scope">
           <biz-tag :value="scope.row.specialStatus" :map="specialStatusMap" />
@@ -210,18 +218,16 @@ import UserSelect from '@/components/UserSelect/index.vue'
 import { useUserMap } from '@/utils/userCache'
 import { getToken } from "@/utils/auth"
 import {
-  teacherTitleOptions, teacherNatureOptions, specialStatusOptions, enterpriseEvalOptions
+  teacherTitleOptions, teacherNatureOptions, specialStatusOptions, enterpriseEvalOptions,
+  specialStatusMap, optionsToMap
 } from '@/utils/bizDict'
 
 const { proxy } = getCurrentInstance()
 const { userLabel, deptName } = useUserMap()
 
-const specialStatusMap = {
-  '正常': { label: '正常', type: 'success' },
-  '产假': { label: '产假', type: 'warning' },
-  '在职读博': { label: '在职读博', type: 'warning' },
-  '访学': { label: '访学', type: 'primary' }
-}
+/** 职称/人员性质列 biz-tag 映射（由 bizDict Options 转换） */
+const teacherTitleMap = optionsToMap(teacherTitleOptions)
+const teacherNatureMap = optionsToMap(teacherNatureOptions)
 
 const teacherProfileList = ref([])
 const open = ref(false)

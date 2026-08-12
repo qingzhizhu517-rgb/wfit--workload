@@ -37,31 +37,28 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="workloadCategoryDictList" row-key="typeCode" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="workloadCategoryDictList" row-key="typeCode" empty-text="暂无数据" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="50" align="center" />
       <el-table-column label="分类代码" align="center" prop="typeCode" width="100">
         <template #default="scope">
           <biz-tag :value="scope.row.typeCode" :map="typeCodeMap" />
         </template>
       </el-table-column>
-      <el-table-column label="分类名称" align="center" prop="typeName" min-width="130" />
+      <el-table-column label="分类名称" align="center" prop="typeName" min-width="130" show-overflow-tooltip />
       <el-table-column label="所属大类" align="center" prop="parentGroup" width="110">
         <template #default="scope">
           <biz-tag :value="scope.row.parentGroup" :map="parentGroupMap" />
         </template>
       </el-table-column>
       <el-table-column label="计算策略" align="center" prop="calcStrategy" min-width="150" show-overflow-tooltip>
-        <template #default="scope">
-          <span v-if="scope.row.calcStrategy" class="strategy-name">{{ scope.row.calcStrategy }}</span>
-          <span v-else>-</span>
-        </template>
+        <template #default="scope">{{ scope.row.calcStrategy || '-' }}</template>
       </el-table-column>
       <el-table-column label="计入超额" align="center" prop="isCalcExcess" width="90">
         <template #default="scope">
           <biz-tag :value="scope.row.isCalcExcess" :map="yesNoMap" />
         </template>
       </el-table-column>
-      <el-table-column label="排序" align="center" prop="sortOrder" width="70" />
+      <el-table-column label="排序" align="center" prop="sortOrder" width="60" />
       <el-table-column label="状态" align="center" prop="status" width="90">
         <template #default="scope">
           <biz-tag :value="scope.row.status" :map="normalStatusMap" />
@@ -290,10 +287,3 @@ function handleExport() {
 
 getList()
 </script>
-
-<style scoped>
-.strategy-name {
-  font-family: monospace;
-  color: var(--el-color-primary);
-}
-</style>

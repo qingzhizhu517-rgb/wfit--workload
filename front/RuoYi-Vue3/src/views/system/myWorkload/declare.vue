@@ -75,31 +75,33 @@
         </div>
       </template>
 
-      <el-table v-loading="listLoading" :data="myList" stripe>
+      <el-table v-loading="listLoading" :data="myList" stripe empty-text="暂无数据">
         <el-table-column label="序号" align="center" width="60">
           <template #default="scope">
             {{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}
           </template>
         </el-table-column>
-        <el-table-column label="学期" prop="semester" width="120" />
-        <el-table-column label="类别" prop="itemType" width="80">
+        <el-table-column label="学期" align="center" prop="semester" width="110" />
+        <el-table-column label="类别" align="center" prop="itemType" width="130">
           <template #default="scope">
-            <el-tag :type="typeTagMap[scope.row.itemType]" size="small">{{ scope.row.itemType }}</el-tag>
+            <biz-tag :value="scope.row.itemType" :map="itemTypeMap" />
           </template>
         </el-table-column>
         <el-table-column label="项目名称" prop="courseName" min-width="160" show-overflow-tooltip />
-        <el-table-column label="核定工作量" prop="calculatedWorkload" width="100" align="center" />
+        <el-table-column label="核定工作量(学时)" prop="calculatedWorkload" width="120" align="right">
+          <template #default="scope">{{ formatNumber(scope.row.calculatedWorkload) }}</template>
+        </el-table-column>
         <el-table-column label="状态" prop="status" width="90" align="center">
           <template #default="scope">
-            <el-tag :type="(workloadItemStatusMap[scope.row.status] || {}).type" size="small">{{ (workloadItemStatusMap[scope.row.status] || {}).label || scope.row.status }}</el-tag>
+            <biz-tag :value="scope.row.status" :map="workloadItemStatusMap" />
           </template>
         </el-table-column>
-        <el-table-column label="申报时间" width="160">
+        <el-table-column label="申报时间" align="center" width="160">
           <template #default="scope">
-            {{ scope.row.createTime ? scope.row.createTime.replace('T', ' ').substring(0, 16) : '-' }}
+            {{ scope.row.createTime ? parseTime(scope.row.createTime, '{y}-{m}-{d} {h}:{i}') : '-' }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="160" align="center">
+        <el-table-column label="操作" width="140" align="center" fixed="right" class-name="small-padding fixed-width">
           <template #default="scope">
             <el-button link type="primary" size="small" icon="View" @click="handleDetail(scope.row)">详情</el-button>
             <el-button link type="danger" size="small" icon="Delete"
@@ -118,20 +120,20 @@
       <el-descriptions :column="2" border>
         <el-descriptions-item label="明细ID">{{ detailData.id }}</el-descriptions-item>
         <el-descriptions-item label="类别">
-          <el-tag :type="typeTagMap[detailData.itemType]" size="small">{{ detailData.itemType }}</el-tag>
+          <biz-tag :value="detailData.itemType" :map="itemTypeMap" />
         </el-descriptions-item>
         <el-descriptions-item label="学期">{{ detailData.semester }}</el-descriptions-item>
-        <el-descriptions-item label="核定工作量">
-          <span style="font-weight: 600; color: var(--el-color-primary);">{{ detailData.calculatedWorkload }}</span>
+        <el-descriptions-item label="核定工作量(学时)">
+          <span style="font-weight: 600; color: var(--el-color-primary);">{{ formatNumber(detailData.calculatedWorkload) }}</span>
         </el-descriptions-item>
         <el-descriptions-item label="项目名称" :span="2">{{ detailData.courseName || '-' }}</el-descriptions-item>
         <el-descriptions-item label="状态">
-          <el-tag :type="(workloadItemStatusMap[detailData.status] || {}).type" size="small">{{ (workloadItemStatusMap[detailData.status] || {}).label || detailData.status }}</el-tag>
+          <biz-tag :value="detailData.status" :map="workloadItemStatusMap" />
         </el-descriptions-item>
         <el-descriptions-item label="来源">{{ detailData.sourceType || '-' }}</el-descriptions-item>
         <el-descriptions-item label="说明" :span="2">{{ detailData.description || '-' }}</el-descriptions-item>
         <el-descriptions-item label="备注" :span="2">{{ detailData.remark || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="申报时间">{{ detailData.createTime || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="申报时间">{{ detailData.createTime ? parseTime(detailData.createTime, '{y}-{m}-{d} {h}:{i}') : '-' }}</el-descriptions-item>
         <el-descriptions-item label="更新时间">{{ detailData.updateTime || '-' }}</el-descriptions-item>
       </el-descriptions>
       <template #footer>
@@ -145,7 +147,7 @@
 
 <script setup name="MyWorkloadDeclare">
 import { listWorkloadItem, getWorkloadItem, addWorkloadItem, delWorkloadItem } from "@/api/system/workloadItem"
-import { getCurrentSemester, roleTypeOptions, workloadItemStatusMap } from "@/utils/bizDict"
+import { getCurrentSemester, roleTypeOptions, workloadItemStatusMap, itemTypeMap, formatNumber } from "@/utils/bizDict"
 import SemesterSelect from '@/components/SemesterSelect/index.vue'
 import useUserStore from '@/store/modules/user'
 
@@ -183,8 +185,6 @@ const rules = {
   calculatedWorkload: [{ required: true, message: '请输入核定工作量', trigger: 'blur' }],
   positionType: [{ required: true, message: '请选择岗位类型', trigger: 'change' }]
 }
-
-const typeTagMap = { G8: 'success', G9: 'warning', G11: 'primary' }
 
 const namePlaceholder = computed(() => {
   const map = {
@@ -286,7 +286,7 @@ getMyList()
 
 .form-tip {
   font-size: 12px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   line-height: 1.2;
   margin-top: 4px;
 }

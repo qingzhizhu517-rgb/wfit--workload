@@ -28,15 +28,17 @@
 
     <el-alert type="info" :closable="false" class="mb8" title="核算公式：工作量 = 学分 × 指导人数(上限20) × 每学分常量（规则 CONST_COURSE_DESIGN，默认 0.4）" />
 
-    <el-table v-loading="loading" :data="wlCourseDesignList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="wlCourseDesignList" empty-text="暂无数据" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="50" align="center" />
-      <el-table-column label="明细ID" align="center" prop="itemId" width="90" />
-      <el-table-column label="课程设计学分" align="center" prop="J4" width="120">
+      <el-table-column label="明细ID" align="center" prop="itemId" width="70" />
+      <el-table-column label="课程设计学分" align="right" prop="J4" width="120">
         <template #default="scope">
-          <span class="coef-main">{{ scope.row.J4 }}</span>
+          <span class="coef-main">{{ formatNumber(scope.row.J4) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="指导人数" align="center" prop="R4" width="100" />
+      <el-table-column label="指导人数" align="right" prop="R4" width="100">
+        <template #default="scope">{{ formatNumber(scope.row.R4, 0) }}</template>
+      </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" min-width="140" show-overflow-tooltip>
         <template #default="scope">{{ scope.row.remark || '-' }}</template>
       </el-table-column>
@@ -80,6 +82,7 @@
 
 <script setup name="WlCourseDesign">
 import { listWlCourseDesign, getWlCourseDesign, delWlCourseDesign, addWlCourseDesign, updateWlCourseDesign } from "@/api/system/wlCourseDesign"
+import { formatNumber } from '@/utils/bizDict'
 
 const { proxy } = getCurrentInstance()
 

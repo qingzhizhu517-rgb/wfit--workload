@@ -38,20 +38,26 @@
 
     <el-alert type="info" :closable="false" class="mb8" title="核算公式：工作量 = 指导人数 × 系数（理工 本9/专5，文史 本6/专4；本科上限10人、专科上限15人）" />
 
-    <el-table v-loading="loading" :data="wlThesisList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="wlThesisList" empty-text="暂无数据" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="50" align="center" />
-      <el-table-column label="明细ID" align="center" prop="itemId" width="90" />
-      <el-table-column label="指导人数" align="center" prop="R5" width="100">
+      <el-table-column label="明细ID" align="center" prop="itemId" width="70" />
+      <el-table-column label="指导人数" align="right" prop="R5" width="100">
         <template #default="scope">
-          <span class="coef-main">{{ scope.row.R5 }}</span>
+          <span class="coef-main">{{ formatNumber(scope.row.R5, 0) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="系数" align="center" prop="K5" width="80" />
-      <el-table-column label="层次" align="center" prop="educationLevel" width="90">
-        <template #default="scope">{{ scope.row.educationLevel || '-' }}</template>
+      <el-table-column label="系数" align="right" prop="K5" width="80">
+        <template #default="scope">{{ formatNumber(scope.row.K5) }}</template>
+      </el-table-column>
+      <el-table-column label="层次" align="center" prop="educationLevel" width="120">
+        <template #default="scope">
+          <biz-tag :value="scope.row.educationLevel" :map="educationLevelTagMap" />
+        </template>
       </el-table-column>
       <el-table-column label="科类" align="center" prop="major" width="90">
-        <template #default="scope">{{ scope.row.major || '-' }}</template>
+        <template #default="scope">
+          <biz-tag :value="scope.row.major" :map="majorCategoryTagMap" />
+        </template>
       </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" min-width="140" show-overflow-tooltip>
         <template #default="scope">{{ scope.row.remark || '-' }}</template>
@@ -108,7 +114,10 @@
 
 <script setup name="WlThesis">
 import { listWlThesis, getWlThesis, delWlThesis, addWlThesis, updateWlThesis } from "@/api/system/wlThesis"
-import { educationLevelOptions, majorCategoryOptions } from '@/utils/bizDict'
+import { educationLevelOptions, majorCategoryOptions, optionsToMap, formatNumber } from '@/utils/bizDict'
+
+const educationLevelTagMap = optionsToMap(educationLevelOptions)
+const majorCategoryTagMap = optionsToMap(majorCategoryOptions)
 
 const { proxy } = getCurrentInstance()
 
