@@ -23,6 +23,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **后端**: Spring Boot 4.0.7 / Java 17 / Maven 多模块 / MyBatis / Druid / Spring Security + JWT
 - **前端**: Vue 3.5 + Vite 6 + Element Plus 2.13 + Pinia 3 + Vue Router 4
 - **数据库**: MySQL 8 (库名 `wflg_workload`)，Redis (缓存 + 会话)
+- **文档**: `docs/API接口文档.md`（22 个 Controller、121 个端点）、`docs/代码审查报告.md`（33 个问题修复记录）
 - **Excel**: Apache POI 5.5.1（导入导出）
 - **API 文档**: Springdoc OpenAPI (Swagger UI at `/swagger-ui.html`)
 
@@ -35,7 +36,7 @@ wfit/
 │   │   ├── workload-admin/            # 启动入口 + 系统管理 Controller (端口 8084)
 │   │   ├── workload-system/           # 业务核心模块
 │   │   │   ├── src/**/calc/           # 核算引擎
-│   │   │   │   ├── strategy/          # G1-G11 策略 bean（7 个 StrategyImpl）
+│   │   │   │   ├── strategy/          # G1-G11 策略 bean（7 个 StrategyImpl + CalcStrategyFactory）
 │   │   │   │   ├── rule/              # 规则参数服务（RuleParamService, Redis 缓存）
 │   │   │   │   ├── allowance/         # 酬金计算（PayCalcService, A~G 费率）
 │   │   │   │   ├── WorkloadCalcService    # 单条/批量重算
@@ -43,6 +44,7 @@ wfit/
 │   │   │   │   ├── PayCalcService         # 酬金计算
 │   │   │   │   ├── ManagementItemGenerator# G11 自动生成
 │   │   │   │   └── SemesterCalendar       # 学期校历工具
+│   │   │   ├── src/**/domain/dto/     # 4 个导入导出 DTO
 │   │   │   ├── src/**/controller/     # 22 个业务 Controller（Biz*Controller）
 │   │   │   ├── src/**/service/        # 18+ 个业务 Service
 │   │   │   ├── src/**/mapper/         # 18 个 MyBatis Mapper 接口
@@ -58,7 +60,12 @@ wfit/
 │   │       ├── 04_biz_test_data.sql   # 测试数据（6教师+9教学任务+12明细+4汇总）
 │   │       ├── 05_biz_menu.sql        # 业务菜单 SQL（19 子菜单 + 按钮权限）
 │   │       ├── 06_test_accounts.sql   # 测试账号
-│   │       └── 07_fix_test_data.sql   # 测试数据修复脚本
+│   │       ├── 07_fix_test_data.sql   # 测试数据修复脚本
+│   │       ├── 08_review_fixes.sql    # 代码审查修复补丁
+│   │       ├── 09_dashboard_perm.sql  # 仪表盘权限登记
+│   │       ├── 10_item_role_type.sql  # 岗位类型字段补充
+│   │       ├── ry_20260321.sql        # RuoYi 基础系统表
+│   │       └── quartz.sql             # Quartz 调度器表
 │   └── front/RuoYi-Vue3/             # 前端 Vue 3 项目
 │       └── src/
 │           ├── api/system/            # 31 个业务 API 文件
@@ -84,13 +91,19 @@ wfit/
 │           │   └── payRate/           # 酬金标准
 │           └── views/dashboard/       # 仪表盘
 │               ├── AdminDashboard.vue # 管理员大屏（4统计+ECharts+待办）
-│               └── TeacherDashboard.vue # 教师工作台（数据卡+明细+达标面板）
+│               ├── TeacherDashboard.vue # 教师工作台（数据卡+明细+达标面板）
+│               ├── JiaoWuDashboard.vue # 教务助理工作台
+│               └── LeaderDashboard.vue # 院领导工作台
 ├── else/                              # 原始需求文档、管理办法
 │   ├── 工作量.md                      # 业务需求权威来源（G1-G11 公式）
 │   ├── 潍理工工作量管理系统设计new).md  # 系统设计文档（E-R图+SOP+路线图）
 │   ├── 实施计划-M4M5-2026-07-24.md    # M4/M5 实施计划
 │   └── 进度报告-2026-07-24.md         # 进度报告
-├── docs/                              # 开发计划与设计规范
+├── docs/                              # 开发文档
+│   ├── API接口文档.md                  # 完整 API 参考（22 Controller、121 端点）
+│   ├── 代码审查报告.md                  # 代码审查报告（33 个问题修复记录）
+│   ├── 测试.md                        # 测试文档
+│   ├── api-test-report.md             # API 测试报告
 │   └── superpowers/
 │       ├── plans/                     # 实施计划（M1/M3）
 │       └── specs/                     # 数据库设计规范（权威 v2）
@@ -134,15 +147,22 @@ npm run build:prod
 ### 数据库初始化
 
 ```bash
-# 按顺序执行 SQL
+# 基础表（先执行 RuoYi 系统表）
+mysql -u root -p wflg_workload < rear/sql/ry_20260321.sql
+mysql -u root -p wflg_workload < rear/sql/quartz.sql
+
+# 按顺序执行业务 SQL
 mysql -u root -p wflg_workload < rear/sql/01_biz_schema.sql
 mysql -u root -p wflg_workload < rear/sql/02_biz_seed.sql
 mysql -u root -p wflg_workload < rear/sql/03_calc_rules.sql
 mysql -u root -p wflg_workload < rear/sql/04_biz_test_data.sql
 mysql -u root -p wflg_workload < rear/sql/05_biz_menu.sql
-# 可选：测试账号和修复脚本
+# 可选：测试账号、修复脚本、后续补丁
 mysql -u root -p wflg_workload < rear/sql/06_test_accounts.sql
 mysql -u root -p wflg_workload < rear/sql/07_fix_test_data.sql
+mysql -u root -p wflg_workload < rear/sql/08_review_fixes.sql
+mysql -u root -p wflg_workload < rear/sql/09_dashboard_perm.sql
+mysql -u root -p wflg_workload < rear/sql/10_item_role_type.sql
 ```
 
 ## 测试
@@ -152,12 +172,21 @@ mysql -u root -p wflg_workload < rear/sql/07_fix_test_data.sql
 ## 配置要点
 
 - 后端端口: `8084` (application.yml)
-- 数据库: `127.0.0.1:3306/wflg_workload`，用户 `root`，密码 `123456` (application-druid.yml)
+- 数据库: `172.19.80.1:3306/wflg_workload`（WSL 桥接 IP，非 localhost），用户 `root`，密码 `123456` (application-druid.yml)
 - Redis: `localhost:6379`，无密码
 - 文件上传路径: `rear/uploadPath/`
 - 前端开发端口: `3000` (vite.config.js)
-- 前端 API 代理: 开发环境默认代理到 `http://localhost:8084`
-- 学期校历: `application.yml` 的 `wl.semester` 节点
+- 前端 API 代理: 开发环境 `/dev-api` 前缀请求代理到 `http://localhost:8084`（去掉前缀）
+- 学期校历: `application.yml` 的 `wl.semester` 节点（秋季 09-01~01-31，春季 02-20~07-15）
+
+### 测试账号（密码均为 `123456`，来自 `06_test_accounts.sql`）
+
+| 账号 | user_id | 角色 | 说明 |
+|------|---------|------|------|
+| `admin_test` | 1001 | admin (role_id=1) | 管理员，全部权限 |
+| `jiaowu_test` | 1002 | assistant (role_id=3) | 教务助理，审批权限 |
+| `teacher_test` | 1003 | teacher (role_id=4) | 教师，仅看自己的数据 |
+| `leader_test` | 1004 | leader (role_id=5) | 院领导，签字权限 |
 
 ## 业务核心：工作量核算公式
 
@@ -178,11 +207,11 @@ mysql -u root -p wflg_workload < rear/sql/07_fix_test_data.sql
 
 ## 计算引擎架构
 
-核心是**策略模式 + Spring IOC 动态分发**，彻底消灭 if-else：
+核心是**策略模式 + Spring IOC 动态分发**，彻底消灭 if-else（包路径 `com.workload.system.calc`）：
 
-1. `WorkloadCalcStrategy` 接口 — 统一计算入口
+1. `WorkloadCalcStrategy` 接口 — 统一计算入口（`getTypeCode()`、`calculate()`、`afterCalculated()`）
 2. 7 个策略实现 — Theory/Practice/InternshipTraining/CourseDesign/Thesis/ConcentratedInternship/Management
-3. `DispatcherService` — 根据 `category_dict.calc_strategy` 字段动态调用对应策略
+3. `CalcStrategyFactory` — 根据 `biz_workload_category_dict.calc_strategy` 列（存 Spring bean 名）动态解析策略，结果缓存在 `ConcurrentHashMap`
 4. `RuleParamService` — 规则参数读取（Redis 缓存），政策变动改数据库即可
 5. `SummaryCalcService` — 学期汇总 → JSON 动态分类
 6. `PayCalcService` — 酬金 A~G 计算
@@ -262,8 +291,11 @@ mysql -u root -p wflg_workload < rear/sql/07_fix_test_data.sql
 ## 注意事项
 
 - 当前存在两套前端（Vue2 在 `rear/workload-ui` 已弃用，Vue3 在 `front/RuoYi-Vue3` 为活跃版本）
-- 学期校历配置在 `application.yml` 的 `wl.semester` 节点，用于任职折算和特殊状态判定
+- `rear/manage/` 模块是空壳占位（仅有 hello-world 的 `Main.java`），无业务逻辑
+- 学期格式为 `2025-2026-1`（学年+学期号），校历配置在 `application.yml` 的 `wl.semester` 节点
 - 业务表前缀 `biz_`，系统表前缀 `sys_`（RuoYi 内置）
-- `.env.*` 文件包含敏感配置，已被 git 跟踪需注意
+- `.env.development` 和 `application-druid.yml` 包含敏感配置且已被 git 跟踪
 - G11 管理服务条目由 `ManagementItemGenerator` 从 `biz_role_assignment` 自动生成，也可手动录入
 - 汇总表 `biz_workload_summary` 使用 JSON 字段 `category_details` 存储动态分类汇总，扩展新类别无需改表结构
+- `DataScopeUtil.resolveUserId()` 强制教师角色只能看自己的数据，防止 IDOR，已在 calc/export/dashboard 控制器中使用
+- 策略 bean 名称必须与 `biz_workload_category_dict.calc_strategy` 列精确匹配（如 `theoryCalcStrategy`），`CalcStrategyFactory` 按 bean 名解析
