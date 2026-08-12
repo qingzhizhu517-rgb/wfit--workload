@@ -18,7 +18,6 @@ import com.workload.system.calc.ManagementItemGenerator;
 import com.workload.system.calc.PayCalcService;
 import com.workload.system.calc.SummaryCalcService;
 import com.workload.system.calc.WorkloadCalcService;
-import com.workload.system.domain.BizPayRecord;
 import com.workload.system.domain.BizWorkloadSummary;
 
 /**
@@ -119,21 +118,13 @@ public class BizCalcController extends BaseController
     }
 
     /**
-     * 一把梭：重算全部未冻结明细 -> 汇总 -> 酬金
+     * 一把梭：重算全部未冻结明细 -> 汇总 -> 酬金（Service 层单事务编排，失败整体回滚）
      */
     @PreAuthorize("@ss.hasPermi('system:workloadSummary:edit')")
     @Log(title = "计算引擎", businessType = BusinessType.UPDATE)
     @PostMapping("/recalcAll")
     public AjaxResult recalcAll(@RequestParam Long userId, @RequestParam String semester)
     {
-        int itemCount = workloadCalcService.recalcItems(userId, semester);
-        BizWorkloadSummary summary = summaryCalcService.recalcSummary(userId, semester, true);
-        BizPayRecord payRecord = payCalcService.recalcPay(userId, semester);
-        Map<String, Object> data = new HashMap<>();
-        data.put("recalcItemCount", itemCount);
-        data.put("summary", summary);
-        data.put("payRecord", payRecord);
-        data.put("unconfirmedCount", summaryCalcService.countUnconfirmed(userId, semester));
-        return success(data);
+        return success(workloadCalcService.recalcAll(userId, semester));
     }
 }

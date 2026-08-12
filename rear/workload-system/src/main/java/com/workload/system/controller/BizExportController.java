@@ -17,7 +17,10 @@ import com.alibaba.excel.write.metadata.WriteSheet;
 import com.alibaba.excel.write.metadata.fill.FillConfig;
 import com.workload.common.core.controller.BaseController;
 import com.workload.common.core.domain.AjaxResult;
+import com.workload.common.exception.ServiceException;
+import com.workload.common.utils.DataScopeUtil;
 import com.workload.common.utils.SecurityUtils;
+import com.workload.common.utils.StringUtils;
 import com.workload.system.domain.BizWorkloadItem;
 import com.workload.system.domain.BizWorkloadSummary;
 import com.workload.system.domain.dto.PersonalWorkloadExportDTO;
@@ -51,6 +54,17 @@ public class BizExportController extends BaseController
             @RequestParam("semester") String semester,
             HttpServletResponse response) throws Exception
     {
+        if (userId == null)
+        {
+            throw new ServiceException("userId 不能为空");
+        }
+        if (StringUtils.isEmpty(semester))
+        {
+            throw new ServiceException("semester 不能为空");
+        }
+        // 教师角色强制导出本人数据，忽略传入的他人 userId（修复越权导出 P2-01）
+        userId = DataScopeUtil.resolveUserId(userId);
+
         // 查询汇总
         BizWorkloadSummary summary = summaryService.selectBizWorkloadSummaryByUserAndSemester(userId, semester);
         if (summary == null)
@@ -98,9 +112,14 @@ public class BizExportController extends BaseController
             @RequestParam("semester") String semester,
             HttpServletResponse response) throws Exception
     {
-        // 查询该学期所有汇总
+        if (StringUtils.isEmpty(semester))
+        {
+            throw new ServiceException("semester 不能为空");
+        }
+        // 查询该学期所有汇总；教师角色强制只导出本人数据
         BizWorkloadSummary query = new BizWorkloadSummary();
         query.setSemester(semester);
+        query.setUserId(DataScopeUtil.resolveUserId(null));
         List<BizWorkloadSummary> summaries = summaryService.selectBizWorkloadSummaryList(query);
 
         if (summaries.isEmpty())

@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -60,7 +61,7 @@ public class SummaryCalcServiceImpl implements SummaryCalcService
     private SemesterCalendar semesterCalendar;
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public BizWorkloadSummary recalcSummary(Long userId, String semester, boolean persist)
     {
         BizWorkloadSummary summary = findSummary(userId, semester);
@@ -120,13 +121,28 @@ public class SummaryCalcServiceImpl implements SummaryCalcService
         // 3. 达标（第五条，展示用）
         applyBasicTeaching(summary, profile, g10, semester);
 
-        // 4. 落库
+        // 4. 落库（并发撞 uk_user_sem 唯一键时降级为更新，消除 check-then-act 竞态）
         if (persist)
         {
             if (isNew)
             {
                 summary.setCreateTime(DateUtils.getNowDate());
-                bizWorkloadSummaryMapper.insertBizWorkloadSummary(summary);
+                try
+                {
+                    bizWorkloadSummaryMapper.insertBizWorkloadSummary(summary);
+                }
+                catch (DuplicateKeyException e)
+                {
+                    BizWorkloadSummary existed = findSummary(userId, semester);
+                    if (existed == null)
+                    {
+                        throw new ServiceException("学期汇总保存失败，请重试");
+                    }
+                    summary.setId(existed.getId());
+                    summary.setCreateTime(existed.getCreateTime());
+                    summary.setUpdateTime(DateUtils.getNowDate());
+                    bizWorkloadSummaryMapper.updateBizWorkloadSummary(summary);
+                }
             }
             else
             {

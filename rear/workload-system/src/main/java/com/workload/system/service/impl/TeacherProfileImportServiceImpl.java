@@ -1,8 +1,8 @@
 package com.workload.system.service.impl;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,8 +33,14 @@ public class TeacherProfileImportServiceImpl implements ITeacherProfileImportSer
 {
     private static final Logger log = LoggerFactory.getLogger(TeacherProfileImportServiceImpl.class);
 
-    /** 教师角色ID */
+    /** 教师角色ID：与 sys_role role_id=4 教师角色对应，变更需同步 rear/sql/06_test_accounts.sql */
     private static final Long TEACHER_ROLE_ID = 4L;
+
+    /**
+     * 新建教师初始密码策略：导入时统一使用该默认密码，教师首次登录后须自行修改密码。
+     * 后续可演进为从 sys_config 读取的配置项。
+     */
+    private static final String DEFAULT_PASSWORD = "123456";
 
     @Autowired
     private ISysUserService sysUserService;
@@ -45,18 +51,16 @@ public class TeacherProfileImportServiceImpl implements ITeacherProfileImportSer
     @Autowired
     private BizTeacherProfileMapper teacherProfileMapper;
 
-    /** 部门名称缓存，避免 N+1 查询 */
-    private final Map<String, Long> deptCache = new ConcurrentHashMap<>();
-
     @Override
     public void importTeacherProfiles(List<TeacherProfileImportDTO> rows, String fileName, boolean updateSupport)
     {
-        deptCache.clear();
+        // 方法局部部门缓存：每次导入自建，避免实例级缓存跨请求/并发导入导致的脏数据
+        Map<String, Long> deptCache = new HashMap<>();
         // 获取代理对象以支持事务
         TeacherProfileImportServiceImpl proxy = (TeacherProfileImportServiceImpl) AopContext.currentProxy();
         for (TeacherProfileImportDTO row : rows)
         {
-            proxy.processSingleRow(row, updateSupport);
+            proxy.processSingleRow(row, updateSupport, deptCache);
         }
     }
 
@@ -64,13 +68,13 @@ public class TeacherProfileImportServiceImpl implements ITeacherProfileImportSer
      * 处理单行导入（每行独立事务）
      */
     @Transactional(rollbackFor = Exception.class)
-    public void processSingleRow(TeacherProfileImportDTO dto, boolean updateSupport)
+    public void processSingleRow(TeacherProfileImportDTO dto, boolean updateSupport, Map<String, Long> deptCache)
     {
         // 1. 校验必填字段
         validateRow(dto);
 
         // 2. 查找或创建系统用户
-        SysUser user = findOrCreateUser(dto);
+        SysUser user = findOrCreateUser(dto, deptCache);
 
         // 3. 创建或更新教师档案
         createOrUpdateTeacherProfile(dto, user, updateSupport);
@@ -117,7 +121,7 @@ public class TeacherProfileImportServiceImpl implements ITeacherProfileImportSer
     /**
      * 查找或创建系统用户
      */
-    private SysUser findOrCreateUser(TeacherProfileImportDTO dto)
+    private SysUser findOrCreateUser(TeacherProfileImportDTO dto, Map<String, Long> deptCache)
     {
         // 先按工号查找
         SysUser user = sysUserService.selectUserByUserName(dto.getUserCode());
@@ -138,7 +142,7 @@ public class TeacherProfileImportServiceImpl implements ITeacherProfileImportSer
         user.setNickName(dto.getNickName());
 
         // 查找部门
-        Long deptId = findDeptId(dto.getDeptName());
+        Long deptId = findDeptId(dto.getDeptName(), deptCache);
         user.setDeptId(deptId);
 
         // 设置可选字段
@@ -151,9 +155,8 @@ public class TeacherProfileImportServiceImpl implements ITeacherProfileImportSer
             user.setEmail(dto.getEmail());
         }
 
-        // 设置默认密码（工号后6位或默认密码）
-        String defaultPassword = SecurityUtils.encryptPassword("123456");
-        user.setPassword(defaultPassword);
+        // 设置初始密码（统一默认密码策略，见 DEFAULT_PASSWORD 常量注释）
+        user.setPassword(SecurityUtils.encryptPassword(DEFAULT_PASSWORD));
 
         // 设置状态正常
         user.setStatus("0");
@@ -168,14 +171,18 @@ public class TeacherProfileImportServiceImpl implements ITeacherProfileImportSer
     }
 
     /**
-     * 根据部门名称查找部门ID（带缓存）
+     * 根据部门名称查找部门ID（导入方法内局部缓存）
+     * <p>
+     * 部门不存在时抛出 ServiceException：该异常会使当前行事务回滚，
+     * 并由导入监听器（batchSize=1）捕获计入该行失败明细，不再静默落空。
      */
-    private Long findDeptId(String deptName)
+    private Long findDeptId(String deptName, Map<String, Long> deptCache)
     {
-        // 先查缓存
-        if (deptCache.containsKey(deptName))
+        // 先查本次导入的局部缓存
+        Long cached = deptCache.get(deptName);
+        if (cached != null)
         {
-            return deptCache.get(deptName);
+            return cached;
         }
         // 查数据库
         SysDept query = new SysDept();

@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.workload.common.exception.ServiceException;
@@ -39,7 +40,7 @@ public class PayCalcServiceImpl implements PayCalcService
     private BizPayRecordMapper bizPayRecordMapper;
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public BizPayRecord recalcPay(Long userId, String semester)
     {
         BizWorkloadSummary summary = findSummary(userId, semester);
@@ -81,7 +82,23 @@ public class PayCalcServiceImpl implements PayCalcService
         if (isNew)
         {
             record.setCreateTime(DateUtils.getNowDate());
-            bizPayRecordMapper.insertBizPayRecord(record);
+            try
+            {
+                bizPayRecordMapper.insertBizPayRecord(record);
+            }
+            catch (DuplicateKeyException e)
+            {
+                // 并发撞 uk_user_sem 唯一键时降级为更新，消除 check-then-act 竞态
+                BizPayRecord existed = findPayRecord(userId, semester);
+                if (existed == null)
+                {
+                    throw new ServiceException("酬金记录保存失败，请重试");
+                }
+                record.setId(existed.getId());
+                record.setCreateTime(existed.getCreateTime());
+                record.setUpdateTime(DateUtils.getNowDate());
+                bizPayRecordMapper.updateBizPayRecord(record);
+            }
         }
         else
         {
