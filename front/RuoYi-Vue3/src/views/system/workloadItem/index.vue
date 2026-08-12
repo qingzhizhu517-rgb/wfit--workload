@@ -164,8 +164,9 @@
       <el-form ref="workloadItemRef" :model="form" :rules="rules" label-width="90px">
         <el-row :gutter="16">
           <el-col :span="12">
+            <!-- 编辑态后端 edit 白名单不含 userId，禁用避免静默丢弃 -->
             <el-form-item label="教师" prop="userId">
-              <user-select v-model="form.userId" />
+              <user-select v-model="form.userId" :disabled="form.id != null" :placeholder="form.id != null ? '编辑时不可修改归属教师' : undefined" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -181,8 +182,10 @@
             </el-form-item>
           </el-col>
           <el-col :span="12">
+            <!-- 编辑态后端 edit 白名单不含 calculatedWorkload，禁用避免静默丢弃；核算值请用列表「重算」 -->
             <el-form-item label="核算工作量" prop="calculatedWorkload">
-              <el-input-number v-model="form.calculatedWorkload" :min="0" :precision="2" controls-position="right" style="width: 100%" />
+              <el-input-number v-model="form.calculatedWorkload" :min="0" :precision="2" controls-position="right" :disabled="form.id != null" style="width: 100%" />
+              <div v-if="form.id != null" class="field-readonly-tip">编辑时不可手改核算值，请在列表中对该明细执行「重算」</div>
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -285,6 +288,9 @@ function getList() {
   listWorkloadItem(queryParams.value).then(response => {
     workloadItemList.value = response.rows
     total.value = response.total
+  }).catch(() => {
+    proxy.$modal.msgError("获取工作量明细列表失败")
+  }).finally(() => {
     loading.value = false
   })
 }
@@ -447,5 +453,15 @@ getList()
 .workload-num {
   font-weight: 600;
   color: var(--el-color-primary);
+}
+.field-readonly-tip {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--el-text-color-secondary);
+}
+.field-readonly-tip {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--el-text-color-secondary);
 }
 </style>

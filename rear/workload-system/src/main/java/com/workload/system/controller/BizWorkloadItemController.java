@@ -3,6 +3,7 @@ package com.workload.system.controller;
 import java.util.List;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -25,6 +26,9 @@ import com.workload.common.core.page.TableDataInfo;
 
 /**
  * 工作量明细主表Controller
+ * <p>
+ * TODO 异议（objection）/申诉（appeal）/院部审批（dean_approval）接口属下一迭代；
+ * 当前 deanApproval 类、appealStatus/appealReply 等字段不提供写入口，edit 白名单也不允许直改。
  * 
  * @author wflg
  * @date 2026-07-20
@@ -87,7 +91,7 @@ public class BizWorkloadItemController extends BaseController
     @PreAuthorize("@ss.hasPermi('system:workloadItem:add')")
     @Log(title = "工作量明细主表", businessType = BusinessType.INSERT)
     @PostMapping
-    public AjaxResult add(@RequestBody BizWorkloadItem bizWorkloadItem)
+    public AjaxResult add(@Validated(BizWorkloadItem.Add.class) @RequestBody BizWorkloadItem bizWorkloadItem)
     {
         // 教师只能为本人新增明细
         bizWorkloadItem.setUserId(DataScopeUtil.resolveUserId(bizWorkloadItem.getUserId()));
@@ -96,6 +100,12 @@ public class BizWorkloadItemController extends BaseController
 
     /**
      * 修改工作量明细主表
+     * <p>
+     * 白名单更新（P1-13）：无论教师还是管理端，仅允许回写业务白名单字段，
+     * 禁止直改 status、calculatedWorkload、审批/签署类（deanApproval*）及申诉处理类字段。
+     * <p>
+     * 不加 @Validated：本端点为部分字段更新，必填校验（Add 分组）仅适用于新增；
+     * 白名单本身已约束可写字段。
      */
     @PreAuthorize("@ss.hasPermi('system:workloadItem:edit')")
     @Log(title = "工作量明细主表", businessType = BusinessType.UPDATE)
@@ -113,32 +123,38 @@ public class BizWorkloadItemController extends BaseController
         }
         // 按数据库记录的归属人校验，防止伪造 userId 绕过
         DataScopeUtil.assertOwnOrAdmin(existing.getUserId());
+        // 构造仅含白名单字段的更新对象（防 mass-assignment）：
+        // 未列入白名单的字段保持 null，Mapper 动态 SQL 会跳过 null 字段不更新
+        BizWorkloadItem update = new BizWorkloadItem();
+        update.setId(bizWorkloadItem.getId());
         if (DataScopeUtil.isTeacherOnly())
         {
             // 教师仅可修改说明/申诉理由/备注等非敏感字段；
-            // 敏感字段置空，利用 Mapper 动态 SQL 跳过 null 的特性不被更新（防 mass-assignment）
-            bizWorkloadItem.setUserId(null);
-            bizWorkloadItem.setSemester(null);
-            bizWorkloadItem.setAcademicYear(null);
-            bizWorkloadItem.setItemType(null);
-            bizWorkloadItem.setSourceType(null);
-            bizWorkloadItem.setTaskId(null);
-            bizWorkloadItem.setAssignmentId(null);
-            bizWorkloadItem.setCourseName(null);
-            bizWorkloadItem.setEducationLevel(null);
-            bizWorkloadItem.setMajorCategory(null);
-            bizWorkloadItem.setCalculatedWorkload(null);
-            bizWorkloadItem.setIsOverLimit(null);
-            bizWorkloadItem.setDeanApprovalStatus(null);
-            bizWorkloadItem.setDeanApprovalBy(null);
-            bizWorkloadItem.setDeanApprovalTime(null);
-            bizWorkloadItem.setAppealStatus(null);
-            bizWorkloadItem.setAppealReply(null);
-            bizWorkloadItem.setStatus(null);
-            bizWorkloadItem.setCreateBy(null);
-            bizWorkloadItem.setCreateTime(null);
+            // roleType（岗位类型归属）不在教师白名单：教师申报时通过 add 写入，
+            // 后续归属变更需由管理端核准，防止教师自行篡改岗位类型
+            update.setDescription(bizWorkloadItem.getDescription());
+            // TODO 申诉（appeal）链路属下一迭代，当前仅允许填写申诉理由字段
+            update.setAppealReason(bizWorkloadItem.getAppealReason());
+            update.setRemark(bizWorkloadItem.getRemark());
         }
-        return toAjax(bizWorkloadItemService.updateBizWorkloadItem(bizWorkloadItem));
+        else
+        {
+            // 管理端白名单：展示与申报类业务字段
+            update.setSemester(bizWorkloadItem.getSemester());
+            update.setAcademicYear(bizWorkloadItem.getAcademicYear());
+            update.setItemType(bizWorkloadItem.getItemType());
+            update.setSourceType(bizWorkloadItem.getSourceType());
+            update.setTaskId(bizWorkloadItem.getTaskId());
+            update.setAssignmentId(bizWorkloadItem.getAssignmentId());
+            update.setRoleType(bizWorkloadItem.getRoleType());
+            update.setCourseName(bizWorkloadItem.getCourseName());
+            update.setEducationLevel(bizWorkloadItem.getEducationLevel());
+            update.setMajorCategory(bizWorkloadItem.getMajorCategory());
+            update.setDescription(bizWorkloadItem.getDescription());
+            update.setIsOverLimit(bizWorkloadItem.getIsOverLimit());
+            update.setRemark(bizWorkloadItem.getRemark());
+        }
+        return toAjax(bizWorkloadItemService.updateBizWorkloadItem(update));
     }
 
     /**

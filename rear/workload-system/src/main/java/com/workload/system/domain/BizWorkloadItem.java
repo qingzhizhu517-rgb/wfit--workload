@@ -3,6 +3,7 @@ package com.workload.system.domain;
 import java.math.BigDecimal;
 import java.util.Date;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import jakarta.validation.constraints.NotBlank;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 import com.workload.common.annotation.Excel;
@@ -18,6 +19,12 @@ public class BizWorkloadItem extends BaseEntity
 {
     private static final long serialVersionUID = 1L;
 
+    /**
+     * 校验分组：仅新增（add）端点生效的必填约束。
+     * edit 端点为部分字段白名单更新，不应用该分组，避免只传部分字段时被「学期/项目类型不能为空」拒绝。
+     */
+    public interface Add {}
+
     /** $column.columnComment */
     private Long id;
 
@@ -25,7 +32,8 @@ public class BizWorkloadItem extends BaseEntity
     @Excel(name = "${comment}", readConverterExp = "$column.readConverterExp()")
     private Long userId;
 
-    /** $column.columnComment */
+    /** 学期（申报必填，仅在 @Validated(Add.class) 的新增端点生效） */
+    @NotBlank(message = "学期不能为空", groups = Add.class)
     @Excel(name = "${comment}", readConverterExp = "$column.readConverterExp()")
     private String semester;
 
@@ -33,7 +41,8 @@ public class BizWorkloadItem extends BaseEntity
     @Excel(name = "${comment}", readConverterExp = "$column.readConverterExp()")
     private String academicYear;
 
-    /** G1..G9,G11 */
+    /** G1..G9,G11 项目类型（申报必填，仅在 @Validated(Add.class) 的新增端点生效） */
+    @NotBlank(message = "项目类型不能为空", groups = Add.class)
     @Excel(name = "G1..G9,G11")
     private String itemType;
 
@@ -48,6 +57,11 @@ public class BizWorkloadItem extends BaseEntity
     /** FK biz_role_assignment(G11) */
     @Excel(name = "FK biz_role_assignment(G11)")
     private Long assignmentId;
+
+    /** 岗位类型(G11): 班主任/系主任/教研室主任/专业负责人/俱乐部经理/实验人员/督导/中层副职/心理中心
+     * 枚举口径与 biz_role_assignment.role_type 一致（P3-05：申报需写入 role_type） */
+    @Excel(name = "岗位类型(G11)")
+    private String roleType;
 
     /** $column.columnComment */
     @Excel(name = "${comment}", readConverterExp = "$column.readConverterExp()")
@@ -73,27 +87,33 @@ public class BizWorkloadItem extends BaseEntity
     @Excel(name = "指导人数超标(G5/G6)")
     private Integer isOverLimit;
 
-    /** 0未审批/1通过/2驳回 */
+    /** 0未审批/1通过/2驳回
+     * TODO 院部审批（dean_approval）链路属下一迭代，当前仅保留字段，不提供审批写入接口 */
     @Excel(name = "0未审批/1通过/2驳回")
     private Integer deanApprovalStatus;
 
-    /** $column.columnComment */
+    /** $column.columnComment
+     * TODO 院部审批（dean_approval）链路属下一迭代 */
     @Excel(name = "${comment}", readConverterExp = "$column.readConverterExp()")
     private String deanApprovalBy;
 
-    /** $column.columnComment */
+    /** $column.columnComment
+     * TODO 院部审批（dean_approval）链路属下一迭代 */
     @Excel(name = "${comment}", readConverterExp = "$column.readConverterExp()")
     private Date deanApprovalTime;
 
-    /** 0无/1申诉中/2已处理/3已驳回 */
+    /** 0无/1申诉中/2已处理/3已驳回
+     * TODO 申诉（appeal）链路属下一迭代，当前仅保留字段，不提供申诉状态写入接口 */
     @Excel(name = "0无/1申诉中/2已处理/3已驳回")
     private Integer appealStatus;
 
-    /** $column.columnComment */
+    /** 申诉理由
+     * TODO 申诉（appeal）链路属下一迭代，当前仅允许教师填写理由字段 */
     @Excel(name = "${comment}", readConverterExp = "$column.readConverterExp()")
     private String appealReason;
 
-    /** $column.columnComment */
+    /** $column.columnComment
+     * TODO 申诉（appeal）链路属下一迭代 */
     @Excel(name = "${comment}", readConverterExp = "$column.readConverterExp()")
     private String appealReply;
 
@@ -179,6 +199,16 @@ public class BizWorkloadItem extends BaseEntity
     public Long getAssignmentId() 
     {
         return assignmentId;
+    }
+
+    public void setRoleType(String roleType) 
+    {
+        this.roleType = roleType;
+    }
+
+    public String getRoleType() 
+    {
+        return roleType;
     }
 
     public void setCourseName(String courseName) 
@@ -322,6 +352,7 @@ public class BizWorkloadItem extends BaseEntity
             .append("sourceType", getSourceType())
             .append("taskId", getTaskId())
             .append("assignmentId", getAssignmentId())
+            .append("roleType", getRoleType())
             .append("courseName", getCourseName())
             .append("educationLevel", getEducationLevel())
             .append("majorCategory", getMajorCategory())
