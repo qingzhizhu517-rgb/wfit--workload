@@ -14,6 +14,7 @@ import com.workload.system.domain.BizPayRecord;
 import com.workload.system.domain.BizWorkloadSummary;
 import com.workload.system.mapper.BizAllowanceItemMapper;
 import com.workload.system.mapper.BizPayRecordMapper;
+import com.workload.system.mapper.BizTeacherProfileMapper;
 import com.workload.system.mapper.BizWorkloadSummaryMapper;
 
 /**
@@ -39,10 +40,18 @@ public class PayCalcServiceImpl implements PayCalcService
     @Autowired
     private BizPayRecordMapper bizPayRecordMapper;
 
+    @Autowired
+    private BizTeacherProfileMapper bizTeacherProfileMapper;
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public BizPayRecord recalcPay(Long userId, String semester)
     {
+        // userId 合法性校验：教师档案不存在则快速失败，避免任意 userId 生成零值脏数据
+        if (bizTeacherProfileMapper.selectBizTeacherProfileByUserId(userId) == null)
+        {
+            throw new ServiceException("教师档案不存在，无法重算");
+        }
         BizWorkloadSummary summary = findSummary(userId, semester);
         if (summary == null)
         {

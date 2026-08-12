@@ -14,6 +14,7 @@ import com.workload.common.annotation.Log;
 import com.workload.common.core.controller.BaseController;
 import com.workload.common.core.domain.AjaxResult;
 import com.workload.common.enums.BusinessType;
+import com.workload.common.utils.DataScopeUtil;
 import com.workload.system.calc.ManagementItemGenerator;
 import com.workload.system.calc.PayCalcService;
 import com.workload.system.calc.SummaryCalcService;
@@ -86,6 +87,8 @@ public class BizCalcController extends BaseController
     @GetMapping("/preview")
     public AjaxResult preview(@RequestParam Long userId, @RequestParam String semester)
     {
+        // 教师角色只能预览本人汇总（统一收口至 DataScopeUtil），防越权查看他人数据
+        userId = DataScopeUtil.resolveUserId(userId);
         BizWorkloadSummary summary = summaryCalcService.recalcSummary(userId, semester, false);
         Map<String, Object> data = new HashMap<>();
         data.put("summary", summary);
@@ -112,8 +115,10 @@ public class BizCalcController extends BaseController
     @PostMapping("/genG11")
     public AjaxResult genG11(@RequestParam String semester, @RequestParam(required = false) Long userId)
     {
-        int count = userId == null ? managementItemGenerator.generateForSemester(semester)
-                : managementItemGenerator.generate(userId, semester);
+        // 教师角色只能生成本人 G11 明细（统一收口至 DataScopeUtil）；管理角色保留入参，null 表示全量
+        Long targetUserId = DataScopeUtil.resolveUserId(userId);
+        int count = targetUserId == null ? managementItemGenerator.generateForSemester(semester)
+                : managementItemGenerator.generate(targetUserId, semester);
         return success(count);
     }
 

@@ -14,6 +14,7 @@ import com.workload.system.calc.strategy.WorkloadCalcStrategy;
 import com.workload.system.domain.BizPayRecord;
 import com.workload.system.domain.BizWorkloadItem;
 import com.workload.system.domain.BizWorkloadSummary;
+import com.workload.system.mapper.BizTeacherProfileMapper;
 import com.workload.system.mapper.BizWorkloadItemMapper;
 import com.workload.system.mapper.BizWorkloadSummaryMapper;
 
@@ -34,6 +35,9 @@ public class WorkloadCalcServiceImpl implements WorkloadCalcService
 
     @Autowired
     private BizWorkloadItemMapper bizWorkloadItemMapper;
+
+    @Autowired
+    private BizTeacherProfileMapper bizTeacherProfileMapper;
 
     @Autowired
     private BizWorkloadSummaryMapper bizWorkloadSummaryMapper;
@@ -109,6 +113,11 @@ public class WorkloadCalcServiceImpl implements WorkloadCalcService
     @Transactional(rollbackFor = Exception.class)
     public Map<String, Object> recalcAll(Long userId, String semester)
     {
+        // userId 合法性校验：教师档案不存在则快速失败，避免任意 userId 生成零值脏数据
+        if (bizTeacherProfileMapper.selectBizTeacherProfileByUserId(userId) == null)
+        {
+            throw new ServiceException("教师档案不存在，无法重算");
+        }
         // 明细 → 汇总 → 酬金 三步同事务：recalcItems 为自调用但已处本事务内；
         // recalcSummary/recalcPay 为跨 Bean 调用，其 @Transactional(REQUIRED) 加入本事务
         int itemCount = recalcItems(userId, semester);

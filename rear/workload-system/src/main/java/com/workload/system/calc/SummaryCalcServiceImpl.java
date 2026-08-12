@@ -64,6 +64,11 @@ public class SummaryCalcServiceImpl implements SummaryCalcService
     @Transactional(rollbackFor = Exception.class)
     public BizWorkloadSummary recalcSummary(Long userId, String semester, boolean persist)
     {
+        // userId 合法性校验：教师档案不存在则快速失败，避免任意 userId 生成零值脏数据
+        if (bizTeacherProfileMapper.selectBizTeacherProfileByUserId(userId) == null)
+        {
+            throw new ServiceException("教师档案不存在，无法重算");
+        }
         BizWorkloadSummary summary = findSummary(userId, semester);
         if (summary != null && summary.getStatus() != null && summary.getStatus() == SUMMARY_STATUS_LOCKED)
         {
