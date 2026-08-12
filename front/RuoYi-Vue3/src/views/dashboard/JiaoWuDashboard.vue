@@ -57,7 +57,7 @@
           </div>
           <div class="card-panel-description">
             <div class="card-panel-text">绩效酬金总额</div>
-            <div class="card-panel-num">¥{{ formatMoney(stats.totalPay) }}</div>
+            <div class="card-panel-num">¥{{ formatAmount(stats.totalPay) }}</div>
           </div>
         </div>
       </el-col>
@@ -140,7 +140,7 @@ import {
 import { getAdminStats } from '@/api/system/dashboard'
 import { listWorkloadSummary } from '@/api/system/workloadSummary'
 import { useDashboard } from '@/composable/useDashboard'
-import { getCurrentSemester } from '@/utils/bizDict'
+import { getCurrentSemester, formatAmount } from '@/utils/bizDict'
 
 const router = useRouter()
 const { proxy } = getCurrentInstance()
@@ -149,7 +149,7 @@ const { proxy } = getCurrentInstance()
 const fallbackSemester = getCurrentSemester()
 
 const {
-  chartLoading, chartRef, chartView, formatMoney,
+  chartLoading, chartRef, chartView,
   fetchAuditCounts, handleExportPaySummary, renderChart, setupChart
 } = useDashboard()
 

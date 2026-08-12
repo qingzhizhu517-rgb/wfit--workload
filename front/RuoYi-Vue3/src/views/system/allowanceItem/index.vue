@@ -34,7 +34,7 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="allowanceItemList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="allowanceItemList" empty-text="暂无数据" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="50" align="center" />
       <el-table-column label="ID" align="center" prop="id" width="70" />
       <el-table-column label="教师" align="center" prop="userId" width="160">
@@ -49,7 +49,7 @@
       <el-table-column label="子类型" align="center" prop="feeSubtype" width="110">
         <template #default="scope">{{ scope.row.feeSubtype || '-' }}</template>
       </el-table-column>
-      <el-table-column label="核算参数" align="left" min-width="180">
+      <el-table-column label="核算参数" align="left" min-width="180" show-overflow-tooltip>
         <template #default="scope">{{ paramSummary(scope.row) }}</template>
       </el-table-column>
       <el-table-column label="金额(元)" align="right" prop="amount" width="110">

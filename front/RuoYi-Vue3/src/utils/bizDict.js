@@ -70,6 +70,33 @@ export const yesNoMap = {
   1: st('是', 'warning'), 0: st('否', 'info')
 }
 
+/** 酬金发放状态（原 payRecord/index.vue 内联定义收敛，键值保持不变） */
+export const payStatusMap = {
+  0: st('未发放', 'info'), 1: st('已发放', 'success')
+}
+
+/** 教师特殊状态（原 teacherProfile/index.vue 内联定义收敛，键值保持不变） */
+export const specialStatusMap = {
+  '正常': st('正常', 'success'),
+  '产假': st('产假', 'warning'),
+  '在职读博': st('在职读博', 'warning'),
+  '访学': st('访学', 'primary')
+}
+
+/** 将 Options 数组转为 biz-tag 可用的 Map（value -> { label, type }） */
+export function optionsToMap(options, type = 'primary') {
+  return Object.fromEntries(options.map(o => [o.value, { label: o.label, type }]))
+}
+
+/** 工作量类别 biz-tag Map（原 workloadItem/index.vue 内联收敛，label 同 itemTypeOptions） */
+export const itemTypeMap = optionsToMap(itemTypeOptions)
+
+/** 数据来源 biz-tag Map（原 workloadItem/index.vue 内联收敛，键值保持不变） */
+export const sourceTypeMap = { IMPORT: st('导入', 'info'), MANUAL: st('手工', 'success') }
+
+/** 管理岗位 biz-tag Map（原 roleAssignment/index.vue 内联收敛，键值同 roleTypeOptions） */
+export const roleTypeMap = optionsToMap(roleTypeOptions)
+
 /** 金额展示（千分位，空值显示 -） */
 export function formatAmount(v, digits = 2) {
   if (v === null || v === undefined || v === '') return '-'
@@ -79,6 +106,12 @@ export function formatAmount(v, digits = 2) {
 /** 空值兜底 */
 export function dash(v) {
   return v === null || v === undefined || v === '' ? '-' : v
+}
+
+/** 数值展示（千分位，最多 maxDigits 位小数且去尾零，空值显示 -），用于学时/人数/系数/工作量等 */
+export function formatNumber(v, maxDigits = 2) {
+  if (v === null || v === undefined || v === '') return dash()
+  return Number(v).toLocaleString('zh-CN', { minimumFractionDigits: 0, maximumFractionDigits: maxDigits })
 }
 
 /** 业务规则常量（规则来源：rear/sql/03_calc_rules.sql 核算规则参数，与 SummaryCalcServiceImpl 口径一致） */

@@ -34,16 +34,16 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="payRateList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="payRateList" empty-text="暂无数据" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="50" align="center" />
       <el-table-column label="职称" align="center" prop="title" width="120">
         <template #default="scope">
           <biz-tag :value="scope.row.title" :map="titleMap" />
         </template>
       </el-table-column>
-      <el-table-column label="单位工作量酬金" align="right" prop="rate" width="150">
+      <el-table-column label="单位工作量酬金(元)" align="right" prop="rate" width="150">
         <template #default="scope">
-          <span class="rate-amount">{{ formatAmount(scope.row.rate) }}</span> 元
+          <span class="rate-amount">{{ formatAmount(scope.row.rate) }}</span>
         </template>
       </el-table-column>
       <el-table-column label="生效起" align="center" prop="effectiveFrom" width="120">

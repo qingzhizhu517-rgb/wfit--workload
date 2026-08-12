@@ -44,7 +44,7 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="workloadItemList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="workloadItemList" empty-text="暂无数据" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="50" align="center" />
       <el-table-column label="序号" align="center" width="60">
         <template #default="scope">
@@ -55,7 +55,7 @@
       <el-table-column label="教师" align="center" prop="userId" width="150">
         <template #default="scope">{{ userLabel(scope.row.userId) }}</template>
       </el-table-column>
-      <el-table-column label="学年学期" align="center" prop="semester" width="105" />
+      <el-table-column label="学年学期" align="center" prop="semester" width="110" />
       <el-table-column label="类别" align="center" prop="itemType" width="110">
         <template #default="scope">
           <biz-tag :value="scope.row.itemType" :map="itemTypeMap" />
@@ -69,9 +69,9 @@
       <el-table-column label="课程/事项" align="center" prop="courseName" min-width="150" show-overflow-tooltip>
         <template #default="scope">{{ scope.row.courseName || scope.row.description || '-' }}</template>
       </el-table-column>
-      <el-table-column label="核算工作量" align="center" prop="calculatedWorkload" width="100">
+      <el-table-column label="核算工作量(学时)" align="right" prop="calculatedWorkload" width="120">
         <template #default="scope">
-          <span class="workload-num">{{ scope.row.calculatedWorkload }}</span>
+          <span class="workload-num">{{ formatNumber(scope.row.calculatedWorkload) }}</span>
         </template>
       </el-table-column>
       <el-table-column label="超标" align="center" prop="isOverLimit" width="70">
@@ -95,12 +95,20 @@
           <biz-tag :value="scope.row.status" :map="workloadItemStatusMap" />
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" width="270" fixed="right" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" width="120" fixed="right" class-name="small-padding fixed-width">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleDetail(scope.row)">详情</el-button>
-          <el-button link type="primary" icon="Refresh" @click="handleRecalcItem(scope.row)" v-hasPermi="['system:workloadItem:edit']">重算</el-button>
-          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['system:workloadItem:edit']">修改</el-button>
-          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['system:workloadItem:remove']">删除</el-button>
+          <!-- 重算/修改/删除收入“更多”下拉，收窄操作列 -->
+          <el-dropdown v-hasPermi="['system:workloadItem:edit', 'system:workloadItem:remove']" @command="(cmd) => handleMoreCmd(cmd, scope.row)" trigger="click">
+            <el-button link type="primary" icon="MoreFilled" />
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="recalc" icon="Refresh" v-hasPermi="['system:workloadItem:edit']">重算</el-dropdown-item>
+                <el-dropdown-item command="edit" icon="Edit" v-hasPermi="['system:workloadItem:edit']">修改</el-dropdown-item>
+                <el-dropdown-item command="delete" icon="Delete" divided v-hasPermi="['system:workloadItem:remove']">删除</el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
         </template>
       </el-table-column>
     </el-table>
@@ -125,8 +133,8 @@
         <el-descriptions-item label="来源">
           <biz-tag :value="detailData.sourceType" :map="sourceTypeMap" />
         </el-descriptions-item>
-        <el-descriptions-item label="核算工作量">
-          <span class="workload-num">{{ detailData.calculatedWorkload }}</span>
+        <el-descriptions-item label="核算工作量(学时)">
+          <span class="workload-num">{{ formatNumber(detailData.calculatedWorkload) }}</span>
         </el-descriptions-item>
         <el-descriptions-item label="课程/事项" :span="2">{{ detailData.courseName || detailData.description || '-' }}</el-descriptions-item>
         <el-descriptions-item label="层次">{{ detailData.educationLevel || '-' }}</el-descriptions-item>
@@ -237,14 +245,12 @@ import SemesterSelect from '@/components/SemesterSelect/index.vue'
 import { useUserMap } from '@/utils/userCache'
 import {
   itemTypeOptions, educationLevelOptions, majorCategoryOptions,
-  workloadItemStatusMap, approvalStatusMap, appealStatusMap, yesNoMap
+  workloadItemStatusMap, approvalStatusMap, appealStatusMap, yesNoMap,
+  itemTypeMap, sourceTypeMap, formatNumber
 } from '@/utils/bizDict'
 
 const { proxy } = getCurrentInstance()
 const { userLabel } = useUserMap()
-
-const itemTypeMap = Object.fromEntries(itemTypeOptions.map(o => [o.value, { label: o.label, type: 'primary' }]))
-const sourceTypeMap = { IMPORT: { label: '导入', type: 'info' }, MANUAL: { label: '手工', type: 'success' } }
 
 const workloadItemList = ref([])
 const open = ref(false)
@@ -421,6 +427,17 @@ function handleRecalcItem(row) {
   }).catch(() => {})
 }
 
+/** 更多操作下拉命令 */
+function handleMoreCmd(cmd, row) {
+  if (cmd === 'recalc') {
+    handleRecalcItem(row)
+  } else if (cmd === 'edit') {
+    handleUpdate(row)
+  } else if (cmd === 'delete') {
+    handleDelete(row)
+  }
+}
+
 /** 按教师+学期批量重算 */
 function handleRecalcSemester() {
   const { userId, semester } = queryParams.value
@@ -453,11 +470,6 @@ getList()
 .workload-num {
   font-weight: 600;
   color: var(--el-color-primary);
-}
-.field-readonly-tip {
-  font-size: 12px;
-  line-height: 1.4;
-  color: var(--el-text-color-secondary);
 }
 .field-readonly-tip {
   font-size: 12px;

@@ -21,11 +21,6 @@ export function useDashboard() {
     completed: 0
   })
 
-  function formatMoney(val) {
-    if (val == null) return '--'
-    return Number(val).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-  }
-
   async function fetchAuditCounts() {
     const statuses = [
       { key: 'draft', status: 0 },
@@ -162,7 +157,6 @@ export function useDashboard() {
     chartRef,
     chartView,
     auditCounts,
-    formatMoney,
     fetchAuditCounts,
     handleExportPaySummary,
     handleExportPersonalWorkload,

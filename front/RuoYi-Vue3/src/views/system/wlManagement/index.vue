@@ -36,18 +36,18 @@
 
     <el-alert type="info" :closable="false" class="mb8" :title="`本明细由 G11 生成器按岗位任职区间自动折算写入，工作量 = 折算学时；多岗叠加与学期封顶 ${G11_SEMESTER_CAP} 在汇总层处理`" />
 
-    <el-table v-loading="loading" :data="wlManagementList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="wlManagementList" empty-text="暂无数据" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="50" align="center" />
-      <el-table-column label="明细ID" align="center" prop="itemId" width="90" />
-      <el-table-column label="任职ID" align="center" prop="assignmentId" width="90" />
+      <el-table-column label="明细ID" align="center" prop="itemId" width="70" />
+      <el-table-column label="任职ID" align="center" prop="assignmentId" width="70" />
       <el-table-column label="岗位" align="center" prop="roleType" width="110">
         <template #default="scope">
           <biz-tag :value="scope.row.roleType" :map="roleTypeMap" />
         </template>
       </el-table-column>
-      <el-table-column label="折算学时" align="center" prop="proratedAmount" width="110">
+      <el-table-column label="折算学时(学时)" align="right" prop="proratedAmount" width="110">
         <template #default="scope">
-          <span class="coef-main">{{ scope.row.proratedAmount }}</span>
+          <span class="coef-main">{{ formatNumber(scope.row.proratedAmount) }}</span>
         </template>
       </el-table-column>
       <el-table-column label="折算说明" align="center" prop="prorationBasis" min-width="180" show-overflow-tooltip>
@@ -105,13 +105,9 @@
 
 <script setup name="WlManagement">
 import { listWlManagement, getWlManagement, delWlManagement, addWlManagement, updateWlManagement } from "@/api/system/wlManagement"
-import { roleTypeOptions, G11_SEMESTER_CAP } from '@/utils/bizDict'
+import { roleTypeOptions, roleTypeMap, formatNumber, G11_SEMESTER_CAP } from '@/utils/bizDict'
 
 const { proxy } = getCurrentInstance()
-
-const roleTypeMap = Object.fromEntries(
-  roleTypeOptions.map(o => [o.value, { label: o.label, type: 'primary' }])
-)
 
 const wlManagementList = ref([])
 const open = ref(false)

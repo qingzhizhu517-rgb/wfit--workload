@@ -28,19 +28,29 @@
 
     <el-alert type="info" :closable="false" class="mb8" title="核算公式：工作量 = 实践学时 × 专业类别 × 重复系数 × 教学质量 × 课程质量 × 全外文（J2×K×C2×Q1×Q2×Q3）" />
 
-    <el-table v-loading="loading" :data="wlPracticeList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="wlPracticeList" empty-text="暂无数据" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="50" align="center" />
-      <el-table-column label="明细ID" align="center" prop="itemId" width="90" />
-      <el-table-column label="实践学时" align="center" prop="J2" width="100">
+      <el-table-column label="明细ID" align="center" prop="itemId" width="70" />
+      <el-table-column label="实践学时" align="right" prop="J2" width="100">
         <template #default="scope">
-          <span class="coef-main">{{ scope.row.J2 }}</span>
+          <span class="coef-main">{{ formatNumber(scope.row.J2) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="专业类别" align="center" prop="K" width="90" />
-      <el-table-column label="重复系数" align="center" prop="C2" width="90" />
-      <el-table-column label="教学质量" align="center" prop="Q1" width="90" />
-      <el-table-column label="课程质量" align="center" prop="Q2" width="90" />
-      <el-table-column label="全外文" align="center" prop="Q3" width="80" />
+      <el-table-column label="专业类别" align="right" prop="K" width="90">
+        <template #default="scope">{{ formatNumber(scope.row.K) }}</template>
+      </el-table-column>
+      <el-table-column label="重复系数" align="right" prop="C2" width="90">
+        <template #default="scope">{{ formatNumber(scope.row.C2) }}</template>
+      </el-table-column>
+      <el-table-column label="教学质量" align="right" prop="Q1" width="90">
+        <template #default="scope">{{ formatNumber(scope.row.Q1) }}</template>
+      </el-table-column>
+      <el-table-column label="课程质量" align="right" prop="Q2" width="90">
+        <template #default="scope">{{ formatNumber(scope.row.Q2) }}</template>
+      </el-table-column>
+      <el-table-column label="全外文" align="right" prop="Q3" width="80">
+        <template #default="scope">{{ formatNumber(scope.row.Q3) }}</template>
+      </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" min-width="120" show-overflow-tooltip>
         <template #default="scope">{{ scope.row.remark || '-' }}</template>
       </el-table-column>
@@ -115,6 +125,7 @@
 
 <script setup name="WlPractice">
 import { listWlPractice, getWlPractice, delWlPractice, addWlPractice, updateWlPractice } from "@/api/system/wlPractice"
+import { formatNumber } from '@/utils/bizDict'
 
 const { proxy } = getCurrentInstance()
 

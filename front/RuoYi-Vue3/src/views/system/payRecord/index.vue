@@ -41,9 +41,9 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="payRecordList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="payRecordList" empty-text="暂无数据" @selection-change="handleSelectionChange">
       <el-table-column v-if="!isTeacher" type="selection" width="50" align="center" />
-      <el-table-column v-if="!isTeacher" label="教师" align="center" prop="userId" width="160">
+      <el-table-column v-if="!isTeacher" label="教师" align="center" prop="userId" width="150">
         <template #default="scope">{{ userLabel(scope.row.userId) }}</template>
       </el-table-column>
       <el-table-column label="学年学期" align="center" prop="semester" width="110" />
@@ -66,13 +66,11 @@
       <el-table-column label="备注" align="center" prop="remark" min-width="120" show-overflow-tooltip>
         <template #default="scope">{{ scope.row.remark || '-' }}</template>
       </el-table-column>
-      <el-table-column label="操作" align="center" :width="isTeacher ? 80 : 220" fixed="right" class-name="small-padding fixed-width">
+      <el-table-column v-if="!isTeacher" label="操作" align="center" width="180" fixed="right" class-name="small-padding fixed-width">
         <template #default="scope">
-          <template v-if="!isTeacher">
-            <el-button link type="primary" icon="Tickets" @click="goAllowance(scope.row)">酬金明细</el-button>
-            <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['system:payRecord:edit']">修改</el-button>
-            <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['system:payRecord:remove']">删除</el-button>
-          </template>
+          <el-button link type="primary" icon="Tickets" @click="goAllowance(scope.row)">酬金明细</el-button>
+          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['system:payRecord:edit']">修改</el-button>
+          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['system:payRecord:remove']">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -144,7 +142,7 @@ import { listPayRecord, getPayRecord, delPayRecord, addPayRecord, updatePayRecor
 import { recalcPay } from "@/api/system/calc"
 import UserSelect from '@/components/UserSelect/index.vue'
 import { useUserMap } from '@/utils/userCache'
-import { formatAmount } from '@/utils/bizDict'
+import { formatAmount, payStatusMap } from '@/utils/bizDict'
 import { useRouter } from 'vue-router'
 import useUserStore from '@/store/modules/user'
 
@@ -154,8 +152,6 @@ const router = useRouter()
 const userStore = useUserStore()
 
 const isTeacher = computed(() => userStore.roles.includes('teacher'))
-
-const payStatusMap = { 0: { label: '未发放', type: 'info' }, 1: { label: '已发放', type: 'success' } }
 
 const payRecordList = ref([])
 const open = ref(false)

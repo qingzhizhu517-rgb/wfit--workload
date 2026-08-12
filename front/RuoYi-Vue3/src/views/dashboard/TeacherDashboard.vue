@@ -59,7 +59,7 @@
         <div class="stat-card card-warning" @click="router.push('/workload/payRecord')">
           <div class="stat-label">预计超工作量绩效</div>
           <div class="stat-value">
-            <span class="stat-big">¥ {{ formatMoney(stats.performancePay) }}</span>
+            <span class="stat-big">¥ {{ formatAmount(stats.performancePay) }}</span>
           </div>
           <div class="stat-footer">
             <template v-if="stats.isCapped">
@@ -104,9 +104,9 @@
               </template>
             </el-table-column>
             <el-table-column prop="sourceDesc" label="来源" min-width="140" show-overflow-tooltip />
-            <el-table-column prop="calculatedWorkload" label="核算学时" width="110" align="center">
+            <el-table-column prop="calculatedWorkload" label="核算学时(学时)" width="110" align="right">
               <template #default="{ row }">
-                <strong style="color: #409eff;">{{ formatNumber(row.calculatedWorkload) }}</strong>
+                <strong style="color: var(--el-color-primary);">{{ formatNumber(row.calculatedWorkload) }}</strong>
               </template>
             </el-table-column>
             <el-table-column prop="status" label="状态" width="90" align="center">
@@ -135,12 +135,12 @@
             <el-divider style="margin: 10px 0" />
             <div class="goal-row">
               <span class="goal-label">已核算</span>
-              <span class="goal-value" style="color: #409eff;">{{ formatNumber(stats.totalWorkload) }}</span>
+              <span class="goal-value" style="color: var(--el-color-primary);">{{ formatNumber(stats.totalWorkload) }}</span>
             </div>
             <el-divider style="margin: 10px 0" />
             <div class="goal-row">
               <span class="goal-label">超额</span>
-              <span class="goal-value" :style="{ color: stats.excessWorkload > 0 ? '#67c23a' : '#909399' }">
+              <span class="goal-value" :style="{ color: stats.excessWorkload > 0 ? 'var(--el-color-success)' : 'var(--el-color-info)' }">
                 {{ formatNumber(stats.excessWorkload) }}
               </span>
             </div>
@@ -188,15 +188,15 @@ import { Document, Warning, Download } from '@element-plus/icons-vue'
 import { getTeacherStats } from '@/api/system/dashboard'
 import { listWorkloadItem } from '@/api/system/workloadItem'
 import { useDashboard } from '@/composable/useDashboard'
-import { workloadItemStatusMap, summaryStatusMap, SEMESTER_WORKLOAD_CAP } from '@/utils/bizDict'
+import { workloadItemStatusMap, summaryStatusMap, SEMESTER_WORKLOAD_CAP, formatAmount, formatNumber } from '@/utils/bizDict'
 import useUserStore from '@/store/modules/user'
 
 const router = useRouter()
 const userStore = useUserStore()
 const { proxy } = getCurrentInstance()
 
-/** 金额格式化与个人工作量导出复用仪表盘共享逻辑 */
-const { formatMoney, handleExportPersonalWorkload } = useDashboard()
+/** 个人工作量导出复用仪表盘共享逻辑，金额/数值格式化统一用 bizDict */
+const { handleExportPersonalWorkload } = useDashboard()
 
 // 从 userStore 获取当前用户 ID（兼容不同字段名）
 const currentUserId = computed(() => userStore.id || userStore.userId)
@@ -216,11 +216,6 @@ const stats = reactive({
   basicTeachingMet: 0,
   appealCount: 0
 })
-
-function formatNumber(val) {
-  if (val == null) return '--'
-  return Number(val).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-}
 
 /** 状态文案/标签类型统一取自 bizDict，消除页面内双口径 */
 function statusLabel(status) {

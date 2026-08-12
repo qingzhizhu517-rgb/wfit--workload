@@ -40,9 +40,9 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="roleAssignmentList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="roleAssignmentList" empty-text="暂无数据" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="50" align="center" />
-      <el-table-column label="教师" align="center" prop="userId" width="160">
+      <el-table-column label="教师" align="center" prop="userId" width="150">
         <template #default="scope">{{ userLabel(scope.row.userId) }}</template>
       </el-table-column>
       <el-table-column label="岗位" align="center" prop="roleType" width="110">
@@ -55,15 +55,15 @@
       </el-table-column>
       <el-table-column label="任职区间" align="center" width="200">
         <template #default="scope">
-          <span>{{ parseTime(scope.row.startDate, '{y}-{m}-{d}') }} ~ {{ scope.row.endDate ? parseTime(scope.row.endDate, '{y}-{m}-{d}') : '至今' }}</span>
+          <span>{{ scope.row.startDate ? parseTime(scope.row.startDate, '{y}-{m}-{d}') : '-' }} ~ {{ scope.row.endDate ? parseTime(scope.row.endDate, '{y}-{m}-{d}') : '至今' }}</span>
         </template>
       </el-table-column>
       <el-table-column label="学年" align="center" prop="academicYear" width="100">
         <template #default="scope">{{ scope.row.academicYear || '-' }}</template>
       </el-table-column>
-      <el-table-column label="标准学时/学年" align="center" prop="allowanceRate" width="120">
+      <el-table-column label="标准学时/学年(学时)" align="right" prop="allowanceRate" width="150">
         <template #default="scope">
-          <span class="rate-num">{{ scope.row.allowanceRate }}</span>
+          <span class="rate-num">{{ formatNumber(scope.row.allowanceRate) }}</span>
         </template>
       </el-table-column>
       <el-table-column label="状态" align="center" prop="status" width="90">
@@ -150,14 +150,10 @@
 import { listRoleAssignment, getRoleAssignment, delRoleAssignment, addRoleAssignment, updateRoleAssignment } from "@/api/system/roleAssignment"
 import UserSelect from '@/components/UserSelect/index.vue'
 import { useUserMap } from '@/utils/userCache'
-import { roleTypeOptions, normalStatusMap } from '@/utils/bizDict'
+import { roleTypeOptions, normalStatusMap, roleTypeMap, formatNumber } from '@/utils/bizDict'
 
 const { proxy } = getCurrentInstance()
 const { userLabel } = useUserMap()
-
-const roleTypeMap = Object.fromEntries(
-  roleTypeOptions.map(o => [o.value, { label: o.label, type: 'primary' }])
-)
 
 const roleAssignmentList = ref([])
 const open = ref(false)

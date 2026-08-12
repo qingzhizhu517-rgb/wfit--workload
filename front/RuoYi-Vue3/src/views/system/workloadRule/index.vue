@@ -50,16 +50,16 @@
     <el-alert type="info" :closable="false" class="mb8"
       title="规则参数修改后立即参与核算；同一键名可通过不同生效日期保留历史版本" />
 
-    <el-table v-loading="loading" :data="workloadRuleList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="workloadRuleList" empty-text="暂无数据" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="50" align="center" />
       <el-table-column label="参数键名" align="center" prop="ruleCode" min-width="180" show-overflow-tooltip>
         <template #default="scope">
           <span class="rule-code">{{ scope.row.ruleCode }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="参数数值" align="center" prop="ruleValue" width="110">
+      <el-table-column label="参数数值" align="right" prop="ruleValue" width="110">
         <template #default="scope">
-          <span class="rule-value">{{ scope.row.ruleValue }}</span>
+          <span class="rule-value">{{ formatNumber(scope.row.ruleValue) }}</span>
         </template>
       </el-table-column>
       <el-table-column label="参数说明" align="center" prop="ruleDesc" min-width="220" show-overflow-tooltip>
@@ -132,7 +132,7 @@
 
 <script setup name="WorkloadRule">
 import { listWorkloadRule, getWorkloadRule, delWorkloadRule, addWorkloadRule, updateWorkloadRule } from "@/api/system/workloadRule"
-import { normalStatusMap } from '@/utils/bizDict'
+import { normalStatusMap, formatNumber } from '@/utils/bizDict'
 
 const { proxy } = getCurrentInstance()
 

@@ -48,32 +48,47 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="workloadSummaryList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="workloadSummaryList" empty-text="暂无数据" @selection-change="handleSelectionChange">
       <el-table-column v-if="!isTeacher" type="selection" width="50" align="center" />
       <el-table-column v-if="!isTeacher" label="教师" align="center" prop="userId" width="150" fixed="left">
         <template #default="scope">{{ userLabel(scope.row.userId) }}</template>
       </el-table-column>
-      <el-table-column label="学年学期" align="center" prop="semester" width="105" fixed="left" />
-      <el-table-column label="G7 第一课堂" align="center" prop="G7" width="95" />
-      <el-table-column label="G8 第二课堂" align="center" prop="G8" width="95" />
-      <el-table-column label="G9 其他" align="center" prop="G9" width="85" />
-      <el-table-column label="G10 教学合计" align="center" prop="G10" width="100" />
-      <el-table-column label="G11 管理服务" align="center" prop="G11" width="100" />
-      <el-table-column label="总工作量" align="center" prop="totalWorkload" width="90">
+      <el-table-column label="学年学期" align="center" prop="semester" width="110" fixed="left" />
+      <el-table-column label="G7 第一课堂(学时)" align="right" prop="G7" width="130">
+        <template #default="scope">{{ formatNumber(scope.row.G7) }}</template>
+      </el-table-column>
+      <el-table-column label="G8 第二课堂(学时)" align="right" prop="G8" width="130">
+        <template #default="scope">{{ formatNumber(scope.row.G8) }}</template>
+      </el-table-column>
+      <el-table-column label="G9 其他(学时)" align="right" prop="G9" width="110">
+        <template #default="scope">{{ formatNumber(scope.row.G9) }}</template>
+      </el-table-column>
+      <el-table-column label="G10 教学合计(学时)" align="right" prop="G10" width="140">
+        <template #default="scope">{{ formatNumber(scope.row.G10) }}</template>
+      </el-table-column>
+      <el-table-column label="G11 管理服务(学时)" align="right" prop="G11" width="130">
+        <template #default="scope">{{ formatNumber(scope.row.G11) }}</template>
+      </el-table-column>
+      <el-table-column label="总工作量(学时)" align="right" prop="totalWorkload" width="110">
         <template #default="scope">
-          <span class="total-num">{{ scope.row.totalWorkload }}</span>
+          <span class="total-num">{{ formatNumber(scope.row.totalWorkload) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="额定" align="center" prop="ratedWorkload" width="70" />
-      <el-table-column label="超额" align="center" prop="excessWorkload" width="80">
+      <el-table-column label="额定(学时)" align="right" prop="ratedWorkload" width="90">
+        <template #default="scope">{{ formatNumber(scope.row.ratedWorkload) }}</template>
+      </el-table-column>
+      <el-table-column label="超额(学时)" align="right" prop="excessWorkload" width="90">
         <template #default="scope">
-          <span :class="{ 'excess-num': Number(scope.row.excessWorkload) > 0 }">{{ scope.row.excessWorkload }}</span>
+          <span :class="{ 'excess-num': Number(scope.row.excessWorkload) > 0 }">{{ formatNumber(scope.row.excessWorkload) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="绩效酬金(元)" align="center" prop="performancePay" width="110">
+      <el-table-column label="绩效酬金(元)" align="right" prop="performancePay" width="130">
         <template #default="scope">
-          {{ formatAmount(scope.row.performancePay) }}
-          <el-tag v-if="scope.row.isCapped === 1" type="danger" size="small" disable-transitions>封顶</el-tag>
+          <!-- 数值右对齐，封顶标记小字号单独一行不破坏对齐 -->
+          <div class="pay-cell">
+            <span>{{ formatAmount(scope.row.performancePay) }}</span>
+            <el-tag v-if="scope.row.isCapped === 1" type="danger" size="small" disable-transitions>封顶</el-tag>
+          </div>
         </template>
       </el-table-column>
       <el-table-column label="基本教学达标" align="center" prop="basicTeachingMet" width="100">
@@ -204,7 +219,7 @@ import { auditSubmit, auditApprove, auditReject, auditSign, auditUnlock, auditBa
 import UserSelect from '@/components/UserSelect/index.vue'
 import SemesterSelect from '@/components/SemesterSelect/index.vue'
 import { useUserMap } from '@/utils/userCache'
-import { summaryStatusMap, yesNoMap, formatAmount } from '@/utils/bizDict'
+import { summaryStatusMap, yesNoMap, formatAmount, formatNumber } from '@/utils/bizDict'
 import useUserStore from '@/store/modules/user'
 
 const { proxy } = getCurrentInstance()
@@ -459,6 +474,12 @@ getList()
 </script>
 
 <style scoped>
+.pay-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.4;
+}
 .total-num {
   font-weight: 700;
   color: var(--el-color-primary);

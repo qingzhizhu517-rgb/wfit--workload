@@ -45,10 +45,10 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="teachingTaskList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="teachingTaskList" empty-text="暂无数据" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="50" align="center" />
 
-      <el-table-column label="教师" align="center" prop="userId" width="160">
+      <el-table-column label="教师" align="center" prop="userId" width="150">
         <template #default="scope">{{ userLabel(scope.row.userId) }}</template>
       </el-table-column>
       <el-table-column label="学年学期" align="center" prop="semester" width="110" />
@@ -56,13 +56,33 @@
       <el-table-column label="课程代码" align="center" prop="courseCode" width="100">
         <template #default="scope">{{ scope.row.courseCode || '-' }}</template>
       </el-table-column>
-      <el-table-column label="层次" align="center" prop="educationLevel" width="80" />
-      <el-table-column label="类别" align="center" prop="majorCategory" width="90" />
-      <el-table-column label="性质" align="center" prop="courseNature" width="70" />
-      <el-table-column label="合堂人数" align="center" prop="studentCount" width="90" />
-      <el-table-column label="理论J1" align="center" prop="theoryHours" width="80" />
-      <el-table-column label="实践J2" align="center" prop="practiceHours" width="80" />
-      <el-table-column label="重复次" align="center" prop="repeatOrder" width="70" />
+      <el-table-column label="层次" align="center" prop="educationLevel" width="90">
+        <template #default="scope">
+          <biz-tag :value="scope.row.educationLevel" :map="educationLevelMap" />
+        </template>
+      </el-table-column>
+      <el-table-column label="类别" align="center" prop="majorCategory" width="90">
+        <template #default="scope">
+          <biz-tag :value="scope.row.majorCategory" :map="majorCategoryMap" />
+        </template>
+      </el-table-column>
+      <el-table-column label="性质" align="center" prop="courseNature" width="80">
+        <template #default="scope">
+          <biz-tag :value="scope.row.courseNature" :map="courseNatureMap" />
+        </template>
+      </el-table-column>
+      <el-table-column label="合堂人数" align="right" prop="studentCount" width="90">
+        <template #default="scope">{{ formatNumber(scope.row.studentCount, 0) }}</template>
+      </el-table-column>
+      <el-table-column label="理论J1(学时)" align="right" prop="theoryHours" width="100">
+        <template #default="scope">{{ formatNumber(scope.row.theoryHours) }}</template>
+      </el-table-column>
+      <el-table-column label="实践J2(学时)" align="right" prop="practiceHours" width="100">
+        <template #default="scope">{{ formatNumber(scope.row.practiceHours) }}</template>
+      </el-table-column>
+      <el-table-column label="重复次" align="right" prop="repeatOrder" width="70">
+        <template #default="scope">{{ formatNumber(scope.row.repeatOrder, 0) }}</template>
+      </el-table-column>
       <el-table-column label="状态" align="center" prop="status" width="80">
         <template #default="scope">
           <biz-tag :value="scope.row.status" :map="normalStatusMap" />
@@ -244,11 +264,17 @@ import { useUserMap } from '@/utils/userCache'
 import { UploadFilled } from '@element-plus/icons-vue'
 import {
   educationLevelOptions, majorCategoryOptions, courseNatureOptions,
-  courseLevelOptions, courseRoleOptions, normalStatusMap
+  courseLevelOptions, courseRoleOptions, normalStatusMap,
+  optionsToMap, formatNumber
 } from '@/utils/bizDict'
 
 const { proxy } = getCurrentInstance()
 const { userLabel } = useUserMap()
+
+/** 层次/类别/性质列 biz-tag 映射（由 bizDict Options 转换） */
+const educationLevelMap = optionsToMap(educationLevelOptions)
+const majorCategoryMap = optionsToMap(majorCategoryOptions)
+const courseNatureMap = optionsToMap(courseNatureOptions)
 
 const teachingTaskList = ref([])
 const open = ref(false)
