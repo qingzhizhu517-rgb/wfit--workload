@@ -91,7 +91,7 @@
         <el-table-column label="核定工作量" prop="calculatedWorkload" width="100" align="center" />
         <el-table-column label="状态" prop="status" width="90" align="center">
           <template #default="scope">
-            <el-tag :type="statusTagMap[scope.row.status]" size="small">{{ statusLabelMap[scope.row.status] }}</el-tag>
+            <el-tag :type="(workloadItemStatusMap[scope.row.status] || {}).type" size="small">{{ (workloadItemStatusMap[scope.row.status] || {}).label || scope.row.status }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column label="申报时间" width="160">
@@ -126,7 +126,7 @@
         </el-descriptions-item>
         <el-descriptions-item label="项目名称" :span="2">{{ detailData.courseName || '-' }}</el-descriptions-item>
         <el-descriptions-item label="状态">
-          <el-tag :type="statusTagMap[detailData.status]" size="small">{{ statusLabelMap[detailData.status] }}</el-tag>
+          <el-tag :type="(workloadItemStatusMap[detailData.status] || {}).type" size="small">{{ (workloadItemStatusMap[detailData.status] || {}).label || detailData.status }}</el-tag>
         </el-descriptions-item>
         <el-descriptions-item label="来源">{{ detailData.sourceType || '-' }}</el-descriptions-item>
         <el-descriptions-item label="说明" :span="2">{{ detailData.description || '-' }}</el-descriptions-item>
@@ -145,7 +145,7 @@
 
 <script setup name="MyWorkloadDeclare">
 import { listWorkloadItem, getWorkloadItem, addWorkloadItem, delWorkloadItem } from "@/api/system/workloadItem"
-import { getCurrentSemester, roleTypeOptions } from "@/utils/bizDict"
+import { getCurrentSemester, roleTypeOptions, workloadItemStatusMap } from "@/utils/bizDict"
 import SemesterSelect from '@/components/SemesterSelect/index.vue'
 import useUserStore from '@/store/modules/user'
 
@@ -185,8 +185,6 @@ const rules = {
 }
 
 const typeTagMap = { G8: 'success', G9: 'warning', G11: 'primary' }
-const statusTagMap = { 0: 'info', 1: 'success', 2: 'warning', 3: 'danger' }
-const statusLabelMap = { 0: '草稿', 1: '已核对', 2: '有异议', 3: '已驳回' }
 
 const namePlaceholder = computed(() => {
   const map = {
@@ -207,6 +205,9 @@ function getMyList() {
   listWorkloadItem(queryParams.value).then(res => {
     myList.value = res.rows
     total.value = res.total
+  }).catch(() => {
+    proxy.$modal.msgError('获取申报记录失败')
+  }).finally(() => {
     listLoading.value = false
   })
 }
@@ -226,10 +227,15 @@ function submitForm() {
       sourceType: 'SELF',
       status: 0
     }
-    // G11: 将岗位类型合并到 description
+    // G11: 岗位类型写入 roleType 字段（对齐 G11 生成器与 biz_role_assignment.role_type 枚举）
+    // description 无条件拼接岗位类型（旧逻辑口径），避免教师不填说明时岗位信息丢失
     if (data.itemType === 'G11' && data.positionType) {
-      data.description = data.positionType + (data.description ? ' - ' + data.description : '')
+      data.roleType = data.positionType
+      data.description = data.description
+        ? data.positionType + ' - ' + data.description
+        : data.positionType
     }
+    delete data.positionType
     addWorkloadItem(data).then(() => {
       proxy.$modal.msgSuccess('申报成功')
       submitting.value = false

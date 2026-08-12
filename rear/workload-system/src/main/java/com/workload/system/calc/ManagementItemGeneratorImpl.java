@@ -129,6 +129,8 @@ public class ManagementItemGeneratorImpl implements ManagementItemGenerator
             item.setItemType("G11");
             item.setSourceType("IMPORT");
             item.setAssignmentId(assignment.getId());
+            // G11 明细同步写入岗位类型（与 biz_role_assignment.role_type 同枚举口径，P3-05）
+            item.setRoleType(assignment.getRoleType());
             item.setCalculatedWorkload(BigDecimal.ZERO);
             item.setStatus(0);
             item.setCreateTime(DateUtils.getNowDate());
@@ -137,7 +139,9 @@ public class ManagementItemGeneratorImpl implements ManagementItemGenerator
             BizWlManagement detail = new BizWlManagement();
             detail.setItemId(item.getId());
             detail.setAssignmentId(assignment.getId());
-            detail.setRoleType(assignment.getRoleType());
+            // role_type 优先取明细自带值（含教师自报申报），为空回退岗位任职解析
+            detail.setRoleType(item.getRoleType() != null && !item.getRoleType().isEmpty()
+                    ? item.getRoleType() : assignment.getRoleType());
             detail.setProratedAmount(prorated);
             detail.setProrationBasis(basis);
             detail.setCreateTime(DateUtils.getNowDate());
@@ -148,7 +152,9 @@ public class ManagementItemGeneratorImpl implements ManagementItemGenerator
             BizWlManagement detail = bizWlManagementMapper.selectBizWlManagementByItemId(item.getId());
             if (detail != null)
             {
-                detail.setRoleType(assignment.getRoleType());
+                // role_type 优先取明细自带值（含教师自报申报），为空回退岗位任职解析
+                detail.setRoleType(item.getRoleType() != null && !item.getRoleType().isEmpty()
+                        ? item.getRoleType() : assignment.getRoleType());
                 detail.setProratedAmount(prorated);
                 detail.setProrationBasis(basis);
                 detail.setUpdateTime(DateUtils.getNowDate());

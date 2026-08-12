@@ -13,6 +13,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="sourceType"    column="source_type"    />
         <result property="taskId"    column="task_id"    />
         <result property="assignmentId"    column="assignment_id"    />
+        <result property="roleType"    column="role_type"    />
         <result property="courseName"    column="course_name"    />
         <result property="educationLevel"    column="education_level"    />
         <result property="majorCategory"    column="major_category"    />
@@ -34,7 +35,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectBizWorkloadItemVo">
-        select id, user_id, semester, academic_year, item_type, source_type, task_id, assignment_id, course_name, education_level, major_category, calculated_workload, description, is_over_limit, dean_approval_status, dean_approval_by, dean_approval_time, appeal_status, appeal_reason, appeal_reply, status, create_by, create_time, update_by, update_time, remark from biz_workload_item
+        select id, user_id, semester, academic_year, item_type, source_type, task_id, assignment_id, role_type, course_name, education_level, major_category, calculated_workload, description, is_over_limit, dean_approval_status, dean_approval_by, dean_approval_time, appeal_status, appeal_reason, appeal_reply, status, create_by, create_time, update_by, update_time, remark from biz_workload_item
     </sql>
 
     <select id="selectBizWorkloadItemList" parameterType="BizWorkloadItem" resultMap="BizWorkloadItemResult">
@@ -47,6 +48,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="sourceType != null  and sourceType != ''"> and source_type = #{sourceType}</if>
             <if test="taskId != null "> and task_id = #{taskId}</if>
             <if test="assignmentId != null "> and assignment_id = #{assignmentId}</if>
+            <if test="roleType != null  and roleType != ''"> and role_type = #{roleType}</if>
             <if test="courseName != null  and courseName != ''"> and course_name like concat('%', #{courseName}, '%')</if>
             <if test="educationLevel != null  and educationLevel != ''"> and education_level = #{educationLevel}</if>
             <if test="majorCategory != null  and majorCategory != ''"> and major_category = #{majorCategory}</if>
@@ -78,6 +80,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="sourceType != null and sourceType != ''">source_type,</if>
             <if test="taskId != null">task_id,</if>
             <if test="assignmentId != null">assignment_id,</if>
+            <if test="roleType != null">role_type,</if>
             <if test="courseName != null">course_name,</if>
             <if test="educationLevel != null">education_level,</if>
             <if test="majorCategory != null">major_category,</if>
@@ -105,6 +108,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="sourceType != null and sourceType != ''">#{sourceType},</if>
             <if test="taskId != null">#{taskId},</if>
             <if test="assignmentId != null">#{assignmentId},</if>
+            <if test="roleType != null">#{roleType},</if>
             <if test="courseName != null">#{courseName},</if>
             <if test="educationLevel != null">#{educationLevel},</if>
             <if test="majorCategory != null">#{majorCategory},</if>
@@ -136,6 +140,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="sourceType != null and sourceType != ''">source_type = #{sourceType},</if>
             <if test="taskId != null">task_id = #{taskId},</if>
             <if test="assignmentId != null">assignment_id = #{assignmentId},</if>
+            <if test="roleType != null">role_type = #{roleType},</if>
             <if test="courseName != null">course_name = #{courseName},</if>
             <if test="educationLevel != null">education_level = #{educationLevel},</if>
             <if test="majorCategory != null">major_category = #{majorCategory},</if>
