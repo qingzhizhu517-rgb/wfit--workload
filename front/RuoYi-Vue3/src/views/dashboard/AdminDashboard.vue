@@ -4,7 +4,7 @@
       <el-col :sm="24" :lg="24">
         <h2 class="dashboard-title">教学工作量智能化管理系统</h2>
         <p class="dashboard-subtitle">
-          当前学期：{{ stats.semester || '2025-2026-1' }}
+          当前学期：{{ stats.semester || fallbackSemester }}
           <span class="last-updated" v-if="stats.lastUpdated">（数据更新于 {{ stats.lastUpdated }}）</span>
         </p>
       </el-col>
@@ -145,10 +145,17 @@ import {
   Download, Setting, WarningFilled, ArrowRight, Clock, Money
 } from '@element-plus/icons-vue'
 import { getAdminStats, getCollegeStats } from '@/api/system/dashboard'
-import { exportPaySummary } from '@/api/system/export'
+import { useDashboard } from '@/composable/useDashboard'
+import { getCurrentSemester } from '@/utils/bizDict'
 
 const router = useRouter()
 const { proxy } = getCurrentInstance()
+
+/** 学期兜底：后端未返回学期时按当前日期推算，避免硬编码 */
+const fallbackSemester = getCurrentSemester()
+
+/** 金额格式化与绩效酬金表导出复用仪表盘共享逻辑 */
+const { formatMoney, handleExportPaySummary } = useDashboard()
 
 const loading = ref(false)
 const chartLoading = ref(false)
@@ -174,11 +181,6 @@ function formatNumber(val) {
   return Number(val).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
-function formatMoney(val) {
-  if (val == null) return '--'
-  return Number(val).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-}
-
 async function fetchStats() {
   loading.value = true
   try {
@@ -189,30 +191,6 @@ async function fetchStats() {
   } finally {
     loading.value = false
   }
-}
-
-function handleExportPaySummary() {
-  proxy.$prompt('请输入学年学期（如 2025-2026-1）', '导出绩效酬金统计表', {
-    confirmButtonText: '导出',
-    cancelButtonText: '取消',
-    inputPattern: /^\d{4}-\d{4}-[12]$/,
-    inputErrorMessage: '格式如 2025-2026-1',
-    inputPlaceholder: '2025-2026-1'
-  }).then(({ value }) => {
-    proxy.$modal.loading('正在导出...')
-    exportPaySummary({ semester: value }).then(res => {
-      const blob = new Blob([res], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
-      const url = window.URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = `绩效酬金统计_${value}.xlsx`
-      link.click()
-      window.URL.revokeObjectURL(url)
-      proxy.$modal.closeLoading()
-    }).catch(() => {
-      proxy.$modal.closeLoading()
-    })
-  }).catch(() => {})
 }
 
 async function fetchCollegeStats() {

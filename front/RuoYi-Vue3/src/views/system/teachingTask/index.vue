@@ -297,6 +297,9 @@ function getList() {
   listTeachingTask(queryParams.value).then(response => {
     teachingTaskList.value = response.rows
     total.value = response.total
+  }).catch(() => {
+    proxy.$modal.msgError("获取教学任务列表失败")
+  }).finally(() => {
     loading.value = false
   })
 }

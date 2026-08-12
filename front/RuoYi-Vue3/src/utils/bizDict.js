@@ -81,16 +81,25 @@ export function dash(v) {
   return v === null || v === undefined || v === '' ? '-' : v
 }
 
+/** 业务规则常量（规则来源：rear/sql/03_calc_rules.sql 核算规则参数，与 SummaryCalcServiceImpl 口径一致） */
+/** 学期工作量封顶（学时）：绩效酬金 = 专任 (min(total, CAP_200PCT) − rated) × rate，规则参数 CAP_200PCT 默认 540 */
+export const SEMESTER_WORKLOAD_CAP = 540
+/** G11 管理服务学期累计封顶（学时）：规则参数 CAP_G11_SEMESTER 默认 180，多岗叠加封顶在汇总层处理 */
+export const G11_SEMESTER_CAP = 180
+
 /**
  * 根据当前日期推算学年学期
- * 规则：9月~次年1月 = 第一学期，2月~8月 = 第二学期
+ * 规则（与后端 SemesterCalendar 数据口径核对：秋季学期 09-01~01-31 为第 1 学期，春季学期 02-20~07-15 为第 2 学期）：
+ *   - 8 月及以后（新学年筹备/开学）→ (年)-(年+1)-1
+ *   - 2 月~7 月（春季学期及暑假前）→ (年-1)-(年)-2
+ *   - 1 月（秋季学期末，跨学年归属上一学年第 1 学期）→ (年-1)-(年)-1
  * @returns {string} 如 '2025-2026-1'
  */
 export function getCurrentSemester() {
   const now = new Date()
   const year = now.getFullYear()
   const month = now.getMonth() + 1 // 1-12
-  if (month >= 9) {
+  if (month >= 8) {
     return `${year}-${year + 1}-1`
   } else if (month >= 2) {
     return `${year - 1}-${year}-2`

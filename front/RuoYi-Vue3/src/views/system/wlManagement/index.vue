@@ -34,7 +34,7 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-alert type="info" :closable="false" class="mb8" title="本明细由 G11 生成器按岗位任职区间自动折算写入，工作量 = 折算学时；多岗叠加与学期封顶 180 在汇总层处理" />
+    <el-alert type="info" :closable="false" class="mb8" :title="`本明细由 G11 生成器按岗位任职区间自动折算写入，工作量 = 折算学时；多岗叠加与学期封顶 ${G11_SEMESTER_CAP} 在汇总层处理`" />
 
     <el-table v-loading="loading" :data="wlManagementList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="50" align="center" />
@@ -105,7 +105,7 @@
 
 <script setup name="WlManagement">
 import { listWlManagement, getWlManagement, delWlManagement, addWlManagement, updateWlManagement } from "@/api/system/wlManagement"
-import { roleTypeOptions } from '@/utils/bizDict'
+import { roleTypeOptions, G11_SEMESTER_CAP } from '@/utils/bizDict'
 
 const { proxy } = getCurrentInstance()
 

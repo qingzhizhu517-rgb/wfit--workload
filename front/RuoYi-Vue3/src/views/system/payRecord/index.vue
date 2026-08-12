@@ -194,6 +194,9 @@ function getList() {
   listPayRecord(queryParams.value).then(response => {
     payRecordList.value = response.rows
     total.value = response.total
+  }).catch(() => {
+    proxy.$modal.msgError("获取酬金汇总列表失败")
+  }).finally(() => {
     loading.value = false
   })
 }

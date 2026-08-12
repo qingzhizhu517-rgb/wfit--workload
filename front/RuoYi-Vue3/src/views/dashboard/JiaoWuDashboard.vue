@@ -4,7 +4,7 @@
       <el-col :sm="24" :lg="24">
         <h2 class="dashboard-title">教务工作台</h2>
         <p class="dashboard-subtitle">
-          当前学期：{{ stats.semester || '2025-2026-1' }}
+          当前学期：{{ stats.semester || fallbackSemester }}
           <span class="last-updated" v-if="stats.lastUpdated">（数据更新于 {{ stats.lastUpdated }}）</span>
         </p>
       </el-col>
@@ -131,7 +131,7 @@
 </template>
 
 <script setup name="JiaoWuDashboard">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, getCurrentInstance } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   Document, User, Clock, Money, Upload, Checked, Download,
@@ -140,8 +140,13 @@ import {
 import { getAdminStats } from '@/api/system/dashboard'
 import { listWorkloadSummary } from '@/api/system/workloadSummary'
 import { useDashboard } from '@/composable/useDashboard'
+import { getCurrentSemester } from '@/utils/bizDict'
 
 const router = useRouter()
+const { proxy } = getCurrentInstance()
+
+/** 学期兜底：后端未返回学期时按当前日期推算，避免硬编码 */
+const fallbackSemester = getCurrentSemester()
 
 const {
   chartLoading, chartRef, chartView, formatMoney,
@@ -171,7 +176,7 @@ async function fetchStats() {
     const res = await getAdminStats()
     Object.assign(stats, res.data)
   } catch (e) {
-    // ignore
+    proxy.$modal.msgError('获取统计数据失败')
   } finally {
     loading.value = false
   }
@@ -183,7 +188,7 @@ async function fetchPendingList() {
     pendingList.value = res.rows || []
     pendingCount.value = res.total || 0
   } catch (e) {
-    // ignore
+    proxy.$modal.msgError('获取待审核汇总失败')
   }
 }
 

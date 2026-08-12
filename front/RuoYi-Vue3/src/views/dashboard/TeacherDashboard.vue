@@ -63,7 +63,7 @@
           </div>
           <div class="stat-footer">
             <template v-if="stats.isCapped">
-              <el-tag type="warning" size="small">已达上限 (540学时)</el-tag>
+              <el-tag type="warning" size="small">已达上限 ({{ SEMESTER_WORKLOAD_CAP }}学时)</el-tag>
             </template>
             <template v-else-if="stats.summaryStatus">
               汇总状态：
@@ -187,12 +187,16 @@ import { useRouter } from 'vue-router'
 import { Document, Warning, Download } from '@element-plus/icons-vue'
 import { getTeacherStats } from '@/api/system/dashboard'
 import { listWorkloadItem } from '@/api/system/workloadItem'
-import { exportPersonalWorkload } from '@/api/system/export'
+import { useDashboard } from '@/composable/useDashboard'
+import { workloadItemStatusMap, summaryStatusMap, SEMESTER_WORKLOAD_CAP } from '@/utils/bizDict'
 import useUserStore from '@/store/modules/user'
 
 const router = useRouter()
 const userStore = useUserStore()
 const { proxy } = getCurrentInstance()
+
+/** 金额格式化与个人工作量导出复用仪表盘共享逻辑 */
+const { formatMoney, handleExportPersonalWorkload } = useDashboard()
 
 // 从 userStore 获取当前用户 ID（兼容不同字段名）
 const currentUserId = computed(() => userStore.id || userStore.userId)
@@ -218,19 +222,13 @@ function formatNumber(val) {
   return Number(val).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
-function formatMoney(val) {
-  if (val == null) return '--'
-  return Number(val).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-}
-
+/** 状态文案/标签类型统一取自 bizDict，消除页面内双口径 */
 function statusLabel(status) {
-  const map = { 0: '草稿', 1: '已核对', 2: '有异议', 3: '已驳回' }
-  return map[status] ?? status
+  return workloadItemStatusMap[status]?.label ?? status
 }
 
 function statusTagType(status) {
-  const map = { 0: 'info', 1: 'success', 2: 'warning', 3: 'danger' }
-  return map[status] ?? ''
+  return workloadItemStatusMap[status]?.type ?? ''
 }
 
 function typeTagType(code) {
@@ -243,13 +241,11 @@ function typeTagType(code) {
 }
 
 function summaryLabel(status) {
-  const map = { 0: '填报中', 1: '待教务审核', 2: '待院领导签字', 3: '已完结' }
-  return map[status] ?? status
+  return summaryStatusMap[status]?.label ?? status
 }
 
 function summaryTagType(status) {
-  const map = { 0: 'info', 1: 'primary', 2: 'warning', 3: 'success' }
-  return map[status] ?? ''
+  return summaryStatusMap[status]?.type ?? ''
 }
 
 async function fetchStats() {
@@ -270,34 +266,14 @@ async function fetchRecentItems() {
       sourceDesc: r.courseName || r.description || `明细 #${r.id}`
     }))
   } catch (e) {
-    // silently ignore
+    proxy.$modal.msgError('获取近期明细失败')
   } finally {
     itemLoading.value = false
   }
 }
 
 function handleExport() {
-  proxy.$prompt('请输入学年学期（如 2025-2026-1）', '导出个人工作量明细', {
-    confirmButtonText: '导出',
-    cancelButtonText: '取消',
-    inputPattern: /^\d{4}-\d{4}-[12]$/,
-    inputErrorMessage: '格式如 2025-2026-1',
-    inputPlaceholder: '2025-2026-1'
-  }).then(({ value }) => {
-    proxy.$modal.loading('正在导出...')
-    exportPersonalWorkload({ userId: currentUserId.value, semester: value }).then(res => {
-      const blob = new Blob([res], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
-      const url = window.URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = `工作量明细_${userStore.nickName || currentUserId.value}_${value}.xlsx`
-      link.click()
-      window.URL.revokeObjectURL(url)
-      proxy.$modal.closeLoading()
-    }).catch(() => {
-      proxy.$modal.closeLoading()
-    })
-  }).catch(() => {})
+  handleExportPersonalWorkload(currentUserId.value, userStore.nickName || currentUserId.value)
 }
 
 onMounted(() => {
