@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.workload.common.constant.HttpStatus;
 import com.workload.common.exception.ServiceException;
 import com.workload.common.utils.SecurityUtils;
 import com.workload.system.domain.BizAuditLog;
@@ -27,6 +28,10 @@ import com.workload.system.service.BizAuditService;
  * 审批状态机：0填报中 → 1教务助理待审 → 2院领导待签 → 3已完结。
  * 每个动作：前置校验 → 带前置状态的原子条件更新（按影响行数判定并发冲突）
  * → 同事务写入 biz_audit_log 审批日志。
+ * <p>
+ * 错误码约定：记录不存在 → {@link HttpStatus#NOT_FOUND}；状态冲突（前置校验失败或原子更新影响行数 != 1）
+ * → {@link HttpStatus#CONFLICT}，且冲突分支经 {@link BizAuditLogWriter}（REQUIRES_NEW 独立事务）
+ * 追加一条 action=conflict 的审计日志，保证外层事务回滚后日志仍落库。
  *
  * @author wflg
  */
@@ -55,11 +60,21 @@ public class BizAuditServiceImpl implements BizAuditService
     private static final String ACTION_UNLOCK = "unlock";
     private static final String ACTION_TEACHER_CONFIRM = "teacherConfirm";
 
+    /** 错误码：记录不存在 */
+    private static final int CODE_NOT_FOUND = HttpStatus.NOT_FOUND;
+
+    /** 错误码：审批状态冲突 */
+    private static final int CODE_STATUS_CONFLICT = HttpStatus.CONFLICT;
+
     @Autowired
     private BizWorkloadSummaryMapper bizWorkloadSummaryMapper;
 
     @Autowired
     private BizAuditLogMapper bizAuditLogMapper;
+
+    /** 独立事务审计日志写入器（跨 Bean 调用使 REQUIRES_NEW 生效，冲突日志不随外层事务回滚） */
+    @Autowired
+    private BizAuditLogWriter bizAuditLogWriter;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -70,7 +85,7 @@ public class BizAuditServiceImpl implements BizAuditService
 
         String username = SecurityUtils.getUsername();
         int rows = bizWorkloadSummaryMapper.updateStatusIf(id, STATUS_DRAFT, STATUS_PENDING_AUDIT, username);
-        assertUpdated(rows);
+        assertUpdated(rows, id, STATUS_DRAFT, STATUS_PENDING_AUDIT);
         writeAuditLog(id, ACTION_SUBMIT, STATUS_DRAFT, STATUS_PENDING_AUDIT, null);
     }
 
@@ -83,7 +98,7 @@ public class BizAuditServiceImpl implements BizAuditService
 
         String username = SecurityUtils.getUsername();
         int rows = bizWorkloadSummaryMapper.approveSummary(id, STATUS_PENDING_AUDIT, STATUS_PENDING_SIGN, username, username);
-        assertUpdated(rows);
+        assertUpdated(rows, id, STATUS_PENDING_AUDIT, STATUS_PENDING_SIGN);
         writeAuditLog(id, ACTION_APPROVE, STATUS_PENDING_AUDIT, STATUS_PENDING_SIGN, null);
     }
 
@@ -98,7 +113,7 @@ public class BizAuditServiceImpl implements BizAuditService
         // 驳回原因写入审批日志；同时兼容写入 remark（reason 为空时保持原 remark，维持现有行为）
         String remark = reason != null ? reason : summary.getRemark();
         int rows = bizWorkloadSummaryMapper.rejectSummary(id, STATUS_PENDING_AUDIT, STATUS_DRAFT, remark, username);
-        assertUpdated(rows);
+        assertUpdated(rows, id, STATUS_PENDING_AUDIT, STATUS_DRAFT);
         writeAuditLog(id, ACTION_REJECT, STATUS_PENDING_AUDIT, STATUS_DRAFT, reason);
     }
 
@@ -111,7 +126,7 @@ public class BizAuditServiceImpl implements BizAuditService
 
         String username = SecurityUtils.getUsername();
         int rows = bizWorkloadSummaryMapper.signSummary(id, STATUS_PENDING_SIGN, STATUS_FINISHED, username, username);
-        assertUpdated(rows);
+        assertUpdated(rows, id, STATUS_PENDING_SIGN, STATUS_FINISHED);
         writeAuditLog(id, ACTION_SIGN, STATUS_PENDING_SIGN, STATUS_FINISHED, null);
     }
 
@@ -124,7 +139,7 @@ public class BizAuditServiceImpl implements BizAuditService
 
         String username = SecurityUtils.getUsername();
         int rows = bizWorkloadSummaryMapper.unlockById(id, username);
-        assertUpdated(rows);
+        assertUpdated(rows, id, STATUS_FINISHED, STATUS_DRAFT);
         writeAuditLog(id, ACTION_UNLOCK, STATUS_FINISHED, STATUS_DRAFT, null);
         log.info("管理员 {} 解锁了汇总 id={}", username, id);
     }
@@ -137,16 +152,20 @@ public class BizAuditServiceImpl implements BizAuditService
         if (summary.getStatus() == null
                 || (summary.getStatus() != STATUS_PENDING_AUDIT && summary.getStatus() != STATUS_PENDING_SIGN))
         {
-            throw new ServiceException("只有待审或待签状态才能教师确认（当前状态: " + summary.getStatus() + "）");
+            throw new ServiceException("只有待审或待签状态才能教师确认（当前状态: " + summary.getStatus() + "）", CODE_STATUS_CONFLICT);
         }
 
         // SecurityUtils 无 getNickName 方法，按约定取登录账户
         String teacherSign = SecurityUtils.getUsername();
         Long userId = SecurityUtils.getUserId();
         int rows = bizWorkloadSummaryMapper.teacherConfirmById(id, userId, teacherSign);
-        if (rows == 0)
+        if (rows != 1)
         {
-            throw new ServiceException("记录状态已变化或记录不属于当前用户，请刷新后重试");
+            // 并发冲突：经独立事务（REQUIRES_NEW）写入 conflict 审计日志后再抛带冲突错误码的异常，
+            // 避免外层事务回滚导致日志丢失
+            bizAuditLogWriter.writeConflictLog(id, summary.getStatus(), summary.getStatus(),
+                    "并发冲突：教师确认未生效，记录状态已变化或记录不属于当前用户（影响行数 " + rows + "）");
+            throw new ServiceException("记录状态已变化或记录不属于当前用户，请刷新后重试", CODE_STATUS_CONFLICT);
         }
         // 教师确认不变更状态，from_status/to_status 记录确认时的状态
         writeAuditLog(id, ACTION_TEACHER_CONFIRM, summary.getStatus(), summary.getStatus(), null);
@@ -190,7 +209,7 @@ public class BizAuditServiceImpl implements BizAuditService
         BizWorkloadSummary summary = bizWorkloadSummaryMapper.selectBizWorkloadSummaryById(id);
         if (summary == null)
         {
-            throw new ServiceException("汇总记录不存在");
+            throw new ServiceException("汇总记录不存在", CODE_NOT_FOUND);
         }
         return summary;
     }
@@ -202,18 +221,23 @@ public class BizAuditServiceImpl implements BizAuditService
     {
         if (!Integer.valueOf(expectedStatus).equals(summary.getStatus()))
         {
-            throw new ServiceException(message + "（当前状态: " + summary.getStatus() + "）");
+            throw new ServiceException(message + "（当前状态: " + summary.getStatus() + "）", CODE_STATUS_CONFLICT);
         }
     }
 
     /**
-     * 原子条件更新影响行数为 0：记录状态已被并发变更
+     * 原子条件更新影响行数 != 1：记录状态已被并发变更。
+     * 经 {@link BizAuditLogWriter} 独立事务（REQUIRES_NEW）写入一条 action=conflict 的审计日志
+     * （含预期 from/to 状态与操作人），再抛带状态冲突错误码的业务异常；
+     * 外层事务回滚不影响冲突日志落库。
      */
-    private void assertUpdated(int rows)
+    private void assertUpdated(int rows, Long summaryId, int fromStatus, int toStatus)
     {
-        if (rows == 0)
+        if (rows != 1)
         {
-            throw new ServiceException("记录状态已变化，请刷新后重试");
+            bizAuditLogWriter.writeConflictLog(summaryId, fromStatus, toStatus,
+                    "并发冲突：预期 " + fromStatus + " → " + toStatus + " 未生效（影响行数 " + rows + "）");
+            throw new ServiceException("记录状态已变化，请刷新后重试", CODE_STATUS_CONFLICT);
         }
     }
 
