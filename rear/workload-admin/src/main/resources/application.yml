@@ -153,3 +153,11 @@ wl:
     autumn-end: 01-31
     spring-start: 02-20
     spring-end: 07-15
+
+# WFIT 导入与初始密码配置
+wfit:
+  import:
+    # Excel 导入单文件大小上限（MB），对应 @Value("${wfit.import.max-size:10}")
+    max-size: 10
+  # 导入新建教师账号的默认初始密码，对应 @Value("${wfit.default-password:123456}")
+  default-password: '123456'

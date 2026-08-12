@@ -5,6 +5,7 @@ import java.util.List;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -43,6 +44,10 @@ public class BizTeachingTaskController extends BaseController
 {
     private static final Logger log = LoggerFactory.getLogger(BizTeachingTaskController.class);
 
+    /** Excel 导入文件大小上限（MB） */
+    @Value("${wfit.import.max-size:10}")
+    private long importMaxSizeMb;
+
     @Autowired
     private IBizTeachingTaskService bizTeachingTaskService;
 
@@ -71,6 +76,12 @@ public class BizTeachingTaskController extends BaseController
     @PostMapping("/importExcel")
     public AjaxResult importExcel(@RequestParam("file") MultipartFile file)
     {
+        // 上传安全校验：空文件/扩展名白名单/文件大小上限
+        String invalidMsg = ImportFileValidator.validateExcelFile(file, importMaxSizeMb);
+        if (invalidMsg != null)
+        {
+            return error(invalidMsg);
+        }
         try
         {
             // 使用 ExcelImportListener 读取（支持逐行错误捕获，不因单行格式错误中断整个导入）
