@@ -133,6 +133,13 @@ VALUES(20211, '导出酬金统计', 2020, 11, '', '', '', '', 1, 0, 'F', '0', '0
 INSERT INTO sys_menu(menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark)
 VALUES(20215, '教师确认', 2020, 12, '', '', '', '', 1, 0, 'F', '0', '0', 'system:audit:teacherConfirm', '#', 'admin', sysdate(), '', NULL, '');
 
+-- 仪表盘权限（09_dashboard_perm.sql 同步登记，字段完全一致）
+-- 对应 BizDashboardController @PreAuthorize 注解权限串（审查项 P2-05 回归修复）
+INSERT INTO sys_menu(menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark)
+VALUES(20216, '管理员仪表盘统计', 2020, 13, '', '', '', '', 1, 0, 'F', '0', '0', 'system:dashboard:adminStats', '#', 'admin', sysdate(), '', NULL, '仪表盘-管理员全局统计');
+INSERT INTO sys_menu(menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark)
+VALUES(20217, '学院概况统计', 2020, 14, '', '', '', '', 1, 0, 'F', '0', '0', 'system:dashboard:collegeStats', '#', 'admin', sysdate(), '', NULL, '仪表盘-各学院教学任务概况');
+
 -- 酬金记录
 INSERT INTO sys_menu(menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark)
 VALUES(20212, '酬金记录查询', 2021, 1, '', '', '', '', 1, 0, 'F', '0', '0', 'system:payRecord:query', '#', 'admin', sysdate(), '', NULL, '');
@@ -148,6 +155,16 @@ INSERT INTO sys_menu(menu_id, menu_name, parent_id, order_num, path, component, 
 VALUES(20302, '生成G11', 2010, 7, '', '', '', '', 1, 0, 'F', '0', '0', 'system:workloadItem:add', '#', 'admin', sysdate(), '', NULL, '');
 
 -- ==================== admin 角色授权 ====================
--- role_id=1 是超级管理员，拥有所有权限
+-- role_id=1 是超级管理员，拥有所有权限（上界 30000 与顶部 DELETE 范围一致，
+-- 覆盖 20011+ 五位按钮菜单，修复原 < 3000 漏授按钮权限的问题）
 INSERT INTO sys_role_menu(role_id, menu_id)
-SELECT 1, menu_id FROM sys_menu WHERE menu_id >= 2000 AND menu_id < 3000;
+SELECT 1, menu_id FROM sys_menu WHERE menu_id >= 2000 AND menu_id < 30000;
+
+-- ==================== 仪表盘权限授权（与 09_dashboard_perm.sql 一致） ====================
+-- 授权矩阵：
+--   20216 adminStats   → role1(admin) + role3(教务)
+--   20217 collegeStats → role1(admin) + role3(教务) + role5(院领导)
+--   teacherStats 复用 20201(system:workloadSummary:query)，role4(教师) 兜底补授
+INSERT IGNORE INTO sys_role_menu(role_id, menu_id) VALUES (1, 20216), (3, 20216);
+INSERT IGNORE INTO sys_role_menu(role_id, menu_id) VALUES (1, 20217), (3, 20217), (5, 20217);
+INSERT IGNORE INTO sys_role_menu(role_id, menu_id) VALUES (4, 20201);
