@@ -89,6 +89,18 @@ VALUES(20025, '教学任务导出', 2002, 5, '', '', '', '', 1, 0, 'F', '0', '0'
 INSERT INTO sys_menu(menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark)
 VALUES(20026, '教学任务导入', 2002, 6, '', '', '', '', 1, 0, 'F', '0', '0', 'system:teachingTask:import', '#', 'admin', sysdate(), '', NULL, '');
 
+-- 岗位任职
+INSERT INTO sys_menu(menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark)
+VALUES(20031, '岗位任职查询', 2003, 1, '', '', '', '', 1, 0, 'F', '0', '0', 'system:roleAssignment:query', '#', 'admin', sysdate(), '', NULL, '');
+INSERT INTO sys_menu(menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark)
+VALUES(20032, '岗位任职新增', 2003, 2, '', '', '', '', 1, 0, 'F', '0', '0', 'system:roleAssignment:add', '#', 'admin', sysdate(), '', NULL, '');
+INSERT INTO sys_menu(menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark)
+VALUES(20033, '岗位任职修改', 2003, 3, '', '', '', '', 1, 0, 'F', '0', '0', 'system:roleAssignment:edit', '#', 'admin', sysdate(), '', NULL, '');
+INSERT INTO sys_menu(menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark)
+VALUES(20034, '岗位任职删除', 2003, 4, '', '', '', '', 1, 0, 'F', '0', '0', 'system:roleAssignment:remove', '#', 'admin', sysdate(), '', NULL, '');
+INSERT INTO sys_menu(menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark)
+VALUES(20035, '岗位任职导出', 2003, 5, '', '', '', '', 1, 0, 'F', '0', '0', 'system:roleAssignment:export', '#', 'admin', sysdate(), '', NULL, '');
+
 -- 工作量明细
 INSERT INTO sys_menu(menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark)
 VALUES(20101, '工作量明细查询', 2010, 1, '', '', '', '', 1, 0, 'F', '0', '0', 'system:workloadItem:query', '#', 'admin', sysdate(), '', NULL, '');
@@ -160,11 +172,15 @@ VALUES(20302, '生成G11', 2010, 7, '', '', '', '', 1, 0, 'F', '0', '0', 'system
 INSERT INTO sys_role_menu(role_id, menu_id)
 SELECT 1, menu_id FROM sys_menu WHERE menu_id >= 2000 AND menu_id < 30000;
 
+-- role_id=2 业务管理员（admin_test 使用），拥有全部业务菜单权限
+INSERT INTO sys_role_menu(role_id, menu_id)
+SELECT 2, menu_id FROM sys_menu WHERE menu_id >= 2000 AND menu_id < 30000;
+
 -- ==================== 仪表盘权限授权（与 09_dashboard_perm.sql 一致） ====================
 -- 授权矩阵：
---   20216 adminStats   → role1(admin) + role3(教务)
---   20217 collegeStats → role1(admin) + role3(教务) + role5(院领导)
+--   20216 adminStats   → role1(admin) + role2(业务管理员) + role3(教务)
+--   20217 collegeStats → role1(admin) + role2(业务管理员) + role3(教务) + role5(院领导)
 --   teacherStats 复用 20201(system:workloadSummary:query)，role4(教师) 兜底补授
-INSERT IGNORE INTO sys_role_menu(role_id, menu_id) VALUES (1, 20216), (3, 20216);
-INSERT IGNORE INTO sys_role_menu(role_id, menu_id) VALUES (1, 20217), (3, 20217), (5, 20217);
+INSERT IGNORE INTO sys_role_menu(role_id, menu_id) VALUES (1, 20216), (2, 20216), (3, 20216);
+INSERT IGNORE INTO sys_role_menu(role_id, menu_id) VALUES (1, 20217), (2, 20217), (3, 20217), (5, 20217);
 INSERT IGNORE INTO sys_role_menu(role_id, menu_id) VALUES (4, 20201);

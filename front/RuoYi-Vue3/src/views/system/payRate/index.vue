@@ -34,7 +34,7 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="payRateList" empty-text="暂无数据" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="payRateList" stripe empty-text="暂无数据" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="50" align="center" />
       <el-table-column label="职称" align="center" prop="title" width="120">
         <template #default="scope">

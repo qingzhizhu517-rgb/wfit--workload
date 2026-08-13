@@ -172,59 +172,66 @@ getCookie()
 .title {
   margin: 0px auto 30px auto;
   text-align: center;
-  color: #333333;
-  font-size: 28px;
-  font-weight: bold;
+  color: var(--el-text-color-primary);
+  font-size: var(--wfit-font-xxl, 28px);
+  font-weight: 700;
   letter-spacing: 2px;
 }
 
 .login-form {
-  border-radius: 20px;
+  border-radius: var(--wfit-radius-lg);
   width: 420px;
   padding: 40px 45px 30px 45px;
   z-index: 1;
-  background-color: rgba(255, 255, 255, 0.65);
-  backdrop-filter: blur(12px);
+  background-color: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.5);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--wfit-shadow-lg);
 
   .el-input {
     height: 44px;
     :deep(.el-input__wrapper) {
       background-color: #ffffff !important;
-      box-shadow: 0 0 0 1px #dcdfe6 inset;
-      border-radius: 6px;
+      box-shadow: 0 0 0 1px var(--el-border-color) inset;
+      border-radius: var(--wfit-radius-sm);
+      transition: box-shadow var(--wfit-transition);
+    }
+    :deep(.el-input__wrapper:hover) {
+      box-shadow: 0 0 0 1px var(--el-border-color-hover) inset;
+    }
+    :deep(.el-input__wrapper.is-focus) {
+      box-shadow: 0 0 0 1px var(--el-color-primary) inset;
     }
     :deep(.el-input__inner) {
-      color: #333333;
+      color: var(--el-text-color-primary);
       height: 44px;
     }
   }
 }
 
 .input-label {
-  font-size: 14px;
-  font-weight: bold;
-  color: #333333;
-  margin-bottom: 10px;
+  font-size: var(--wfit-font-md);
+  font-weight: 600;
+  color: var(--el-text-color-primary);
+  margin-bottom: var(--wfit-space-sm);
 }
 
 .action-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 25px;
+  margin-bottom: var(--wfit-space-lg);
 
   :deep(.el-checkbox__label) {
-    color: #444444;
+    color: var(--el-text-color-regular);
   }
 
   .forgot-pwd {
-    font-size: 14px;
-    color: #444444 !important; /* 覆盖 el-link 默认颜色 */
+    font-size: var(--wfit-font-md);
+    color: var(--el-text-color-secondary) !important;
     
     &:hover {
-      color: #4a8df8 !important;
+      color: var(--el-color-primary) !important;
     }
   }
 }
@@ -232,28 +239,23 @@ getCookie()
 .login-btn {
   width: 100%;
   height: 48px;
-  border-radius: 6px;
-  font-size: 16px;
+  border-radius: var(--wfit-radius-sm);
+  font-size: var(--wfit-font-lg);
   letter-spacing: 4px;
-  background: #4a8df8;
-  border: none;
-  box-shadow: 0 4px 10px rgba(74, 141, 248, 0.3);
-
-  &:hover {
-    background: #3b7dec;
-  }
+  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.25);
+  transition: all var(--wfit-transition);
 }
 
 .register-link {
   text-align: center;
-  font-size: 13px;
-  color: #666666;
-  margin-top: 10px;
+  font-size: var(--wfit-font-sm);
+  color: var(--el-text-color-secondary);
+  margin-top: var(--wfit-space-sm);
 
   .link-type {
-    color: #4a8df8;
+    color: var(--el-color-primary);
     text-decoration: none;
-    font-weight: bold;
+    font-weight: 600;
 
     &:hover {
       text-decoration: underline;
@@ -287,9 +289,8 @@ getCookie()
   bottom: 0;
   width: 100%;
   text-align: center;
-  color: #666;
-  font-family: Arial;
-  font-size: 12px;
+  color: var(--el-text-color-secondary);
+  font-size: var(--wfit-font-xs);
   letter-spacing: 1px;
 }
 </style>

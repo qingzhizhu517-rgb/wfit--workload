@@ -36,7 +36,7 @@
 
     <el-alert type="info" :closable="false" class="mb8" :title="`本明细由 G11 生成器按岗位任职区间自动折算写入，工作量 = 折算学时；多岗叠加与学期封顶 ${G11_SEMESTER_CAP} 在汇总层处理`" />
 
-    <el-table v-loading="loading" :data="wlManagementList" empty-text="暂无数据" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="wlManagementList" stripe empty-text="暂无数据" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="50" align="center" />
       <el-table-column label="明细ID" align="center" prop="itemId" width="70" />
       <el-table-column label="任职ID" align="center" prop="assignmentId" width="70" />

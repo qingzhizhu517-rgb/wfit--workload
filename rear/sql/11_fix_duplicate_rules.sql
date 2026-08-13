@@ -1,24 +1,18 @@
 -- ============================================================
--- 潍理工教师工作量管理系统 种子数据
--- G 类别字典 11 条 / 全局规则参数 28 条 / 职称酬金费率 4 条
+-- 11_fix_duplicate_rules.sql — 清理重复的规则数据
+-- 执行: mysql -u root -p wflg_workload < 11_fix_duplicate_rules.sql
+--
+-- 背景：02_biz_seed.sql 使用 INSERT INTO 且未指定 effective_from，
+-- 导致 MySQL NULL + UNIQUE 约束不生效，重复执行会产生重复记录。
+-- 本脚本清理重复数据并重新插入正确的种子数据。
+--
+-- 本脚本幂等，可重复执行。
 -- ============================================================
 
--- G 类别字典（使用 INSERT IGNORE 确保幂等性）
-INSERT IGNORE INTO biz_workload_category_dict (type_code, type_name, parent_group, calc_strategy, is_calc_excess, sort_order) VALUES
-('G1','理论课','TEACHING','theoryCalcStrategy',1,1),
-('G2','课内实践/实验/实训','TEACHING','practiceCalcStrategy',1,2),
-('G3','教学实习/实训','TEACHING','internshipTrainingCalcStrategy',1,3),
-('G4','课程设计','TEACHING','courseDesignCalcStrategy',1,4),
-('G5','毕业论文(设计)','TEACHING','thesisCalcStrategy',1,5),
-('G6','集中实习(现场跟班)','TEACHING','concentratedInternshipCalcStrategy',1,6),
-('G7','第一课堂工作量','TEACHING',NULL,1,7),
-('G8','第二课堂工作量','EXTRA',NULL,1,8),
-('G9','其他工作量','EXTRA',NULL,1,9),
-('G10','教学工作量合计','TEACHING',NULL,1,10),
-('G11','管理服务工作量','ADMIN','managementCalcStrategy',1,11);
+-- 1. 删除 effective_from 为 NULL 的规则数据（这些是重复插入的）
+DELETE FROM biz_workload_rule WHERE effective_from IS NULL;
 
--- 全局规则参数(系数档位/常数)
--- 使用 INSERT IGNORE + effective_from 确保幂等性（唯一约束 uk_rule_code_eff 生效）
+-- 2. 重新插入正确的种子数据（使用 INSERT IGNORE 确保幂等性）
 INSERT IGNORE INTO biz_workload_rule (rule_code, rule_value, rule_desc, effective_from) VALUES
 ('COEF_CLASS_120_150', 1.10, '合堂120-150人系数N', '2025-09-01'),
 ('COEF_CLASS_151_UP',  1.20, '合堂151人及以上系数N', '2025-09-01'),
@@ -48,10 +42,3 @@ INSERT IGNORE INTO biz_workload_rule (rule_code, rule_value, rule_desc, effectiv
 ('BASIC_TEACH_ASSIST', 192.00,'达标基本教学量助教/年', '2025-09-01'),
 ('FACTOR_MATERNITY',   0.50, '产假达标折算系数', '2025-09-01'),
 ('BASIC_TEACH_PHD',    128.00,'在职读博达标基本教学量/年', '2025-09-01');
-
--- 职称单位酬金费率（使用 INSERT IGNORE 确保幂等性）
-INSERT IGNORE INTO biz_pay_rate (title, rate, effective_from) VALUES
-('教授',   70.00, '2025-09-01'),
-('副教授', 60.00, '2025-09-01'),
-('讲师',   50.00, '2025-09-01'),
-('助教',   40.00, '2025-09-01');

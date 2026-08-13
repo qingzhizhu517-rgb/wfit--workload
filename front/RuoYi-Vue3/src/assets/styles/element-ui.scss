@@ -23,8 +23,8 @@
 
 .small-padding {
   .cell {
-    padding-left: 5px;
-    padding-right: 5px;
+    padding-left: var(--wfit-space-xs);
+    padding-right: var(--wfit-space-xs);
   }
 }
 
@@ -37,7 +37,7 @@
 
 .status-col {
   .cell {
-    padding: 0 10px;
+    padding: 0 var(--wfit-space-sm);
     text-align: center;
 
     .el-tag {
@@ -52,6 +52,7 @@
   left: 0;
   position: relative;
   margin: 0 auto;
+  border-radius: var(--wfit-radius-md);
 }
 
 // refine element ui upload
@@ -69,8 +70,9 @@
 // dropdown
 .el-dropdown-menu {
   a {
-    display: block
+    display: block;
   }
+  border-radius: var(--wfit-radius-sm);
 }
 
 // fix date-picker ui bug in filter-item
@@ -93,4 +95,9 @@
 
 .el-dropdown .el-dropdown-link{
   color: var(--el-color-primary) !important;
+}
+
+// 卡片 hover 统一阴影提升
+.el-card {
+  transition: box-shadow var(--wfit-transition);
 }

@@ -38,7 +38,7 @@
 
     <el-alert type="info" :closable="false" class="mb8" title="核算公式：工作量 = 指导人数 × 系数（理工 本9/专5，文史 本6/专4；本科上限10人、专科上限15人）" />
 
-    <el-table v-loading="loading" :data="wlThesisList" empty-text="暂无数据" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="wlThesisList" stripe empty-text="暂无数据" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="50" align="center" />
       <el-table-column label="明细ID" align="center" prop="itemId" width="70" />
       <el-table-column label="指导人数" align="right" prop="R5" width="100">

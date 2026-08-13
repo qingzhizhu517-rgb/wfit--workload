@@ -50,7 +50,7 @@
     <el-alert type="info" :closable="false" class="mb8"
       title="规则参数修改后立即参与核算；同一键名可通过不同生效日期保留历史版本" />
 
-    <el-table v-loading="loading" :data="workloadRuleList" empty-text="暂无数据" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="workloadRuleList" stripe empty-text="暂无数据" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="50" align="center" />
       <el-table-column label="参数键名" align="center" prop="ruleCode" min-width="180" show-overflow-tooltip>
         <template #default="scope">

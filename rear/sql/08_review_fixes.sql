@@ -48,9 +48,10 @@ DELETE FROM sys_role_menu WHERE role_id = 5 AND menu_id = 20206;
 -- 2.4 教师确认按钮授权教师角色（role_id=4）
 INSERT IGNORE INTO sys_role_menu(role_id, menu_id) VALUES (4, 20215);
 
--- 2.5 admin 角色（role_id=1）显式授权 20215
---     （06_test_accounts.sql L28 的 SELECT 全量授权会自动覆盖，此处保证不重放 06 时 admin 也有该权限）
+-- 2.5 admin 角色（role_id=1）和业务管理员（role_id=2）显式授权 20215
+--     （06_test_accounts.sql 的 SELECT 全量授权会自动覆盖，此处保证不重放 06 时也有该权限）
 INSERT IGNORE INTO sys_role_menu(role_id, menu_id) SELECT 1, menu_id FROM sys_menu WHERE menu_id = 20215;
+INSERT IGNORE INTO sys_role_menu(role_id, menu_id) SELECT 2, menu_id FROM sys_menu WHERE menu_id = 20215;
 
 -- ==================== 3. 回归补丁（审批链 approve 403 修复） ====================
 -- 回归验证发现：2.3 撤销 (5,20206) 后，20206(approve)/20207(reject)/20209(unlock)
@@ -60,8 +61,10 @@ INSERT IGNORE INTO sys_role_menu(role_id, menu_id) SELECT 1, menu_id FROM sys_me
 -- 3.1 教务助理（role_id=3）承接审批审核环节：approve/reject/unlock（审查报告 P2-03 修复口径）
 INSERT IGNORE INTO sys_role_menu(role_id, menu_id) VALUES (3, 20206), (3, 20207), (3, 20209);
 
--- 3.2 测试账号角色绑定补齐（防账号与角色脱绑；与 06_test_accounts.sql L100-105 声明一致）
-INSERT IGNORE INTO sys_user_role(user_id, role_id) VALUES (1001, 1), (1002, 3), (1003, 4), (1004, 5);
+-- 3.2 测试账号角色绑定补齐（防账号与角色脱绑；与 06_test_accounts.sql 声明一致）
+--     admin_test 使用 role_id=2（业务管理员），避免 role_id=1 被框架跳过
+INSERT IGNORE INTO sys_user_role(user_id, role_id) VALUES (1001, 2), (1002, 3), (1003, 4), (1004, 5);
 
--- 3.3 admin 角色（role_id=1）业务菜单全量授权补齐（与 06_test_accounts.sql L28 同口径，含 20215）
+-- 3.3 admin 角色（role_id=1）和业务管理员（role_id=2）业务菜单全量授权补齐
 INSERT IGNORE INTO sys_role_menu(role_id, menu_id) SELECT 1, menu_id FROM sys_menu WHERE menu_id >= 2000;
+INSERT IGNORE INTO sys_role_menu(role_id, menu_id) SELECT 2, menu_id FROM sys_menu WHERE menu_id >= 2000;

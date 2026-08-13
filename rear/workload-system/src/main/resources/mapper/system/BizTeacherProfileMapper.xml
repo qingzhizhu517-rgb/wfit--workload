@@ -26,7 +26,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <select id="selectBizTeacherProfileList" parameterType="BizTeacherProfile" resultMap="BizTeacherProfileResult">
         <include refid="selectBizTeacherProfileVo"/>
-        <where>  
+        <where>
+            <if test="userId != null "> and user_id = #{userId}</if>
             <if test="title != null  and title != ''"> and title = #{title}</if>
             <if test="teacherNature != null  and teacherNature != ''"> and teacher_nature = #{teacherNature}</if>
             <if test="specialStatus != null  and specialStatus != ''"> and special_status = #{specialStatus}</if>

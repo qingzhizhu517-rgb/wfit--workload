@@ -48,7 +48,7 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="workloadSummaryList" empty-text="暂无数据" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="workloadSummaryList" stripe empty-text="暂无数据" @selection-change="handleSelectionChange">
       <el-table-column v-if="!isTeacher" type="selection" width="50" align="center" />
       <el-table-column v-if="!isTeacher" label="教师" align="center" prop="userId" width="150" fixed="left">
         <template #default="scope">{{ userLabel(scope.row.userId) }}</template>

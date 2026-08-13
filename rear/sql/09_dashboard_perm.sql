@@ -32,19 +32,19 @@ VALUES(20217, '学院概况统计', 2020, 14, '', '', '', '', 1, 0, 'F', '0', '0
 
 -- ==================== 2. sys_role_menu 角色授权 ====================
 -- 角色 id 以 06_test_accounts.sql 为准：
---   role_id=1 管理员 / role_id=3 教务助理 / role_id=4 教师 / role_id=5 院领导
+--   role_id=1 管理员 / role_id=2 业务管理员(admin_test) / role_id=3 教务助理 / role_id=4 教师 / role_id=5 院领导
 --
 -- 授权矩阵：
---   20216 adminStats   → role1(admin) + role3(教务)
---   20217 collegeStats → role1(admin) + role3(教务) + role5(院领导)
+--   20216 adminStats   → role1(admin) + role2(业务管理员) + role3(教务)
+--   20217 collegeStats → role1(admin) + role2(业务管理员) + role3(教务) + role5(院领导)
 --   teacherStats 复用 20201(system:workloadSummary:query)
 --                      → role4(教师) 兜底补授，保证教师可访问本人仪表盘
 
--- 2.1 adminStats：管理员 + 教务
-INSERT IGNORE INTO sys_role_menu(role_id, menu_id) VALUES (1, 20216), (3, 20216);
+-- 2.1 adminStats：管理员 + 业务管理员 + 教务
+INSERT IGNORE INTO sys_role_menu(role_id, menu_id) VALUES (1, 20216), (2, 20216), (3, 20216);
 
--- 2.2 collegeStats：管理员 + 教务 + 院领导
-INSERT IGNORE INTO sys_role_menu(role_id, menu_id) VALUES (1, 20217), (3, 20217), (5, 20217);
+-- 2.2 collegeStats：管理员 + 业务管理员 + 教务 + 院领导
+INSERT IGNORE INTO sys_role_menu(role_id, menu_id) VALUES (1, 20217), (2, 20217), (3, 20217), (5, 20217);
 
 -- 2.3 teacherStats：教师查看本人仪表盘（权限串 system:workloadSummary:query，
 --     对应既有按钮 20201；06_test_accounts.sql 已授 role4，此处兜底防脱漏）

@@ -28,7 +28,7 @@
 
     <el-alert type="info" :closable="false" class="mb8" title="核算公式：工作量 = 理论学时 × 重复系数 × 课程类型 × 教学质量 × 课程质量 × 全外文 × 合堂（J1×C1×K1×Q1×Q2×Q3×N）" />
 
-    <el-table v-loading="loading" :data="wlTheoryList" empty-text="暂无数据" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="wlTheoryList" stripe empty-text="暂无数据" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="50" align="center" />
       <el-table-column label="明细ID" align="center" prop="itemId" width="70" />
       <el-table-column label="理论学时" align="right" prop="J1" width="100">

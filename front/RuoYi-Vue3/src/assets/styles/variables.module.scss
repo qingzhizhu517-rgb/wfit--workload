@@ -253,8 +253,8 @@ html.dark {
 
     .el-table__header-wrapper, .el-table__fixed-header-wrapper {
       th {
-        background-color: var(--el-bg-color-overlay, #f8f8f9) !important;
-        color: var(--el-text-color-regular, #515a6e);
+        background-color: var(--el-bg-color-overlay) !important;
+        color: var(--el-text-color-regular);
       }
     }
   }

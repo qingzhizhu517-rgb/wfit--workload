@@ -28,7 +28,7 @@
 
     <el-alert type="info" :closable="false" class="mb8" title="核算公式：工作量 = 学分 × 指导人数(上限20) × 每学分常量（规则 CONST_COURSE_DESIGN，默认 0.4）" />
 
-    <el-table v-loading="loading" :data="wlCourseDesignList" empty-text="暂无数据" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="wlCourseDesignList" stripe empty-text="暂无数据" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="50" align="center" />
       <el-table-column label="明细ID" align="center" prop="itemId" width="70" />
       <el-table-column label="课程设计学分" align="right" prop="J4" width="120">

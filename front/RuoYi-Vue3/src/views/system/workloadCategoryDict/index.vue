@@ -37,7 +37,7 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="workloadCategoryDictList" row-key="typeCode" empty-text="暂无数据" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="workloadCategoryDictList" row-key="typeCode" stripe empty-text="暂无数据" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="50" align="center" />
       <el-table-column label="分类代码" align="center" prop="typeCode" width="100">
         <template #default="scope">

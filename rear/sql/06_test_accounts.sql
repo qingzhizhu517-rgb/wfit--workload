@@ -6,26 +6,34 @@
 -- 院领导端: leader_test / 123456
 -- ============================================================
 
--- 1. 创建教务角色（role_id=3）
+-- 1. 创建业务管理员角色（role_id=2）— admin_test 使用，避免 role_id=1 被 RuoYi 框架硬编码跳过
 INSERT INTO sys_role (role_id, role_name, role_key, role_sort, data_scope, menu_check_strictly, dept_check_strictly, status, del_flag, create_by, create_time, update_by, update_time, remark)
-VALUES (3, '教务助理', 'assistant', 3, '2', 1, 1, '0', '0', 'admin', NOW(), '', NULL, '教务助理角色')
-ON DUPLICATE KEY UPDATE role_name='教务助理', role_key='assistant', status='0', del_flag='0';
+VALUES (2, '业务管理员', 'biz_admin', 2, '1', 1, 1, '0', '0', 'admin', NOW(), '', NULL, '业务管理员角色（测试用，全部数据权限）')
+ON DUPLICATE KEY UPDATE role_name='业务管理员', role_key='biz_admin', data_scope='1', status='0', del_flag='0';
 
--- 2. 创建教师角色（role_id=4）
+-- 2. 创建教务角色（role_id=3）— data_scope='1' 全部数据权限，避免 sys_role_dept 为空导致查询返回零行
 INSERT INTO sys_role (role_id, role_name, role_key, role_sort, data_scope, menu_check_strictly, dept_check_strictly, status, del_flag, create_by, create_time, update_by, update_time, remark)
-VALUES (4, '教师', 'teacher', 4, '2', 1, 1, '0', '0', 'admin', NOW(), '', NULL, '教师角色')
-ON DUPLICATE KEY UPDATE role_name='教师', role_key='teacher', status='0', del_flag='0';
+VALUES (3, '教务助理', 'assistant', 3, '1', 1, 1, '0', '0', 'admin', NOW(), '', NULL, '教务助理角色')
+ON DUPLICATE KEY UPDATE role_name='教务助理', role_key='assistant', data_scope='1', status='0', del_flag='0';
 
--- 3. 创建院领导角色（role_id=5）
+-- 3. 创建教师角色（role_id=4）— data_scope='1'（DataScopeUtil 会强制按 userId 过滤）
 INSERT INTO sys_role (role_id, role_name, role_key, role_sort, data_scope, menu_check_strictly, dept_check_strictly, status, del_flag, create_by, create_time, update_by, update_time, remark)
-VALUES (5, '院领导', 'leader', 5, '2', 1, 1, '0', '0', 'admin', NOW(), '', NULL, '院领导角色')
-ON DUPLICATE KEY UPDATE role_name='院领导', role_key='leader', status='0', del_flag='0';
+VALUES (4, '教师', 'teacher', 4, '1', 1, 1, '0', '0', 'admin', NOW(), '', NULL, '教师角色')
+ON DUPLICATE KEY UPDATE role_name='教师', role_key='teacher', data_scope='1', status='0', del_flag='0';
+
+-- 4. 创建院领导角色（role_id=5）— data_scope='1' 全部数据权限
+INSERT INTO sys_role (role_id, role_name, role_key, role_sort, data_scope, menu_check_strictly, dept_check_strictly, status, del_flag, create_by, create_time, update_by, update_time, remark)
+VALUES (5, '院领导', 'leader', 5, '1', 1, 1, '0', '0', 'admin', NOW(), '', NULL, '院领导角色')
+ON DUPLICATE KEY UPDATE role_name='院领导', role_key='leader', data_scope='1', status='0', del_flag='0';
 
 -- 4. 清除旧的角色菜单分配（可重复执行）
-DELETE FROM sys_role_menu WHERE role_id IN (1, 3, 4, 5) AND menu_id >= 2000;
+DELETE FROM sys_role_menu WHERE role_id IN (1, 2, 3, 4, 5) AND menu_id >= 2000;
 
--- 4.1 管理员角色（role_id=1）— 拥有全部业务菜单
+-- 4.1 管理员角色（role_id=1）— 拥有全部业务菜单（仅供原始 admin 用户使用）
 INSERT INTO sys_role_menu(role_id, menu_id) SELECT 1, menu_id FROM sys_menu WHERE menu_id >= 2000;
+
+-- 4.2 业务管理员角色（role_id=2）— 拥有全部业务菜单（admin_test 使用）
+INSERT INTO sys_role_menu(role_id, menu_id) SELECT 2, menu_id FROM sys_menu WHERE menu_id >= 2000;
 
 -- 5. 教务助理角色的菜单权限（role_id=3）— 数据管理、核算、导入、审批
 INSERT INTO sys_role_menu(role_id, menu_id) VALUES
@@ -58,12 +66,16 @@ INSERT INTO sys_role_menu(role_id, menu_id) VALUES
 INSERT INTO sys_role_menu(role_id, menu_id) VALUES
 -- 目录
 (4, 2000),
+-- 工作量明细页面（TeacherDashboard 近期明细需要 menu_id 2010）
+(4, 2010),
 -- 学期汇总（查看自己的）
 (4, 2020),
 -- 酬金记录（查看自己的）
 (4, 2021),
 -- 我的工作量（自主申报）
 (4, 2030),
+-- 按钮权限：工作量明细查询（兜底）
+(4, 20101),
 -- 按钮权限：学期汇总 查询
 (4, 20201),
 -- 按钮权限：审批提交（修复教师提交按钮永不渲染，见 08_review_fixes.sql / P3-03）
@@ -90,19 +102,21 @@ INSERT INTO sys_role_menu(role_id, menu_id) VALUES
 -- 按钮权限：导出报表
 (5, 20210), (5, 20211),
 -- 按钮权限：酬金记录 查询/导出
-(5, 20212), (5, 20214);
+(5, 20212), (5, 20214),
+-- 按钮权限：管理员仪表盘统计（LeaderDashboard 需要 menu_id 20216）
+(5, 20216);
 
 -- 8. 创建测试用户（密码均为 bcrypt 加密的 123456）
-INSERT INTO sys_user (user_id, user_name, nick_name, email, phonenumber, sex, avatar, password, status, del_flag, dept_id, create_time) VALUES
-(1001, 'admin_test', '管理员测试', 'admin@wfit.edu.cn', '13800001001', '0', '', '$2a$12$8hRkqDsRxg70wdfgq3MpeOotjQj3Hwu0Gr0qcPkDMbLEyZNsvCje6', '0', '0', 103, NOW()),
-(1002, 'jiaowu_test', '教务测试', 'jiaowu@wfit.edu.cn', '13800001002', '0', '', '$2a$12$8hRkqDsRxg70wdfgq3MpeOotjQj3Hwu0Gr0qcPkDMbLEyZNsvCje6', '0', '0', 103, NOW()),
-(1003, 'teacher_test', '教师测试', 'teacher@wfit.edu.cn', '13800001003', '0', '', '$2a$12$8hRkqDsRxg70wdfgq3MpeOotjQj3Hwu0Gr0qcPkDMbLEyZNsvCje6', '0', '0', 103, NOW()),
-(1004, 'leader_test', '院领导测试', 'leader@wfit.edu.cn', '13800001004', '0', '', '$2a$12$8hRkqDsRxg70wdfgq3MpeOotjQj3Hwu0Gr0qcPkDMbLEyZNsvCje6', '0', '0', 103, NOW())
-ON DUPLICATE KEY UPDATE nick_name=VALUES(nick_name), password=VALUES(password);
+INSERT INTO sys_user (user_id, user_name, nick_name, email, phonenumber, sex, avatar, password, status, del_flag, dept_id, create_time, pwd_update_date) VALUES
+(1001, 'admin_test', '管理员测试', 'admin@wfit.edu.cn', '13800001001', '0', '', '$2a$12$8hRkqDsRxg70wdfgq3MpeOotjQj3Hwu0Gr0qcPkDMbLEyZNsvCje6', '0', '0', 103, NOW(), NOW()),
+(1002, 'jiaowu_test', '教务测试', 'jiaowu@wfit.edu.cn', '13800001002', '0', '', '$2a$12$8hRkqDsRxg70wdfgq3MpeOotjQj3Hwu0Gr0qcPkDMbLEyZNsvCje6', '0', '0', 103, NOW(), NOW()),
+(1003, 'teacher_test', '教师测试', 'teacher@wfit.edu.cn', '13800001003', '0', '', '$2a$12$8hRkqDsRxg70wdfgq3MpeOotjQj3Hwu0Gr0qcPkDMbLEyZNsvCje6', '0', '0', 103, NOW(), NOW()),
+(1004, 'leader_test', '院领导测试', 'leader@wfit.edu.cn', '13800001004', '0', '', '$2a$12$8hRkqDsRxg70wdfgq3MpeOotjQj3Hwu0Gr0qcPkDMbLEyZNsvCje6', '0', '0', 103, NOW(), NOW())
+ON DUPLICATE KEY UPDATE nick_name=VALUES(nick_name), password=VALUES(password), pwd_update_date=NOW();
 
 -- 9. 分配角色
 INSERT INTO sys_user_role (user_id, role_id) VALUES
-(1001, 1),  -- admin_test → 超级管理员
+(1001, 2),  -- admin_test → 业务管理员（role_id=2，避免 role_id=1 被框架跳过）
 (1002, 3),  -- jiaowu_test → 教务助理
 (1003, 4),  -- teacher_test → 教师
 (1004, 5)   -- leader_test → 院领导

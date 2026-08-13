@@ -28,7 +28,7 @@
 
     <el-alert type="info" :closable="false" class="mb8" title="核算公式：工作量 = 实际天数 × 8 × 指导系数 × 重复系数 × 教学质量 × 课程质量 × 全外文（T×8×D×K×Q1×Q2×Q3）" />
 
-    <el-table v-loading="loading" :data="wlInternshipTrainingList" empty-text="暂无数据" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="wlInternshipTrainingList" stripe empty-text="暂无数据" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="50" align="center" />
       <el-table-column label="明细ID" align="center" prop="itemId" width="70" />
       <el-table-column label="实际天数" align="right" prop="T" width="100">
