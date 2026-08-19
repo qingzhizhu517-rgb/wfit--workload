@@ -1,9 +1,18 @@
 <template>
   <div class="register">
-    <el-form ref="registerRef" :model="registerForm" :rules="registerRules" class="register-form">
-      <h3 class="title">欢迎注册</h3>
+    <el-form
+      ref="registerRef"
+      :model="registerForm"
+      :rules="registerRules"
+      class="register-form"
+    >
+      <h3 class="title">
+        欢迎注册
+      </h3>
 
-      <div class="input-label">账号</div>
+      <div class="input-label">
+        账号
+      </div>
       <el-form-item prop="username">
         <el-input 
           v-model="registerForm.username" 
@@ -11,11 +20,12 @@
           size="large" 
           auto-complete="off" 
           placeholder="请输入手机号/工号"
-        >
-        </el-input>
+        />
       </el-form-item>
 
-      <div class="input-label">密码</div>
+      <div class="input-label">
+        密码
+      </div>
       <el-form-item prop="password">
         <el-input
           v-model="registerForm.password"
@@ -24,11 +34,12 @@
           auto-complete="off"
           placeholder="请输入密码"
           @keyup.enter="handleRegister"
-        >
-        </el-input>
+        />
       </el-form-item>
 
-      <div class="input-label">确认密码</div>
+      <div class="input-label">
+        确认密码
+      </div>
       <el-form-item prop="confirmPassword">
         <el-input
           v-model="registerForm.confirmPassword"
@@ -37,24 +48,28 @@
           auto-complete="off"
           placeholder="请再次输入您的密码"
           @keyup.enter="handleRegister"
-        >
-        </el-input>
+        />
       </el-form-item>
 
       <template v-if="captchaEnabled">
-        <div class="input-label">验证码</div>
+        <div class="input-label">
+          验证码
+        </div>
         <el-form-item prop="code">
           <el-input
-            size="large" 
-            v-model="registerForm.code"
+            v-model="registerForm.code" 
+            size="large"
             auto-complete="off"
             placeholder="请输入验证码"
             style="width: 63%"
             @keyup.enter="handleRegister"
-          >
-          </el-input>
+          />
           <div class="register-code">
-            <img :src="codeUrl" @click="getCode" class="register-code-img"/>
+            <img
+              :src="codeUrl"
+              class="register-code-img"
+              @click="getCode"
+            >
           </div>
         </el-form-item>
       </template>
@@ -74,7 +89,12 @@
       
       <div class="login-link">
         <span>已有账号？ </span>
-        <router-link class="link-type" :to="'/login'">立即登录</router-link>
+        <router-link
+          class="link-type"
+          :to="'/login'"
+        >
+          立即登录
+        </router-link>
       </div>
     </el-form>
     
@@ -85,8 +105,8 @@
 </template>
 
 <script setup>
-import { ElMessageBox } from "element-plus"
-import { getCodeImg, register } from "@/api/login"
+import { ElMessageBox } from 'element-plus'
+import { getCodeImg, register } from '@/api/login'
 import defaultSettings from '@/settings'
 import { ref, getCurrentInstance } from 'vue'
 import { useRouter } from 'vue-router'
@@ -97,16 +117,16 @@ const router = useRouter()
 const { proxy } = getCurrentInstance()
 
 const registerForm = ref({
-  username: "",
-  password: "",
-  confirmPassword: "",
-  code: "",
-  uuid: ""
+  username: '',
+  password: '',
+  confirmPassword: '',
+  code: '',
+  uuid: ''
 })
 
 const equalToPassword = (rule, value, callback) => {
   if (registerForm.value.password !== value) {
-    callback(new Error("两次输入的密码不一致"))
+    callback(new Error('两次输入的密码不一致'))
   } else {
     callback()
   }
@@ -114,22 +134,22 @@ const equalToPassword = (rule, value, callback) => {
 
 const registerRules = {
   username: [
-    { required: true, trigger: "blur", message: "请输入您的账号" },
-    { min: 2, max: 20, message: "用户账号长度必须介于 2 和 20 之间", trigger: "blur" }
+    { required: true, trigger: 'blur', message: '请输入您的账号' },
+    { min: 2, max: 20, message: '用户账号长度必须介于 2 和 20 之间', trigger: 'blur' }
   ],
   password: [
-    { required: true, trigger: "blur", message: "请输入您的密码" },
-    { min: 5, max: 20, message: "用户密码长度必须介于 5 和 20 之间", trigger: "blur" },
-    { pattern: /^[^<>"'|\\]+$/, message: "不能包含非法字符：< > \" ' \\\ |", trigger: "blur" }
+    { required: true, trigger: 'blur', message: '请输入您的密码' },
+    { min: 5, max: 20, message: '用户密码长度必须介于 5 和 20 之间', trigger: 'blur' },
+    { pattern: /^[^<>"'|\\]+$/, message: '不能包含非法字符：< > " \' \\\ |', trigger: 'blur' }
   ],
   confirmPassword: [
-    { required: true, trigger: "blur", message: "请再次输入您的密码" },
-    { required: true, validator: equalToPassword, trigger: "blur" }
+    { required: true, trigger: 'blur', message: '请再次输入您的密码' },
+    { required: true, validator: equalToPassword, trigger: 'blur' }
   ],
-  code: [{ required: true, trigger: "change", message: "请输入验证码" }]
+  code: [{ required: true, trigger: 'change', message: '请输入验证码' }]
 }
 
-const codeUrl = ref("")
+const codeUrl = ref('')
 const loading = ref(false)
 const captchaEnabled = ref(true)
 
@@ -139,15 +159,15 @@ function handleRegister() {
       loading.value = true
       register(registerForm.value).then(res => {
         const username = registerForm.value.username
-        ElMessageBox.alert("<font color='red'>恭喜你，您的账号 " + username + " 注册成功！</font>", "系统提示", {
+        ElMessageBox.alert('<font color=\'red\'>恭喜你，您的账号 ' + username + ' 注册成功！</font>', '系统提示', {
           dangerouslyUseHTMLString: true,
-          type: "success",
+          type: 'success',
         }).then(() => {
-          router.push("/login")
+          router.push('/login')
         }).catch(() => {})
       }).catch(() => {
         loading.value = false
-        if (captchaEnabled) {
+        if (captchaEnabled.value) {
           getCode()
         }
       })
@@ -159,7 +179,7 @@ function getCode() {
   getCodeImg().then(res => {
     captchaEnabled.value = res.captchaEnabled === undefined ? true : res.captchaEnabled
     if (captchaEnabled.value) {
-      codeUrl.value = "data:image/gif;base64," + res.img
+      codeUrl.value = 'data:image/gif;base64,' + res.img
       registerForm.value.uuid = res.uuid
     }
   })

@@ -1,12 +1,32 @@
 <template>
-  <el-menu class="topbar-menu" :ellipsis="false" :default-active="activeMenu" :active-text-color="theme" mode="horizontal">
-    <sidebar-item :key="route.path + index" v-for="(route, index) in topMenus" :item="route" :base-path="route.path" />
+  <el-menu
+    class="topbar-menu"
+    :ellipsis="false"
+    :default-active="activeMenu"
+    :active-text-color="theme"
+    mode="horizontal"
+  >
+    <sidebar-item
+      v-for="(route, index) in topMenus"
+      :key="route.path + index"
+      :item="route"
+      :base-path="route.path"
+    />
 
-    <el-sub-menu index="more" class="el-sub-menu__hide-arrow" v-if="moreRoutes.length > 0">
+    <el-sub-menu
+      v-if="moreRoutes.length > 0"
+      index="more"
+      class="el-sub-menu__hide-arrow"
+    >
       <template #title>
         <span>更多菜单</span>
       </template>
-      <sidebar-item :key="route.path + index" v-for="(route, index) in moreRoutes" :item="route" :base-path="route.path" />
+      <sidebar-item
+        v-for="(route, index) in moreRoutes"
+        :key="route.path + index"
+        :item="route"
+        :base-path="route.path"
+      />
     </el-sub-menu>
   </el-menu>
 </template>

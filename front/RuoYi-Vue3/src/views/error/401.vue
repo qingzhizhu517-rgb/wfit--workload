@@ -1,6 +1,10 @@
 <template>
   <div class="errPage-container">
-    <el-button icon="arrow-left" class="pan-back-btn" @click="back">
+    <el-button
+      icon="arrow-left"
+      class="pan-back-btn"
+      @click="back"
+    >
       返回
     </el-button>
     <el-row>
@@ -19,22 +23,27 @@
         </ul>
       </el-col>
       <el-col :span="12">
-        <img :src="errGif" width="313" height="428" alt="Girl has dropped her ice cream.">
+        <img
+          :src="errGif"
+          width="313"
+          height="428"
+          alt="Girl has dropped her ice cream."
+        >
       </el-col>
     </el-row>
   </div>
 </template>
 
 <script setup>
-import errImage from "@/assets/401_images/401.gif"
+import errImage from '@/assets/401_images/401.gif'
 
-let { proxy } = getCurrentInstance()
+const { proxy } = getCurrentInstance()
 
-const errGif = ref(errImage + "?" + +new Date())
+const errGif = ref(errImage + '?' + +new Date())
 
 function back() {
   if (proxy.$route.query.noGoBack) {
-    proxy.$router.push({ path: "/" })
+    proxy.$router.push({ path: '/' })
   } else {
     proxy.$router.go(-1)
   }

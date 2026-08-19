@@ -33,11 +33,25 @@
         <jwt.version>0.11.5</jwt.version>
         <jaxb-api.version>2.3.1</jaxb-api.version>
         <springdoc.version>3.0.2</springdoc.version>
+        <junit.version>5.10.2</junit.version>
+        <mockito.version>5.11.0</mockito.version>
+        <assertj.version>3.25.3</assertj.version>
     </properties>
 
     <!-- 依赖声明 -->
     <dependencyManagement>
         <dependencies>
+
+            <!-- JUnit 5 BOM -->
+            <dependency>
+                <groupId>org.junit</groupId>
+                <artifactId>junit-bom</artifactId>
+                <version>${junit.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <!-- Jackson：钉 2.21.5（须在 spring-boot-dependencies 之前声明，先到者胜；修 GHSA-5gvw/5jmj/mhm7） -->
 
             <!-- Jackson：钉 2.21.5（须在 spring-boot-dependencies 之前声明，先到者胜；修 GHSA-5gvw/5jmj/mhm7） -->
             <dependency>

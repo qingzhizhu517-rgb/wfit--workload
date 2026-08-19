@@ -1,45 +1,120 @@
 <template>
-  <el-drawer v-model="showSettings" :withHeader="false" :lock-scroll="false" direction="rtl" size="300px">
+  <el-drawer
+    v-model="showSettings"
+    :with-header="false"
+    :lock-scroll="false"
+    direction="rtl"
+    size="300px"
+  >
     <div class="setting-drawer-title">
-      <h3 class="drawer-title">菜单导航设置</h3>
+      <h3 class="drawer-title">
+        菜单导航设置
+      </h3>
     </div>
     <div class="nav-wrap">
-      <el-tooltip content="左侧菜单" placement="bottom">
-        <div class="item left" @click="handleNavType(1)" :class="{ activeItem: navType == 1 }">
-          <b></b><b></b>
+      <el-tooltip
+        content="左侧菜单"
+        placement="bottom"
+      >
+        <div
+          class="item left"
+          :class="{ activeItem: navType == 1 }"
+          @click="handleNavType(1)"
+        >
+          <b /><b />
         </div>
       </el-tooltip>
 
-      <el-tooltip content="混合菜单" placement="bottom">
-        <div class="item mix" @click="handleNavType(2)" :class="{ activeItem: navType == 2 }">
-          <b></b><b></b>
+      <el-tooltip
+        content="混合菜单"
+        placement="bottom"
+      >
+        <div
+          class="item mix"
+          :class="{ activeItem: navType == 2 }"
+          @click="handleNavType(2)"
+        >
+          <b /><b />
         </div>
       </el-tooltip>
-      <el-tooltip content="顶部菜单" placement="bottom">
-        <div class="item top" @click="handleNavType(3)" :class="{ activeItem: navType == 3 }">
-          <b></b><b></b>
+      <el-tooltip
+        content="顶部菜单"
+        placement="bottom"
+      >
+        <div
+          class="item top"
+          :class="{ activeItem: navType == 3 }"
+          @click="handleNavType(3)"
+        >
+          <b /><b />
         </div>
       </el-tooltip>
     </div>
     <div class="setting-drawer-title">
-      <h3 class="drawer-title">主题风格设置</h3>
+      <h3 class="drawer-title">
+        主题风格设置
+      </h3>
     </div>
     <div class="setting-drawer-block-checbox">
-      <div class="setting-drawer-block-checbox-item" @click="handleTheme('theme-dark')">
-        <img src="@/assets/images/dark.svg" alt="dark" />
-        <div v-if="sideTheme === 'theme-dark'" class="setting-drawer-block-checbox-selectIcon" style="display: block;">
-          <i aria-label="图标: check" class="anticon anticon-check">
-            <svg viewBox="64 64 896 896" data-icon="check" width="1em" height="1em" :fill="theme" aria-hidden="true" focusable="false" class>
+      <div
+        class="setting-drawer-block-checbox-item"
+        @click="handleTheme('theme-dark')"
+      >
+        <img
+          src="@/assets/images/dark.svg"
+          alt="dark"
+        >
+        <div
+          v-if="sideTheme === 'theme-dark'"
+          class="setting-drawer-block-checbox-selectIcon"
+          style="display: block;"
+        >
+          <i
+            aria-label="图标: check"
+            class="anticon anticon-check"
+          >
+            <svg
+              viewBox="64 64 896 896"
+              data-icon="check"
+              width="1em"
+              height="1em"
+              :fill="theme"
+              aria-hidden="true"
+              focusable="false"
+              class
+            >
               <path d="M912 190h-69.9c-9.8 0-19.1 4.5-25.1 12.2L404.7 724.5 207 474a32 32 0 0 0-25.1-12.2H112c-6.7 0-10.4 7.7-6.3 12.9l273.9 347c12.8 16.2 37.4 16.2 50.3 0l488.4-618.9c4.1-5.1.4-12.8-6.3-12.8z" />
             </svg>
           </i>
         </div>
       </div>
-      <div class="setting-drawer-block-checbox-item" @click="handleTheme('theme-light')">
-        <img src="@/assets/images/light.svg" alt="light" />
-        <div v-if="sideTheme === 'theme-light'" class="setting-drawer-block-checbox-selectIcon" style="display: block;">
-          <i aria-label="图标: check" class="anticon anticon-check">
-            <svg viewBox="64 64 896 896" data-icon="check" width="1em" height="1em" :fill="theme" aria-hidden="true" focusable="false" class>
+      <div
+        class="setting-drawer-block-checbox-item"
+        @click="handleTheme('theme-light')"
+      >
+        <img
+          src="@/assets/images/light.svg"
+          alt="light"
+        >
+        <div
+          v-if="sideTheme === 'theme-light'"
+          class="setting-drawer-block-checbox-selectIcon"
+          style="display: block;"
+        >
+          <i
+            aria-label="图标: check"
+            class="anticon anticon-check"
+          >
+            <svg
+              viewBox="64 64 896 896"
+              data-icon="check"
+              width="1em"
+              height="1em"
+              :fill="theme"
+              aria-hidden="true"
+              focusable="false"
+              class
+            >
               <path d="M912 190h-69.9c-9.8 0-19.1 4.5-25.1 12.2L404.7 724.5 207 474a32 32 0 0 0-25.1-12.2H112c-6.7 0-10.4 7.7-6.3 12.9l273.9 347c12.8 16.2 37.4 16.2 50.3 0l488.4-618.9c4.1-5.1.4-12.8-6.3-12.8z" />
             </svg>
           </i>
@@ -49,68 +124,111 @@
     <div class="drawer-item">
       <span>主题颜色</span>
       <span class="comp-style">
-        <el-color-picker v-model="theme" :predefine="predefineColors" @change="themeChange"/>
+        <el-color-picker
+          v-model="theme"
+          :predefine="predefineColors"
+          @change="themeChange"
+        />
       </span>
     </div>
     <el-divider />
 
-    <h3 class="drawer-title">系统布局配置</h3>
+    <h3 class="drawer-title">
+      系统布局配置
+    </h3>
 
     <div class="drawer-item">
       <span>开启 Tags-Views</span>
       <span class="comp-style">
-        <el-switch v-model="settingsStore.tagsView" class="drawer-switch" />
+        <el-switch
+          v-model="settingsStore.tagsView"
+          class="drawer-switch"
+        />
       </span>
     </div>
 
     <div class="drawer-item">
       <span>持久化标签页</span>
       <span class="comp-style">
-        <el-switch v-model="settingsStore.tagsViewPersist" :disabled="!settingsStore.tagsView" @change="tagsViewPersistChange" class="drawer-switch" />
+        <el-switch
+          v-model="settingsStore.tagsViewPersist"
+          :disabled="!settingsStore.tagsView"
+          class="drawer-switch"
+          @change="tagsViewPersistChange"
+        />
       </span>
     </div>
 
     <div class="drawer-item">
       <span>显示页签图标</span>
       <span class="comp-style">
-        <el-switch v-model="settingsStore.tagsIcon" :disabled="!settingsStore.tagsView" class="drawer-switch" />
+        <el-switch
+          v-model="settingsStore.tagsIcon"
+          :disabled="!settingsStore.tagsView"
+          class="drawer-switch"
+        />
       </span>
     </div>
 
     <div class="drawer-item">
       <span>固定 Header</span>
       <span class="comp-style">
-        <el-switch v-model="settingsStore.fixedHeader" class="drawer-switch" />
+        <el-switch
+          v-model="settingsStore.fixedHeader"
+          class="drawer-switch"
+        />
       </span>
     </div>
 
     <div class="drawer-item">
       <span>显示 Logo</span>
       <span class="comp-style">
-        <el-switch v-model="settingsStore.sidebarLogo" class="drawer-switch" />
+        <el-switch
+          v-model="settingsStore.sidebarLogo"
+          class="drawer-switch"
+        />
       </span>
     </div>
 
     <div class="drawer-item">
       <span>动态标题</span>
       <span class="comp-style">
-        <el-switch v-model="settingsStore.dynamicTitle" @change="dynamicTitleChange" class="drawer-switch" />
+        <el-switch
+          v-model="settingsStore.dynamicTitle"
+          class="drawer-switch"
+          @change="dynamicTitleChange"
+        />
       </span>
     </div>
 
     <div class="drawer-item">
       <span>底部版权</span>
       <span class="comp-style">
-        <el-switch v-model="settingsStore.footerVisible" class="drawer-switch" />
+        <el-switch
+          v-model="settingsStore.footerVisible"
+          class="drawer-switch"
+        />
       </span>
     </div>
 
     <el-divider />
 
-    <el-button type="primary" plain icon="DocumentAdd" @click="saveSetting">保存配置</el-button>
-    <el-button plain icon="Refresh" @click="resetSetting">重置配置</el-button>
+    <el-button
+      type="primary"
+      plain
+      icon="DocumentAdd"
+      @click="saveSetting"
+    >
+      保存配置
+    </el-button>
+    <el-button
+      plain
+      icon="Refresh"
+      @click="resetSetting"
+    >
+      重置配置
+    </el-button>
   </el-drawer>
-
 </template>
 
 <script setup>
@@ -129,7 +247,7 @@ const theme = ref(settingsStore.theme)
 const sideTheme = ref(settingsStore.sideTheme)
 const tagsViewPersist = ref(settingsStore.tagsViewPersist)
 const storeSettings = computed(() => settingsStore)
-const predefineColors = ref(["#409EFF", "#ff4500", "#ff8c00", "#ffd700", "#90ee90", "#00ced1", "#1e90ff", "#c71585"])
+const predefineColors = ref(['#409EFF', '#ff4500', '#ff8c00', '#ffd700', '#90ee90', '#00ced1', '#1e90ff', '#c71585'])
 
 /** 是否需要dynamicTitle */
 function dynamicTitleChange() {
@@ -170,37 +288,37 @@ watch(() => navType, val => {
     appStore.toggleSideBarHide(true)
   }
   if ([1, 3].includes(val.value)) {
-      permissionStore.setSidebarRouters(permissionStore.defaultRoutes)
+    permissionStore.setSidebarRouters(permissionStore.defaultRoutes)
   }
-  }, { immediate: true, deep: true }
+}, { immediate: true, deep: true }
 )
 
 function saveSetting() {
-  proxy.$modal.loading("正在保存到本地，请稍候...")
+  proxy.$modal.loading('正在保存到本地，请稍候...')
   if (!tagsViewPersist.value) {
     proxy.$cache.local.remove('tags-view-visited')
   }
-  let layoutSetting = {
-    "navType": storeSettings.value.navType,
-    "tagsView": storeSettings.value.tagsView,
-    "tagsIcon": storeSettings.value.tagsIcon,
-    "tagsViewPersist": storeSettings.value.tagsViewPersist,
-    "fixedHeader": storeSettings.value.fixedHeader,
-    "sidebarLogo": storeSettings.value.sidebarLogo,
-    "dynamicTitle": storeSettings.value.dynamicTitle,
-    "footerVisible": storeSettings.value.footerVisible,
-    "sideTheme": storeSettings.value.sideTheme,
-    "theme": storeSettings.value.theme
+  const layoutSetting = {
+    'navType': storeSettings.value.navType,
+    'tagsView': storeSettings.value.tagsView,
+    'tagsIcon': storeSettings.value.tagsIcon,
+    'tagsViewPersist': storeSettings.value.tagsViewPersist,
+    'fixedHeader': storeSettings.value.fixedHeader,
+    'sidebarLogo': storeSettings.value.sidebarLogo,
+    'dynamicTitle': storeSettings.value.dynamicTitle,
+    'footerVisible': storeSettings.value.footerVisible,
+    'sideTheme': storeSettings.value.sideTheme,
+    'theme': storeSettings.value.theme
   }
-  localStorage.setItem("layout-setting", JSON.stringify(layoutSetting))
+  localStorage.setItem('layout-setting', JSON.stringify(layoutSetting))
   setTimeout(proxy.$modal.closeLoading(), 1000)
 }
 
 function resetSetting() {
   proxy.$cache.local.remove('tags-view-visited')
-  proxy.$modal.loading("正在清除设置缓存并刷新，请稍候...")
-  localStorage.removeItem("layout-setting")
-  setTimeout("window.location.reload()", 1000)
+  proxy.$modal.loading('正在清除设置缓存并刷新，请稍候...')
+  localStorage.removeItem('layout-setting')
+  setTimeout('window.location.reload()', 1000)
 }
 
 function openSetting() {

@@ -45,6 +45,10 @@ export default defineConfig(({ mode, command }) => {
       port: 3000,
       host: true,
       open: true,
+      watch: {
+        usePolling: true,
+        interval: 100
+      },
       proxy: {
         // https://cn.vitejs.dev/config/#server-proxy
         '/dev-api': {
@@ -52,8 +56,8 @@ export default defineConfig(({ mode, command }) => {
           changeOrigin: true,
           rewrite: (p) => p.replace(/^\/dev-api/, '')
         },
-         // springdoc proxy
-         '^/v3/api-docs/(.*)': {
+        // springdoc proxy
+        '^/v3/api-docs/(.*)': {
           target: baseUrl,
           changeOrigin: true,
         }

@@ -1,136 +1,394 @@
 <template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="68px">
-      <el-form-item v-if="!isTeacher" label="教师" prop="userId">
-        <user-select v-model="queryParams.userId" style="width: 200px" />
+    <el-form
+      v-show="showSearch"
+      ref="queryRef"
+      :model="queryParams"
+      :inline="true"
+      label-width="68px"
+    >
+      <el-form-item
+        v-if="!isTeacher"
+        label="教师"
+        prop="userId"
+      >
+        <user-select
+          v-model="queryParams.userId"
+          style="width: 200px"
+        />
       </el-form-item>
-      <el-form-item label="学年学期" prop="semester">
-        <el-input v-model="queryParams.semester" placeholder="如 2025-2026-1" clearable style="width: 150px" @keyup.enter="handleQuery" />
+      <el-form-item
+        label="学年学期"
+        prop="semester"
+      >
+        <el-input
+          v-model="queryParams.semester"
+          placeholder="如 2025-2026-1"
+          clearable
+          style="width: 150px"
+          @keyup.enter="handleQuery"
+        />
       </el-form-item>
-      <el-form-item label="状态" prop="status">
-        <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 120px">
-          <el-option v-for="(v, k) in payStatusMap" :key="k" :label="v.label" :value="Number(k)" />
+      <el-form-item
+        label="状态"
+        prop="status"
+      >
+        <el-select
+          v-model="queryParams.status"
+          placeholder="请选择状态"
+          clearable
+          style="width: 120px"
+        >
+          <el-option
+            v-for="(v, k) in payStatusMap"
+            :key="k"
+            :label="v.label"
+            :value="Number(k)"
+          />
         </el-select>
       </el-form-item>
       <el-form-item>
-        <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-        <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+        <el-button
+          type="primary"
+          icon="Search"
+          @click="handleQuery"
+        >
+          搜索
+        </el-button>
+        <el-button
+          icon="Refresh"
+          @click="resetQuery"
+        >
+          重置
+        </el-button>
       </el-form-item>
     </el-form>
 
-    <el-row :gutter="10" class="mb8">
+    <el-row
+      :gutter="10"
+      class="mb8"
+    >
       <template v-if="!isTeacher">
         <el-col :span="1.5">
-          <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['system:payRecord:add']">新增</el-button>
+          <el-button
+            v-hasPermi="['system:payRecord:add']"
+            type="primary"
+            plain
+            icon="Plus"
+            @click="handleAdd"
+          >
+            新增
+          </el-button>
         </el-col>
         <el-col :span="1.5">
-          <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['system:payRecord:edit']">修改</el-button>
+          <el-button
+            v-hasPermi="['system:payRecord:edit']"
+            type="success"
+            plain
+            icon="Edit"
+            :disabled="single"
+            @click="handleUpdate"
+          >
+            修改
+          </el-button>
         </el-col>
         <el-col :span="1.5">
-          <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['system:payRecord:remove']">删除</el-button>
+          <el-button
+            v-hasPermi="['system:payRecord:remove']"
+            type="danger"
+            plain
+            icon="Delete"
+            :disabled="multiple"
+            @click="handleDelete"
+          >
+            删除
+          </el-button>
         </el-col>
         <el-col :span="1.5">
-          <el-tooltip content="按搜索栏选中的教师+学期重算酬金（需先重算汇总）" placement="top">
-            <el-button type="primary" plain icon="Cpu" :loading="calcLoading" @click="handleRecalcPay" v-hasPermi="['system:payRecord:edit']">重算酬金</el-button>
+          <el-tooltip
+            content="按搜索栏选中的教师+学期重算酬金（需先重算汇总）"
+            placement="top"
+          >
+            <el-button
+              v-hasPermi="['system:payRecord:edit']"
+              type="primary"
+              plain
+              icon="Cpu"
+              :loading="calcLoading"
+              @click="handleRecalcPay"
+            >
+              重算酬金
+            </el-button>
           </el-tooltip>
         </el-col>
       </template>
       <el-col :span="1.5">
-        <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['system:payRecord:export']">导出</el-button>
+        <el-button
+          v-hasPermi="['system:payRecord:export']"
+          type="warning"
+          plain
+          icon="Download"
+          @click="handleExport"
+        >
+          导出
+        </el-button>
       </el-col>
-      <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
+      <right-toolbar
+        v-model:show-search="showSearch"
+        @query-table="getList"
+      />
     </el-row>
 
-    <el-table v-loading="loading" :data="payRecordList" stripe empty-text="暂无数据" @selection-change="handleSelectionChange">
-      <el-table-column v-if="!isTeacher" type="selection" width="50" align="center" />
-      <el-table-column v-if="!isTeacher" label="教师" align="center" prop="userId" width="150">
-        <template #default="scope">{{ userLabel(scope.row.userId) }}</template>
+    <el-table
+      v-loading="loading"
+      :data="payRecordList"
+      stripe
+      empty-text="暂无数据"
+      @selection-change="handleSelectionChange"
+    >
+      <el-table-column
+        v-if="!isTeacher"
+        type="selection"
+        width="50"
+        align="center"
+      />
+      <el-table-column
+        v-if="!isTeacher"
+        label="教师"
+        align="center"
+        prop="userId"
+        width="150"
+      >
+        <template #default="scope">
+          {{ userLabel(scope.row.userId) }}
+        </template>
       </el-table-column>
-      <el-table-column label="学年学期" align="center" prop="semester" width="110" />
-      <el-table-column label="课时/绩效酬金" align="right" prop="courseHourPay" width="120">
-        <template #default="scope">{{ formatAmount(scope.row.courseHourPay) }}</template>
+      <el-table-column
+        label="学年学期"
+        align="center"
+        prop="semester"
+        width="110"
+      />
+      <el-table-column
+        label="课时/绩效酬金"
+        align="right"
+        prop="courseHourPay"
+        width="120"
+      >
+        <template #default="scope">
+          {{ formatAmount(scope.row.courseHourPay) }}
+        </template>
       </el-table-column>
-      <el-table-column label="其他酬金合计" align="right" prop="otherPayTotal" width="120">
-        <template #default="scope">{{ formatAmount(scope.row.otherPayTotal) }}</template>
+      <el-table-column
+        label="其他酬金合计"
+        align="right"
+        prop="otherPayTotal"
+        width="120"
+      >
+        <template #default="scope">
+          {{ formatAmount(scope.row.otherPayTotal) }}
+        </template>
       </el-table-column>
-      <el-table-column label="总金额(元)" align="right" prop="totalPay" width="120">
+      <el-table-column
+        label="总金额(元)"
+        align="right"
+        prop="totalPay"
+        width="120"
+      >
         <template #default="scope">
           <span class="pay-total">{{ formatAmount(scope.row.totalPay, 0) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="状态" align="center" prop="status" width="90">
+      <el-table-column
+        label="状态"
+        align="center"
+        prop="status"
+        width="90"
+      >
         <template #default="scope">
-          <biz-tag :value="scope.row.status" :map="payStatusMap" />
+          <biz-tag
+            :value="scope.row.status"
+            :map="payStatusMap"
+          />
         </template>
       </el-table-column>
-      <el-table-column label="备注" align="center" prop="remark" min-width="120" show-overflow-tooltip>
-        <template #default="scope">{{ scope.row.remark || '-' }}</template>
-      </el-table-column>
-      <el-table-column v-if="!isTeacher" label="操作" align="center" width="180" fixed="right" class-name="small-padding fixed-width">
+      <el-table-column
+        label="备注"
+        align="center"
+        prop="remark"
+        min-width="120"
+        show-overflow-tooltip
+      >
         <template #default="scope">
-          <el-button link type="primary" icon="Tickets" @click="goAllowance(scope.row)">酬金明细</el-button>
-          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['system:payRecord:edit']">修改</el-button>
-          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['system:payRecord:remove']">删除</el-button>
+          {{ scope.row.remark || '-' }}
+        </template>
+      </el-table-column>
+      <el-table-column
+        v-if="!isTeacher"
+        label="操作"
+        align="center"
+        width="180"
+        fixed="right"
+        class-name="small-padding fixed-width"
+      >
+        <template #default="scope">
+          <el-button
+            link
+            type="primary"
+            icon="Tickets"
+            @click="goAllowance(scope.row)"
+          >
+            酬金明细
+          </el-button>
+          <el-button
+            v-hasPermi="['system:payRecord:edit']"
+            link
+            type="primary"
+            icon="Edit"
+            @click="handleUpdate(scope.row)"
+          >
+            修改
+          </el-button>
+          <el-button
+            v-hasPermi="['system:payRecord:remove']"
+            link
+            type="primary"
+            icon="Delete"
+            @click="handleDelete(scope.row)"
+          >
+            删除
+          </el-button>
         </template>
       </el-table-column>
     </el-table>
 
     <pagination
       v-show="total>0"
-      :total="total"
       v-model:page="queryParams.pageNum"
       v-model:limit="queryParams.pageSize"
+      :total="total"
       @pagination="getList"
     />
 
     <!-- 添加或修改酬金汇总对话框 -->
-    <el-dialog :title="title" v-model="open" width="640px" append-to-body>
-      <el-form ref="payRecordRef" :model="form" :rules="rules" label-width="110px">
+    <el-dialog
+      v-model="open"
+      :title="title"
+      width="640px"
+      append-to-body
+    >
+      <el-form
+        ref="payRecordRef"
+        :model="form"
+        :rules="rules"
+        label-width="110px"
+      >
         <el-row :gutter="16">
           <el-col :span="12">
-            <el-form-item label="教师" prop="userId">
+            <el-form-item
+              label="教师"
+              prop="userId"
+            >
               <user-select v-model="form.userId" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="学年学期" prop="semester">
-              <el-input v-model="form.semester" placeholder="如 2025-2026-1" maxlength="20" />
+            <el-form-item
+              label="学年学期"
+              prop="semester"
+            >
+              <el-input
+                v-model="form.semester"
+                placeholder="如 2025-2026-1"
+                maxlength="20"
+              />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="课时/绩效酬金" prop="courseHourPay">
-              <el-input-number v-model="form.courseHourPay" :min="0" :precision="2" controls-position="right" style="width: 100%" />
+            <el-form-item
+              label="课时/绩效酬金"
+              prop="courseHourPay"
+            >
+              <el-input-number
+                v-model="form.courseHourPay"
+                :min="0"
+                :precision="2"
+                controls-position="right"
+                style="width: 100%"
+              />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="其他酬金合计" prop="otherPayTotal">
-              <el-input-number v-model="form.otherPayTotal" :min="0" :precision="2" controls-position="right" style="width: 100%" />
+            <el-form-item
+              label="其他酬金合计"
+              prop="otherPayTotal"
+            >
+              <el-input-number
+                v-model="form.otherPayTotal"
+                :min="0"
+                :precision="2"
+                controls-position="right"
+                style="width: 100%"
+              />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="总金额" prop="totalPay">
-              <el-input-number v-model="form.totalPay" :min="0" :precision="0" controls-position="right" style="width: 100%" />
+            <el-form-item
+              label="总金额"
+              prop="totalPay"
+            >
+              <el-input-number
+                v-model="form.totalPay"
+                :min="0"
+                :precision="0"
+                controls-position="right"
+                style="width: 100%"
+              />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="状态" prop="status">
+            <el-form-item
+              label="状态"
+              prop="status"
+            >
               <el-radio-group v-model="form.status">
-                <el-radio :value="0">未发放</el-radio>
-                <el-radio :value="1">已发放</el-radio>
+                <el-radio :value="0">
+                  未发放
+                </el-radio>
+                <el-radio :value="1">
+                  已发放
+                </el-radio>
               </el-radio-group>
             </el-form-item>
           </el-col>
           <el-col :span="24">
-            <el-form-item label="备注" prop="remark">
-              <el-input v-model="form.remark" type="textarea" :rows="2" maxlength="500" show-word-limit placeholder="请输入备注" />
+            <el-form-item
+              label="备注"
+              prop="remark"
+            >
+              <el-input
+                v-model="form.remark"
+                type="textarea"
+                :rows="2"
+                maxlength="500"
+                show-word-limit
+                placeholder="请输入备注"
+              />
             </el-form-item>
           </el-col>
         </el-row>
       </el-form>
       <template #footer>
         <div class="dialog-footer">
-          <el-button type="primary" @click="submitForm">确 定</el-button>
-          <el-button @click="cancel">取 消</el-button>
+          <el-button
+            type="primary"
+            @click="submitForm"
+          >
+            确 定
+          </el-button>
+          <el-button @click="cancel">
+            取 消
+          </el-button>
         </div>
       </template>
     </el-dialog>
@@ -138,8 +396,8 @@
 </template>
 
 <script setup name="PayRecord">
-import { listPayRecord, getPayRecord, delPayRecord, addPayRecord, updatePayRecord } from "@/api/system/payRecord"
-import { recalcPay } from "@/api/system/calc"
+import { listPayRecord, getPayRecord, delPayRecord, addPayRecord, updatePayRecord } from '@/api/system/payRecord'
+import { recalcPay } from '@/api/system/calc'
 import UserSelect from '@/components/UserSelect/index.vue'
 import { useUserMap } from '@/utils/userCache'
 import { formatAmount, payStatusMap } from '@/utils/bizDict'
@@ -162,7 +420,7 @@ const ids = ref([])
 const single = ref(true)
 const multiple = ref(true)
 const total = ref(0)
-const title = ref("")
+const title = ref('')
 
 const data = reactive({
   form: {},
@@ -174,10 +432,10 @@ const data = reactive({
     status: null
   },
   rules: {
-    userId: [{ required: true, message: "请选择教师", trigger: "change" }],
+    userId: [{ required: true, message: '请选择教师', trigger: 'change' }],
     semester: [
-      { required: true, message: "请输入学年学期", trigger: "blur" },
-      { pattern: /^\d{4}-\d{4}-[12]$/, message: "格式如 2025-2026-1", trigger: "blur" }
+      { required: true, message: '请输入学年学期', trigger: 'blur' },
+      { pattern: /^\d{4}-\d{4}-[12]$/, message: '格式如 2025-2026-1', trigger: 'blur' }
     ]
   }
 })
@@ -191,7 +449,7 @@ function getList() {
     payRecordList.value = response.rows
     total.value = response.total
   }).catch(() => {
-    proxy.$modal.msgError("获取酬金汇总列表失败")
+    proxy.$modal.msgError('获取酬金汇总列表失败')
   }).finally(() => {
     loading.value = false
   })
@@ -220,7 +478,7 @@ function reset() {
     updateTime: null,
     remark: null
   }
-  proxy.resetForm("payRecordRef")
+  proxy.resetForm('payRecordRef')
 }
 
 /** 搜索按钮操作 */
@@ -231,7 +489,7 @@ function handleQuery() {
 
 /** 重置按钮操作 */
 function resetQuery() {
-  proxy.resetForm("queryRef")
+  proxy.resetForm('queryRef')
   handleQuery()
 }
 
@@ -246,7 +504,7 @@ function handleSelectionChange(selection) {
 function handleAdd() {
   reset()
   open.value = true
-  title.value = "添加酬金记录"
+  title.value = '添加酬金记录'
 }
 
 /** 修改按钮操作 */
@@ -256,23 +514,23 @@ function handleUpdate(row) {
   getPayRecord(_id).then(response => {
     form.value = response.data
     open.value = true
-    title.value = "修改酬金记录"
+    title.value = '修改酬金记录'
   })
 }
 
 /** 提交按钮 */
 function submitForm() {
-  proxy.$refs["payRecordRef"].validate(valid => {
+  proxy.$refs['payRecordRef'].validate(valid => {
     if (valid) {
       if (form.value.id != null) {
         updatePayRecord(form.value).then(() => {
-          proxy.$modal.msgSuccess("修改成功")
+          proxy.$modal.msgSuccess('修改成功')
           open.value = false
           getList()
         })
       } else {
         addPayRecord(form.value).then(() => {
-          proxy.$modal.msgSuccess("新增成功")
+          proxy.$modal.msgSuccess('新增成功')
           open.value = false
           getList()
         })
@@ -288,7 +546,7 @@ function handleDelete(row) {
     return delPayRecord(_ids)
   }).then(() => {
     getList()
-    proxy.$modal.msgSuccess("删除成功")
+    proxy.$modal.msgSuccess('删除成功')
   }).catch(() => {})
 }
 
@@ -305,7 +563,7 @@ function handleRecalcPay() {
     return recalcPay(uid, semester)
   }).then(() => {
     getList()
-    proxy.$modal.msgSuccess("酬金重算完成")
+    proxy.$modal.msgSuccess('酬金重算完成')
   }).catch(() => {}).finally(() => {
     calcLoading.value = false
   })

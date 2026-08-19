@@ -1,4 +1,4 @@
-@use './tokens.scss';
+﻿@use './tokens.scss';
 @use './mixin.scss';
 @use './transition.scss';
 @use './element-ui.scss';
@@ -17,7 +17,7 @@ body {
   font-size: var(--wfit-font-md);
   line-height: 1.6;
   color: var(--el-text-color-regular);
-  background-color: var(--el-bg-color);
+  background-color: var(--el-bg-color-page);
 }
 
 label {
@@ -189,4 +189,58 @@ aside {
   color: var(--el-text-color-secondary);
   line-height: 1.5;
   margin-top: var(--wfit-space-xs);
+}
+
+// ── 全局滚动条（主题感知、克制细滚动条）──
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--el-border-color);
+  border-radius: var(--wfit-radius-circle);
+  border: 2px solid transparent;
+  background-clip: content-box;
+
+  &:hover {
+    background: var(--el-text-color-placeholder);
+    background-clip: content-box;
+  }
+}
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--el-border-color) transparent;
+}
+
+// ── 页头规范：标题 / 副标题 / 操作区 ──
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--wfit-space-md);
+  margin-bottom: var(--wfit-space-lg);
+
+  .page-title {
+    margin: 0;
+    font-size: var(--wfit-font-xl);
+    font-weight: var(--wfit-font-weight-semibold);
+    line-height: var(--wfit-line-height-tight);
+    color: var(--el-text-color-primary);
+  }
+
+  .page-desc {
+    margin-top: var(--wfit-space-xs);
+    font-size: var(--wfit-font-sm);
+    color: var(--el-text-color-secondary);
+  }
+
+  .page-actions {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--wfit-space-sm);
+  }
 }

@@ -16,7 +16,7 @@ export function isPathMatch(pattern, path) {
  * @returns {Boolean}
  */
 export function isEmpty(value) {
-  if (value == null || value == "" || value == undefined || value == "undefined") {
+  if (value == null || value == '' || value == undefined || value == 'undefined') {
     return true
   }
   return false

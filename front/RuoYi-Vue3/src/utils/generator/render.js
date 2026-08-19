@@ -72,8 +72,8 @@ const componentChild = {
         return h(resolveComponent('el-icon'), option, () => h(resolveComponent('Plus')))
       } else {
         // option.size = "small"
-        option.type = "primary"
-        option.icon = "Upload"
+        option.type = 'primary'
+        option.icon = 'Upload'
         return h(resolveComponent('el-button'), option, () => conf.buttonText)
       }
     },
@@ -85,13 +85,19 @@ const componentSlot = {
     'tip': (h, conf, key) => {
       if (conf.showTip) {
         return () => h('div', {
-          class: "el-upload__tip"
+          class: 'el-upload__tip'
         }, '只能上传不超过' + conf.fileSize + conf.sizeUnit + '的' + conf.accept + '文件')
       }
     },
   }
 }
 export default defineComponent({
+  props: {
+    conf: {
+      type: Object,
+      required: true,
+    },
+  },
 
   // 使用 render 函数
   render() {
@@ -146,11 +152,5 @@ export default defineComponent({
         },
       }
       , slot ?? null)
-  },
-  props: {
-    conf: {
-      type: Object,
-      required: true,
-    },
   }
 })

@@ -1,5 +1,11 @@
 <template>
-  <el-tag v-if="current" :type="current.type" disable-transitions>{{ current.label }}</el-tag>
+  <el-tag
+    v-if="current"
+    :type="current.type"
+    disable-transitions
+  >
+    {{ current.label }}
+  </el-tag>
   <span v-else>{{ display }}</span>
 </template>
 

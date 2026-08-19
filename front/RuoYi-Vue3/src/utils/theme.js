@@ -12,7 +12,7 @@ export function handleThemeStyle(theme) {
 // hex颜色转rgb颜色
 export function hexToRgb(str) {
   str = str.replace('#', '')
-  let hexs = str.match(/../g)
+  const hexs = str.match(/../g)
   for (let i = 0; i < 3; i++) {
     hexs[i] = parseInt(hexs[i], 16)
   }
@@ -21,7 +21,7 @@ export function hexToRgb(str) {
 
 // rgb颜色转Hex颜色
 export function rgbToHex(r, g, b) {
-  let hexs = [r.toString(16), g.toString(16), b.toString(16)]
+  const hexs = [r.toString(16), g.toString(16), b.toString(16)]
   for (let i = 0; i < 3; i++) {
     if (hexs[i].length == 1) {
       hexs[i] = `0${hexs[i]}`
@@ -32,7 +32,7 @@ export function rgbToHex(r, g, b) {
 
 // 变浅颜色值
 export function getLightColor(color, level) {
-  let rgb = hexToRgb(color)
+  const rgb = hexToRgb(color)
   for (let i = 0; i < 3; i++) {
     rgb[i] = Math.floor((255 - rgb[i]) * level + rgb[i])
   }
@@ -41,7 +41,7 @@ export function getLightColor(color, level) {
 
 // 变深颜色值
 export function getDarkColor(color, level) {
-  let rgb = hexToRgb(color)
+  const rgb = hexToRgb(color)
   for (let i = 0; i < 3; i++) {
     rgb[i] = Math.floor(rgb[i] * (1 - level))
   }

@@ -1,7 +1,7 @@
 import useUserStore from '@/store/modules/user'
 
 function authPermission(permission) {
-  const all_permission = "*:*:*"
+  const all_permission = '*:*:*'
   const permissions = useUserStore().permissions
   if (permission && permission.length > 0) {
     return permissions.some(v => {
@@ -13,7 +13,7 @@ function authPermission(permission) {
 }
 
 function authRole(role) {
-  const super_admin = "admin"
+  const super_admin = 'admin'
   const roles = useUserStore().roles
   if (role && role.length > 0) {
     return roles.some(v => {

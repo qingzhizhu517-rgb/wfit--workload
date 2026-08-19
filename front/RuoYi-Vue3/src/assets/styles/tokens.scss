@@ -1,4 +1,4 @@
-/* ═══ WFIT 设计 Token ═══
+﻿/* ═══ WFIT 设计 Token ═══
  * 基于 Element Plus CSS 变量，仅补充项目级 token。
  * 颜色一律复用 --el-* 变量，禁止新增 hex 色值。
  */
@@ -8,6 +8,7 @@
   --wfit-radius-sm: 4px;
   --wfit-radius-md: 8px;
   --wfit-radius-lg: 12px;
+  --wfit-radius-circle: 9999px;
 
   /* ── 阴影 ── */
   --wfit-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
@@ -20,15 +21,38 @@
   --wfit-space-md: 16px;
   --wfit-space-lg: 24px;
   --wfit-space-xl: 32px;
+  --wfit-space-2xl: 48px;
 
   /* ── 字号阶梯 ── */
+  --wfit-font-xxs: 11px;
   --wfit-font-xs: 12px;
   --wfit-font-sm: 13px;
   --wfit-font-md: 14px;
   --wfit-font-lg: 16px;
   --wfit-font-xl: 20px;
+  --wfit-font-xxl: 24px;
+  --wfit-font-2xl: 28px;
 
-  /* ── 过渡 ── */
-  --wfit-transition: 0.2s ease;
-  --wfit-transition-slow: 0.3s ease;
+  /* ── 字重 ── */
+  --wfit-font-weight-regular: 400;
+  --wfit-font-weight-medium: 500;
+  --wfit-font-weight-semibold: 600;
+  --wfit-font-weight-bold: 700;
+
+  /* ── 行高 ── */
+  --wfit-line-height-tight: 1.25;
+  --wfit-line-height-normal: 1.6;
+  --wfit-line-height-relaxed: 1.75;
+
+  /* ── 过渡（统一缓动 + 时长）── */
+  --wfit-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --wfit-transition: 0.2s var(--wfit-ease);
+  --wfit-transition-slow: 0.3s var(--wfit-ease);
+}
+
+/* 暗黑模式：阴影弱化为深色投影，避免浅色阴影在暗底上形成光晕 */
+html.dark {
+  --wfit-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --wfit-shadow-md: 0 2px 12px rgba(0, 0, 0, 0.5);
+  --wfit-shadow-lg: 0 4px 20px rgba(0, 0, 0, 0.6);
 }
