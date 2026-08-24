@@ -107,14 +107,21 @@ public class BizAuditServiceImpl implements BizAuditService
     public void reject(Long id, String reason)
     {
         BizWorkloadSummary summary = requireSummary(id);
-        assertStatus(summary, STATUS_PENDING_AUDIT, "只有待审状态才能驳回");
+        // 任意审批环节（教务助理待审 1 / 院领导待签 2）均可驳回，回到填报中 0
+        Integer current = summary.getStatus();
+        if (current == null
+                || (current != STATUS_PENDING_AUDIT && current != STATUS_PENDING_SIGN))
+        {
+            throw new ServiceException(
+                    "只有待审或待签状态才能驳回（当前状态: " + current + "）", CODE_STATUS_CONFLICT);
+        }
 
         String username = SecurityUtils.getUsername();
         // 驳回原因写入审批日志；同时兼容写入 remark（reason 为空时保持原 remark，维持现有行为）
         String remark = reason != null ? reason : summary.getRemark();
-        int rows = bizWorkloadSummaryMapper.rejectSummary(id, STATUS_PENDING_AUDIT, STATUS_DRAFT, remark, username);
-        assertUpdated(rows, id, STATUS_PENDING_AUDIT, STATUS_DRAFT);
-        writeAuditLog(id, ACTION_REJECT, STATUS_PENDING_AUDIT, STATUS_DRAFT, reason);
+        int rows = bizWorkloadSummaryMapper.rejectSummary(id, current, STATUS_DRAFT, remark, username);
+        assertUpdated(rows, id, current, STATUS_DRAFT);
+        writeAuditLog(id, ACTION_REJECT, current, STATUS_DRAFT, reason);
     }
 
     @Override

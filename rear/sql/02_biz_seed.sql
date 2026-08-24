@@ -36,7 +36,7 @@ INSERT IGNORE INTO biz_workload_rule (rule_code, rule_value, rule_desc, effectiv
 ('COEF_THESIS_K5_HU_B',6.00, '毕业论文K5文史类本科', '2025-09-01'),
 ('COEF_THESIS_K5_HU_C',4.00, '毕业论文K5文史类专科', '2025-09-01'),
 ('CONST_COURSE_DESIGN',0.40, '课程设计/集中实习常数', '2025-09-01'),
-('CAP_R4_MAX',         20.00,'课程设计指导人数上限', '2025-09-01'),
+('CAP_R4_MAX',         60.00,'课程设计指导人数上限', '2025-09-01'),
 ('CAP_R6_MAX',         20.00,'集中实习指导人数上限', '2025-09-01'),
 ('CAP_R5_BACHELOR',    10.00,'毕业论文本科人数上限', '2025-09-01'),
 ('CAP_R5_JUNIOR',      15.00,'毕业论文专科人数上限', '2025-09-01'),

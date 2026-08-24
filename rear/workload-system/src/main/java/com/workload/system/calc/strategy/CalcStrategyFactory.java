@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import com.workload.system.domain.BizWorkloadCategoryDict;
 import com.workload.system.mapper.BizWorkloadCategoryDictMapper;
+import com.workload.common.exception.ServiceException;
 
 /**
  * 计算策略工厂：按类别字典 calc_strategy 配置解析 Spring bean（结果缓存）
@@ -66,9 +67,13 @@ public class CalcStrategyFactory
         
         WorkloadCalcStrategy strategy = strategyMap.get(strategyBeanName);
         if (strategy == null) {
+            // 字典明确配置了策略 bean 名却解析不到（拼写错误/未注册）：
+            // 属配置错误，必须抛异常，避免静默当作“无策略”把工作量置零
             log.error("未找到策略Bean: {} (类别: {})", strategyBeanName, typeCode);
+            throw new ServiceException(
+                    "类别 " + typeCode + " 配置的计算策略 Bean [" + strategyBeanName + "] 不存在，请检查 biz_workload_category_dict.calc_strategy");
         }
-        
+
         return strategy;
     }
 }

@@ -48,13 +48,20 @@ public class DataScopeUtil
     }
 
     /**
-     * 断言当前用户是超管或目标数据归属本人，否则抛越权异常。
+     * 断言当前用户有权访问目标数据：非纯教师角色（超管/业务管理员/教务助理/院领导）放行；
+     * 纯教师仅可访问归属本人的数据，否则抛越权异常。
+     * <p>
+     * 说明：此前用 {@link SecurityUtils#isAdmin()}（硬编码 userId==1）判定豁免，
+     * 会把实际的业务管理员（如 biz_admin，userId!=1）误判为需受限，导致其无法
+     * 查看/编辑他人单条记录。现改为与 {@link #resolveUserId(Long)} 对称的
+     * 「非纯教师即放行」口径，基于角色而非硬编码 userId。
+     * </p>
      *
      * @param targetUserId 目标记录归属的用户ID
      */
     public static void assertOwnOrAdmin(Long targetUserId)
     {
-        if (SecurityUtils.isAdmin())
+        if (!isTeacherOnly())
         {
             return;
         }

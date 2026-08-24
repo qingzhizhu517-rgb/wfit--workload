@@ -216,11 +216,19 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where id = #{id} and status = #{fromStatus}
     </update>
 
-    <!-- 驳回：同时写 remark 驳回原因（reason 为空时由 Service 传入原 remark，保持现有行为） -->
+    <!-- 驳回：回到填报中(0)，清空已产生的签字痕迹，写 remark 驳回原因
+         （from∈{1,2}：可能已有教务助理/教师签字，必须一并清除，避免草稿态残留已签状态） -->
     <update id="rejectSummary">
         update biz_workload_summary
         set status = #{toStatus},
             remark = #{remark},
+            academic_assistant_sign = NULL,
+            academic_assistant_sign_time = NULL,
+            teacher_sign = NULL,
+            teacher_sign_time = NULL,
+            dept_leader_sign = NULL,
+            dept_leader_sign_time = NULL,
+            lock_time = NULL,
             update_by = #{updateBy},
             update_time = NOW()
         where id = #{id} and status = #{fromStatus}

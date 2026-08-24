@@ -2,6 +2,7 @@ package com.workload.common.utils.excel;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import org.slf4j.Logger;
@@ -39,8 +40,15 @@ public class ExcelImportListener<T> extends AnalysisEventListener<T>
     /** 当前批次缓冲 */
     private List<T> batch = new ArrayList<>();
 
-    /** 批处理器（每满 batchSize 行调用一次） */
+    /** 批处理器（每满 batchSize 行调用一次）；与 rowConsumer 二选一 */
     private final Consumer<List<T>> batchProcessor;
+
+    /**
+     * 行处理器（逐行回调，入参为 数据 + 物理行号(0基,含表头)）。
+     * 非空时走逐行模式：不缓冲、不分批，抛异常即记为该行错误，与解析异常(onException)
+     * 使用同一 ImportResult 和同一物理行号口径，避免行号错位与错误丢失。
+     */
+    private final BiConsumer<T, Integer> rowConsumer;
 
     /** 导入结果 */
     private final ImportResult result = new ImportResult();
@@ -68,6 +76,19 @@ public class ExcelImportListener<T> extends AnalysisEventListener<T>
     {
         this.batchProcessor = batchProcessor;
         this.batchSize = batchSize;
+        this.rowConsumer = null;
+    }
+
+    /**
+     * 构造（逐行模式）：每行独立回调，抛异常即记为该行错误。
+     *
+     * @param rowConsumer 行处理器（数据, 物理行号）
+     */
+    public ExcelImportListener(BiConsumer<T, Integer> rowConsumer)
+    {
+        this.batchProcessor = null;
+        this.rowConsumer = rowConsumer;
+        this.batchSize = DEFAULT_BATCH_SIZE;
     }
 
     /**
@@ -77,8 +98,24 @@ public class ExcelImportListener<T> extends AnalysisEventListener<T>
     public void invoke(T data, AnalysisContext context)
     {
         currentRow++;
-        batch.add(data);
+        if (rowConsumer != null)
+        {
+            int physicalRow = context.readRowHolder().getRowIndex();
+            try
+            {
+                rowConsumer.accept(data, physicalRow);
+                result.addSuccess();
+            }
+            catch (Exception e)
+            {
+                String msg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+                log.warn("第 {} 行处理失败: {}", physicalRow, msg);
+                result.addError(physicalRow, msg);
+            }
+            return;
+        }
 
+        batch.add(data);
         if (batch.size() >= batchSize)
         {
             processBatch();
@@ -91,7 +128,7 @@ public class ExcelImportListener<T> extends AnalysisEventListener<T>
     @Override
     public void doAfterAllAnalysed(AnalysisContext context)
     {
-        if (!batch.isEmpty())
+        if (rowConsumer == null && !batch.isEmpty())
         {
             processBatch();
         }

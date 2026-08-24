@@ -305,6 +305,8 @@ const chartLoading = ref(false)
 const chartRef = ref(null)
 const chartView = ref('bar')
 let chartInstance = null
+// 缓存最近一次学院数据，供切换图表类型时无参重绘
+let lastCollegeData = []
 
 const stats = reactive({
   taskCount: 0,
@@ -354,12 +356,17 @@ function renderChart(collegeData) {
   if (!chartInstance) {
     chartInstance = echarts.init(chartRef.value)
   }
+  // 记录最近数据，切换图表类型时复用（el-radio-group @change 会传入选中值字符串，不可作为数据）
+  if (Array.isArray(collegeData)) {
+    lastCollegeData = collegeData
+  }
+  const data = lastCollegeData
 
   let option
-  if (collegeData && collegeData.length > 0) {
-    const names = collegeData.map(d => d.deptName)
-    const tasks = collegeData.map(d => d.taskCount)
-    const items = collegeData.map(d => d.itemCount)
+  if (data && data.length > 0) {
+    const names = data.map(d => d.deptName)
+    const tasks = data.map(d => d.taskCount)
+    const items = data.map(d => d.itemCount)
     option = {
       tooltip: {
         trigger: 'axis',

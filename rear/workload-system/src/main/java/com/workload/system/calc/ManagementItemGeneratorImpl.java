@@ -111,10 +111,9 @@ public class ManagementItemGeneratorImpl implements ManagementItemGenerator
         long overlapDays = ChronoUnit.DAYS.between(overlapStart, overlapEnd) + 1;
         long semesterDays = ChronoUnit.DAYS.between(semStart, semEnd) + 1;
 
-        // 标准学时/学年 ÷ 2 = 满学期量，再按任职天数占比折算
+        // G11 = 岗位标准学时（学期标准）× 任职天数占比；学期封顶见 CAP_G11_SEMESTER
         BigDecimal rate = assignment.getAllowanceRate() == null ? BigDecimal.ZERO : assignment.getAllowanceRate();
-        BigDecimal prorated = rate.divide(new BigDecimal("2"), 4, RoundingMode.HALF_UP)
-                .multiply(new BigDecimal(overlapDays))
+        BigDecimal prorated = rate.multiply(new BigDecimal(overlapDays))
                 .divide(new BigDecimal(semesterDays), 2, RoundingMode.HALF_UP);
         String basis = String.format("任职 %s 至 %s，学期 %s 至 %s，折算 %d/%d 天",
                 assignStart, assignEnd, semStart, semEnd, overlapDays, semesterDays);

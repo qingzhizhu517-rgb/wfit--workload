@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -174,33 +175,33 @@ class CalcStrategyFactoryTest {
     }
 
     @Test
-    @DisplayName("应该返回 null 当策略 Bean 不存在时")
-    void shouldReturnNullWhenStrategyBeanNotFound() {
+    @DisplayName("应该抛出异常当配置的策略 Bean 不存在时")
+    void shouldThrowWhenStrategyBeanNotFound() {
         // Given
         String typeCode = "G1";
         String strategyBeanName = "nonExistentStrategy";
-        
+
         BizWorkloadCategoryDict categoryDict = new BizWorkloadCategoryDict();
         categoryDict.setCalcStrategy(strategyBeanName);
-        
+
         when(categoryDictMapper.selectBizWorkloadCategoryDictByTypeCode(typeCode))
             .thenReturn(categoryDict);
-        
-        // strategyMap 中没有这个 Bean
 
-        // When
+        // strategyMap 中没有这个 Bean —— 属配置错误，必须抛异常而非静默返回 null
+
+        // When / Then：通过反射调用私有 resolve，期望其内部抛出 ServiceException
+        java.lang.reflect.Method resolveMethod;
         try {
-            java.lang.reflect.Method resolveMethod = CalcStrategyFactory.class.getDeclaredMethod("resolve", String.class);
+            resolveMethod = CalcStrategyFactory.class.getDeclaredMethod("resolve", String.class);
             resolveMethod.setAccessible(true);
-            
-            WorkloadCalcStrategy result = (WorkloadCalcStrategy) resolveMethod.invoke(calcStrategyFactory, typeCode);
-            
-            // Then
-            assertThat(result).isNull();
-            verify(categoryDictMapper).selectBizWorkloadCategoryDictByTypeCode(typeCode);
-        } catch (Exception e) {
-            throw new RuntimeException("测试 resolve 方法失败", e);
+        } catch (NoSuchMethodException e) {
+            throw new RuntimeException("找不到 resolve 方法", e);
         }
+
+        assertThatThrownBy(() -> resolveMethod.invoke(calcStrategyFactory, typeCode))
+            .isInstanceOf(java.lang.reflect.InvocationTargetException.class)
+            .hasCauseInstanceOf(com.workload.common.exception.ServiceException.class);
+        verify(categoryDictMapper).selectBizWorkloadCategoryDictByTypeCode(typeCode);
     }
 
     @Test

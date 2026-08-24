@@ -18,7 +18,9 @@ import com.workload.common.core.controller.BaseController;
 import com.workload.common.core.domain.AjaxResult;
 import com.workload.common.enums.BusinessType;
 import com.workload.system.domain.BizWorkloadItem;
+import com.workload.system.domain.BizWorkloadSummary;
 import com.workload.system.service.IBizWorkloadItemService;
+import com.workload.system.service.IBizWorkloadSummaryService;
 import com.workload.common.utils.poi.ExcelUtil;
 import com.workload.common.utils.DataScopeUtil;
 import com.workload.common.exception.ServiceException;
@@ -39,6 +41,34 @@ public class BizWorkloadItemController extends BaseController
 {
     @Autowired
     private IBizWorkloadItemService bizWorkloadItemService;
+
+    @Autowired
+    private IBizWorkloadSummaryService bizWorkloadSummaryService;
+
+    /**
+     * 校验该教师该学期的汇总是否处于可编辑状态（填报中 0 或 驳回退回后的 0）。
+     * 汇总一旦提交进入审批链（1 待审 / 2 待签 / 3 已完结），底层明细即冻结，
+     * 教师不得再增删改，防止绕过审批修改在审数据。
+     * 仅对教师角色生效；管理端（教务/管理员）不受此限，仍可修订。
+     */
+    private void assertItemEditable(Long userId, String semester)
+    {
+        if (!DataScopeUtil.isTeacherOnly())
+        {
+            return;
+        }
+        // 教师操作必须落在明确的「本人 + 学期」记录上；缺少学期无法判定冻结状态，
+        // 为防止通过省略 semester 绕过审批冻结，此处 fail-closed 直接拒绝
+        if (userId == null || semester == null)
+        {
+            throw new ServiceException("缺少学期信息，无法校验申报状态");
+        }
+        BizWorkloadSummary summary = bizWorkloadSummaryService.selectBizWorkloadSummaryByUserAndSemester(userId, semester);
+        if (summary != null && summary.getStatus() != null && summary.getStatus() != 0)
+        {
+            throw new ServiceException("本学期工作量已提交审核，明细已锁定，不可修改；如需变更请等待驳回或联系教务");
+        }
+    }
 
     /**
      * 查询工作量明细主表列表
@@ -95,6 +125,8 @@ public class BizWorkloadItemController extends BaseController
     {
         // 教师只能为本人新增明细
         bizWorkloadItem.setUserId(DataScopeUtil.resolveUserId(bizWorkloadItem.getUserId()));
+        // 汇总已进入审批链则明细冻结，教师不可再申报
+        assertItemEditable(bizWorkloadItem.getUserId(), bizWorkloadItem.getSemester());
         return toAjax(bizWorkloadItemService.insertBizWorkloadItem(bizWorkloadItem));
     }
 
@@ -123,6 +155,8 @@ public class BizWorkloadItemController extends BaseController
         }
         // 按数据库记录的归属人校验，防止伪造 userId 绕过
         DataScopeUtil.assertOwnOrAdmin(existing.getUserId());
+        // 汇总已进入审批链则明细冻结，教师不可再修改（按 DB 记录的归属人+学期判定）
+        assertItemEditable(existing.getUserId(), existing.getSemester());
         // 构造仅含白名单字段的更新对象（防 mass-assignment）：
         // 未列入白名单的字段保持 null，Mapper 动态 SQL 会跳过 null 字段不更新
         BizWorkloadItem update = new BizWorkloadItem();
@@ -167,13 +201,14 @@ public class BizWorkloadItemController extends BaseController
     {
         if (DataScopeUtil.isTeacherOnly())
         {
-            // 教师只能删除本人记录
+            // 教师只能删除本人记录，且汇总未进入审批链时才可删
             for (Long id : ids)
             {
                 BizWorkloadItem item = bizWorkloadItemService.selectBizWorkloadItemById(id);
                 if (item != null)
                 {
                     DataScopeUtil.assertOwnOrAdmin(item.getUserId());
+                    assertItemEditable(item.getUserId(), item.getSemester());
                 }
             }
         }

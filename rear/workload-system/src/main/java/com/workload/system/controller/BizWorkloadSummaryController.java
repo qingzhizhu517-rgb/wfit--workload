@@ -33,6 +33,9 @@ import com.workload.common.core.page.TableDataInfo;
 @RequestMapping("/system/workloadSummary")
 public class BizWorkloadSummaryController extends BaseController
 {
+    /** 汇总状态：已完结（锁定） */
+    private static final int STATUS_FINISHED = 3;
+
     @Autowired
     private IBizWorkloadSummaryService bizWorkloadSummaryService;
 
@@ -96,6 +99,10 @@ public class BizWorkloadSummaryController extends BaseController
 
     /**
      * 修改学期工作量汇总
+     *
+     * 说明：审批状态迁移与签字一律走 /system/audit/* 审批链（带原子条件更新 + 审计日志），
+     * 本通用 edit 端点对所有角色都禁止改动 status/各签字字段/lock_time（防状态机后门），
+     * 且已完结(3)记录整体锁定不可改。教师额外仅可改备注。
      */
     @PreAuthorize("@ss.hasPermi('system:workloadSummary:edit')")
     @Log(title = "学期工作量汇总", businessType = BusinessType.UPDATE)
@@ -113,10 +120,27 @@ public class BizWorkloadSummaryController extends BaseController
         }
         // 按数据库记录的归属人校验，防止伪造 userId 绕过
         DataScopeUtil.assertOwnOrAdmin(existing.getUserId());
+
+        // 已完结(3)记录锁定，任何角色不可经通用 edit 修改；如需变更请先走审批解锁
+        if (existing.getStatus() != null && existing.getStatus() == STATUS_FINISHED)
+        {
+            throw new ServiceException("该汇总已完结锁定，禁止修改；如需变更请先解锁");
+        }
+
+        // 审批流字段一律不允许经此端点写入（对所有角色生效），状态迁移只能走审批链。
+        // 置 null 后 Mapper 动态 SQL 会跳过更新（防 mass-assignment / 状态机后门）。
+        bizWorkloadSummary.setStatus(null);
+        bizWorkloadSummary.setTeacherSign(null);
+        bizWorkloadSummary.setTeacherSignTime(null);
+        bizWorkloadSummary.setDeptLeaderSign(null);
+        bizWorkloadSummary.setDeptLeaderSignTime(null);
+        bizWorkloadSummary.setAcademicAssistantSign(null);
+        bizWorkloadSummary.setAcademicAssistantSignTime(null);
+        bizWorkloadSummary.setLockTime(null);
+
         if (DataScopeUtil.isTeacherOnly())
         {
-            // 工作量/酬金/审批签字均属敏感数据，教师仅可修改备注；
-            // 敏感字段置空，利用 Mapper 动态 SQL 跳过 null 的特性不被更新（防 mass-assignment）
+            // 工作量/酬金等属敏感数据，教师仅可修改备注；敏感字段置空跳过更新
             bizWorkloadSummary.setUserId(null);
             bizWorkloadSummary.setSemester(null);
             bizWorkloadSummary.setAcademicYear(null);
@@ -134,14 +158,6 @@ public class BizWorkloadSummaryController extends BaseController
             bizWorkloadSummary.setIsCapped(null);
             bizWorkloadSummary.setBasicTeachingStandard(null);
             bizWorkloadSummary.setBasicTeachingMet(null);
-            bizWorkloadSummary.setStatus(null);
-            bizWorkloadSummary.setTeacherSign(null);
-            bizWorkloadSummary.setTeacherSignTime(null);
-            bizWorkloadSummary.setDeptLeaderSign(null);
-            bizWorkloadSummary.setDeptLeaderSignTime(null);
-            bizWorkloadSummary.setAcademicAssistantSign(null);
-            bizWorkloadSummary.setAcademicAssistantSignTime(null);
-            bizWorkloadSummary.setLockTime(null);
             bizWorkloadSummary.setCreateBy(null);
             bizWorkloadSummary.setCreateTime(null);
         }
