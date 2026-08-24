@@ -1,6 +1,5 @@
 package com.workload.system.controller;
 
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -17,10 +16,14 @@ import com.alibaba.excel.write.metadata.WriteSheet;
 import com.alibaba.excel.write.metadata.fill.FillConfig;
 import com.workload.common.core.controller.BaseController;
 import com.workload.common.core.domain.AjaxResult;
+import com.workload.common.exception.ServiceException;
+import com.workload.common.utils.DataScopeUtil;
 import com.workload.common.utils.SecurityUtils;
+import com.workload.common.utils.StringUtils;
 import com.workload.system.domain.BizWorkloadItem;
 import com.workload.system.domain.BizWorkloadSummary;
-import com.workload.system.domain.dto.PersonalWorkloadExportDTO;
+import com.workload.system.domain.dto.PaySummaryExportDTO;
+import com.workload.system.domain.dto.PersonalWorkloadDetailExportDTO;
 import com.workload.system.service.IBizWorkloadItemService;
 import com.workload.system.service.IBizWorkloadSummaryService;
 
@@ -51,6 +54,17 @@ public class BizExportController extends BaseController
             @RequestParam("semester") String semester,
             HttpServletResponse response) throws Exception
     {
+        if (userId == null)
+        {
+            throw new ServiceException("userId 不能为空");
+        }
+        if (StringUtils.isEmpty(semester))
+        {
+            throw new ServiceException("semester 不能为空");
+        }
+        // 教师角色强制导出本人数据，忽略传入的他人 userId（修复越权导出 P2-01）
+        userId = DataScopeUtil.resolveUserId(userId);
+
         // 查询汇总
         BizWorkloadSummary summary = summaryService.selectBizWorkloadSummaryByUserAndSemester(userId, semester);
         if (summary == null)
@@ -66,11 +80,11 @@ public class BizExportController extends BaseController
         query.setSemester(semester);
         List<BizWorkloadItem> items = workloadItemService.selectBizWorkloadItemList(query);
 
-        // 构建导出数据
-        List<PersonalWorkloadExportDTO> exportData = new ArrayList<>();
+        // 构建导出数据（附件1：个人工作量明细列集）
+        List<PersonalWorkloadDetailExportDTO> exportData = new ArrayList<>();
         for (BizWorkloadItem item : items)
         {
-            PersonalWorkloadExportDTO dto = new PersonalWorkloadExportDTO();
+            PersonalWorkloadDetailExportDTO dto = new PersonalWorkloadDetailExportDTO();
             dto.setItemType(item.getItemType());
             dto.setCourseName(item.getCourseName() != null ? item.getCourseName() : "-");
             dto.setCalculatedWorkload(item.getCalculatedWorkload());
@@ -84,7 +98,7 @@ public class BizExportController extends BaseController
         String fileName = "工作量明细_" + userId + "_" + semester + ".xlsx";
         response.setHeader("Content-Disposition", "attachment;filename=" + java.net.URLEncoder.encode(fileName, "UTF-8"));
 
-        EasyExcel.write(response.getOutputStream(), PersonalWorkloadExportDTO.class)
+        EasyExcel.write(response.getOutputStream(), PersonalWorkloadDetailExportDTO.class)
                 .sheet("工作量明细")
                 .doWrite(exportData);
     }
@@ -98,9 +112,14 @@ public class BizExportController extends BaseController
             @RequestParam("semester") String semester,
             HttpServletResponse response) throws Exception
     {
-        // 查询该学期所有汇总
+        if (StringUtils.isEmpty(semester))
+        {
+            throw new ServiceException("semester 不能为空");
+        }
+        // 查询该学期所有汇总；教师角色强制只导出本人数据
         BizWorkloadSummary query = new BizWorkloadSummary();
         query.setSemester(semester);
+        query.setUserId(DataScopeUtil.resolveUserId(null));
         List<BizWorkloadSummary> summaries = summaryService.selectBizWorkloadSummaryList(query);
 
         if (summaries.isEmpty())
@@ -110,11 +129,11 @@ public class BizExportController extends BaseController
             return;
         }
 
-        // 构建导出数据
-        List<PersonalWorkloadExportDTO> exportData = new ArrayList<>();
+        // 构建导出数据（附件2：绩效酬金列集）
+        List<PaySummaryExportDTO> exportData = new ArrayList<>();
         for (BizWorkloadSummary s : summaries)
         {
-            PersonalWorkloadExportDTO dto = new PersonalWorkloadExportDTO();
+            PaySummaryExportDTO dto = new PaySummaryExportDTO();
             dto.setUserId(s.getUserId());
             dto.setSemester(s.getSemester());
             dto.setTitle(s.getTitle());
@@ -131,7 +150,7 @@ public class BizExportController extends BaseController
         String fileName = "绩效酬金统计_" + semester + ".xlsx";
         response.setHeader("Content-Disposition", "attachment;filename=" + java.net.URLEncoder.encode(fileName, "UTF-8"));
 
-        EasyExcel.write(response.getOutputStream(), PersonalWorkloadExportDTO.class)
+        EasyExcel.write(response.getOutputStream(), PaySummaryExportDTO.class)
                 .sheet("绩效酬金统计")
                 .doWrite(exportData);
     }

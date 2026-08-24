@@ -1,11 +1,33 @@
-<template>
-  <div class="navbar" :class="'nav' + settingsStore.navType">
-    <hamburger id="hamburger-container" :is-active="appStore.sidebar.opened" class="hamburger-container" @toggleClick="toggleSideBar" />
-    <breadcrumb v-if="settingsStore.navType == 1" id="breadcrumb-container" class="breadcrumb-container" />
-    <top-nav v-if="settingsStore.navType == 2" id="topmenu-container" class="topmenu-container" />
+﻿<template>
+  <div
+    class="navbar"
+    :class="'nav' + settingsStore.navType"
+  >
+    <hamburger
+      id="hamburger-container"
+      :is-active="appStore.sidebar.opened"
+      class="hamburger-container"
+      @toggle-click="toggleSideBar"
+    />
+    <breadcrumb
+      v-if="settingsStore.navType == 1"
+      id="breadcrumb-container"
+      class="breadcrumb-container"
+    />
+    <top-nav
+      v-if="settingsStore.navType == 2"
+      id="topmenu-container"
+      class="topmenu-container"
+    />
     <template v-if="settingsStore.navType == 3">
-      <logo v-show="settingsStore.sidebarLogo" :collapse="false"></logo>
-      <top-bar id="topbar-container" class="topbar-container" />
+      <logo
+        v-show="settingsStore.sidebarLogo"
+        :collapse="false"
+      />
+      <top-bar
+        id="topbar-container"
+        class="topbar-container"
+      />
     </template>
 
     <div class="right-menu">
@@ -15,7 +37,7 @@
 
 
         <screenfull id="screenfull" class="right-menu-item hover-effect" /> -->
-<!-- 
+        <!-- 
         <el-tooltip content="主题模式" effect="dark" placement="bottom">
           <div class="right-menu-item hover-effect theme-switch-wrapper" @click="toggleTheme">
             <svg-icon v-if="settingsStore.isDark" icon-class="sunny" />
@@ -32,9 +54,16 @@
         </el-tooltip> -->
       </template>
 
-      <el-dropdown @command="handleCommand" class="avatar-container right-menu-item hover-effect" trigger="hover">
+      <el-dropdown
+        class="avatar-container right-menu-item hover-effect"
+        trigger="hover"
+        @command="handleCommand"
+      >
         <div class="avatar-wrapper">
-          <img :src="userStore.avatar" class="user-avatar" />
+          <img
+            :src="userStore.avatar"
+            class="user-avatar"
+          >
           <span class="user-nickname"> {{ userStore.nickName }} </span>
         </div>
         <template #dropdown>
@@ -42,13 +71,19 @@
             <router-link to="/user/profile">
               <el-dropdown-item>个人中心</el-dropdown-item>
             </router-link>
-            <el-dropdown-item command="setLayout" v-if="settingsStore.showSettings">
-                <span>布局设置</span>
+            <el-dropdown-item
+              v-if="settingsStore.showSettings"
+              command="setLayout"
+            >
+              <span>布局设置</span>
             </el-dropdown-item>
             <el-dropdown-item command="lockScreen">
-                <span>锁定屏幕</span>
+              <span>锁定屏幕</span>
             </el-dropdown-item>
-            <el-dropdown-item divided command="logout">
+            <el-dropdown-item
+              divided
+              command="logout"
+            >
               <span>退出登录</span>
             </el-dropdown-item>
           </el-dropdown-menu>
@@ -89,17 +124,17 @@ function toggleSideBar() {
 
 function handleCommand(command) {
   switch (command) {
-    case "setLayout":
-      setLayout()
-      break
-    case "lockScreen":
-      lockScreen()
-      break
-    case "logout":
-      logout()
-      break
-    default:
-      break
+  case 'setLayout':
+    setLayout()
+    break
+  case 'lockScreen':
+    lockScreen()
+    break
+  case 'logout':
+    logout()
+    break
+  default:
+    break
   }
 }
 
@@ -131,7 +166,7 @@ async function toggleTheme(event) {
   const y = event?.clientY || window.innerHeight / 2
   const wasDark = settingsStore.isDark
 
-  const isReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  const isReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
   const isSupported = document.startViewTransition && !isReducedMotion
 
   if (!isSupported) {
@@ -154,14 +189,14 @@ async function toggleTheme(event) {
         clipPath: !wasDark ? [...clipPath].reverse() : clipPath
       }, {
         duration: 650,
-        easing: "cubic-bezier(0.4, 0, 0.2, 1)",
-        fill: "forwards",
-        pseudoElement: !wasDark ? "::view-transition-old(root)" : "::view-transition-new(root)"
+        easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+        fill: 'forwards',
+        pseudoElement: !wasDark ? '::view-transition-old(root)' : '::view-transition-new(root)'
       }
     )
     await transition.finished
   } catch (error) {
-    console.warn("View transition failed, falling back to immediate toggle:", error)
+    console.warn('View transition failed, falling back to immediate toggle:', error)
     settingsStore.toggleTheme()
   }
 }
@@ -235,7 +270,7 @@ async function toggleTheme(event) {
       padding: 0 8px;
       height: 100%;
       font-size: 18px;
-      color: #5a5e66;
+      color: var(--el-text-color-regular);
       vertical-align: text-bottom;
 
       &.hover-effect {

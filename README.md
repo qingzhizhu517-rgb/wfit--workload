@@ -15,7 +15,7 @@
 | G1 | 理论课 | `J1 × C1 × K1 × Q1 × Q2 × Q3 × N` |
 | G2 | 课内实践/实验/实训 | `J2 × K × C2 × Q1 × Q2 × Q3` |
 | G3 | 教学实习/实训 | `T × D × K × Q1 × Q2 × Q3` |
-| G4 | 课程设计 | `J4 × min(R4,20) × 0.4` |
+| G4 | 课程设计 | `J4 × min(R4,60) × 0.4` |
 | G5 | 毕业论文(设计) | `R5 × K5` |
 | G6 | 集中实习(现场跟班) | `W × min(R6,20) × 0.4` |
 | G7 | 第一课堂工作量合计 | G1+G2+G3+G4+G5+G6 |
@@ -67,19 +67,28 @@
 
 ### 数据库初始化
 
+> 仓库根目录即 `wfit--workload/`，**无** `WFIT_workload/` 外层目录。SQL 脚本须按顺序执行。
+
 ```bash
-cd WFIT_workload/rear/sql/
+cd rear/sql/
+# 基础框架表（先执行）
+mysql -u root -p wflg_workload < ry_20260321.sql
+mysql -u root -p wflg_workload < quartz.sql
+# 业务表 + 种子 + 规则 + 菜单
 mysql -u root -p wflg_workload < 01_biz_schema.sql
 mysql -u root -p wflg_workload < 02_biz_seed.sql
 mysql -u root -p wflg_workload < 03_calc_rules.sql
 mysql -u root -p wflg_workload < 04_biz_test_data.sql
 mysql -u root -p wflg_workload < 05_biz_menu.sql
+# 可选：测试账号与修复补丁（06~14，其中修复脚本幂等，可重复执行）
+mysql -u root -p wflg_workload < 06_test_accounts.sql
+# ... 依次执行 07~14（详见 CLAUDE.md）
 ```
 
 ### 启动后端
 
 ```bash
-cd WFIT_workload/rear/
+cd rear/
 mvn clean package -DskipTests
 java -jar workload-admin/target/workload-admin.jar
 # 或
@@ -91,23 +100,30 @@ mvn spring-boot:run -pl workload-admin
 ### 启动前端
 
 ```bash
-cd WFIT_workload/front/RuoYi-Vue3/
+cd front/RuoYi-Vue3/
 npm install --registry=https://registry.npmmirror.com
-npm run dev
+npm run dev          # 开发服务器（端口 3000）
+npm run build:prod   # 生产构建
+npm run lint         # ESLint 检查（lint:fix 自动修复）
 ```
 
-前端开发服务器默认运行在 http://localhost:3000。
+前端开发服务器默认运行在 http://localhost:3000，`/dev-api` 前缀请求代理到后端 `http://localhost:8084`（去掉前缀）。
 
-### 默认账号
+### 测试账号
 
-| 角色 | 用户名 | 密码 |
-|------|--------|------|
-| 管理员 | admin | admin123 |
+RuoYi 内置账号 `admin / admin123`。业务测试账号（密码均为 `123456`，来自 `06_test_accounts.sql`）：
+
+| 账号 | 角色 | 说明 |
+|------|------|------|
+| `admin_test` | 管理员 | 全部权限 |
+| `jiaowu_test` | 教务助理 | 审批权限 |
+| `teacher_test` | 教师 | 仅看本人数据 |
+| `leader_test` | 院领导 | 签字权限 |
 
 ## 项目结构
 
 ```
-WFIT_workload/
+wfit--workload/                        # 仓库根目录（无 WFIT_workload/ 外层）
 ├── rear/                              # 后端（Spring Boot）
 │   ├── workload-admin/                # 启动入口 + 系统管理
 │   ├── workload-system/               # 业务核心

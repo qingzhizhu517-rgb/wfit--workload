@@ -1,61 +1,129 @@
 <template>
   <div class="dashboard-editor-container">
     <el-row :gutter="20">
-      <el-col :sm="24" :lg="24">
-        <h2 class="dashboard-title">教学工作量智能化管理系统</h2>
+      <el-col
+        :sm="24"
+        :lg="24"
+      >
+        <h2 class="dashboard-title">
+          教学工作量智能化管理系统
+        </h2>
         <p class="dashboard-subtitle">
-          当前学期：{{ stats.semester || '2025-2026-1' }}
-          <span class="last-updated" v-if="stats.lastUpdated">（数据更新于 {{ stats.lastUpdated }}）</span>
+          当前学期：{{ stats.semester || fallbackSemester }}
+          <span
+            v-if="stats.lastUpdated"
+            class="last-updated"
+          >（数据更新于 {{ stats.lastUpdated }}）</span>
         </p>
       </el-col>
     </el-row>
 
     <!-- 4 统计卡片 -->
-    <el-row :gutter="20" class="panel-group">
-      <el-col :xs="12" :sm="12" :lg="6" class="card-panel-col">
-        <div class="card-panel" @click="router.push('/workload/teachingTask')">
+    <el-row
+      :gutter="20"
+      class="panel-group"
+    >
+      <el-col
+        :xs="12"
+        :sm="12"
+        :lg="6"
+        class="card-panel-col"
+      >
+        <div
+          class="card-panel"
+          @click="router.push('/workload/teachingTask')"
+        >
           <div class="card-panel-icon-wrapper icon-tasks">
-            <el-icon :size="36"><Document /></el-icon>
+            <el-icon :size="36">
+              <Document />
+            </el-icon>
           </div>
           <div class="card-panel-description">
-            <div class="card-panel-text">教学任务数</div>
-            <div class="card-panel-num">{{ stats.taskCount ?? '--' }}</div>
+            <div class="card-panel-text">
+              教学任务数
+            </div>
+            <div class="card-panel-num">
+              {{ stats.taskCount ?? '--' }}
+            </div>
           </div>
         </div>
       </el-col>
 
-      <el-col :xs="12" :sm="12" :lg="6" class="card-panel-col">
-        <div class="card-panel" @click="router.push('/workload/workloadItem')">
+      <el-col
+        :xs="12"
+        :sm="12"
+        :lg="6"
+        class="card-panel-col"
+      >
+        <div
+          class="card-panel"
+          @click="router.push('/workload/workloadItem')"
+        >
           <div class="card-panel-icon-wrapper icon-workload">
-            <el-icon :size="36"><DataLine /></el-icon>
+            <el-icon :size="36">
+              <DataLine />
+            </el-icon>
           </div>
           <div class="card-panel-description">
-            <div class="card-panel-text">已核算总工作量</div>
-            <div class="card-panel-num">{{ formatNumber(stats.totalWorkload) }}</div>
+            <div class="card-panel-text">
+              已核算总工作量
+            </div>
+            <div class="card-panel-num">
+              {{ formatNumber(stats.totalWorkload) }}
+            </div>
           </div>
         </div>
       </el-col>
 
-      <el-col :xs="12" :sm="12" :lg="6" class="card-panel-col">
-        <div class="card-panel" @click="router.push('/workload/teacherProfile')">
+      <el-col
+        :xs="12"
+        :sm="12"
+        :lg="6"
+        class="card-panel-col"
+      >
+        <div
+          class="card-panel"
+          @click="router.push('/workload/teacherProfile')"
+        >
           <div class="card-panel-icon-wrapper icon-teacher">
-            <el-icon :size="36"><User /></el-icon>
+            <el-icon :size="36">
+              <User />
+            </el-icon>
           </div>
           <div class="card-panel-description">
-            <div class="card-panel-text">参与核算教师</div>
-            <div class="card-panel-num">{{ stats.teacherCount ?? '--' }}</div>
+            <div class="card-panel-text">
+              参与核算教师
+            </div>
+            <div class="card-panel-num">
+              {{ stats.teacherCount ?? '--' }}
+            </div>
           </div>
         </div>
       </el-col>
 
-      <el-col :xs="12" :sm="12" :lg="6" class="card-panel-col">
-        <div class="card-panel" @click="router.push('/workload/workloadItem?appealStatus=1')">
+      <el-col
+        :xs="12"
+        :sm="12"
+        :lg="6"
+        class="card-panel-col"
+      >
+        <div
+          class="card-panel"
+          @click="router.push('/workload/workloadItem?appealStatus=1')"
+        >
           <div class="card-panel-icon-wrapper icon-warning">
-            <el-icon :size="36"><Warning /></el-icon>
+            <el-icon :size="36">
+              <Warning />
+            </el-icon>
           </div>
           <div class="card-panel-description">
-            <div class="card-panel-text">待处理异议</div>
-            <div class="card-panel-num" :class="{ 'has-appeal': stats.appealCount > 0 }">
+            <div class="card-panel-text">
+              待处理异议
+            </div>
+            <div
+              class="card-panel-num"
+              :class="{ 'has-appeal': stats.appealCount > 0 }"
+            >
               {{ stats.appealCount ?? '--' }}
             </div>
           </div>
@@ -65,71 +133,146 @@
 
     <el-row :gutter="20">
       <!-- 快捷操作 + 待办事项 -->
-      <el-col :xs="24" :sm="24" :lg="8">
-        <el-card class="box-card" shadow="hover">
+      <el-col
+        :xs="24"
+        :sm="24"
+        :lg="8"
+      >
+        <el-card
+          class="box-card"
+          shadow="hover"
+        >
           <template #header>
             <div class="card-header">
               <span>快捷操作</span>
             </div>
           </template>
           <div class="quick-links">
-            <el-button type="primary" plain icon="Upload" @click="router.push('/workload/importBatch')">
+            <el-button
+              type="primary"
+              plain
+              icon="Upload"
+              @click="router.push('/workload/importBatch')"
+            >
               导入教务处Excel
             </el-button>
-            <el-button type="success" plain icon="Edit" @click="router.push('/workload/workloadItem')">
+            <el-button
+              type="success"
+              plain
+              icon="Edit"
+              @click="router.push('/workload/workloadItem')"
+            >
               录入特殊工作量
             </el-button>
-            <el-button type="warning" plain icon="Download" @click="handleExportPaySummary">
+            <el-button
+              type="warning"
+              plain
+              icon="Download"
+              @click="handleExportPaySummary"
+            >
               导出绩效酬金统计表
             </el-button>
-            <el-button type="info" plain icon="Setting" @click="router.push('/workload/workloadRule')">
+            <el-button
+              type="info"
+              plain
+              icon="Setting"
+              @click="router.push('/workload/workloadRule')"
+            >
               基础系数配置
             </el-button>
           </div>
         </el-card>
 
-        <el-card class="box-card todo-card" shadow="hover">
+        <el-card
+          class="box-card todo-card"
+          shadow="hover"
+        >
           <template #header>
             <div class="card-header">
               <span>待办事项</span>
-              <el-badge :value="stats.appealCount" :hidden="!stats.appealCount" />
+              <el-badge
+                :value="stats.appealCount"
+                :hidden="!stats.appealCount"
+              />
             </div>
           </template>
-          <div class="todo-list" v-loading="loading">
-            <div v-if="stats.appealCount > 0" class="todo-item todo-warning" @click="router.push('/workload/workloadItem?appealStatus=1')">
+          <div
+            v-loading="loading"
+            class="todo-list"
+          >
+            <div
+              v-if="stats.appealCount > 0"
+              class="todo-item todo-warning"
+              @click="router.push('/workload/workloadItem?appealStatus=1')"
+            >
               <el-icon><WarningFilled /></el-icon>
               <span>{{ stats.appealCount }} 条工作量异议待处理</span>
-              <el-icon class="arrow-right"><ArrowRight /></el-icon>
+              <el-icon class="arrow-right">
+                <ArrowRight />
+              </el-icon>
             </div>
-            <div class="todo-item todo-info" @click="router.push('/workload/workloadSummary')">
+            <div
+              class="todo-item todo-info"
+              @click="router.push('/workload/workloadSummary')"
+            >
               <el-icon><Clock /></el-icon>
               <span>{{ stats.summaryCount ?? 0 }} 条学期汇总记录</span>
-              <el-icon class="arrow-right"><ArrowRight /></el-icon>
+              <el-icon class="arrow-right">
+                <ArrowRight />
+              </el-icon>
             </div>
-            <div class="todo-item todo-success" v-if="stats.totalExcess > 0" @click="router.push('/workload/payRecord')">
+            <div
+              v-if="stats.totalExcess > 0"
+              class="todo-item todo-success"
+              @click="router.push('/workload/payRecord')"
+            >
               <el-icon><Money /></el-icon>
-              <span>超工作量酬金合计 ¥{{ formatMoney(stats.totalPay) }}</span>
-              <el-icon class="arrow-right"><ArrowRight /></el-icon>
+              <span>超工作量酬金合计 ¥{{ formatAmount(stats.totalPay) }}</span>
+              <el-icon class="arrow-right">
+                <ArrowRight />
+              </el-icon>
             </div>
-            <el-empty v-if="!stats.appealCount && !stats.summaryCount && !stats.totalExcess"
-              description="暂无待办事项" :image-size="60" />
+            <el-empty
+              v-if="!stats.appealCount && !stats.summaryCount && !stats.totalExcess"
+              description="暂无待办事项"
+              :image-size="60"
+            />
           </div>
         </el-card>
       </el-col>
 
       <!-- ECharts 图表 -->
-      <el-col :xs="24" :sm="24" :lg="16">
-        <el-card class="box-card" shadow="hover">
+      <el-col
+        :xs="24"
+        :sm="24"
+        :lg="16"
+      >
+        <el-card
+          class="box-card"
+          shadow="hover"
+        >
           <template #header>
             <div class="card-header">
               <span>各学院教学任务概况</span>
-              <el-radio-group v-model="chartView" size="small" @change="renderChart">
-                <el-radio-button value="bar">柱状图</el-radio-button>
-                <el-radio-button value="line">折线图</el-radio-button>
+              <el-radio-group
+                v-model="chartView"
+                size="small"
+                @change="renderChart"
+              >
+                <el-radio-button value="bar">
+                  柱状图
+                </el-radio-button>
+                <el-radio-button value="line">
+                  折线图
+                </el-radio-button>
               </el-radio-group>
             </div>
           </template>
-          <div ref="chartRef" style="height: 380px" v-loading="chartLoading" />
+          <div
+            ref="chartRef"
+            v-loading="chartLoading"
+            style="height: 380px"
+          />
         </el-card>
       </el-col>
     </el-row>
@@ -145,16 +288,25 @@ import {
   Download, Setting, WarningFilled, ArrowRight, Clock, Money
 } from '@element-plus/icons-vue'
 import { getAdminStats, getCollegeStats } from '@/api/system/dashboard'
-import { exportPaySummary } from '@/api/system/export'
+import { useDashboard } from '@/composable/useDashboard'
+import { getCurrentSemester, formatAmount } from '@/utils/bizDict'
 
 const router = useRouter()
 const { proxy } = getCurrentInstance()
+
+/** 学期兜底：后端未返回学期时按当前日期推算，避免硬编码 */
+const fallbackSemester = getCurrentSemester()
+
+/** 绩效酬金表导出复用仪表盘共享逻辑，金额格式化统一用 bizDict.formatAmount */
+const { handleExportPaySummary } = useDashboard()
 
 const loading = ref(false)
 const chartLoading = ref(false)
 const chartRef = ref(null)
 const chartView = ref('bar')
 let chartInstance = null
+// 缓存最近一次学院数据，供切换图表类型时无参重绘
+let lastCollegeData = []
 
 const stats = reactive({
   taskCount: 0,
@@ -174,11 +326,6 @@ function formatNumber(val) {
   return Number(val).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
-function formatMoney(val) {
-  if (val == null) return '--'
-  return Number(val).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-}
-
 async function fetchStats() {
   loading.value = true
   try {
@@ -189,30 +336,6 @@ async function fetchStats() {
   } finally {
     loading.value = false
   }
-}
-
-function handleExportPaySummary() {
-  proxy.$prompt('请输入学年学期（如 2025-2026-1）', '导出绩效酬金统计表', {
-    confirmButtonText: '导出',
-    cancelButtonText: '取消',
-    inputPattern: /^\d{4}-\d{4}-[12]$/,
-    inputErrorMessage: '格式如 2025-2026-1',
-    inputPlaceholder: '2025-2026-1'
-  }).then(({ value }) => {
-    proxy.$modal.loading('正在导出...')
-    exportPaySummary({ semester: value }).then(res => {
-      const blob = new Blob([res], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
-      const url = window.URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = `绩效酬金统计_${value}.xlsx`
-      link.click()
-      window.URL.revokeObjectURL(url)
-      proxy.$modal.closeLoading()
-    }).catch(() => {
-      proxy.$modal.closeLoading()
-    })
-  }).catch(() => {})
 }
 
 async function fetchCollegeStats() {
@@ -233,12 +356,17 @@ function renderChart(collegeData) {
   if (!chartInstance) {
     chartInstance = echarts.init(chartRef.value)
   }
+  // 记录最近数据，切换图表类型时复用（el-radio-group @change 会传入选中值字符串，不可作为数据）
+  if (Array.isArray(collegeData)) {
+    lastCollegeData = collegeData
+  }
+  const data = lastCollegeData
 
   let option
-  if (collegeData && collegeData.length > 0) {
-    const names = collegeData.map(d => d.deptName)
-    const tasks = collegeData.map(d => d.taskCount)
-    const items = collegeData.map(d => d.itemCount)
+  if (data && data.length > 0) {
+    const names = data.map(d => d.deptName)
+    const tasks = data.map(d => d.taskCount)
+    const items = data.map(d => d.itemCount)
     option = {
       tooltip: {
         trigger: 'axis',

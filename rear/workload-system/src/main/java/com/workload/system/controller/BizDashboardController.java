@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -52,6 +53,7 @@ public class BizDashboardController extends BaseController
     /**
      * 管理员仪表盘统计
      */
+    @PreAuthorize("@ss.hasPermi('system:dashboard:adminStats')")
     @GetMapping("/adminStats")
     public AjaxResult adminStats(@RequestParam(required = false) String semester)
     {
@@ -113,11 +115,13 @@ public class BizDashboardController extends BaseController
     }
 
     /**
-     * 教师仪表盘统计
+     * 教师仪表盘统计（仅返回当前登录用户本人数据）
      */
+    @PreAuthorize("@ss.hasPermi('system:workloadSummary:query')")
     @GetMapping("/teacherStats")
     public AjaxResult teacherStats(@RequestParam(required = false) String semester)
     {
+        // 强制只返回当前用户数据（userId 取自登录态，忽略任何外部入参）
         Long userId = getUserId();
         Map<String, Object> stats = new HashMap<>();
 
@@ -185,6 +189,7 @@ public class BizDashboardController extends BaseController
     /**
      * 各学院教学任务概况（柱图/折线图用）
      */
+    @PreAuthorize("@ss.hasPermi('system:dashboard:collegeStats')")
     @GetMapping("/collegeStats")
     public AjaxResult collegeStats(@RequestParam(required = false) String semester)
     {

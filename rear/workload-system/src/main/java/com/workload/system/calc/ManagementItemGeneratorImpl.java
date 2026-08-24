@@ -111,10 +111,9 @@ public class ManagementItemGeneratorImpl implements ManagementItemGenerator
         long overlapDays = ChronoUnit.DAYS.between(overlapStart, overlapEnd) + 1;
         long semesterDays = ChronoUnit.DAYS.between(semStart, semEnd) + 1;
 
-        // 标准学时/学年 ÷ 2 = 满学期量，再按任职天数占比折算
+        // G11 = 岗位标准学时（学期标准）× 任职天数占比；学期封顶见 CAP_G11_SEMESTER
         BigDecimal rate = assignment.getAllowanceRate() == null ? BigDecimal.ZERO : assignment.getAllowanceRate();
-        BigDecimal prorated = rate.divide(new BigDecimal("2"), 4, RoundingMode.HALF_UP)
-                .multiply(new BigDecimal(overlapDays))
+        BigDecimal prorated = rate.multiply(new BigDecimal(overlapDays))
                 .divide(new BigDecimal(semesterDays), 2, RoundingMode.HALF_UP);
         String basis = String.format("任职 %s 至 %s，学期 %s 至 %s，折算 %d/%d 天",
                 assignStart, assignEnd, semStart, semEnd, overlapDays, semesterDays);
@@ -129,6 +128,8 @@ public class ManagementItemGeneratorImpl implements ManagementItemGenerator
             item.setItemType("G11");
             item.setSourceType("IMPORT");
             item.setAssignmentId(assignment.getId());
+            // G11 明细同步写入岗位类型（与 biz_role_assignment.role_type 同枚举口径，P3-05）
+            item.setRoleType(assignment.getRoleType());
             item.setCalculatedWorkload(BigDecimal.ZERO);
             item.setStatus(0);
             item.setCreateTime(DateUtils.getNowDate());
@@ -137,7 +138,9 @@ public class ManagementItemGeneratorImpl implements ManagementItemGenerator
             BizWlManagement detail = new BizWlManagement();
             detail.setItemId(item.getId());
             detail.setAssignmentId(assignment.getId());
-            detail.setRoleType(assignment.getRoleType());
+            // role_type 优先取明细自带值（含教师自报申报），为空回退岗位任职解析
+            detail.setRoleType(item.getRoleType() != null && !item.getRoleType().isEmpty()
+                    ? item.getRoleType() : assignment.getRoleType());
             detail.setProratedAmount(prorated);
             detail.setProrationBasis(basis);
             detail.setCreateTime(DateUtils.getNowDate());
@@ -148,7 +151,9 @@ public class ManagementItemGeneratorImpl implements ManagementItemGenerator
             BizWlManagement detail = bizWlManagementMapper.selectBizWlManagementByItemId(item.getId());
             if (detail != null)
             {
-                detail.setRoleType(assignment.getRoleType());
+                // role_type 优先取明细自带值（含教师自报申报），为空回退岗位任职解析
+                detail.setRoleType(item.getRoleType() != null && !item.getRoleType().isEmpty()
+                        ? item.getRoleType() : assignment.getRoleType());
                 detail.setProratedAmount(prorated);
                 detail.setProrationBasis(basis);
                 detail.setUpdateTime(DateUtils.getNowDate());

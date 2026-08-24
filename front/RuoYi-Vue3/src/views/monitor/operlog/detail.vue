@@ -1,26 +1,52 @@
 <template>
-  <el-dialog title="操作日志详细" v-model="dialogVisible" width="780px" append-to-body @close="$emit('update:visible', false)">
+  <el-dialog
+    v-model="dialogVisible"
+    title="操作日志详细"
+    width="780px"
+    append-to-body
+    @close="$emit('update:visible', false)"
+  >
     <div class="detail-wrap">
       <!-- 基本信息 -->
       <div class="detail-card">
-        <div class="detail-card-title"><el-icon><InfoFilled /></el-icon> 基本信息</div>
+        <div class="detail-card-title">
+          <el-icon><InfoFilled /></el-icon> 基本信息
+        </div>
         <el-row class="detail-row">
           <el-col :span="12">
-            <div class="detail-item"><span class="detail-label">操作模块</span><span class="detail-value">{{ form.title }}</span></div>
+            <div class="detail-item">
+              <span class="detail-label">操作模块</span><span class="detail-value">{{ form.title }}</span>
+            </div>
           </el-col>
           <el-col :span="12">
-            <div class="detail-item"><span class="detail-label">业务类型</span><span class="detail-value">{{ typeLabel }}</span></div>
+            <div class="detail-item">
+              <span class="detail-label">业务类型</span><span class="detail-value">{{ typeLabel }}</span>
+            </div>
           </el-col>
         </el-row>
         <el-row class="detail-row">
           <el-col :span="12">
-            <div class="detail-item"><span class="detail-label">操作时间</span><span class="detail-value">{{ form.operTime }}</span></div>
+            <div class="detail-item">
+              <span class="detail-label">操作时间</span><span class="detail-value">{{ form.operTime }}</span>
+            </div>
           </el-col>
           <el-col :span="12">
             <div class="detail-item">
               <span class="detail-label">执行状态</span>
-              <el-tag v-if="form.status === 0" type="success" size="small">正常</el-tag>
-              <el-tag v-else type="danger" size="small">异常</el-tag>
+              <el-tag
+                v-if="form.status === 0"
+                type="success"
+                size="small"
+              >
+                正常
+              </el-tag>
+              <el-tag
+                v-else
+                type="danger"
+                size="small"
+              >
+                异常
+              </el-tag>
             </div>
           </el-col>
         </el-row>
@@ -28,13 +54,22 @@
 
       <!-- 操作人员 -->
       <div class="detail-card">
-        <div class="detail-card-title"><el-icon><User /></el-icon> 操作人员</div>
+        <div class="detail-card-title">
+          <el-icon><User /></el-icon> 操作人员
+        </div>
         <el-row class="detail-row">
           <el-col :span="12">
-            <div class="detail-item"><span class="detail-label">操作人员</span><span class="detail-value">{{ form.operName }}</span></div>
+            <div class="detail-item">
+              <span class="detail-label">操作人员</span><span class="detail-value">{{ form.operName }}</span>
+            </div>
           </el-col>
-          <el-col :span="12" v-if="form.deptName">
-            <div class="detail-item"><span class="detail-label">所属部门</span><span class="detail-value">{{ form.deptName }}</span></div>
+          <el-col
+            v-if="form.deptName"
+            :span="12"
+          >
+            <div class="detail-item">
+              <span class="detail-label">所属部门</span><span class="detail-value">{{ form.deptName }}</span>
+            </div>
           </el-col>
         </el-row>
         <el-row class="detail-row">
@@ -49,7 +84,9 @@
 
       <!-- 请求信息 -->
       <div class="detail-card">
-        <div class="detail-card-title"><el-icon><Sort /></el-icon> 请求信息</div>
+        <div class="detail-card-title">
+          <el-icon><Sort /></el-icon> 请求信息
+        </div>
         <el-row class="detail-row">
           <el-col :span="24">
             <div class="detail-item">
@@ -63,23 +100,35 @@
         </el-row>
         <el-row class="detail-row">
           <el-col :span="24">
-            <div class="detail-item"><span class="detail-label">操作方法</span><span class="detail-value mono">{{ form.method }}</span></div>
+            <div class="detail-item">
+              <span class="detail-label">操作方法</span><span class="detail-value mono">{{ form.method }}</span>
+            </div>
           </el-col>
         </el-row>
         <el-row class="detail-row">
           <el-col :span="12">
-            <div class="detail-item"><span class="detail-label">消耗时间</span><span class="detail-value">{{ form.costTime }} 毫秒</span></div>
+            <div class="detail-item">
+              <span class="detail-label">消耗时间</span><span class="detail-value">{{ form.costTime }} 毫秒</span>
+            </div>
           </el-col>
         </el-row>
       </div>
 
       <!-- 请求参数 -->
       <div class="detail-card">
-        <div class="detail-card-title"><el-icon><Upload /></el-icon> 请求参数</div>
+        <div class="detail-card-title">
+          <el-icon><Upload /></el-icon> 请求参数
+        </div>
         <div class="code-body">
           <div class="code-wrap">
             <div class="code-action">
-              <el-button size="small" :icon="CopyDocument" @click="copyText(form.operParam)">复制</el-button>
+              <el-button
+                size="small"
+                :icon="CopyDocument"
+                @click="copyText(form.operParam)"
+              >
+                复制
+              </el-button>
             </div>
             <pre class="code-pre">{{ formatJson(form.operParam) }}</pre>
           </div>
@@ -88,11 +137,19 @@
 
       <!-- 返回参数 -->
       <div class="detail-card">
-        <div class="detail-card-title"><el-icon><Download /></el-icon> 返回参数</div>
+        <div class="detail-card-title">
+          <el-icon><Download /></el-icon> 返回参数
+        </div>
         <div class="code-body">
           <div class="code-wrap">
             <div class="code-action">
-              <el-button size="small" :icon="CopyDocument" @click="copyText(form.jsonResult)">复制</el-button>
+              <el-button
+                size="small"
+                :icon="CopyDocument"
+                @click="copyText(form.jsonResult)"
+              >
+                复制
+              </el-button>
             </div>
             <pre class="code-pre">{{ formatJson(form.jsonResult) }}</pre>
           </div>
@@ -100,13 +157,19 @@
       </div>
 
       <!-- 异常信息 -->
-      <div class="detail-card" v-if="form.status !== 0">
-        <div class="detail-card-title error-title"><el-icon><Warning /></el-icon> 异常信息</div>
+      <div
+        v-if="form.status !== 0"
+        class="detail-card"
+      >
+        <div class="detail-card-title error-title">
+          <el-icon><Warning /></el-icon> 异常信息
+        </div>
         <div class="error-body">
-          <div class="error-msg">{{ form.errorMsg }}</div>
+          <div class="error-msg">
+            {{ form.errorMsg }}
+          </div>
         </div>
       </div>
-
     </div>
   </el-dialog>
 </template>

@@ -1,33 +1,76 @@
 <template>
   <div class="lock-container">
     <!-- 动态粒子背景 -->
-    <canvas ref="particleCanvas" class="particle-bg"></canvas>
+    <canvas
+      ref="particleCanvas"
+      class="particle-bg"
+    />
 
     <!-- 时钟 -->
-    <div class="lock-time">{{ currentTime }}</div>
-    <div class="lock-date">{{ currentDate }}</div>
+    <div class="lock-time">
+      {{ currentTime }}
+    </div>
+    <div class="lock-date">
+      {{ currentDate }}
+    </div>
 
     <!-- 锁屏卡片 -->
     <div class="lock-card">
       <div class="avatar-wrap">
-        <img :src="userStore.avatar" class="lock-avatar" @error="onAvatarError" />
-        <div class="lock-icon">🔒</div>
+        <img
+          :src="userStore.avatar"
+          class="lock-avatar"
+          @error="onAvatarError"
+        >
+        <div class="lock-icon">
+          🔒
+        </div>
       </div>
-      <div class="lock-username">{{ userStore.nickName }}</div>
-      <div class="lock-hint">系统已锁定，请输入密码解锁</div>
+      <div class="lock-username">
+        {{ userStore.nickName }}
+      </div>
+      <div class="lock-hint">
+        系统已锁定，请输入密码解锁
+      </div>
 
-      <div class="input-wrap" :class="{ shake: isShaking }">
-        <input ref="passwordInput" v-model="password" type="password" placeholder="请输入登录密码" class="lock-input" @keydown.enter="handleUnlock" autocomplete="off" />
-        <button class="unlock-btn" @click="handleUnlock" :disabled="loading">
+      <div
+        class="input-wrap"
+        :class="{ shake: isShaking }"
+      >
+        <input
+          ref="passwordInput"
+          v-model="password"
+          type="password"
+          placeholder="请输入登录密码"
+          class="lock-input"
+          autocomplete="off"
+          @keydown.enter="handleUnlock"
+        >
+        <button
+          class="unlock-btn"
+          :disabled="loading"
+          @click="handleUnlock"
+        >
           <span v-if="!loading">→</span>
-          <span v-else class="loading-dot">···</span>
+          <span
+            v-else
+            class="loading-dot"
+          >···</span>
         </button>
       </div>
 
-      <div v-if="errorMsg" class="error-msg">{{ errorMsg }}</div>
+      <div
+        v-if="errorMsg"
+        class="error-msg"
+      >
+        {{ errorMsg }}
+      </div>
 
       <div class="lock-footer">
-        <a href="javascript:;" @click="goLogin">退出重新登录</a>
+        <a
+          href="javascript:;"
+          @click="goLogin"
+        >退出重新登录</a>
       </div>
     </div>
   </div>

@@ -2,6 +2,8 @@ package com.workload.system.service.impl;
 
 import java.util.List;
 import com.workload.common.utils.DateUtils;
+import com.workload.common.utils.SecurityUtils;
+import com.workload.common.exception.ServiceException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.workload.system.mapper.BizTeacherProfileMapper;
@@ -53,7 +55,14 @@ public class BizTeacherProfileServiceImpl implements IBizTeacherProfileService
     @Override
     public int insertBizTeacherProfile(BizTeacherProfile bizTeacherProfile)
     {
+        // 检查是否已存在该教师的业务档案
+        BizTeacherProfile existing = bizTeacherProfileMapper.selectBizTeacherProfileByUserId(bizTeacherProfile.getUserId());
+        if (existing != null)
+        {
+            throw new ServiceException("该教师已存在业务档案，请勿重复添加");
+        }
         bizTeacherProfile.setCreateTime(DateUtils.getNowDate());
+        bizTeacherProfile.setCreateBy(SecurityUtils.getUsername());
         return bizTeacherProfileMapper.insertBizTeacherProfile(bizTeacherProfile);
     }
 

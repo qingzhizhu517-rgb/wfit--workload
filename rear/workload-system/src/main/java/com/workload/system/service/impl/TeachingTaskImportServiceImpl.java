@@ -1,22 +1,22 @@
 package com.workload.system.service.impl;
 
+import java.io.InputStream;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.Date;
-import java.util.List;
 import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.aop.framework.AopContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import com.workload.common.exception.ServiceException;
+import com.workload.common.utils.excel.ExcelReadUtil;
 import com.workload.common.utils.excel.ImportResult;
 import com.workload.system.calc.strategy.CalcStrategyFactory;
-import com.workload.system.calc.strategy.WorkloadCalcStrategy;
 import com.workload.system.domain.BizImportBatch;
 import com.workload.system.domain.BizTeachingTask;
 import com.workload.system.domain.BizWlConcentratedInternship;
@@ -84,10 +84,8 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
     private CalcStrategyFactory calcStrategyFactory;
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
-    public ImportResult importTeachingTasks(List<TeachingTaskImportDTO> rows, String fileName)
+    public ImportResult importTeachingTasksStreaming(InputStream inputStream, String fileName)
     {
-        ImportResult result = new ImportResult();
         String batchNo = "IMP-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
 
         // 创建导入批次记录
@@ -95,29 +93,23 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
         batch.setBatchNo(batchNo);
         batch.setImportType("TEACHING_TASK");
         batch.setFileName(fileName);
-        batch.setTotalCount((long) rows.size());
-        batch.setStatus(0); // 处理中
+        batch.setStatus(0); // 0=解析中
         importBatchMapper.insertBizImportBatch(batch);
+
+        // 结果累加器由监听器维护：逐行独立事务处理，边读边入库（不全量驻留内存）；
+        // 单元格解析异常(onException)与业务异常共用同一 ImportResult 和物理行号，避免错误丢失/行号错位
+        TeachingTaskImportServiceImpl proxy = (TeachingTaskImportServiceImpl) AopContext.currentProxy();
+
+        // EasyExcel 逐行回调：physicalRow 为 0 基含表头的物理行号，展示时 +1 转 1 基
+        ImportResult result = ExcelReadUtil.readEachRow(inputStream, TeachingTaskImportDTO.class,
+                (dto, physicalRow) -> proxy.processSingleRow(dto, batchNo));
         result.setBatchId(batch.getId());
 
-        for (int i = 0; i < rows.size(); i++)
-        {
-            try
-            {
-                processSingleRow(rows.get(i), batchNo);
-                result.addSuccess();
-            }
-            catch (Exception e)
-            {
-                log.warn("导入第 {} 行失败: {}", i + 2, e.getMessage());
-                result.addError(i + 2, e.getMessage());
-            }
-        }
-
-        // 更新批次记录
+        // 更新批次记录（对齐表定义 status 语义：2=已导入 4=失败/部分失败）
+        batch.setTotalCount((long) result.getTotalCount());
         batch.setSuccessCount((long) result.getSuccessCount());
         batch.setFailCount((long) result.getFailCount());
-        batch.setStatus(result.hasErrors() ? 2 : 1); // 1=完成 2=部分失败
+        batch.setStatus(result.hasErrors() ? 4 : 2);
         if (result.hasErrors())
         {
             StringBuilder sb = new StringBuilder();
@@ -165,6 +157,11 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
         if (!StringUtils.hasText(dto.getSemester()))
         {
             throw new ServiceException("学年学期不能为空");
+        }
+        // 学期格式必须为 学年-学年-学期号，如 2025-2026-1（学期号 1 秋 / 2 春）
+        if (!dto.getSemester().matches("^\\d{4}-\\d{4}-[12]$"))
+        {
+            throw new ServiceException("学期格式非法，应形如 2025-2026-1，当前: " + dto.getSemester());
         }
         if (!StringUtils.hasText(dto.getUserCode()))
         {
@@ -292,16 +289,8 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
         detail.setN(calcN(dto));   // 合堂系数
         wlTheoryMapper.insertBizWlTheory(detail);
 
-        // 调用策略计算
-        WorkloadCalcStrategy strategy = calcStrategyFactory.get("G1");
-        if (strategy != null)
-        {
-            return strategy.calculate(item);
-        }
-        // 手动计算兜底
-        return detail.getJ1().multiply(detail.getC1()).multiply(detail.getK1())
-                .multiply(detail.getQ1()).multiply(detail.getQ2()).multiply(detail.getQ3())
-                .multiply(detail.getN()).setScale(2, RoundingMode.HALF_UP);
+        // 策略计算（G1 策略必配；未配/配错时 CalcStrategyFactory 抛异常，由外层记为该行错误）
+        return calcStrategyFactory.get("G1").calculate(item);
     }
 
     /**
@@ -319,14 +308,7 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
         detail.setQ3(BigDecimal.ONE);
         wlPracticeMapper.insertBizWlPractice(detail);
 
-        WorkloadCalcStrategy strategy = calcStrategyFactory.get("G2");
-        if (strategy != null)
-        {
-            return strategy.calculate(item);
-        }
-        return detail.getJ2().multiply(detail.getK()).multiply(detail.getC2())
-                .multiply(detail.getQ1()).multiply(detail.getQ2())
-                .multiply(detail.getQ3()).setScale(2, RoundingMode.HALF_UP);
+        return calcStrategyFactory.get("G2").calculate(item);
     }
 
     /**
@@ -344,14 +326,7 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
         detail.setQ3(BigDecimal.ONE);
         wlInternshipTrainingMapper.insertBizWlInternshipTraining(detail);
 
-        WorkloadCalcStrategy strategy = calcStrategyFactory.get("G3");
-        if (strategy != null)
-        {
-            return strategy.calculate(item);
-        }
-        return detail.getT().multiply(detail.getD()).multiply(detail.getK())
-                .multiply(detail.getQ1()).multiply(detail.getQ2())
-                .multiply(detail.getQ3()).setScale(2, RoundingMode.HALF_UP);
+        return calcStrategyFactory.get("G3").calculate(item);
     }
 
     /**
@@ -365,13 +340,7 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
         detail.setR4(dto.getStudentCount() != null ? dto.getStudentCount().longValue() : 0L);
         wlCourseDesignMapper.insertBizWlCourseDesign(detail);
 
-        WorkloadCalcStrategy strategy = calcStrategyFactory.get("G4");
-        if (strategy != null)
-        {
-            return strategy.calculate(item);
-        }
-        return detail.getJ4().multiply(new BigDecimal(detail.getR4()))
-                .multiply(new BigDecimal("0.4")).setScale(2, RoundingMode.HALF_UP);
+        return calcStrategyFactory.get("G4").calculate(item);
     }
 
     /**
@@ -385,13 +354,7 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
         detail.setK5(dto.getCourseCoefficient() != null ? dto.getCourseCoefficient() : new BigDecimal("9"));
         wlThesisMapper.insertBizWlThesis(detail);
 
-        WorkloadCalcStrategy strategy = calcStrategyFactory.get("G5");
-        if (strategy != null)
-        {
-            return strategy.calculate(item);
-        }
-        return new BigDecimal(detail.getR5()).multiply(detail.getK5())
-                .setScale(2, RoundingMode.HALF_UP);
+        return calcStrategyFactory.get("G5").calculate(item);
     }
 
     /**
@@ -405,13 +368,7 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
         detail.setR6(dto.getStudentCount() != null ? dto.getStudentCount().longValue() : 0L);
         wlConcentratedInternshipMapper.insertBizWlConcentratedInternship(detail);
 
-        WorkloadCalcStrategy strategy = calcStrategyFactory.get("G6");
-        if (strategy != null)
-        {
-            return strategy.calculate(item);
-        }
-        return detail.getW().multiply(new BigDecimal(detail.getR6()))
-                .multiply(new BigDecimal("0.4")).setScale(2, RoundingMode.HALF_UP);
+        return calcStrategyFactory.get("G6").calculate(item);
     }
 
     // --- 系数计算辅助方法 ---

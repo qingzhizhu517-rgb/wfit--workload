@@ -1,12 +1,16 @@
 <template>
-  <div :style="'height:' + height" v-loading="loading" element-loading-text="正在加载页面，请稍候！">
+  <div
+    v-loading="loading"
+    :style="'height:' + height"
+    element-loading-text="正在加载页面，请稍候！"
+  >
     <iframe
       :id="iframeId"
+      ref="iframeRef"
       style="width: 100%; height: 100%"
       :src="src"
-      ref="iframeRef"
       frameborder="no"
-    ></iframe>
+    />
   </div>
 </template>
 
@@ -14,7 +18,7 @@
 const props = defineProps({
   src: {
     type: String,
-    default: "/"
+    default: '/'
   },
   iframeId: {
     type: String

@@ -5,6 +5,7 @@ import java.util.List;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,7 +23,6 @@ import com.workload.common.annotation.Log;
 import com.workload.common.core.controller.BaseController;
 import com.workload.common.core.domain.AjaxResult;
 import com.workload.common.enums.BusinessType;
-import com.workload.common.utils.excel.ExcelReadUtil;
 import com.workload.common.utils.excel.ImportResult;
 import com.workload.system.domain.BizTeachingTask;
 import com.workload.system.domain.dto.TeachingTaskImportDTO;
@@ -42,6 +42,10 @@ import com.workload.common.core.page.TableDataInfo;
 public class BizTeachingTaskController extends BaseController
 {
     private static final Logger log = LoggerFactory.getLogger(BizTeachingTaskController.class);
+
+    /** Excel 导入文件大小上限（MB） */
+    @Value("${wfit.import.max-size:10}")
+    private long importMaxSizeMb;
 
     @Autowired
     private IBizTeachingTaskService bizTeachingTaskService;
@@ -71,29 +75,27 @@ public class BizTeachingTaskController extends BaseController
     @PostMapping("/importExcel")
     public AjaxResult importExcel(@RequestParam("file") MultipartFile file)
     {
+        // 上传安全校验：空文件/扩展名白名单/文件大小上限
+        String invalidMsg = ImportFileValidator.validateExcelFile(file, importMaxSizeMb);
+        if (invalidMsg != null)
+        {
+            return error(invalidMsg);
+        }
         try
         {
-            // 使用 ExcelImportListener 读取（支持逐行错误捕获，不因单行格式错误中断整个导入）
-            List<TeachingTaskImportDTO> rows = new ArrayList<>();
-            ImportResult readResult = ExcelReadUtil.read(
-                    file.getInputStream(),
-                    TeachingTaskImportDTO.class,
-                    batch -> rows.addAll(batch)
-            );
+            // 流式导入：EasyExcel 分批回调，边读边逐行入库（每行独立事务），
+            // 不再把整份文件累积进内存，规避大文件 OOM 与超长事务。
+            ImportResult result = teachingTaskImportService.importTeachingTasksStreaming(
+                    file.getInputStream(), file.getOriginalFilename());
 
-            // 如果 Excel 解析阶段就有错误（如单元格格式错误），直接返回
-            if (readResult.hasErrors())
-            {
-                return error("Excel 解析失败，共 " + readResult.getFailCount() + " 处错误")
-                        .put("data", readResult);
-            }
-
-            if (rows.isEmpty())
+            if (result.getTotalCount() == 0)
             {
                 return error("Excel 文件为空或无有效数据行");
             }
-
-            ImportResult result = teachingTaskImportService.importTeachingTasks(rows, file.getOriginalFilename());
+            if (result.getSuccessCount() == 0 && result.hasErrors())
+            {
+                return error("导入失败，共 " + result.getFailCount() + " 行错误").put("data", result);
+            }
             return success("导入完成").put("data", result);
         }
         catch (Exception e)

@@ -19,7 +19,8 @@ import com.workload.common.enums.BusinessType;
 import com.workload.system.domain.BizPayRecord;
 import com.workload.system.service.IBizPayRecordService;
 import com.workload.common.utils.poi.ExcelUtil;
-import com.workload.common.utils.SecurityUtils;
+import com.workload.common.utils.DataScopeUtil;
+import com.workload.common.exception.ServiceException;
 import com.workload.common.core.page.TableDataInfo;
 
 /**
@@ -42,12 +43,8 @@ public class BizPayRecordController extends BaseController
     @GetMapping("/list")
     public TableDataInfo list(BizPayRecord bizPayRecord)
     {
-        // 教师角色只能查看自己的数据（不用 hasRole，避免 admin 绕过）
-        if (!SecurityUtils.isAdmin() && SecurityUtils.getLoginUser().getUser().getRoles().stream()
-                .anyMatch(r -> "teacher".equals(r.getRoleKey())))
-        {
-            bizPayRecord.setUserId(SecurityUtils.getUserId());
-        }
+        // 教师角色只能查看自己的数据（统一收口至 DataScopeUtil）
+        bizPayRecord.setUserId(DataScopeUtil.resolveUserId(bizPayRecord.getUserId()));
         startPage();
         List<BizPayRecord> list = bizPayRecordService.selectBizPayRecordList(bizPayRecord);
         return getDataTable(list);
@@ -61,12 +58,8 @@ public class BizPayRecordController extends BaseController
     @PostMapping("/export")
     public void export(HttpServletResponse response, BizPayRecord bizPayRecord)
     {
-        // 教师角色只能导出自己的数据
-        if (!SecurityUtils.isAdmin() && SecurityUtils.getLoginUser().getUser().getRoles().stream()
-                .anyMatch(r -> "teacher".equals(r.getRoleKey())))
-        {
-            bizPayRecord.setUserId(SecurityUtils.getUserId());
-        }
+        // 教师角色只能导出自己的数据（统一收口至 DataScopeUtil）
+        bizPayRecord.setUserId(DataScopeUtil.resolveUserId(bizPayRecord.getUserId()));
         List<BizPayRecord> list = bizPayRecordService.selectBizPayRecordList(bizPayRecord);
         ExcelUtil<BizPayRecord> util = new ExcelUtil<BizPayRecord>(BizPayRecord.class);
         util.exportExcel(response, list, "酬金汇总数据");
@@ -79,7 +72,13 @@ public class BizPayRecordController extends BaseController
     @GetMapping(value = "/{id}")
     public AjaxResult getInfo(@PathVariable("id") Long id)
     {
-        return success(bizPayRecordService.selectBizPayRecordById(id));
+        BizPayRecord bizPayRecord = bizPayRecordService.selectBizPayRecordById(id);
+        if (bizPayRecord != null)
+        {
+            // 教师只能查看本人记录，防 IDOR 遍历
+            DataScopeUtil.assertOwnOrAdmin(bizPayRecord.getUserId());
+        }
+        return success(bizPayRecord);
     }
 
     /**
@@ -90,6 +89,8 @@ public class BizPayRecordController extends BaseController
     @PostMapping
     public AjaxResult add(@RequestBody BizPayRecord bizPayRecord)
     {
+        // 教师只能为本人新增酬金记录
+        bizPayRecord.setUserId(DataScopeUtil.resolveUserId(bizPayRecord.getUserId()));
         return toAjax(bizPayRecordService.insertBizPayRecord(bizPayRecord));
     }
 
@@ -101,6 +102,31 @@ public class BizPayRecordController extends BaseController
     @PutMapping
     public AjaxResult edit(@RequestBody BizPayRecord bizPayRecord)
     {
+        if (bizPayRecord.getId() == null)
+        {
+            throw new ServiceException("缺少记录ID，无法修改");
+        }
+        BizPayRecord existing = bizPayRecordService.selectBizPayRecordById(bizPayRecord.getId());
+        if (existing == null)
+        {
+            throw new ServiceException("待修改的记录不存在");
+        }
+        // 按数据库记录的归属人校验，防止伪造 userId 绕过
+        DataScopeUtil.assertOwnOrAdmin(existing.getUserId());
+        if (DataScopeUtil.isTeacherOnly())
+        {
+            // 酬金属敏感数据，教师仅可修改备注；敏感字段置空，
+            // 利用 Mapper 动态 SQL 跳过 null 的特性不被更新（防 mass-assignment）
+            bizPayRecord.setUserId(null);
+            bizPayRecord.setSemester(null);
+            bizPayRecord.setSummaryId(null);
+            bizPayRecord.setCourseHourPay(null);
+            bizPayRecord.setOtherPayTotal(null);
+            bizPayRecord.setTotalPay(null);
+            bizPayRecord.setStatus(null);
+            bizPayRecord.setCreateBy(null);
+            bizPayRecord.setCreateTime(null);
+        }
         return toAjax(bizPayRecordService.updateBizPayRecord(bizPayRecord));
     }
 
@@ -112,6 +138,18 @@ public class BizPayRecordController extends BaseController
 	@DeleteMapping("/{ids}")
     public AjaxResult remove(@PathVariable Long[] ids)
     {
+        if (DataScopeUtil.isTeacherOnly())
+        {
+            // 教师只能删除本人记录
+            for (Long id : ids)
+            {
+                BizPayRecord record = bizPayRecordService.selectBizPayRecordById(id);
+                if (record != null)
+                {
+                    DataScopeUtil.assertOwnOrAdmin(record.getUserId());
+                }
+            }
+        }
         return toAjax(bizPayRecordService.deleteBizPayRecordByIds(ids));
     }
 }

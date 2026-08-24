@@ -1,13 +1,15 @@
 package com.workload.system.service.impl;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.aop.framework.AopContext;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -33,8 +35,21 @@ public class TeacherProfileImportServiceImpl implements ITeacherProfileImportSer
 {
     private static final Logger log = LoggerFactory.getLogger(TeacherProfileImportServiceImpl.class);
 
-    /** 教师角色ID */
+    /** 教师角色ID：与 sys_role role_id=4 教师角色对应，变更需同步 rear/sql/06_test_accounts.sql */
     private static final Long TEACHER_ROLE_ID = 4L;
+
+    /** 手机号校验规则：仅当单元格非空时校验 */
+    private static final Pattern PHONE_PATTERN = Pattern.compile("^1[3-9]\\d{9}$");
+
+    /** 邮箱校验规则：仅当单元格非空时校验 */
+    private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)*\\.[A-Za-z]{2,}$");
+
+    /**
+     * 新建教师初始密码策略：导入时统一使用该默认密码，教师首次登录后须自行修改密码。
+     * 由配置项 wfit.default-password 注入（见 application.yml wfit 段）。
+     */
+    @Value("${wfit.default-password:123456}")
+    private String defaultPassword;
 
     @Autowired
     private ISysUserService sysUserService;
@@ -45,63 +60,64 @@ public class TeacherProfileImportServiceImpl implements ITeacherProfileImportSer
     @Autowired
     private BizTeacherProfileMapper teacherProfileMapper;
 
-    /** 部门名称缓存，避免 N+1 查询 */
-    private final Map<String, Long> deptCache = new ConcurrentHashMap<>();
-
     @Override
-    public void importTeacherProfiles(List<TeacherProfileImportDTO> rows, String fileName, boolean updateSupport)
+    public void importTeacherProfiles(List<TeacherProfileImportDTO> rows, String fileName, boolean updateSupport, int startRowNumber)
     {
-        deptCache.clear();
+        // 方法局部部门缓存：每次导入自建，避免实例级缓存跨请求/并发导入导致的脏数据
+        Map<String, Long> deptCache = new HashMap<>();
         // 获取代理对象以支持事务
         TeacherProfileImportServiceImpl proxy = (TeacherProfileImportServiceImpl) AopContext.currentProxy();
-        for (TeacherProfileImportDTO row : rows)
+        for (int i = 0; i < rows.size(); i++)
         {
-            proxy.processSingleRow(row, updateSupport);
+            proxy.processSingleRow(rows.get(i), updateSupport, deptCache, startRowNumber + i);
         }
     }
 
     /**
      * 处理单行导入（每行独立事务）
+     *
+     * @param rowNumber 数据行号（从 1 开始，与 ExcelImportListener 错误行号口径一致）
      */
     @Transactional(rollbackFor = Exception.class)
-    public void processSingleRow(TeacherProfileImportDTO dto, boolean updateSupport)
+    public void processSingleRow(TeacherProfileImportDTO dto, boolean updateSupport, Map<String, Long> deptCache, int rowNumber)
     {
         // 1. 校验必填字段
-        validateRow(dto);
+        validateRow(dto, rowNumber);
 
         // 2. 查找或创建系统用户
-        SysUser user = findOrCreateUser(dto);
+        SysUser user = findOrCreateUser(dto, deptCache);
 
         // 3. 创建或更新教师档案
         createOrUpdateTeacherProfile(dto, user, updateSupport);
     }
 
     /**
-     * 校验必填字段
+     * 校验必填字段与格式（错误信息带行号，与 ImportResult.ErrorRow “第 X 行”风格一致）
      */
-    private void validateRow(TeacherProfileImportDTO dto)
+    private void validateRow(TeacherProfileImportDTO dto, int rowNumber)
     {
+        String rowPrefix = "第 " + rowNumber + " 行：";
         if (!StringUtils.hasText(dto.getUserCode()))
         {
-            throw new ServiceException("教师工号不能为空");
+            throw new ServiceException(rowPrefix + "教师工号不能为空");
         }
         if (!StringUtils.hasText(dto.getNickName()))
         {
-            throw new ServiceException("教师姓名不能为空");
+            throw new ServiceException(rowPrefix + "教师姓名不能为空");
         }
         if (!StringUtils.hasText(dto.getDeptName()))
         {
-            throw new ServiceException("院部名称不能为空");
+            throw new ServiceException(rowPrefix + "院部名称不能为空");
         }
         if (!StringUtils.hasText(dto.getTitle()))
         {
-            throw new ServiceException("职称不能为空");
+            throw new ServiceException(rowPrefix + "职称不能为空");
         }
         // 校验职称
         String title = dto.getTitle();
         if (!title.matches("教授|副教授|讲师|助教|未定级"))
         {
-            throw new ServiceException("职称必须为：教授/副教授/讲师/助教/未定级，当前: " + title);
+            throw new ServiceException(rowPrefix + "职称必须为：教授/副教授/讲师/助教/未定级，当前: " + title);
         }
         // 校验人员性质（如果填写了）
         if (StringUtils.hasText(dto.getTeacherNature()))
@@ -109,15 +125,25 @@ public class TeacherProfileImportServiceImpl implements ITeacherProfileImportSer
             String nature = dto.getTeacherNature();
             if (!nature.matches("专任|外聘|校企|银龄|青州外聘"))
             {
-                throw new ServiceException("人员性质必须为：专任/外聘/校企/银龄/青州外聘，当前: " + nature);
+                throw new ServiceException(rowPrefix + "人员性质必须为：专任/外聘/校企/银龄/青州外聘，当前: " + nature);
             }
+        }
+        // 校验手机号（仅当单元格非空时）
+        if (StringUtils.hasText(dto.getPhonenumber()) && !PHONE_PATTERN.matcher(dto.getPhonenumber().trim()).matches())
+        {
+            throw new ServiceException(rowPrefix + "手机号格式不正确，应为 11 位大陆手机号，当前: " + dto.getPhonenumber());
+        }
+        // 校验邮箱（仅当单元格非空时）
+        if (StringUtils.hasText(dto.getEmail()) && !EMAIL_PATTERN.matcher(dto.getEmail().trim()).matches())
+        {
+            throw new ServiceException(rowPrefix + "邮箱格式不正确，当前: " + dto.getEmail());
         }
     }
 
     /**
      * 查找或创建系统用户
      */
-    private SysUser findOrCreateUser(TeacherProfileImportDTO dto)
+    private SysUser findOrCreateUser(TeacherProfileImportDTO dto, Map<String, Long> deptCache)
     {
         // 先按工号查找
         SysUser user = sysUserService.selectUserByUserName(dto.getUserCode());
@@ -138,7 +164,7 @@ public class TeacherProfileImportServiceImpl implements ITeacherProfileImportSer
         user.setNickName(dto.getNickName());
 
         // 查找部门
-        Long deptId = findDeptId(dto.getDeptName());
+        Long deptId = findDeptId(dto.getDeptName(), deptCache);
         user.setDeptId(deptId);
 
         // 设置可选字段
@@ -151,9 +177,8 @@ public class TeacherProfileImportServiceImpl implements ITeacherProfileImportSer
             user.setEmail(dto.getEmail());
         }
 
-        // 设置默认密码（工号后6位或默认密码）
-        String defaultPassword = SecurityUtils.encryptPassword("123456");
-        user.setPassword(defaultPassword);
+        // 设置初始密码（统一默认密码策略，见 defaultPassword 字段注释）
+        user.setPassword(SecurityUtils.encryptPassword(defaultPassword));
 
         // 设置状态正常
         user.setStatus("0");
@@ -168,14 +193,18 @@ public class TeacherProfileImportServiceImpl implements ITeacherProfileImportSer
     }
 
     /**
-     * 根据部门名称查找部门ID（带缓存）
+     * 根据部门名称查找部门ID（导入方法内局部缓存）
+     * <p>
+     * 部门不存在时抛出 ServiceException：该异常会使当前行事务回滚，
+     * 并由导入监听器（batchSize=1）捕获计入该行失败明细，不再静默落空。
      */
-    private Long findDeptId(String deptName)
+    private Long findDeptId(String deptName, Map<String, Long> deptCache)
     {
-        // 先查缓存
-        if (deptCache.containsKey(deptName))
+        // 先查本次导入的局部缓存
+        Long cached = deptCache.get(deptName);
+        if (cached != null)
         {
-            return deptCache.get(deptName);
+            return cached;
         }
         // 查数据库
         SysDept query = new SysDept();

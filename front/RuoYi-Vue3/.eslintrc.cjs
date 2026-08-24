@@ -1,0 +1,125 @@
+module.exports = {
+  root: true,
+  env: {
+    node: true,
+    browser: true,
+    es2022: true,
+    'vue/setup-compiler-macros': true,
+  },
+  globals: {
+    // Vue 3 Composition API 全局变量
+    ref: 'readonly',
+    reactive: 'readonly',
+    computed: 'readonly',
+    watch: 'readonly',
+    watchEffect: 'readonly',
+    onMounted: 'readonly',
+    onUnmounted: 'readonly',
+    onBeforeMount: 'readonly',
+    onBeforeUnmount: 'readonly',
+    onUpdated: 'readonly',
+    onBeforeUpdate: 'readonly',
+    nextTick: 'readonly',
+    defineProps: 'readonly',
+    defineEmits: 'readonly',
+    defineExpose: 'readonly',
+    withDefaults: 'readonly',
+    toRef: 'readonly',
+    toRefs: 'readonly',
+    unref: 'readonly',
+    isRef: 'readonly',
+    isReactive: 'readonly',
+    isReadonly: 'readonly',
+    isProxy: 'readonly',
+    shallowRef: 'readonly',
+    triggerRef: 'readonly',
+    customRef: 'readonly',
+    shallowReactive: 'readonly',
+    markRaw: 'readonly',
+    toRaw: 'readonly',
+    provide: 'readonly',
+    inject: 'readonly',
+    getCurrentInstance: 'readonly',
+    useRoute: 'readonly',
+    useRouter: 'readonly',
+    useStore: 'readonly',
+    useSlots: 'readonly',
+    useAttrs: 'readonly',
+    useCssModules: 'readonly',
+    useCssVars: 'readonly',
+    onActivated: 'readonly',
+    onDeactivated: 'readonly',
+    onErrorCaptured: 'readonly',
+    onRenderTracked: 'readonly',
+    onRenderTriggered: 'readonly',
+    defineComponent: 'readonly',
+    defineAsyncComponent: 'readonly',
+    defineCustomElement: 'readonly',
+    defineDirective: 'readonly',
+    resolveComponent: 'readonly',
+    resolveDirective: 'readonly',
+    resolveDynamicComponent: 'readonly',
+    createApp: 'readonly',
+    createRef: 'readonly',
+    h: 'readonly',
+    mergeProps: 'readonly',
+    cloneVNode: 'readonly',
+    isVNode: 'readonly',
+    withDirectives: 'readonly',
+    withModifiers: 'readonly',
+    Transition: 'readonly',
+    TransitionGroup: 'readonly',
+    KeepAlive: 'readonly',
+    Suspense: 'readonly',
+    Teleport: 'readonly',
+  },
+  extends: [
+    'eslint:recommended',
+    'plugin:vue/vue3-recommended',
+    // 'plugin:prettier/recommended', // 如果需要 prettier 集成
+  ],
+  parserOptions: {
+    ecmaVersion: 2022,
+    sourceType: 'module',
+  },
+  rules: {
+    // 基本规则
+    'no-console': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
+    'no-debugger': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
+    
+    // Vue 规则
+    'vue/multi-word-component-names': 'off',
+    'vue/no-v-html': 'off',
+    'vue/require-default-prop': 'off',
+    'vue/require-explicit-emits': 'off',
+    
+    // 代码风格
+    'indent': ['error', 2],
+    'linebreak-style': ['error', 'windows'], // 允许 CRLF 换行符
+    'quotes': ['error', 'single'],
+    'semi': ['error', 'never'],
+    
+    // 最佳实践
+    'eqeqeq': ['error', 'always'],
+    'no-var': 'error',
+    'prefer-const': 'error',
+    'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+    
+    // 错误处理
+    'no-empty': 'error',
+    'no-extra-semi': 'error',
+    'no-unreachable': 'error',
+    
+    // 性能相关
+    'no-loop-func': 'error',
+    'no-inner-declarations': 'error',
+  },
+  overrides: [
+    {
+      files: ['**/__tests__/*.{j,t}s?(x)', '**/tests/unit/**/*.spec.{j,t}s?(x)'],
+      env: {
+        jest: true,
+      },
+    },
+  ],
+}

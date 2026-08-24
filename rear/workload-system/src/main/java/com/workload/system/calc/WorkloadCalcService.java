@@ -1,6 +1,7 @@
 package com.workload.system.calc;
 
 import java.math.BigDecimal;
+import java.util.Map;
 
 /**
  * 工作量明细计算服务（单条/批量重算 + 可编辑护栏）
@@ -40,4 +41,14 @@ public interface WorkloadCalcService
      * @param itemId 明细主表 id
      */
     public void onDetailDeleted(Long itemId);
+
+    /**
+     * 一把梭编排：重算全部未冻结明细 → 重算汇总（落库）→ 重算酬金（落库）。
+     * 三步在同一事务内（facade），中途失败整体回滚，避免明细/汇总/酬金半成品状态。
+     *
+     * @param userId 教师
+     * @param semester 学期
+     * @return 结果 Map：recalcItemCount / summary / payRecord / unconfirmedCount
+     */
+    public Map<String, Object> recalcAll(Long userId, String semester);
 }

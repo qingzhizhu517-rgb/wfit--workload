@@ -3,7 +3,10 @@
     <div class="left-board">
       <div class="logo-wrapper">
         <div class="logo">
-          <img :src="logo" alt="logo"> Form Generator
+          <img
+            :src="logo"
+            alt="logo"
+          > Form Generator
         </div>
       </div>
       <el-scrollbar class="left-scrollbar">
@@ -11,11 +14,22 @@
           <div class="components-title">
             <svg-icon icon-class="component" />输入型组件
           </div>
-          <draggable class="components-draggable" :list="inputComponents"
-            :group="{ name: 'componentsGroup', pull: 'clone', put: false }" :clone="cloneComponent"
-            draggable=".components-item" :sort="false" @end="onEnd" item-key="label">
+          <draggable
+            class="components-draggable"
+            :list="inputComponents"
+            :group="{ name: 'componentsGroup', pull: 'clone', put: false }"
+            :clone="cloneComponent"
+            draggable=".components-item"
+            :sort="false"
+            item-key="label"
+            @end="onEnd"
+          >
             <template #item="{ element, index }">
-              <div :key="index" class="components-item" @click="addComponent(element)">
+              <div
+                :key="index"
+                class="components-item"
+                @click="addComponent(element)"
+              >
                 <div class="components-body">
                   <svg-icon :icon-class="element.tagIcon" />
                   {{ element.label }}
@@ -26,11 +40,22 @@
           <div class="components-title">
             <svg-icon icon-class="component" />选择型组件
           </div>
-          <draggable class="components-draggable" :list="selectComponents"
-            :group="{ name: 'componentsGroup', pull: 'clone', put: false }" :clone="cloneComponent"
-            draggable=".components-item" :sort="false" @end="onEnd" item-key="label">
+          <draggable
+            class="components-draggable"
+            :list="selectComponents"
+            :group="{ name: 'componentsGroup', pull: 'clone', put: false }"
+            :clone="cloneComponent"
+            draggable=".components-item"
+            :sort="false"
+            item-key="label"
+            @end="onEnd"
+          >
             <template #item="{ element, index }">
-              <div :key="index" class="components-item" @click="addComponent(element)">
+              <div
+                :key="index"
+                class="components-item"
+                @click="addComponent(element)"
+              >
                 <div class="components-body">
                   <svg-icon :icon-class="element.tagIcon" />
                   {{ element.label }}
@@ -41,11 +66,22 @@
           <div class="components-title">
             <svg-icon icon-class="component" /> 布局型组件
           </div>
-          <draggable class="components-draggable" :list="layoutComponents"
-            :group="{ name: 'componentsGroup', pull: 'clone', put: false }" :clone="cloneComponent"
-            draggable=".components-item" :sort="false" @end="onEnd" item-key="label">
+          <draggable
+            class="components-draggable"
+            :list="layoutComponents"
+            :group="{ name: 'componentsGroup', pull: 'clone', put: false }"
+            :clone="cloneComponent"
+            draggable=".components-item"
+            :sort="false"
+            item-key="label"
+            @end="onEnd"
+          >
             <template #item="{ element, index }">
-              <div :key="index" class="components-item" @click="addComponent(element)">
+              <div
+                :key="index"
+                class="components-item"
+                @click="addComponent(element)"
+              >
                 <div class="components-body">
                   <svg-icon :icon-class="element.tagIcon" />
                   {{ element.label }}
@@ -58,45 +94,97 @@
     </div>
     <div class="center-board">
       <div class="action-bar">
-        <el-button icon="Download" type="primary" text @click="download">
+        <el-button
+          icon="Download"
+          type="primary"
+          text
+          @click="download"
+        >
           导出vue文件
         </el-button>
-        <el-button class="copy-btn-main" icon="DocumentCopy" type="primary" text @click="copy">
+        <el-button
+          class="copy-btn-main"
+          icon="DocumentCopy"
+          type="primary"
+          text
+          @click="copy"
+        >
           复制代码
         </el-button>
-        <el-button class="delete-btn" icon="Delete" text @click="empty" type="danger">
+        <el-button
+          class="delete-btn"
+          icon="Delete"
+          text
+          type="danger"
+          @click="empty"
+        >
           清空
         </el-button>
       </div>
       <el-scrollbar class="center-scrollbar">
-        <el-row class="center-board-row" :gutter="formConf.gutter">
-          <el-form :size="formConf.size" :label-position="formConf.labelPosition" :disabled="formConf.disabled"
-            :label-width="formConf.labelWidth + 'px'">
-            <draggable class="drawing-board" :list="drawingList" :animation="340" group="componentsGroup"
-              item-key="label">
+        <el-row
+          class="center-board-row"
+          :gutter="formConf.gutter"
+        >
+          <el-form
+            :size="formConf.size"
+            :label-position="formConf.labelPosition"
+            :disabled="formConf.disabled"
+            :label-width="formConf.labelWidth + 'px'"
+          >
+            <draggable
+              class="drawing-board"
+              :list="drawingList"
+              :animation="340"
+              group="componentsGroup"
+              item-key="label"
+            >
               <template #item="{ element, index }">
-                <draggable-item :key="element.renderKey" :drawing-list="drawingList" :element="element" :index="index"
-                  :active-id="activeId" :form-conf="formConf" @activeItem="activeFormItem" @copyItem="drawingItemCopy"
-                  @deleteItem="drawingItemDelete" />
+                <draggable-item
+                  :key="element.renderKey"
+                  :drawing-list="drawingList"
+                  :element="element"
+                  :index="index"
+                  :active-id="activeId"
+                  :form-conf="formConf"
+                  @active-item="activeFormItem"
+                  @copy-item="drawingItemCopy"
+                  @delete-item="drawingItemDelete"
+                />
               </template>
             </draggable>
-            <div v-show="!drawingList.length" class="empty-info">
+            <div
+              v-show="!drawingList.length"
+              class="empty-info"
+            >
               从左侧拖入或点选组件进行表单设计
             </div>
           </el-form>
         </el-row>
       </el-scrollbar>
     </div>
-    <right-panel :active-data="activeData" :form-conf="formConf" :show-field="!!drawingList.length"
-      @tag-change="tagChange" />
+    <right-panel
+      :active-data="activeData"
+      :form-conf="formConf"
+      :show-field="!!drawingList.length"
+      @tag-change="tagChange"
+    />
 
-    <code-type-dialog v-model="dialogVisible" title="选择生成类型" :showFileName="showFileName" @confirm="generate" />
-    <input id="copyNode" type="hidden">
+    <code-type-dialog
+      v-model="dialogVisible"
+      title="选择生成类型"
+      :show-file-name="showFileName"
+      @confirm="generate"
+    />
+    <input
+      id="copyNode"
+      type="hidden"
+    >
   </div>
 </template>
 
 <script setup>
-import draggable from "vuedraggable/dist/vuedraggable.common"
+import draggable from 'vuedraggable/dist/vuedraggable.common'
 import ClipboardJS from 'clipboard'
 import beautifier from 'js-beautify'
 import logo from '@/assets/logo/logo.png'
@@ -145,10 +233,10 @@ function download() {
 }
 function empty() {
   proxy.$modal.confirm('确定要清空所有组件吗？', '提示', { type: 'warning' }).then(() => {
-      idGlobal.value = 100
-      drawingList.value = []
-      cleanDrawingDefaultValue()
-    }
+    idGlobal.value = 100
+    drawingList.value = []
+    cleanDrawingDefaultValue()
+  }
   )
 }
 
@@ -249,14 +337,14 @@ function generate(data) {
   generateConf.value = data
   nextTick(() => {
     switch (operationType.value) {
-      case 'copy':
-        execCopy(data)
-        break
-      case 'download':
-        execDownload(data)
-        break
-      default:
-        break
+    case 'copy':
+      execCopy(data)
+      break
+    case 'download':
+      execDownload(data)
+      break
+    default:
+      break
     }
   })
 }

@@ -1,4 +1,4 @@
-// cover some element-ui styles
+﻿// cover some element-ui styles
 
 .el-breadcrumb__inner,
 .el-breadcrumb__inner a {
@@ -23,8 +23,8 @@
 
 .small-padding {
   .cell {
-    padding-left: 5px;
-    padding-right: 5px;
+    padding-left: var(--wfit-space-xs);
+    padding-right: var(--wfit-space-xs);
   }
 }
 
@@ -37,7 +37,7 @@
 
 .status-col {
   .cell {
-    padding: 0 10px;
+    padding: 0 var(--wfit-space-sm);
     text-align: center;
 
     .el-tag {
@@ -52,6 +52,7 @@
   left: 0;
   position: relative;
   margin: 0 auto;
+  border-radius: var(--wfit-radius-md);
 }
 
 // refine element ui upload
@@ -69,8 +70,9 @@
 // dropdown
 .el-dropdown-menu {
   a {
-    display: block
+    display: block;
   }
+  border-radius: var(--wfit-radius-sm);
 }
 
 // fix date-picker ui bug in filter-item
@@ -93,4 +95,77 @@
 
 .el-dropdown .el-dropdown-link{
   color: var(--el-color-primary) !important;
+}
+
+// ── 卡片：统一圆角 / 边框 / 悬浮阴影 ──
+.el-card {
+  border-radius: var(--wfit-radius-md);
+  border: 1px solid var(--el-border-color-lighter);
+  box-shadow: none;
+  transition: box-shadow var(--wfit-transition), border-color var(--wfit-transition);
+
+  &.is-always-shadow,
+  &:hover {
+    box-shadow: var(--wfit-shadow-sm);
+  }
+}
+
+// ── 标签：统一圆角与字重 ──
+.el-tag {
+  border-radius: var(--wfit-radius-sm);
+  font-weight: var(--wfit-font-weight-medium);
+}
+
+// ── 对话框：统一圆角 / 阴影 / 页头页脚留白 ──
+.el-dialog {
+  box-shadow: var(--wfit-shadow-lg);
+
+  .el-dialog__header {
+    padding: var(--wfit-space-md) var(--wfit-space-lg) var(--wfit-space-sm);
+    margin-right: 0;
+    border-bottom: 1px solid var(--el-border-color-lighter);
+  }
+  .el-dialog__title {
+    font-size: var(--wfit-font-lg);
+    font-weight: var(--wfit-font-weight-semibold);
+  }
+  .el-dialog__body {
+    padding: var(--wfit-space-md) var(--wfit-space-lg);
+  }
+  .el-dialog__footer {
+    padding: var(--wfit-space-sm) var(--wfit-space-lg) var(--wfit-space-md);
+  }
+}
+
+// ── 描述列表：圆角 + 标签弱化 ──
+.el-descriptions {
+  border-radius: var(--wfit-radius-sm);
+  overflow: hidden;
+
+  .el-descriptions__label {
+    color: var(--el-text-color-secondary);
+  }
+}
+
+// ── 抽屉：页头分隔与留白 ──
+.el-drawer {
+  .el-drawer__header {
+    margin-bottom: 0;
+    padding: var(--wfit-space-md) var(--wfit-space-lg);
+    border-bottom: 1px solid var(--el-border-color-lighter);
+    color: var(--el-text-color-primary);
+    font-weight: var(--wfit-font-weight-semibold);
+  }
+  .el-drawer__body {
+    padding: var(--wfit-space-md) var(--wfit-space-lg);
+  }
+}
+
+// ── 空状态：留白与辅助色文案 ──
+.el-empty {
+  padding: var(--wfit-space-xl) 0;
+
+  .el-empty__description p {
+    color: var(--el-text-color-secondary);
+  }
 }

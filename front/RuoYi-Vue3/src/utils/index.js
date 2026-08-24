@@ -4,7 +4,7 @@ import { parseTime } from './ruoyi'
  * 表格时间格式化
  */
 export function formatDate(cellValue) {
-  if (cellValue == null || cellValue == "") return ""
+  if (cellValue == null || cellValue == '') return ''
   const date = new Date(cellValue) 
   const year = date.getFullYear()
   const month = date.getMonth() + 1 < 10 ? '0' + (date.getMonth() + 1) : date.getMonth() + 1

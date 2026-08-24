@@ -14,6 +14,7 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import com.workload.common.constant.HttpStatus;
 import com.workload.common.core.domain.AjaxResult;
 import com.workload.common.core.text.Convert;
+import com.workload.common.exception.base.BaseException;
 import com.workload.common.exception.DemoModeException;
 import com.workload.common.exception.ServiceException;
 import com.workload.common.utils.StringUtils;
@@ -98,7 +99,8 @@ public class GlobalExceptionHandler
     {
         String requestURI = request.getRequestURI();
         log.error("请求地址'{}',发生未知异常.", requestURI, e);
-        return AjaxResult.error(e.getMessage());
+        // 不回显原始异常信息，避免泄漏 SQL/表名/约束名等内部结构（P2-07）
+        return AjaxResult.error("系统异常，请联系管理员");
     }
 
     /**
@@ -109,7 +111,8 @@ public class GlobalExceptionHandler
     {
         String requestURI = request.getRequestURI();
         log.error("请求地址'{}',发生系统异常.", requestURI, e);
-        return AjaxResult.error(e.getMessage());
+        // 不回显原始异常信息，避免泄漏 SQL/表名/约束名等内部结构（P2-07）
+        return AjaxResult.error("系统异常，请联系管理员");
     }
 
     /**

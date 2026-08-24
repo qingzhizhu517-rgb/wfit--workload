@@ -38,7 +38,7 @@ public class CourseDesignCalcStrategy extends AbstractWorkloadCalcStrategy
         {
             throw new ServiceException("G4课程设计明细缺失, itemId=" + item.getId());
         }
-        BigDecimal cap = ruleParamService.get("CAP_R4_MAX", new BigDecimal("20"));
+        BigDecimal cap = ruleParamService.get("CAP_R4_MAX", new BigDecimal("60"));
         BigDecimal r4 = num(detail.getR4()).min(cap);
         BigDecimal constant = ruleParamService.get("CONST_COURSE_DESIGN", new BigDecimal("0.4"));
         return scale(mul(num(detail.getJ4()), r4, constant));

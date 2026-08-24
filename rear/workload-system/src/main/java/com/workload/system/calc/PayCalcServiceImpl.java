@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.workload.common.exception.ServiceException;
@@ -13,6 +14,7 @@ import com.workload.system.domain.BizPayRecord;
 import com.workload.system.domain.BizWorkloadSummary;
 import com.workload.system.mapper.BizAllowanceItemMapper;
 import com.workload.system.mapper.BizPayRecordMapper;
+import com.workload.system.mapper.BizTeacherProfileMapper;
 import com.workload.system.mapper.BizWorkloadSummaryMapper;
 
 /**
@@ -38,10 +40,18 @@ public class PayCalcServiceImpl implements PayCalcService
     @Autowired
     private BizPayRecordMapper bizPayRecordMapper;
 
+    @Autowired
+    private BizTeacherProfileMapper bizTeacherProfileMapper;
+
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public BizPayRecord recalcPay(Long userId, String semester)
     {
+        // userId 合法性校验：教师档案不存在则快速失败，避免任意 userId 生成零值脏数据
+        if (bizTeacherProfileMapper.selectBizTeacherProfileByUserId(userId) == null)
+        {
+            throw new ServiceException("教师档案不存在，无法重算");
+        }
         BizWorkloadSummary summary = findSummary(userId, semester);
         if (summary == null)
         {
@@ -81,7 +91,23 @@ public class PayCalcServiceImpl implements PayCalcService
         if (isNew)
         {
             record.setCreateTime(DateUtils.getNowDate());
-            bizPayRecordMapper.insertBizPayRecord(record);
+            try
+            {
+                bizPayRecordMapper.insertBizPayRecord(record);
+            }
+            catch (DuplicateKeyException e)
+            {
+                // 并发撞 uk_user_sem 唯一键时降级为更新，消除 check-then-act 竞态
+                BizPayRecord existed = findPayRecord(userId, semester);
+                if (existed == null)
+                {
+                    throw new ServiceException("酬金记录保存失败，请重试");
+                }
+                record.setId(existed.getId());
+                record.setCreateTime(existed.getCreateTime());
+                record.setUpdateTime(DateUtils.getNowDate());
+                bizPayRecordMapper.updateBizPayRecord(record);
+            }
         }
         else
         {

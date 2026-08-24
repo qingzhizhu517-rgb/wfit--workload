@@ -19,6 +19,7 @@ public interface ITeacherProfileImportService
      * @param rows           Excel 行数据
      * @param fileName       原始文件名
      * @param updateSupport  是否更新已存在的档案
+     * @param startRowNumber 本批首行的数据行号（从 1 开始，用于行级校验错误定位）
      */
-    void importTeacherProfiles(List<TeacherProfileImportDTO> rows, String fileName, boolean updateSupport);
+    void importTeacherProfiles(List<TeacherProfileImportDTO> rows, String fileName, boolean updateSupport, int startRowNumber);
 }

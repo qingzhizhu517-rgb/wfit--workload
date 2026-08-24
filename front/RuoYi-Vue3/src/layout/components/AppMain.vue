@@ -1,9 +1,16 @@
-<template>
+﻿<template>
   <section class="app-main">
     <router-view v-slot="{ Component, route }">
-      <transition name="fade-transform" mode="out-in">
+      <transition
+        name="fade-transform"
+        mode="out-in"
+      >
         <keep-alive :include="tagsViewStore.cachedViews">
-          <component v-if="!route.meta.link" :is="Component" :key="route.path"/>
+          <component
+            :is="Component"
+            v-if="!route.meta.link"
+            :key="route.path"
+          />
         </keep-alive>
       </transition>
     </router-view>
@@ -13,8 +20,8 @@
 </template>
 
 <script setup>
-import copyright from "./Copyright/index"
-import iframeToggle from "./IframeToggle/index"
+import copyright from './Copyright/index'
+import iframeToggle from './IframeToggle/index'
 import useTagsViewStore from '@/store/modules/tagsView'
 
 const route = useRoute()
@@ -107,17 +114,5 @@ function addIframe() {
 </style>
 
 <style lang="scss">
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background-color: #f1f1f1;
-}
-
-::-webkit-scrollbar-thumb {
-  background-color: #c0c0c0;
-  border-radius: 3px;
-}
+/* 全局滚动条已统一收敛至 src/assets/styles/index.scss（主题感知），此处不再重复定义硬编码色值 */
 </style>

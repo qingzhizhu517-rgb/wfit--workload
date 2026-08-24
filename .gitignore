@@ -1,22 +1,24 @@
-# ---- 前端 ----
+# ---- 前端构建产物 ----
 node_modules/
 dist/
 front/**/node_modules/
 front/**/dist/
 front/**/.vite/
 
-# ---- 环境变量（防敏感信息入库，模板用 .env.*.example） ----
-.env
-.env.production
-.env.staging
-!*.example
-
-# ---- 后端 ----
+# ---- 后端构建产物 ----
 target/
 rear/**/target/
 *.class
 *.jar
 !.mvn/wrapper/*.jar
+
+# ---- 环境变量（防敏感信息入库） ----
+.env
+.env.production
+.env.staging
+.env.local
+*.local
+!*.example
 
 # ---- 日志与上传 ----
 logs/
@@ -28,4 +30,13 @@ rear/uploadPath/
 .vscode/
 *.iml
 .DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# ---- 工具配置 ----
 .claude/
+.mimocode/
+.qoder/
+dump.rdb

@@ -53,7 +53,7 @@ export function resetForm(refName) {
 
 // 添加日期范围
 export function addDateRange(params, dateRange, propName) {
-  let search = params
+  const search = params
   search.params = typeof (search.params) === 'object' && search.params !== null && !Array.isArray(search.params) ? search.params : {}
   dateRange = Array.isArray(dateRange) ? dateRange : []
   if (typeof (propName) === 'undefined') {
@@ -69,7 +69,7 @@ export function addDateRange(params, dateRange, propName) {
 // 回显数据字典
 export function selectDictLabel(datas, value) {
   if (value === undefined) {
-    return ""
+    return ''
   }
   const actions = []
   Object.keys(datas).some((key) => {
@@ -87,13 +87,13 @@ export function selectDictLabel(datas, value) {
 // 回显数据字典（字符串、数组）
 export function selectDictLabels(datas, value, separator) {
   if (value === undefined || value.length ===0) {
-    return ""
+    return ''
   }
   if (Array.isArray(value)) {
-    value = value.join(",")
+    value = value.join(',')
   }
   const actions = []
-  const currentSeparator = undefined === separator ? "," : separator
+  const currentSeparator = undefined === separator ? ',' : separator
   const temp = value.split(currentSeparator)
   Object.keys(value.split(currentSeparator)).some((val) => {
     let match = false
@@ -126,8 +126,8 @@ export function sprintf(str) {
 
 // 转换字符串，undefined,null等转化为""
 export function parseStrEmpty(str) {
-  if (!str || str == "undefined" || str == "null") {
-    return ""
+  if (!str || str == 'undefined' || str == 'null') {
+    return ''
   }
   return str
 }
@@ -192,18 +192,18 @@ export function tansParams(params) {
   let result = ''
   for (const propName of Object.keys(params)) {
     const value = params[propName]
-    const part = encodeURIComponent(propName) + "="
-    if (value !== null && value !== "" && typeof (value) !== "undefined") {
+    const part = encodeURIComponent(propName) + '='
+    if (value !== null && value !== '' && typeof (value) !== 'undefined') {
       if (typeof value === 'object') {
         for (const key of Object.keys(value)) {
-          if (value[key] !== null && value[key] !== "" && typeof (value[key]) !== 'undefined') {
+          if (value[key] !== null && value[key] !== '' && typeof (value[key]) !== 'undefined') {
             const params = propName + '[' + key + ']'
-            const subPart = encodeURIComponent(params) + "="
-            result += subPart + encodeURIComponent(value[key]) + "&"
+            const subPart = encodeURIComponent(params) + '='
+            result += subPart + encodeURIComponent(value[key]) + '&'
           }
         }
       } else {
-        result += part + encodeURIComponent(value) + "&"
+        result += part + encodeURIComponent(value) + '&'
       }
     }
   }
@@ -215,7 +215,7 @@ export function getNormalPath(p) {
   if (p.length === 0 || !p || p == 'undefined') {
     return p
   }
-  let res = p.replace('//', '/')
+  const res = p.replace('//', '/')
   if (res[res.length - 1] === '/') {
     return res.slice(0, res.length - 1)
   }

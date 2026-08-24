@@ -193,4 +193,74 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             #{id}
         </foreach>
     </delete>
+
+    <!-- ==================== 审批域专用语句（均带前置状态原子条件，按影响行数判定并发冲突） ==================== -->
+
+    <!-- 提交审核：通用原子状态更新（填报中 → 待审） -->
+    <update id="updateStatusIf">
+        update biz_workload_summary
+        set status = #{toStatus},
+            update_by = #{updateBy},
+            update_time = NOW()
+        where id = #{id} and status = #{fromStatus}
+    </update>
+
+    <!-- 教务助理审核通过：同时写 academic_assistant_sign 签字与时间 -->
+    <update id="approveSummary">
+        update biz_workload_summary
+        set status = #{toStatus},
+            academic_assistant_sign = #{signName},
+            academic_assistant_sign_time = NOW(),
+            update_by = #{updateBy},
+            update_time = NOW()
+        where id = #{id} and status = #{fromStatus}
+    </update>
+
+    <!-- 驳回：回到填报中(0)，清空已产生的签字痕迹，写 remark 驳回原因
+         （from∈{1,2}：可能已有教务助理/教师签字，必须一并清除，避免草稿态残留已签状态） -->
+    <update id="rejectSummary">
+        update biz_workload_summary
+        set status = #{toStatus},
+            remark = #{remark},
+            academic_assistant_sign = NULL,
+            academic_assistant_sign_time = NULL,
+            teacher_sign = NULL,
+            teacher_sign_time = NULL,
+            dept_leader_sign = NULL,
+            dept_leader_sign_time = NULL,
+            lock_time = NULL,
+            update_by = #{updateBy},
+            update_time = NOW()
+        where id = #{id} and status = #{fromStatus}
+    </update>
+
+    <!-- 院领导签字确认：同时写 dept_leader_sign 与 lock_time -->
+    <update id="signSummary">
+        update biz_workload_summary
+        set status = #{toStatus},
+            dept_leader_sign = #{signName},
+            dept_leader_sign_time = NOW(),
+            lock_time = NOW(),
+            update_by = #{updateBy},
+            update_time = NOW()
+        where id = #{id} and status = #{fromStatus}
+    </update>
+
+    <!-- 解锁：显式 SET lock_time = NULL（动态 SQL 对 null 值跳过，通用 update 无法清空该列） -->
+    <update id="unlockById">
+        update biz_workload_summary
+        set lock_time = NULL,
+            status = 0,
+            update_by = #{updateBy},
+            update_time = NOW()
+        where id = #{id} and status = 3
+    </update>
+
+    <!-- 教师本人确认：限定本人记录且状态为待审(1)/待签(2) -->
+    <update id="teacherConfirmById">
+        update biz_workload_summary
+        set teacher_sign = #{teacherSign},
+            teacher_sign_time = NOW()
+        where id = #{id} and user_id = #{userId} and status in (1, 2)
+    </update>
 </mapper>

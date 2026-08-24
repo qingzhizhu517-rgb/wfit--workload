@@ -1,32 +1,33 @@
-// 教务/院领导仪表盘共享样式
+﻿// 教务/院领导仪表盘共享样式
+// 颜色一律复用 --el-* / --wfit-* 变量，兼容暗黑主题
 .dashboard-container {
-  padding: 20px;
-  background-color: #f0f2f5;
+  padding: var(--wfit-space-lg);
+  background-color: var(--el-bg-color-page);
   min-height: calc(100vh - 84px);
 }
 
 .dashboard-title {
   margin: 0 0 5px;
-  color: #303133;
+  color: var(--el-text-color-primary);
   font-size: 22px;
 }
 
 .dashboard-subtitle {
-  color: #909399;
+  color: var(--el-text-color-secondary);
   font-size: 14px;
-  margin-bottom: 20px;
+  margin-bottom: var(--wfit-space-lg);
   .last-updated {
     margin-left: 10px;
     font-size: 12px;
-    color: #c0c4cc;
+    color: var(--el-text-color-placeholder);
   }
 }
 
 .panel-group {
-  margin-bottom: 20px;
+  margin-bottom: var(--wfit-space-lg);
 
   .card-panel-col {
-    margin-bottom: 20px;
+    margin-bottom: var(--wfit-space-lg);
   }
 
   .card-panel {
@@ -35,42 +36,42 @@
     font-size: 12px;
     position: relative;
     overflow: hidden;
-    color: #666;
-    background: #fff;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, .06);
-    border-radius: 8px;
+    color: var(--el-text-color-regular);
+    background: var(--el-bg-color);
+    box-shadow: var(--wfit-shadow-md);
+    border-radius: var(--wfit-radius-md);
     display: flex;
     align-items: center;
     padding: 0 20px;
-    transition: transform 0.2s, box-shadow 0.2s;
+    transition: transform var(--wfit-transition), box-shadow var(--wfit-transition);
 
     &:hover {
       transform: translateY(-2px);
-      box-shadow: 0 4px 20px rgba(0, 0, 0, .1);
+      box-shadow: var(--wfit-shadow-lg);
       .card-panel-icon-wrapper { color: #fff; }
-      .icon-pending { background: #e6a23c; }
-      .icon-tasks { background: #40c9c6; }
-      .icon-teacher { background: #f4516c; }
-      .icon-pay { background: #67c23a; }
-      .icon-done { background: #67c23a; }
-      .icon-total { background: #409eff; }
+      .icon-pending { background: var(--el-color-warning); }
+      .icon-tasks { background: var(--el-color-info); }
+      .icon-teacher { background: var(--el-color-danger); }
+      .icon-pay { background: var(--el-color-success); }
+      .icon-done { background: var(--el-color-success); }
+      .icon-total { background: var(--el-color-primary); }
     }
 
     .card-panel-icon-wrapper {
       padding: 14px;
       transition: all 0.38s ease-out;
-      border-radius: 8px;
+      border-radius: var(--wfit-radius-md);
       display: flex;
       align-items: center;
       justify-content: center;
     }
 
-    .icon-pending { color: #e6a23c; }
-    .icon-tasks { color: #40c9c6; }
-    .icon-teacher { color: #f4516c; }
-    .icon-pay { color: #67c23a; }
-    .icon-done { color: #67c23a; }
-    .icon-total { color: #409eff; }
+    .icon-pending { color: var(--el-color-warning); }
+    .icon-tasks { color: var(--el-color-info); }
+    .icon-teacher { color: var(--el-color-danger); }
+    .icon-pay { color: var(--el-color-success); }
+    .icon-done { color: var(--el-color-success); }
+    .icon-total { color: var(--el-color-primary); }
 
     .card-panel-description {
       margin-left: auto;
@@ -79,16 +80,16 @@
 
       .card-panel-text {
         line-height: 18px;
-        color: rgba(0, 0, 0, 0.45);
+        color: var(--el-text-color-secondary);
         font-size: 15px;
         margin-bottom: 10px;
       }
 
       .card-panel-num {
         font-size: 28px;
-        color: #303133;
+        color: var(--el-text-color-primary);
         &.has-alert {
-          color: #ff4949;
+          color: var(--el-color-danger);
         }
       }
     }
@@ -96,8 +97,8 @@
 }
 
 .box-card {
-  margin-bottom: 20px;
-  border-radius: 8px;
+  margin-bottom: var(--wfit-space-lg);
+  border-radius: var(--wfit-radius-md);
 
   .card-header {
     display: flex;
@@ -105,7 +106,7 @@
     align-items: center;
     font-weight: 600;
     font-size: 15px;
-    color: #303133;
+    color: var(--el-text-color-primary);
   }
 }
 
@@ -134,31 +135,31 @@
     gap: 10px;
     padding: 12px 16px;
     margin-bottom: 8px;
-    border-radius: 6px;
+    border-radius: var(--wfit-radius-sm);
     cursor: pointer;
     font-size: 14px;
-    transition: background 0.2s;
+    transition: background var(--wfit-transition);
     border-left: 3px solid transparent;
 
     .arrow-right {
       margin-left: auto;
-      color: #c0c4cc;
+      color: var(--el-text-color-placeholder);
     }
 
     &:hover {
-      background: #f5f7fa;
+      background: var(--el-fill-color-light);
     }
 
     &.todo-warning {
-      background: #fef0f0;
-      color: #e6a23c;
-      border-left-color: #e6a23c;
-      &:hover { background: #fde2e2; }
+      background: var(--el-color-warning-light-9);
+      color: var(--el-color-warning);
+      border-left-color: var(--el-color-warning);
+      &:hover { background: var(--el-color-warning-light-8); }
     }
     &.todo-success {
-      background: #f0fdf4;
-      color: #67c23a;
-      border-left-color: #67c23a;
+      background: var(--el-color-success-light-9);
+      color: var(--el-color-success);
+      border-left-color: var(--el-color-success);
     }
   }
 }

@@ -1,7 +1,7 @@
 import { ref, reactive, onMounted, onUnmounted, getCurrentInstance } from 'vue'
 import * as echarts from 'echarts'
 import { listWorkloadSummary } from '@/api/system/workloadSummary'
-import { exportPaySummary } from '@/api/system/export'
+import { exportPaySummary, exportPersonalWorkload } from '@/api/system/export'
 
 /**
  * 教务/院领导仪表盘共享逻辑
@@ -21,26 +21,23 @@ export function useDashboard() {
     completed: 0
   })
 
-  function formatMoney(val) {
-    if (val == null) return '--'
-    return Number(val).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-  }
-
   async function fetchAuditCounts() {
-    try {
-      const statuses = [
-        { key: 'draft', status: 0 },
-        { key: 'pending', status: 1 },
-        { key: 'signed', status: 2 },
-        { key: 'completed', status: 3 }
-      ]
-      for (const s of statuses) {
-        const res = await listWorkloadSummary({ status: s.status, pageNum: 1, pageSize: 1 })
-        auditCounts[s.key] = res.total || 0
-      }
-    } catch (e) {
-      // ignore
-    }
+    const statuses = [
+      { key: 'draft', status: 0 },
+      { key: 'pending', status: 1 },
+      { key: 'signed', status: 2 },
+      { key: 'completed', status: 3 }
+    ]
+    // 并行请求各状态计数，单个失败不影响其他面板
+    await Promise.all(statuses.map(s =>
+      listWorkloadSummary({ status: s.status, pageNum: 1, pageSize: 1 })
+        .then(res => {
+          auditCounts[s.key] = res.total || 0
+        })
+        .catch(() => {
+          // ignore
+        })
+    ))
   }
 
   function handleExportPaySummary() {
@@ -58,6 +55,31 @@ export function useDashboard() {
         const link = document.createElement('a')
         link.href = url
         link.download = `绩效酬金统计_${value}.xlsx`
+        link.click()
+        window.URL.revokeObjectURL(url)
+        proxy.$modal.closeLoading()
+      }).catch(() => {
+        proxy.$modal.closeLoading()
+      })
+    }).catch(() => {})
+  }
+
+  /** 教师导出个人工作量明细（共享下载逻辑，避免页面内重复实现） */
+  function handleExportPersonalWorkload(userId, fileNamePrefix) {
+    proxy.$prompt('请输入学年学期（如 2025-2026-1）', '导出个人工作量明细', {
+      confirmButtonText: '导出',
+      cancelButtonText: '取消',
+      inputPattern: /^\d{4}-\d{4}-[12]$/,
+      inputErrorMessage: '格式如 2025-2026-1',
+      inputPlaceholder: '2025-2026-1'
+    }).then(({ value }) => {
+      proxy.$modal.loading('正在导出...')
+      exportPersonalWorkload({ userId, semester: value }).then(res => {
+        const blob = new Blob([res], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+        const url = window.URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = `工作量明细_${fileNamePrefix}_${value}.xlsx`
         link.click()
         window.URL.revokeObjectURL(url)
         proxy.$modal.closeLoading()
@@ -135,9 +157,9 @@ export function useDashboard() {
     chartRef,
     chartView,
     auditCounts,
-    formatMoney,
     fetchAuditCounts,
     handleExportPaySummary,
+    handleExportPersonalWorkload,
     renderChart,
     handleResize,
     setupChart

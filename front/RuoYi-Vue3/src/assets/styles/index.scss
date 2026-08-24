@@ -1,9 +1,11 @@
+﻿@use './tokens.scss';
 @use './mixin.scss';
 @use './transition.scss';
 @use './element-ui.scss';
 @use './sidebar.scss';
 @use './btn.scss';
 @use './ruoyi.scss';
+@use './table.scss';
 
 body {
   height: 100%;
@@ -11,7 +13,11 @@ body {
   -moz-osx-font-smoothing: grayscale;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  font-family: Helvetica Neue, Helvetica, PingFang SC, Hiragino Sans GB, Microsoft YaHei, Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: var(--wfit-font-md);
+  line-height: 1.6;
+  color: var(--el-text-color-regular);
+  background-color: var(--el-bg-color-page);
 }
 
 label {
@@ -98,40 +104,39 @@ div:focus {
 }
 
 aside {
-  background: #eef1f6;
-  padding: 8px 24px;
-  margin-bottom: 20px;
-  border-radius: 2px;
+  background: var(--el-fill-color-light);
+  padding: var(--wfit-space-sm) var(--wfit-space-lg);
+  margin-bottom: var(--wfit-space-md);
+  border-radius: var(--wfit-radius-sm);
   display: block;
   line-height: 32px;
-  font-size: 16px;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
-  color: #2c3e50;
+  font-size: var(--wfit-font-lg);
+  color: var(--el-text-color-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
   a {
-    color: #337ab7;
+    color: var(--el-color-primary);
     cursor: pointer;
 
     &:hover {
-      color: rgb(32, 160, 255);
+      color: var(--el-color-primary-light-3);
     }
   }
 }
 
 //main-container全局样式
 .app-container {
-  padding: 20px;
+  padding: var(--wfit-space-lg);
 }
 
 .components-container {
-  margin: 30px 50px;
+  margin: var(--wfit-space-xl) 50px;
   position: relative;
 }
 
 .text-center {
-  text-align: center
+  text-align: center;
 }
 
 .sub-navbar {
@@ -140,48 +145,102 @@ aside {
   position: relative;
   width: 100%;
   text-align: right;
-  padding-right: 20px;
+  padding-right: var(--wfit-space-md);
   transition: 600ms ease position;
-  background: linear-gradient(90deg, rgba(32, 182, 249, 1) 0%, rgba(32, 182, 249, 1) 0%, rgba(33, 120, 241, 1) 100%, rgba(33, 120, 241, 1) 100%);
+  background: linear-gradient(90deg, var(--el-color-primary) 0%, var(--el-color-primary-light-3) 100%);
 
   .subtitle {
-    font-size: 20px;
+    font-size: var(--wfit-font-xl);
     color: #fff;
   }
 
   &.draft {
-    background: #d0d0d0;
+    background: var(--el-color-info-light-5);
   }
 
   &.deleted {
-    background: #d0d0d0;
+    background: var(--el-color-info-light-5);
   }
 }
 
 .link-type,
 .link-type:focus {
-  color: #337ab7;
+  color: var(--el-color-primary);
   cursor: pointer;
 
   &:hover {
-    color: rgb(32, 160, 255);
+    color: var(--el-color-primary-light-3);
   }
 }
 
 .filter-container {
-  padding-bottom: 10px;
+  padding-bottom: var(--wfit-space-sm);
 
   .filter-item {
     display: inline-block;
     vertical-align: middle;
-    margin-bottom: 10px;
+    margin-bottom: var(--wfit-space-sm);
   }
 }
 
 // 表单字段下方辅助说明文字
 .form-tip {
-  font-size: 12px;
+  font-size: var(--wfit-font-xs);
   color: var(--el-text-color-secondary);
   line-height: 1.5;
-  margin-top: 2px;
+  margin-top: var(--wfit-space-xs);
+}
+
+// ── 全局滚动条（主题感知、克制细滚动条）──
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--el-border-color);
+  border-radius: var(--wfit-radius-circle);
+  border: 2px solid transparent;
+  background-clip: content-box;
+
+  &:hover {
+    background: var(--el-text-color-placeholder);
+    background-clip: content-box;
+  }
+}
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--el-border-color) transparent;
+}
+
+// ── 页头规范：标题 / 副标题 / 操作区 ──
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--wfit-space-md);
+  margin-bottom: var(--wfit-space-lg);
+
+  .page-title {
+    margin: 0;
+    font-size: var(--wfit-font-xl);
+    font-weight: var(--wfit-font-weight-semibold);
+    line-height: var(--wfit-line-height-tight);
+    color: var(--el-text-color-primary);
+  }
+
+  .page-desc {
+    margin-top: var(--wfit-space-xs);
+    font-size: var(--wfit-font-sm);
+    color: var(--el-text-color-secondary);
+  }
+
+  .page-actions {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--wfit-space-sm);
+  }
 }

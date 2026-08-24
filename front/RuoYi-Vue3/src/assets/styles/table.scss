@@ -1,0 +1,36 @@
+// 全站表格展示层规范
+// 仅视觉样式，不影响业务逻辑
+
+.app-container {
+  .el-table {
+    // 表头加粗 + 浅底色
+    .el-table__header-wrapper {
+      th.el-table__cell {
+        font-weight: 600;
+        background-color: var(--el-fill-color-light);
+      }
+    }
+
+    // 表头吸顶
+    .el-table__header-wrapper {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+    }
+
+    // 斑马纹行高舒适
+    &.el-table--striped .el-table__body tr.el-table__row--striped td.el-table__cell {
+      background-color: var(--el-fill-color-lighter);
+    }
+
+    // 单元格统一内边距
+    .el-table__body {
+      td.el-table__cell {
+        padding: var(--wfit-space-sm) 0;
+      }
+    }
+
+    // 表格整体圆角
+    border-radius: var(--wfit-radius-sm);
+  }
+}

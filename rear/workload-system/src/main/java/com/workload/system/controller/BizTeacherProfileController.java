@@ -1,7 +1,9 @@
 package com.workload.system.controller;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -37,6 +39,10 @@ import com.workload.common.core.page.TableDataInfo;
 @RequestMapping("/system/teacherProfile")
 public class BizTeacherProfileController extends BaseController
 {
+    /** Excel 导入文件大小上限（MB） */
+    @Value("${wfit.import.max-size:10}")
+    private long importMaxSizeMb;
+
     @Autowired
     private IBizTeacherProfileService bizTeacherProfileService;
 
@@ -76,9 +82,18 @@ public class BizTeacherProfileController extends BaseController
     @PostMapping("/importData")
     public AjaxResult importData(MultipartFile file, @RequestParam(defaultValue = "false") boolean updateSupport) throws Exception
     {
+        // 上传安全校验：空文件/扩展名白名单/文件大小上限
+        String invalidMsg = ImportFileValidator.validateExcelFile(file, importMaxSizeMb);
+        if (invalidMsg != null)
+        {
+            return error(invalidMsg);
+        }
+        // 数据行序号（从 1 开始，与 ExcelImportListener 错误行号口径一致），用于行级校验错误定位
+        final AtomicInteger rowSeq = new AtomicInteger(1);
         // 使用 batchSize=1，确保每行独立事务，单行失败不影响其他行
         ImportResult result = ExcelReadUtil.read(file.getInputStream(), TeacherProfileImportDTO.class,
-                rows -> teacherProfileImportService.importTeacherProfiles(rows, file.getOriginalFilename(), updateSupport), 1);
+                rows -> teacherProfileImportService.importTeacherProfiles(rows, file.getOriginalFilename(), updateSupport,
+                        rowSeq.getAndAdd(rows.size())), 1);
         return success(result);
     }
 

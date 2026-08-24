@@ -1,12 +1,12 @@
 <template>
   <el-select
     :model-value="modelValue"
-    @update:model-value="onChange"
     filterable
     clearable
     :disabled="disabled"
     :placeholder="placeholder"
     style="width: 100%"
+    @update:model-value="onChange"
   >
     <el-option
       v-for="u in userList"

@@ -10,12 +10,14 @@
         >{{ item.label + " " }}</span>
         <el-tag
           v-else
-          :disable-transitions="true"
           :key="item.value + ''"
+          :disable-transitions="true"
           :index="index"
           :type="item.elTagType"
           :class="item.elTagClass"
-        >{{ item.label + " " }}</el-tag>
+        >
+          {{ item.label + " " }}
+        </el-tag>
       </template>
     </template>
     <template v-if="unmatch && showValue">
@@ -43,7 +45,7 @@ const props = defineProps({
   },
   separator: {
     type: String,
-    default: ",",
+    default: ',',
   }
 })
 
@@ -69,9 +71,9 @@ const unmatch = computed(() => {
 })
 
 function handleArray(array) {
-  if (array.length === 0) return ""
+  if (array.length === 0) return ''
   return array.reduce((pre, cur) => {
-    return pre + " " + cur
+    return pre + ' ' + cur
   })
 }
 

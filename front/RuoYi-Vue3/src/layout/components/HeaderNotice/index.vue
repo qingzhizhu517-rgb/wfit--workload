@@ -1,21 +1,51 @@
 <template>
   <div>
-    <el-popover ref="noticePopover" placement="bottom-end" :width="320" trigger="manual" v-model:visible="noticeVisible" popper-class="notice-popover">
+    <el-popover
+      ref="noticePopover"
+      v-model:visible="noticeVisible"
+      placement="bottom-end"
+      :width="320"
+      trigger="manual"
+      popper-class="notice-popover"
+    >
       <!-- 弹出内容 -->
       <div class="notice-header">
         <span class="notice-title">通知公告</span>
-        <span class="notice-mark-all" @click="markAllRead">全部已读</span>
+        <span
+          class="notice-mark-all"
+          @click="markAllRead"
+        >全部已读</span>
       </div>
-      <div v-if="noticeLoading" class="notice-loading">
-        <el-icon class="is-loading"><Loading /></el-icon> 加载中...
+      <div
+        v-if="noticeLoading"
+        class="notice-loading"
+      >
+        <el-icon class="is-loading">
+          <Loading />
+        </el-icon> 加载中...
       </div>
-      <div v-else-if="noticeList.length === 0" class="notice-empty">
-        <el-icon style="font-size:24px;display:block;margin-bottom:6px;"><Postcard /></el-icon>
+      <div
+        v-else-if="noticeList.length === 0"
+        class="notice-empty"
+      >
+        <el-icon style="font-size:24px;display:block;margin-bottom:6px;">
+          <Postcard />
+        </el-icon>
         暂无公告
       </div>
       <div v-else>
-        <div v-for="item in noticeList" :key="item.noticeId" class="notice-item" :class="{ 'is-read': item.isRead }" @click="previewNotice(item)">
-          <el-tag size="small" :type="item.noticeType === '1' ? 'warning' : 'success'" class="notice-tag">
+        <div
+          v-for="item in noticeList"
+          :key="item.noticeId"
+          class="notice-item"
+          :class="{ 'is-read': item.isRead }"
+          @click="previewNotice(item)"
+        >
+          <el-tag
+            size="small"
+            :type="item.noticeType === '1' ? 'warning' : 'success'"
+            class="notice-tag"
+          >
             {{ item.noticeType === '1' ? '通知' : '公告' }}
           </el-tag>
           <span class="notice-item-title">{{ item.noticeTitle }}</span>
@@ -25,17 +55,33 @@
 
       <!-- 触发器 -->
       <template #reference>
-        <div class="right-menu-item hover-effect notice-trigger" @mouseenter="onNoticeEnter" @mouseleave="onNoticeLeave">
+        <div
+          class="right-menu-item hover-effect notice-trigger"
+          @mouseenter="onNoticeEnter"
+          @mouseleave="onNoticeLeave"
+        >
           <svg-icon icon-class="bell" />
-          <span v-if="unreadCount > 0" class="notice-badge">{{ unreadCount }}</span>
+          <span
+            v-if="unreadCount > 0"
+            class="notice-badge"
+          >{{ unreadCount }}</span>
         </div>
       </template>
     </el-popover>
 
     <!-- 预览弹窗 -->
-    <el-dialog v-model="previewVisible" :title="previewTitle" width="680px" append-to-body class="notice-preview-dialog">
+    <el-dialog
+      v-model="previewVisible"
+      :title="previewTitle"
+      width="680px"
+      append-to-body
+      class="notice-preview-dialog"
+    >
       <div class="notice-preview-meta">
-        <el-tag size="small" :type="previewNoticeType === '1' ? 'warning' : 'success'">
+        <el-tag
+          size="small"
+          :type="previewNoticeType === '1' ? 'warning' : 'success'"
+        >
           {{ previewNoticeType === '1' ? '通知' : '公告' }}
         </el-tag>
         <span class="notice-preview-info">
@@ -45,8 +91,11 @@
           <el-icon><Timer /></el-icon> {{ previewCreateTime }}
         </span>
       </div>
-      <div class="notice-preview-divider"></div>
-      <div class="notice-preview-content" v-html="previewContent"></div>
+      <div class="notice-preview-divider" />
+      <div
+        class="notice-preview-content"
+        v-html="previewContent"
+      />
     </el-dialog>
   </div>
 </template>

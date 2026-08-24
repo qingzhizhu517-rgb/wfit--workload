@@ -1,13 +1,7 @@
 package com.workload.system.controller;
 
-import java.util.Date;
-import java.util.List;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -16,17 +10,14 @@ import org.springframework.web.bind.annotation.RestController;
 import com.workload.common.annotation.Log;
 import com.workload.common.core.controller.BaseController;
 import com.workload.common.core.domain.AjaxResult;
-import com.workload.common.core.domain.entity.SysUser;
 import com.workload.common.enums.BusinessType;
-import com.workload.common.exception.ServiceException;
-import com.workload.common.utils.SecurityUtils;
-import com.workload.system.domain.BizWorkloadSummary;
-import com.workload.system.service.IBizWorkloadSummaryService;
+import com.workload.system.service.BizAuditService;
 
 /**
  * 工作量审批 Controller
  * <p>
- * 审批流程：0填报中 → 1教务助理待审 → 2院领导待签 → 3已完结
+ * 审批流程：0填报中 → 1教务助理待审 → 2院领导待签 → 3已完结。
+ * 状态机逻辑全部下沉至 {@link BizAuditService}，本类只做参数绑定、权限校验与调用。
  *
  * @author wflg
  */
@@ -34,26 +25,19 @@ import com.workload.system.service.IBizWorkloadSummaryService;
 @RequestMapping("/system/audit")
 public class BizAuditController extends BaseController
 {
-    private static final Logger log = LoggerFactory.getLogger(BizAuditController.class);
-
     @Autowired
-    private IBizWorkloadSummaryService summaryService;
+    private BizAuditService bizAuditService;
 
     /**
-     * 提交审核（教务助理：填报中 → 待审）
+     * 提交审核（填报中 → 待审）
      */
     @PreAuthorize("@ss.hasPermi('system:audit:submit')")
     @Log(title = "提交工作量审核", businessType = BusinessType.UPDATE)
     @PostMapping("/submit")
     public AjaxResult submit(@RequestParam("id") Long id)
     {
-        BizWorkloadSummary summary = summaryService.selectBizWorkloadSummaryById(id);
-        assertStatus(summary, 0, "只有草稿状态才能提交审核");
-
-        summary.setStatus(1);
-        summary.setUpdateBy(SecurityUtils.getUsername());
-        summary.setUpdateTime(new Date());
-        return toAjax(summaryService.updateBizWorkloadSummary(summary));
+        bizAuditService.submit(id);
+        return success();
     }
 
     /**
@@ -64,16 +48,8 @@ public class BizAuditController extends BaseController
     @PostMapping("/approve")
     public AjaxResult approve(@RequestParam("id") Long id)
     {
-        BizWorkloadSummary summary = summaryService.selectBizWorkloadSummaryById(id);
-        assertStatus(summary, 1, "只有待审状态才能审核");
-
-        String username = SecurityUtils.getUsername();
-        summary.setStatus(2);
-        summary.setAcademicAssistantSign(username);
-        summary.setAcademicAssistantSignTime(new Date());
-        summary.setUpdateBy(username);
-        summary.setUpdateTime(new Date());
-        return toAjax(summaryService.updateBizWorkloadSummary(summary));
+        bizAuditService.approve(id);
+        return success();
     }
 
     /**
@@ -84,15 +60,8 @@ public class BizAuditController extends BaseController
     @PostMapping("/reject")
     public AjaxResult reject(@RequestParam("id") Long id, @RequestParam(value = "reason", required = false) String reason)
     {
-        BizWorkloadSummary summary = summaryService.selectBizWorkloadSummaryById(id);
-        assertStatus(summary, 1, "只有待审状态才能驳回");
-
-        String username = SecurityUtils.getUsername();
-        summary.setStatus(0);
-        summary.setRemark(reason != null ? reason : summary.getRemark());
-        summary.setUpdateBy(username);
-        summary.setUpdateTime(new Date());
-        return toAjax(summaryService.updateBizWorkloadSummary(summary));
+        bizAuditService.reject(id, reason);
+        return success();
     }
 
     /**
@@ -103,17 +72,8 @@ public class BizAuditController extends BaseController
     @PostMapping("/sign")
     public AjaxResult sign(@RequestParam("id") Long id)
     {
-        BizWorkloadSummary summary = summaryService.selectBizWorkloadSummaryById(id);
-        assertStatus(summary, 2, "只有待签状态才能签字");
-
-        String username = SecurityUtils.getUsername();
-        summary.setStatus(3);
-        summary.setDeptLeaderSign(username);
-        summary.setDeptLeaderSignTime(new Date());
-        summary.setLockTime(new Date());
-        summary.setUpdateBy(username);
-        summary.setUpdateTime(new Date());
-        return toAjax(summaryService.updateBizWorkloadSummary(summary));
+        bizAuditService.sign(id);
+        return success();
     }
 
     /**
@@ -124,61 +84,30 @@ public class BizAuditController extends BaseController
     @PostMapping("/unlock")
     public AjaxResult unlock(@RequestParam("id") Long id)
     {
-        BizWorkloadSummary summary = summaryService.selectBizWorkloadSummaryById(id);
-        assertStatus(summary, 3, "只有已完结状态才能解锁");
-
-        String username = SecurityUtils.getUsername();
-        summary.setStatus(0);
-        summary.setLockTime(null);
-        summary.setUpdateBy(username);
-        summary.setUpdateTime(new Date());
-        log.info("管理员 {} 解锁了汇总 id={}", username, id);
-        return toAjax(summaryService.updateBizWorkloadSummary(summary));
+        bizAuditService.unlock(id);
+        return success();
     }
 
     /**
-     * 批量提交审核
+     * 教师本人确认汇总（写 teacher_sign/teacher_sign_time）
+     */
+    @PreAuthorize("@ss.hasPermi('system:audit:teacherConfirm')")
+    @Log(title = "教师确认工作量汇总", businessType = BusinessType.UPDATE)
+    @PostMapping("/teacherConfirm")
+    public AjaxResult teacherConfirm(@RequestParam("id") Long id)
+    {
+        bizAuditService.teacherConfirm(id);
+        return success();
+    }
+
+    /**
+     * 批量提交审核（逐条独立事务，返回成功/失败明细回执）
      */
     @PreAuthorize("@ss.hasPermi('system:audit:submit')")
     @Log(title = "批量提交工作量审核", businessType = BusinessType.UPDATE)
     @PostMapping("/batchSubmit")
     public AjaxResult batchSubmit(@RequestParam("ids") Long[] ids)
     {
-        int success = 0;
-        for (Long id : ids)
-        {
-            try
-            {
-                BizWorkloadSummary summary = summaryService.selectBizWorkloadSummaryById(id);
-                if (summary != null && summary.getStatus() == 0)
-                {
-                    summary.setStatus(1);
-                    summary.setUpdateBy(SecurityUtils.getUsername());
-                    summary.setUpdateTime(new Date());
-                    summaryService.updateBizWorkloadSummary(summary);
-                    success++;
-                }
-            }
-            catch (Exception e)
-            {
-                log.warn("批量提交失败 id={}: {}", id, e.getMessage());
-            }
-        }
-        return success("成功提交 " + success + " 条");
-    }
-
-    /**
-     * 状态校验
-     */
-    private void assertStatus(BizWorkloadSummary summary, int expectedStatus, String message)
-    {
-        if (summary == null)
-        {
-            throw new ServiceException("汇总记录不存在");
-        }
-        if (!Integer.valueOf(expectedStatus).equals(summary.getStatus()))
-        {
-            throw new ServiceException(message + "（当前状态: " + summary.getStatus() + "）");
-        }
+        return success(bizAuditService.batchSubmit(ids));
     }
 }

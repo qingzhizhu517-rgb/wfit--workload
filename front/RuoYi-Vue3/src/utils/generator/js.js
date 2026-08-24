@@ -134,7 +134,7 @@ function buildRules(conf, ruleList) {
   const rules = []
   if (trigger[conf.tag]) {
     if (conf.required) {
-      const type = Array.isArray(conf.defaultValue) ? "type: 'array'," : ''
+      const type = Array.isArray(conf.defaultValue) ? 'type: \'array\',' : ''
       let message = Array.isArray(conf.defaultValue)
         ? `请至少选择一个${conf.vModel}`
         : conf.placeholder

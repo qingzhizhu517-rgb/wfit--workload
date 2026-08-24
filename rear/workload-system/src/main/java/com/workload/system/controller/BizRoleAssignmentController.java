@@ -19,6 +19,8 @@ import com.workload.common.enums.BusinessType;
 import com.workload.system.domain.BizRoleAssignment;
 import com.workload.system.service.IBizRoleAssignmentService;
 import com.workload.common.utils.poi.ExcelUtil;
+import com.workload.common.exception.ServiceException;
+import com.workload.common.utils.StringUtils;
 import com.workload.common.core.page.TableDataInfo;
 
 /**
@@ -77,6 +79,7 @@ public class BizRoleAssignmentController extends BaseController
     @PostMapping
     public AjaxResult add(@RequestBody BizRoleAssignment bizRoleAssignment)
     {
+        validateBizRoleAssignment(bizRoleAssignment, true);
         return toAjax(bizRoleAssignmentService.insertBizRoleAssignment(bizRoleAssignment));
     }
 
@@ -88,6 +91,11 @@ public class BizRoleAssignmentController extends BaseController
     @PutMapping
     public AjaxResult edit(@RequestBody BizRoleAssignment bizRoleAssignment)
     {
+        if (bizRoleAssignment.getId() == null)
+        {
+            throw new ServiceException("缺少记录ID，无法修改");
+        }
+        validateBizRoleAssignment(bizRoleAssignment, false);
         return toAjax(bizRoleAssignmentService.updateBizRoleAssignment(bizRoleAssignment));
     }
 
@@ -99,6 +107,45 @@ public class BizRoleAssignmentController extends BaseController
 	@DeleteMapping("/{ids}")
     public AjaxResult remove(@PathVariable Long[] ids)
     {
+        if (ids == null || ids.length == 0)
+        {
+            throw new ServiceException("请选择要删除的记录");
+        }
         return toAjax(bizRoleAssignmentService.deleteBizRoleAssignmentByIds(ids));
+    }
+
+    /**
+     * 关键入参非空与合法性校验，防止 NPE 与脏写
+     *
+     * @param bizRoleAssignment 入参实体
+     * @param isInsert 是否新增场景（新增时关键业务字段必填）
+     */
+    private void validateBizRoleAssignment(BizRoleAssignment bizRoleAssignment, boolean isInsert)
+    {
+        if (isInsert && bizRoleAssignment.getUserId() == null)
+        {
+            throw new ServiceException("userId 不能为空");
+        }
+        if (bizRoleAssignment.getUserId() != null && bizRoleAssignment.getUserId() <= 0)
+        {
+            throw new ServiceException("userId 非法");
+        }
+        if (isInsert && StringUtils.isEmpty(bizRoleAssignment.getRoleType()))
+        {
+            throw new ServiceException("岗位类型 roleType 不能为空");
+        }
+        if (isInsert && StringUtils.isEmpty(bizRoleAssignment.getSemester()))
+        {
+            throw new ServiceException("学期 semester 不能为空");
+        }
+        if (bizRoleAssignment.getAllowanceRate() != null && bizRoleAssignment.getAllowanceRate().signum() < 0)
+        {
+            throw new ServiceException("岗位标准学时 allowanceRate 不能为负数");
+        }
+        if (bizRoleAssignment.getStartDate() != null && bizRoleAssignment.getEndDate() != null
+                && bizRoleAssignment.getEndDate().before(bizRoleAssignment.getStartDate()))
+        {
+            throw new ServiceException("任职止不能早于任职起");
+        }
     }
 }
