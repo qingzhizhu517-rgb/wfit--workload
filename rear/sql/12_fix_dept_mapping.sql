@@ -1,20 +1,26 @@
 -- ============================================================
--- 修复 collegeStats 返回空的问题
--- 原因：biz_teacher_profile.dept_id 使用了 103/105，但 sys_dept 中不存在
--- 解决：添加缺失的部门记录
+-- 12_fix_dept_mapping.sql — sys_dept 部门映射修正（幂等，可重复执行）
+-- 执行: mysql -u root -p wflg_workload < 12_fix_dept_mapping.sql
+--
+-- 背景：biz_teacher_profile 测试数据使用 dept_id 103/105，业务语义要求
+--   100=潍理工学院、103/105 为其下属二级学院。而 ry_20260321.sql 默认
+--   已有 100（若依科技）、103（研发部门，挂 101 下）、105（测试部门，挂 101 下），
+--   原版 INSERT IGNORE 会因主键已存在而全部跳过——既不改名、也不改层级。
+--   故改为 INSERT ... ON DUPLICATE KEY UPDATE（upsert），确保无论记录
+--   是否已存在，名称/父级/祖链均达到目标状态。
 -- ============================================================
 
--- 确保父部门存在（若依默认 100=若依科技）
-INSERT IGNORE INTO sys_dept (dept_id, parent_id, ancestors, dept_name, order_num, leader, phone, email, status, del_flag, create_by, create_time) 
-VALUES (100, 0, '0', '潍理工学院', 0, '管理员', '', '', '0', '0', 'admin', sysdate());
+-- 1. 校级根部门：100 潍理工学院（覆盖 ry 默认「若依科技」）
+INSERT INTO sys_dept (dept_id, parent_id, ancestors, dept_name, order_num, leader, phone, email, status, del_flag, create_by, create_time)
+VALUES (100, 0, '0', '潍理工学院', 0, '管理员', '', '', '0', '0', 'admin', sysdate())
+ON DUPLICATE KEY UPDATE parent_id=VALUES(parent_id), ancestors=VALUES(ancestors), dept_name=VALUES(dept_name), order_num=VALUES(order_num), leader=VALUES(leader), status='0', del_flag='0';
 
--- 添加二级学院（与 biz_teacher_profile.test_data 中的 dept_id 对应）
-INSERT IGNORE INTO sys_dept (dept_id, parent_id, ancestors, dept_name, order_num, leader, phone, email, status, del_flag, create_by, create_time) 
-VALUES (103, 100, '0,100', '信息工程学院', 1, '', '', '', '0', '0', 'admin', sysdate());
+-- 2. 二级学院：103 信息工程学院（覆盖 ry 默认「研发部门」并改挂 100 下）
+INSERT INTO sys_dept (dept_id, parent_id, ancestors, dept_name, order_num, leader, phone, email, status, del_flag, create_by, create_time)
+VALUES (103, 100, '0,100', '信息工程学院', 1, '', '', '', '0', '0', 'admin', sysdate())
+ON DUPLICATE KEY UPDATE parent_id=VALUES(parent_id), ancestors=VALUES(ancestors), dept_name=VALUES(dept_name), order_num=VALUES(order_num), status='0', del_flag='0';
 
-INSERT IGNORE INTO sys_dept (dept_id, parent_id, ancestors, dept_name, order_num, leader, phone, email, status, del_flag, create_by, create_time) 
-VALUES (105, 100, '0,100', '经济管理学院', 2, '', '', '', '0', '0', 'admin', sysdate());
-
--- 如果有其他缺失的 dept_id，在此补充
--- INSERT IGNORE INTO sys_dept (dept_id, parent_id, ancestors, dept_name, order_num, leader, phone, email, status, del_flag, create_by, create_time) 
--- VALUES (104, 100, '0,100', '其他学院', 3, '', '', '', '0', '0', 'admin', sysdate());
+-- 3. 二级学院：105 经济管理学院（覆盖 ry 默认「测试部门」并改挂 100 下）
+INSERT INTO sys_dept (dept_id, parent_id, ancestors, dept_name, order_num, leader, phone, email, status, del_flag, create_by, create_time)
+VALUES (105, 100, '0,100', '经济管理学院', 2, '', '', '', '0', '0', 'admin', sysdate())
+ON DUPLICATE KEY UPDATE parent_id=VALUES(parent_id), ancestors=VALUES(ancestors), dept_name=VALUES(dept_name), order_num=VALUES(order_num), status='0', del_flag='0';

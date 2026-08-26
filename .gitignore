@@ -40,3 +40,6 @@ rear/uploadPath/
 .mimocode/
 .qoder/
 dump.rdb
+
+# ---- AI 工具本地记忆 ----
+.workbuddy/

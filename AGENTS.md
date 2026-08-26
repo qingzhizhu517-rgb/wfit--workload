@@ -24,7 +24,7 @@ rear/                           # Maven multi-module (Java 17, Spring Boot 4.0.7
 │   └── src/**/calc/            # Calculation engine (strategy pattern)
 ├── workload-framework/         # Security, datasource, AOP
 ├── workload-common/            # Shared utils
-└── sql/                        # DDL + seed + rules (execute in order 01→10)
+└── sql/                        # DDL + seed + rules (fresh DB: 01→06 + 08 + 13)
 
 front/RuoYi-Vue3/               # Vue 3.5 + Vite 6 + Element Plus
 └── src/views/system/           # 19 business pages
@@ -32,12 +32,12 @@ front/RuoYi-Vue3/               # Vue 3.5 + Vite 6 + Element Plus
 
 ## Non-Obvious Facts
 
-- **DB host is `172.19.80.1`** (WSL bridge IP), not localhost. Config in `rear/workload-admin/src/main/resources/application-druid.yml`.
-- **No automated tests exist.** `spring-boot-starter-test` is not in pom.xml. Verify changes via Swagger UI (`/swagger-ui.html`) or frontend.
+- **DB host is `172.19.80.1`** (legacy WSL bridge IP, not localhost). On a macOS/local checkout this must be changed in `rear/workload-admin/src/main/resources/application-druid.yml`.
+- **Limited automated tests.** Only `workload-system` has JUnit 5 tests (`CalcStrategyFactoryTest`, `StrategyCacheTest` in `src/test/**/calc/strategy/`); run via `mvn test -pl workload-system`. No `spring-boot-starter-test` / integration tests. Verify other changes via Swagger UI (`/swagger-ui.html`) or frontend.
 - **Frontend proxy**: all `/dev-api` requests strip prefix and proxy to `http://localhost:8084` (see `vite.config.js`).
 - **Calculation engine uses Spring bean names** — `biz_workload_category_dict.calc_strategy` column stores bean names like `theoryCalcStrategy`. `CalcStrategyFactory` resolves by bean name, not by class.
 - **`manage` module is empty** — just a hello-world `Main.java`, no business logic.
-- **`rear/workload-ui` (Vue 2) is abandoned** — active frontend is `front/RuoYi-Vue3`.
+- **Vue 2 `workload-ui` has been removed** - the only frontend is `front/RuoYi-Vue3` (Vue 3).
 - **G8/G9 have no auto-calculation** — second classroom and other workload are manual entry only.
 - **Semester format**: `2025-2026-1` (academic year + semester number). Calendar config in `application.yml` under `wl.semester`.
 
@@ -51,13 +51,17 @@ front/RuoYi-Vue3/               # Vue 3.5 + Vite 6 + Element Plus
 
 ## SQL Execution Order
 
-Must execute in this order (DB: `wflg_workload`):
+Fresh database (DB: `wflg_workload`) — execute in order:
 
 ```
-ry_20260321.sql → quartz.sql → 01_biz_schema.sql → 02_biz_seed.sql → 03_calc_rules.sql → 04_biz_test_data.sql → 05_biz_menu.sql
+ry_20260321.sql → quartz.sql → 01_biz_schema.sql → 02_biz_seed.sql → 03_calc_rules.sql → 04_biz_test_data.sql → 05_biz_menu.sql → 06_test_accounts.sql → 08_review_fixes.sql → 13_fix_audit_perm.sql
 ```
 
-Optional: `06-11` (test accounts, fixes, patches). `11_fix_duplicate_rules.sql` is idempotent — safe to re-run.
+- `08` is mandatory: `biz_audit_log` (19th table) is created ONLY here — `01_biz_schema.sql` does not include it.
+- `13` is mandatory: revokes the (role3, 20209 unlock) over-privilege granted by `06`, and grants leader reject (20207).
+- `07`/`09`/`10`/`11`/`14` are already merged into `04`/`05`/`01`/`02` respectively — skip on a fresh DB (all idempotent, harmless if run).
+- `12` is optional: renames dept 100/103/105 to school names (ry defaults are 若依科技/研发部门/测试部门).
+- `03` is NOT idempotent (plain `INSERT INTO`) — run exactly once.
 
 ## Key Entry Points
 

@@ -29,10 +29,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 目录结构
 
-> 注意：`rear/` 与 `front/` 位于仓库根目录，**无** `WFIT_workload/` 外层目录。
+> 注意：`rear/` 与 `front/` 位于仓库根目录（即本文件所在目录），**无**额外嵌套。
 
 ```
-wfit--workload/                         # 仓库根（WSL 内为 /home/aohs/vibecoding/wfit--workload）
+wfit--workload/                         # 仓库根（GitHub: qingzhizhu517-rgb/wfit--workload）
+                                       # 本机检出路径: /Users/a1/Desktop/wfit/WFIT_workload（macOS）
+                                       # 历史开发环境: WSL /home/aohs/vibecoding/wfit--workload
 ├── rear/                              # 后端 Maven 多模块（group=com.workload）
 │   ├── workload-admin/                # 启动入口 + 系统管理 Controller (端口 8084)
 │   ├── workload-system/               # 业务核心模块
@@ -151,20 +153,22 @@ mysql -u root -p wflg_workload < rear/sql/quartz.sql
 # 按顺序执行业务 SQL
 mysql -u root -p wflg_workload < rear/sql/01_biz_schema.sql
 mysql -u root -p wflg_workload < rear/sql/02_biz_seed.sql
-mysql -u root -p wflg_workload < rear/sql/03_calc_rules.sql
+mysql -u root -p wflg_workload < rear/sql/03_calc_rules.sql    # 非幂等，仅执行一次
 mysql -u root -p wflg_workload < rear/sql/04_biz_test_data.sql
 mysql -u root -p wflg_workload < rear/sql/05_biz_menu.sql
-# 可选：测试账号、修复脚本、后续补丁
+
+# 角色 + 四端测试账号
 mysql -u root -p wflg_workload < rear/sql/06_test_accounts.sql
-mysql -u root -p wflg_workload < rear/sql/07_fix_test_data.sql
-mysql -u root -p wflg_workload < rear/sql/08_review_fixes.sql       # 含第 19 张表 biz_audit_log
-mysql -u root -p wflg_workload < rear/sql/09_dashboard_perm.sql
-mysql -u root -p wflg_workload < rear/sql/10_item_role_type.sql
-mysql -u root -p wflg_workload < rear/sql/11_fix_duplicate_rules.sql # 幂等，可重复执行
-mysql -u root -p wflg_workload < rear/sql/12_fix_dept_mapping.sql    # 修复 collegeStats 空返回
-mysql -u root -p wflg_workload < rear/sql/13_fix_audit_perm.sql      # 撤销教务助理 unlock 越权 + 院领导授 reject（幂等）
-mysql -u root -p wflg_workload < rear/sql/14_fix_calc_rules.sql      # G4 人数上限 CAP_R4_MAX 20→60（幂等 UPDATE）
+# 必须：biz_audit_log 审计表仅在此创建（01 未包含）
+mysql -u root -p wflg_workload < rear/sql/08_review_fixes.sql
+# 必须：撤销教务助理 unlock 越权 + 院领导补授 reject
+mysql -u root -p wflg_workload < rear/sql/13_fix_audit_perm.sql
+
+# 可选：部门名称学院化（100→潍理工学院、103→信息工程学院、105→经济管理学院）
+mysql -u root -p wflg_workload < rear/sql/12_fix_dept_mapping.sql
 ```
+
+> 07/09/10/11/14 的修复内容已分别并入 04/05/01/02 基础脚本，新库无需执行（脚本均幂等，执行亦无害）；08 与 13 为新库必需。详见 README「数据库初始化」。
 
 ## 测试
 
@@ -175,7 +179,7 @@ mysql -u root -p wflg_workload < rear/sql/14_fix_calc_rules.sql      # G4 人数
 ## 配置要点
 
 - 后端端口: `8084` (application.yml)
-- 数据库: `172.19.80.1:3306/wflg_workload`（WSL 桥接 IP，非 localhost），用户 `root`，密码 `123456` (application-druid.yml)
+- 数据库: `172.19.80.1:3306/wflg_workload`（历史 WSL 桥接 IP，指向 Windows 宿主；**在 macOS 本机运行需改为 `127.0.0.1` 或实际地址**），用户 `root`，密码 `123456` (application-druid.yml)
 - Redis: `localhost:6379`，无密码
 - 文件上传路径: `rear/uploadPath/`
 - 前端开发端口: `3000` (vite.config.js)
@@ -200,7 +204,7 @@ mysql -u root -p wflg_workload < rear/sql/14_fix_calc_rules.sql      # G4 人数
 | G1 理论课 | `J1 * C1 * K1 * Q1 * Q2 * Q3 * N` | J1=计划学时, C1=重复系数, K1=必修1.1/选修1.0, Q1/Q2=质量, N=合堂 |
 | G2 实践课 | `J2 * K * C2 * Q1 * Q2 * Q3` | J2=实践学时, K=理工1.0/其他0.9, C2=0.9 |
 | G3 实习实训 | `T * D * K * Q1 * Q2 * Q3` | T=实际天数(×8学时), D=理工4/艺术3/文史2 |
-| G4 课程设计 | `J4 * min(R4,20) * 0.4` | J4=学分, R4=人数(上限20) |
+| G4 课程设计 | `J4 * min(R4,60) * 0.4` | J4=学分, R4=人数(上限60，见 A6/14_fix_calc_rules.sql) |
 | G5 毕业论文 | `R5 * K5` | K5=理工本9/专5, 文史本6/专4 |
 | G6 集中实习 | `W * min(R6,20) * 0.4` | W=周数, R6=人数(上限20) |
 | G11 管理服务 | 按岗位标准学时 * 任职天数/学期天数 | 学期封顶 180 |
@@ -350,3 +354,12 @@ mysql -u root -p wflg_workload < rear/sql/14_fix_calc_rules.sql      # G4 人数
 - 汇总表 `biz_workload_summary` 使用 JSON 字段 `category_details` 存储动态分类汇总，扩展新类别无需改表结构
 - `DataScopeUtil.resolveUserId()` 强制教师角色只能看自己的数据，防止 IDOR，已在 calc/export/dashboard 控制器中使用
 - 策略 bean 名称必须与 `biz_workload_category_dict.calc_strategy` 列精确匹配（如 `theoryCalcStrategy`），`CalcStrategyFactory` 按 bean 名解析
+
+## 仓库内其他 AI 指引文件（以本文件为准）
+
+| 文件 | 定位 | 注意 |
+|------|------|------|
+| `AGENTS.md` | 精简版速查（面向通用 AI agent） | 部分内容过时，冲突时以本文件为准 |
+| `PROJECT_CONTEXT.md` | 一页式速查手册（含账号/配置速查） | 环境描述停留在 WSL，DB IP 注意事项同上 |
+| `README.md` | 面向人的项目介绍 | 业务公式与代码一致，可作交叉参考 |
+| 上级目录 `../CLAUDE.md` | 历史版本的项目指引 | **已过时**（前端端口写 80、DB 写 localhost），勿据此操作 |

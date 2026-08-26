@@ -74,16 +74,31 @@ cd rear/sql/
 # 基础框架表（先执行）
 mysql -u root -p wflg_workload < ry_20260321.sql
 mysql -u root -p wflg_workload < quartz.sql
-# 业务表 + 种子 + 规则 + 菜单
+# 业务表 + 种子 + 规则 + 测试数据 + 菜单
 mysql -u root -p wflg_workload < 01_biz_schema.sql
 mysql -u root -p wflg_workload < 02_biz_seed.sql
 mysql -u root -p wflg_workload < 03_calc_rules.sql
 mysql -u root -p wflg_workload < 04_biz_test_data.sql
 mysql -u root -p wflg_workload < 05_biz_menu.sql
-# 可选：测试账号与修复补丁（06~14，其中修复脚本幂等，可重复执行）
+# 角色与四端测试账号
 mysql -u root -p wflg_workload < 06_test_accounts.sql
-# ... 依次执行 07~14（详见 CLAUDE.md）
+# 必须：审计日志表 biz_audit_log 仅在此脚本创建（01 未包含）
+mysql -u root -p wflg_workload < 08_review_fixes.sql
+# 必须：撤销教务助理 unlock 越权 + 院领导补授驳回权限
+mysql -u root -p wflg_workload < 13_fix_audit_perm.sql
+# 可选：部门名称学院化（100→潍理工学院、103→信息工程学院、105→经济管理学院）
+mysql -u root -p wflg_workload < 12_fix_dept_mapping.sql
 ```
+
+**关于 07~14 补丁脚本**（新库执行完上面即可，无需再跑）：
+
+| 脚本 | 状态 | 说明 |
+|------|------|------|
+| 07 / 09 / 10 / 11 / 14 | 已并入基础脚本 | 修复内容分别合并进 `04`/`05`/`01`/`02`，新库可跳过（幂等，跑了无害） |
+| 08 / 13 | **新库必须执行** | `biz_audit_log` 审计表唯一来源；修正 `06` 授予的教务 unlock 越权 |
+| 12 | 可选 | 将 ry 默认部门（若依科技/研发部门/测试部门）改名为学院名称 |
+
+注意：`03_calc_rules.sql` 使用 `INSERT INTO`（非幂等），重复执行会因唯一键冲突报错，仅执行一次。
 
 ### 启动后端
 

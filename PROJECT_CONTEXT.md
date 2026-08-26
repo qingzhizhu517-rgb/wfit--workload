@@ -47,7 +47,7 @@ wfit--workload/
 │   ├── workload-quartz/           # 定时任务
 │   ├── workload-generator/        # 代码生成器
 │   ├── manage/                    # 空壳（仅 hello-world Main.java，无业务）
-│   └── sql/                       # 建表/种子/规则/菜单（按 01→11 顺序执行）
+│   └── sql/                       # 建表/种子/规则/菜单（新库：01→06 + 08 + 13）
 ├── front/RuoYi-Vue3/              # 前端（Vue 3）
 │   └── src/{api,views}/system/    # 31 个 API 文件 + 19 个业务页面
 ├── else/                          # 需求/设计原始文档（工作量.md 是 G1-G11 权威公式）
@@ -143,7 +143,12 @@ PayCalcService → biz_pay_record + biz_allowance_item（酬金层）
 
 > 18 张在 `01_biz_schema.sql`，第 19 张 `biz_audit_log` 在 `08_review_fixes.sql`。
 
-**SQL 执行顺序**（DB `wflg_workload`）：`ry_20260321.sql → quartz.sql → 01_biz_schema → 02_biz_seed → 03_calc_rules → 04_biz_test_data → 05_biz_menu →`（可选 06~11，`11_fix_duplicate_rules.sql` 幂等）。
+**SQL 执行顺序**（DB `wflg_workload`，新库最小集）：`ry_20260321.sql → quartz.sql → 01_biz_schema → 02_biz_seed → 03_calc_rules → 04_biz_test_data → 05_biz_menu → 06_test_accounts → 08_review_fixes → 13_fix_audit_perm`。
+- **08 必须**：`biz_audit_log`（第 19 张表）仅在此创建，01 未包含。
+- **13 必须**：撤销 06 授予教务助理的 unlock 越权，并给院领导补授 reject。
+- **07/09/10/11/14 已并入** 04/05/01/02，新库可跳过（全幂等，跑了无害）。
+- **12 可选**：将 ry 默认部门名改为学院名（upsert，幂等）。
+- **03 非幂等**（`INSERT INTO`），只执行一次。
 
 ---
 
@@ -239,11 +244,18 @@ npm install --registry=https://registry.npmmirror.com
 npm run dev          # 3000 端口
 npm run build:prod
 
-# 数据库（在 rear/sql/ 下，按顺序）
+# 数据库（在 rear/sql/ 下，按顺序，新库最小集）
 mysql -u root -p wflg_workload < ry_20260321.sql
 mysql -u root -p wflg_workload < quartz.sql
 mysql -u root -p wflg_workload < 01_biz_schema.sql
-# ... 依次到 05_biz_menu.sql（可选 06~11）
+mysql -u root -p wflg_workload < 02_biz_seed.sql
+mysql -u root -p wflg_workload < 03_calc_rules.sql
+mysql -u root -p wflg_workload < 04_biz_test_data.sql
+mysql -u root -p wflg_workload < 05_biz_menu.sql
+mysql -u root -p wflg_workload < 06_test_accounts.sql
+mysql -u root -p wflg_workload < 08_review_fixes.sql   # 必须：biz_audit_log
+mysql -u root -p wflg_workload < 13_fix_audit_perm.sql # 必须：撤越权+补驳回
+# 可选 12_fix_dept_mapping.sql（部门学院化）；07/09/10/11/14 已并入基础脚本
 
 # API 冒烟测试（需先启动后端并关验证码）
 bash test_api.sh
