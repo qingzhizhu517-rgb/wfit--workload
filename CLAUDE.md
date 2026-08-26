@@ -73,6 +73,7 @@ wfit--workload/                         # 仓库根（GitHub: qingzhizhu517-rgb/
 │       ├── 12_fix_dept_mapping.sql    # sys_dept 数据补充（修复 collegeStats 空返回）
 │       ├── 13_fix_audit_perm.sql      # 撤销教务助理 unlock 越权 + 院领导授 reject（幂等）
 │       ├── 14_fix_calc_rules.sql      # G4 人数上限 CAP_R4_MAX 20→60（幂等 UPDATE）
+│       ├── 15_fix_menu_buttons.sql    # 补 63 个明细/配置页按钮权限 + 清理死权限（幂等，已并入 05/06）
 │       ├── ry_20260321.sql            # RuoYi 基础系统表
 │       └── quartz.sql                 # Quartz 调度器表
 ├── front/RuoYi-Vue3/                  # 前端 Vue 3 项目
@@ -166,9 +167,12 @@ mysql -u root -p wflg_workload < rear/sql/13_fix_audit_perm.sql
 
 # 可选：部门名称学院化（100→潍理工学院、103→信息工程学院、105→经济管理学院）
 mysql -u root -p wflg_workload < rear/sql/12_fix_dept_mapping.sql
+
+# 存量库可选：补 63 个明细/配置页按钮权限 + 清理死权限（新库无需，已并入 05/06）
+mysql -u root -p wflg_workload < rear/sql/15_fix_menu_buttons.sql
 ```
 
-> 07/09/10/11/14 的修复内容已分别并入 04/05/01/02 基础脚本，新库无需执行（脚本均幂等，执行亦无害）；08 与 13 为新库必需。详见 README「数据库初始化」。
+> 07/09/10/11/14/15 的修复内容已分别并入 04/05/01/02/05+06 基础脚本，新库无需执行（脚本均幂等，执行亦无害）；08 与 13 为新库必需。详见 README「数据库初始化」。
 
 ## 测试
 
@@ -328,6 +332,14 @@ mysql -u root -p wflg_workload < rear/sql/12_fix_dept_mapping.sql
 | B4 | 工厂改抛异常后，导入 `createGxDetail` 手动兜底成死代码且逻辑矛盾 | ✅ 删除 6 个手动兜底分支，统一走策略；配错即该行报错（fail-loud 一致） |
 | B5 | 自学辅导 ≥20 人且金额空时静默发 0 | ✅ 金额为空抛异常，不再按 0 发放 |
 | B6 | 流式错误行号跳过行后错位 | ✅ 随 B1 改用 EasyExcel 物理行号（`readRowHolder().getRowIndex()`） |
+
+### 权限专项修复（2026-08-26，见 docs/Bug排查报告-2026-08-26.md）
+
+| # | 问题 | 修复 |
+|---|------|------|
+| C1 | 7 张 G 明细页 + 6 个配置页的 add/edit/query/remove/export 按钮权限串未在 sys_menu 登记（后端注解/前端指令齐全，唯 SQL 缺失），非超管角色按钮不渲染且接口 403 | ✅ `15_fix_menu_buttons.sql` 登记 63 个 F 型按钮并授 role1/2/3；同步并入 `05_biz_menu.sql`/`06_test_accounts.sql` |
+| C2 | 审批 `submit`/`batchSubmit` 无归属校验，教师可提交他人汇总（横向越权） | ✅ `BizAuditServiceImpl.submit()` 增加 `DataScopeUtil.assertOwnOrAdmin(summary.getUserId())`，与 teacherConfirm 对齐 |
+| C3 | 菜单 20301 登记 `system:calc:recalc` 为死权限（无代码引用） | ✅ perms 改为 BizCalcController 实际使用的 `system:workloadItem:edit` |
 
 ### 待办（未处理，需排期/决策）
 

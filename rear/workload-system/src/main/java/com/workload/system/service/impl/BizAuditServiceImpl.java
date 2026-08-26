@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.workload.common.constant.HttpStatus;
 import com.workload.common.exception.ServiceException;
+import com.workload.common.utils.DataScopeUtil;
 import com.workload.common.utils.SecurityUtils;
 import com.workload.system.domain.BizAuditLog;
 import com.workload.system.domain.BizWorkloadSummary;
@@ -82,6 +83,9 @@ public class BizAuditServiceImpl implements BizAuditService
     {
         BizWorkloadSummary summary = requireSummary(id);
         assertStatus(summary, STATUS_DRAFT, "只有填报中状态才能提交审核");
+        // 提交是「本人动作」：教师角色仅可提交本人的汇总，防止横向越权提交他人记录
+        // （与 teacherConfirm 的归属校验对齐；教务/管理角色由 assertOwnOrAdmin 放行）
+        DataScopeUtil.assertOwnOrAdmin(summary.getUserId());
 
         String username = SecurityUtils.getUsername();
         int rows = bizWorkloadSummaryMapper.updateStatusIf(id, STATUS_DRAFT, STATUS_PENDING_AUDIT, username);
