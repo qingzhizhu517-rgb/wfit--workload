@@ -24,21 +24,21 @@ VALUES(2004, '数据导入', 2000, 4, 'importBatch', 'system/importBatch/index',
 
 -- ==================== 工作量明细 ====================
 INSERT INTO sys_menu(menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark)
-VALUES(2010, '工作量明细', 2000, 5, 'workloadItem', 'system/workloadItem/index', '', '', 1, 0, 'C', '0', '0', 'system:workloadItem:list', 'list', 'admin', sysdate(), '', NULL, '工作量明细菜单');
+VALUES(2010, '工作量明细总表', 2000, 5, 'workloadItem', 'system/workloadItem/index', '', '', 1, 0, 'C', '0', '0', 'system:workloadItem:list', 'list', 'admin', sysdate(), '', NULL, '工作量明细菜单');
 INSERT INTO sys_menu(menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark)
-VALUES(2011, 'G1 理论课', 2000, 6, 'wlTheory', 'system/wlTheory/index', '', '', 1, 0, 'C', '0', '0', 'system:wlTheory:list', 'documentation', 'admin', sysdate(), '', NULL, 'G1理论课菜单');
+VALUES(2011, '理论课明细(G1)', 2000, 6, 'wlTheory', 'system/wlTheory/index', '', '', 1, 0, 'C', '0', '0', 'system:wlTheory:list', 'documentation', 'admin', sysdate(), '', NULL, 'G1理论课菜单');
 INSERT INTO sys_menu(menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark)
-VALUES(2012, 'G2 课内实践', 2000, 7, 'wlPractice', 'system/wlPractice/index', '', '', 1, 0, 'C', '0', '0', 'system:wlPractice:list', 'documentation', 'admin', sysdate(), '', NULL, 'G2课内实践菜单');
+VALUES(2012, '课内实践明细(G2)', 2000, 7, 'wlPractice', 'system/wlPractice/index', '', '', 1, 0, 'C', '0', '0', 'system:wlPractice:list', 'documentation', 'admin', sysdate(), '', NULL, 'G2课内实践菜单');
 INSERT INTO sys_menu(menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark)
-VALUES(2013, 'G3 实习实训', 2000, 8, 'wlInternshipTraining', 'system/wlInternshipTraining/index', '', '', 1, 0, 'C', '0', '0', 'system:wlInternshipTraining:list', 'documentation', 'admin', sysdate(), '', NULL, 'G3实习实训菜单');
+VALUES(2013, '实习实训明细(G3)', 2000, 8, 'wlInternshipTraining', 'system/wlInternshipTraining/index', '', '', 1, 0, 'C', '0', '0', 'system:wlInternshipTraining:list', 'documentation', 'admin', sysdate(), '', NULL, 'G3实习实训菜单');
 INSERT INTO sys_menu(menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark)
-VALUES(2014, 'G4 课程设计', 2000, 9, 'wlCourseDesign', 'system/wlCourseDesign/index', '', '', 1, 0, 'C', '0', '0', 'system:wlCourseDesign:list', 'documentation', 'admin', sysdate(), '', NULL, 'G4课程设计菜单');
+VALUES(2014, '课程设计明细(G4)', 2000, 9, 'wlCourseDesign', 'system/wlCourseDesign/index', '', '', 1, 0, 'C', '0', '0', 'system:wlCourseDesign:list', 'documentation', 'admin', sysdate(), '', NULL, 'G4课程设计菜单');
 INSERT INTO sys_menu(menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark)
-VALUES(2015, 'G5 毕业论文', 2000, 10, 'wlThesis', 'system/wlThesis/index', '', '', 1, 0, 'C', '0', '0', 'system:wlThesis:list', 'documentation', 'admin', sysdate(), '', NULL, 'G5毕业论文菜单');
+VALUES(2015, '毕业论文明细(G5)', 2000, 10, 'wlThesis', 'system/wlThesis/index', '', '', 1, 0, 'C', '0', '0', 'system:wlThesis:list', 'documentation', 'admin', sysdate(), '', NULL, 'G5毕业论文菜单');
 INSERT INTO sys_menu(menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark)
-VALUES(2016, 'G6 集中实习', 2000, 11, 'wlConcentratedInternship', 'system/wlConcentratedInternship/index', '', '', 1, 0, 'C', '0', '0', 'system:wlConcentratedInternship:list', 'documentation', 'admin', sysdate(), '', NULL, 'G6集中实习菜单');
+VALUES(2016, '集中实习明细(G6)', 2000, 11, 'wlConcentratedInternship', 'system/wlConcentratedInternship/index', '', '', 1, 0, 'C', '0', '0', 'system:wlConcentratedInternship:list', 'documentation', 'admin', sysdate(), '', NULL, 'G6集中实习菜单');
 INSERT INTO sys_menu(menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark)
-VALUES(2017, 'G11 管理服务', 2000, 12, 'wlManagement', 'system/wlManagement/index', '', '', 1, 0, 'C', '0', '0', 'system:wlManagement:list', 'documentation', 'admin', sysdate(), '', NULL, 'G11管理服务菜单');
+VALUES(2017, '管理服务明细(G11)', 2000, 12, 'wlManagement', 'system/wlManagement/index', '', '', 1, 0, 'C', '0', '0', 'system:wlManagement:list', 'documentation', 'admin', sysdate(), '', NULL, 'G11管理服务菜单');
 
 -- ==================== 汇总与酬金 ====================
 INSERT INTO sys_menu(menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark)
