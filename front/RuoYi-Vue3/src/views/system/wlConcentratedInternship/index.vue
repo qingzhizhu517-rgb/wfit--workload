@@ -137,25 +137,23 @@
           {{ formatNumber(scope.row.R6, 0) }}
         </template>
       </el-table-column>
-      <el-table-column
-        label="备注"
-        align="center"
-        prop="remark"
-        min-width="140"
-        show-overflow-tooltip
-      >
-        <template #default="scope">
-          {{ scope.row.remark || '-' }}
-        </template>
-      </el-table-column>
+      <el-table-column min-width="40" />
       <el-table-column
         label="操作"
         align="center"
-        width="140"
+        width="180"
         fixed="right"
         class-name="small-padding fixed-width"
       >
         <template #default="scope">
+          <el-button
+            link
+            type="primary"
+            icon="View"
+            @click="handleView(scope.row)"
+          >
+            详情
+          </el-button>
           <el-button
             v-hasPermi="['system:wlConcentratedInternship:edit']"
             link
@@ -177,6 +175,13 @@
         </template>
       </el-table-column>
     </el-table>
+
+    <biz-detail-drawer
+      v-model="detailOpen"
+      title="G6 集中实习明细详情"
+      :row="detailRow"
+      :fields="detailFields"
+    />
 
     <pagination
       v-show="total>0"
@@ -282,6 +287,8 @@ const { proxy } = getCurrentInstance()
 
 const wlConcentratedInternshipList = ref([])
 const open = ref(false)
+const detailOpen = ref(false)
+const detailRow = ref({})
 const submitLoading = ref(false)
 const loading = ref(true)
 const showSearch = ref(true)
@@ -290,6 +297,13 @@ const single = ref(true)
 const multiple = ref(true)
 const total = ref(0)
 const title = ref('')
+
+/** 详情抽屉字段（承载原备注列 + 核算参数） */
+const detailFields = [
+  { label: '明细ID', prop: 'itemId', type: 'text' },
+  { label: '实习周数 W', prop: 'W' },
+  { label: '指导人数 R6', prop: 'R6', type: 'int' }
+]
 
 const data = reactive({
   form: {},
@@ -358,6 +372,12 @@ function handleAdd() {
   reset()
   open.value = true
   title.value = '添加G6集中实习明细'
+}
+
+/** 查看详情操作 */
+function handleView(row) {
+  detailRow.value = row
+  detailOpen.value = true
 }
 
 /** 修改按钮操作 */

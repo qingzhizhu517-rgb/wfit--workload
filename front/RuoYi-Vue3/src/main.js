@@ -45,6 +45,8 @@ import ImagePreview from '@/components/ImagePreview'
 import DictTag from '@/components/DictTag'
 // 业务状态标签组件
 import BizTag from '@/components/BizTag'
+// 通用查看详情抽屉组件
+import BizDetailDrawer from '@/components/BizDetailDrawer'
 
 const app = createApp(App)
 
@@ -62,6 +64,7 @@ app.config.globalProperties.selectDictLabels = selectDictLabels
 // 全局组件挂载
 app.component('DictTag', DictTag)
 app.component('BizTag', BizTag)
+app.component('BizDetailDrawer', BizDetailDrawer)
 app.component('Pagination', Pagination)
 app.component('FileUpload', FileUpload)
 app.component('ImageUpload', ImageUpload)

@@ -177,25 +177,23 @@
           {{ formatNumber(scope.row.Q3) }}
         </template>
       </el-table-column>
-      <el-table-column
-        label="备注"
-        align="center"
-        prop="remark"
-        min-width="120"
-        show-overflow-tooltip
-      >
-        <template #default="scope">
-          {{ scope.row.remark || '-' }}
-        </template>
-      </el-table-column>
+      <el-table-column min-width="40" />
       <el-table-column
         label="操作"
         align="center"
-        width="140"
+        width="180"
         fixed="right"
         class-name="small-padding fixed-width"
       >
         <template #default="scope">
+          <el-button
+            link
+            type="primary"
+            icon="View"
+            @click="handleView(scope.row)"
+          >
+            详情
+          </el-button>
           <el-button
             v-hasPermi="['system:wlInternshipTraining:edit']"
             link
@@ -217,6 +215,13 @@
         </template>
       </el-table-column>
     </el-table>
+
+    <biz-detail-drawer
+      v-model="detailOpen"
+      title="G3 实习实训明细详情"
+      :row="detailRow"
+      :fields="detailFields"
+    />
 
     <pagination
       v-show="total>0"
@@ -406,6 +411,8 @@ const { proxy } = getCurrentInstance()
 
 const wlInternshipTrainingList = ref([])
 const open = ref(false)
+const detailOpen = ref(false)
+const detailRow = ref({})
 const submitLoading = ref(false)
 const loading = ref(true)
 const showSearch = ref(true)
@@ -414,6 +421,17 @@ const single = ref(true)
 const multiple = ref(true)
 const total = ref(0)
 const title = ref('')
+
+/** 详情抽屉字段（承载原备注列 + 各核算系数） */
+const detailFields = [
+  { label: '明细ID', prop: 'itemId', type: 'text' },
+  { label: '实际天数 T', prop: 'T' },
+  { label: '指导系数 D', prop: 'D' },
+  { label: '重复系数 K', prop: 'K' },
+  { label: '教学质量 Q1', prop: 'Q1' },
+  { label: '课程质量 Q2', prop: 'Q2' },
+  { label: '全外文 Q3', prop: 'Q3' }
+]
 
 const data = reactive({
   form: {},
@@ -486,6 +504,12 @@ function handleAdd() {
   reset()
   open.value = true
   title.value = '添加G3教学实习实训明细'
+}
+
+/** 查看详情操作 */
+function handleView(row) {
+  detailRow.value = row
+  detailOpen.value = true
 }
 
 /** 修改按钮操作 */

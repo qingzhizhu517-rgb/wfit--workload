@@ -137,25 +137,23 @@
           {{ formatNumber(scope.row.R4, 0) }}
         </template>
       </el-table-column>
-      <el-table-column
-        label="备注"
-        align="center"
-        prop="remark"
-        min-width="140"
-        show-overflow-tooltip
-      >
-        <template #default="scope">
-          {{ scope.row.remark || '-' }}
-        </template>
-      </el-table-column>
+      <el-table-column min-width="40" />
       <el-table-column
         label="操作"
         align="center"
-        width="140"
+        width="180"
         fixed="right"
         class-name="small-padding fixed-width"
       >
         <template #default="scope">
+          <el-button
+            link
+            type="primary"
+            icon="View"
+            @click="handleView(scope.row)"
+          >
+            详情
+          </el-button>
           <el-button
             v-hasPermi="['system:wlCourseDesign:edit']"
             link
@@ -177,6 +175,13 @@
         </template>
       </el-table-column>
     </el-table>
+
+    <biz-detail-drawer
+      v-model="detailOpen"
+      title="G4 课程设计明细详情"
+      :row="detailRow"
+      :fields="detailFields"
+    />
 
     <pagination
       v-show="total>0"
@@ -282,6 +287,8 @@ const { proxy } = getCurrentInstance()
 
 const wlCourseDesignList = ref([])
 const open = ref(false)
+const detailOpen = ref(false)
+const detailRow = ref({})
 const submitLoading = ref(false)
 const loading = ref(true)
 const showSearch = ref(true)
@@ -290,6 +297,13 @@ const single = ref(true)
 const multiple = ref(true)
 const total = ref(0)
 const title = ref('')
+
+/** 详情抽屉字段（承载原备注列 + 核算参数） */
+const detailFields = [
+  { label: '明细ID', prop: 'itemId', type: 'text' },
+  { label: '课程设计学分 J4', prop: 'J4' },
+  { label: '指导人数 R4', prop: 'R4', type: 'int' }
+]
 
 const data = reactive({
   form: {},
@@ -358,6 +372,12 @@ function handleAdd() {
   reset()
   open.value = true
   title.value = '添加G4课程设计明细'
+}
+
+/** 查看详情操作 */
+function handleView(row) {
+  detailRow.value = row
+  detailOpen.value = true
 }
 
 /** 修改按钮操作 */

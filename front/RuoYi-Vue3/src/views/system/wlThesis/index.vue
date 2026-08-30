@@ -199,25 +199,23 @@
           />
         </template>
       </el-table-column>
-      <el-table-column
-        label="备注"
-        align="center"
-        prop="remark"
-        min-width="140"
-        show-overflow-tooltip
-      >
-        <template #default="scope">
-          {{ scope.row.remark || '-' }}
-        </template>
-      </el-table-column>
+      <el-table-column min-width="40" />
       <el-table-column
         label="操作"
         align="center"
-        width="140"
+        width="180"
         fixed="right"
         class-name="small-padding fixed-width"
       >
         <template #default="scope">
+          <el-button
+            link
+            type="primary"
+            icon="View"
+            @click="handleView(scope.row)"
+          >
+            详情
+          </el-button>
           <el-button
             v-hasPermi="['system:wlThesis:edit']"
             link
@@ -239,6 +237,13 @@
         </template>
       </el-table-column>
     </el-table>
+
+    <biz-detail-drawer
+      v-model="detailOpen"
+      title="G5 毕业论文明细详情"
+      :row="detailRow"
+      :fields="detailFields"
+    />
 
     <pagination
       v-show="total>0"
@@ -385,6 +390,8 @@ const { proxy } = getCurrentInstance()
 
 const wlThesisList = ref([])
 const open = ref(false)
+const detailOpen = ref(false)
+const detailRow = ref({})
 const submitLoading = ref(false)
 const loading = ref(true)
 const showSearch = ref(true)
@@ -393,6 +400,15 @@ const single = ref(true)
 const multiple = ref(true)
 const total = ref(0)
 const title = ref('')
+
+/** 详情抽屉字段（承载原备注列 + 核算参数） */
+const detailFields = [
+  { label: '明细ID', prop: 'itemId', type: 'text' },
+  { label: '指导人数 R5', prop: 'R5', type: 'int' },
+  { label: '系数 K5', prop: 'K5' },
+  { label: '层次', prop: 'educationLevel', map: educationLevelTagMap },
+  { label: '科类', prop: 'major', map: majorCategoryTagMap }
+]
 
 const data = reactive({
   form: {},
@@ -465,6 +481,12 @@ function handleAdd() {
   reset()
   open.value = true
   title.value = '添加G5毕业论文明细'
+}
+
+/** 查看详情操作 */
+function handleView(row) {
+  detailRow.value = row
+  detailOpen.value = true
 }
 
 /** 修改按钮操作 */

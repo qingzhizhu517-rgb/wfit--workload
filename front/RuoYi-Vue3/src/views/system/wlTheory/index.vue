@@ -187,25 +187,23 @@
           {{ formatNumber(scope.row.N) }}
         </template>
       </el-table-column>
-      <el-table-column
-        label="备注"
-        align="center"
-        prop="remark"
-        min-width="120"
-        show-overflow-tooltip
-      >
-        <template #default="scope">
-          {{ scope.row.remark || '-' }}
-        </template>
-      </el-table-column>
+      <el-table-column min-width="40" />
       <el-table-column
         label="操作"
         align="center"
-        width="140"
+        width="180"
         fixed="right"
         class-name="small-padding fixed-width"
       >
         <template #default="scope">
+          <el-button
+            link
+            type="primary"
+            icon="View"
+            @click="handleView(scope.row)"
+          >
+            详情
+          </el-button>
           <el-button
             v-hasPermi="['system:wlTheory:edit']"
             link
@@ -227,6 +225,13 @@
         </template>
       </el-table-column>
     </el-table>
+
+    <biz-detail-drawer
+      v-model="detailOpen"
+      title="G1 理论课明细详情"
+      :row="detailRow"
+      :fields="detailFields"
+    />
 
     <pagination
       v-show="total>0"
@@ -433,6 +438,8 @@ const { proxy } = getCurrentInstance()
 
 const wlTheoryList = ref([])
 const open = ref(false)
+const detailOpen = ref(false)
+const detailRow = ref({})
 const submitLoading = ref(false)
 const loading = ref(true)
 const showSearch = ref(true)
@@ -441,6 +448,18 @@ const single = ref(true)
 const multiple = ref(true)
 const total = ref(0)
 const title = ref('')
+
+/** 详情抽屉字段（承载原备注列 + 各核算系数，列表页更清爽） */
+const detailFields = [
+  { label: '明细ID', prop: 'itemId', type: 'text' },
+  { label: '理论学时 J1', prop: 'J1' },
+  { label: '重复系数 C1', prop: 'C1' },
+  { label: '课程类型 K1', prop: 'K1' },
+  { label: '教学质量 Q1', prop: 'Q1' },
+  { label: '课程质量 Q2', prop: 'Q2' },
+  { label: '全外文 Q3', prop: 'Q3' },
+  { label: '合堂 N', prop: 'N' }
+]
 
 const data = reactive({
   form: {},
@@ -513,6 +532,12 @@ function handleAdd() {
   reset()
   open.value = true
   title.value = '添加G1理论课明细'
+}
+
+/** 查看详情操作 */
+function handleView(row) {
+  detailRow.value = row
+  detailOpen.value = true
 }
 
 /** 修改按钮操作 */
