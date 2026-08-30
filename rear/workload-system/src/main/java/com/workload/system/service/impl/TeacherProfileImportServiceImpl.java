@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import com.workload.common.exception.ServiceException;
+import com.workload.common.utils.DateUtils;
 import com.workload.common.utils.SecurityUtils;
 import com.workload.common.core.domain.entity.SysDept;
 import com.workload.common.core.domain.entity.SysUser;
@@ -250,6 +251,9 @@ public class TeacherProfileImportServiceImpl implements ITeacherProfileImportSer
             profile.setTeacherNature(StringUtils.hasText(dto.getTeacherNature()) ? dto.getTeacherNature() : "专任");
             profile.setSpecialStatus("正常");
             profile.setDeptId(user.getDeptId());
+            // 导入直连 mapper 未经 Service，需手动补审计字段，否则详情页创建时间/创建者为空
+            profile.setCreateBy(SecurityUtils.getUsername());
+            profile.setCreateTime(DateUtils.getNowDate());
             teacherProfileMapper.insertBizTeacherProfile(profile);
         }
     }

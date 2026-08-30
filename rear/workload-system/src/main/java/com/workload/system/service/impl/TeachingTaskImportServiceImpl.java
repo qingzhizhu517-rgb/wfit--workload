@@ -223,7 +223,9 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
         task.setImportSource("EXCEL");
         task.setImportBatch(batchNo);
         task.setImportTime(new Date());
-        task.setStatus(0);
+        // 教学任务为源数据记录，状态语义 1=正常/有效 0=停用（与手工新增 reset() 及 schema DEFAULT 1 对齐）；
+        // 前端 normalStatusMap 也按 1正常/0停用 渲染，导入置 1 才与手工录入一致，避免全部显示“停用”
+        task.setStatus(1);
         return task;
     }
 
