@@ -40,6 +40,11 @@ rear/uploadPath/
 .mimocode/
 .qoder/
 dump.rdb
+# MCP server 配置含本机数据库明文口令，不入库（结构见 CLAUDE.md「配置要点」）
+.mcp.json
+
+# ---- 测试数据产物（由 gen_*.py 生成，脚本入库、产物不入库）----
+*.xlsx
 
 # ---- AI 工具本地记忆 ----
 .workbuddy/

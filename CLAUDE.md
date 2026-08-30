@@ -24,7 +24,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **前端**: Vue 3.5 + Vite 6 + Element Plus 2.13 + Pinia 3 + Vue Router 4
 - **数据库**: MySQL 8 (库名 `wflg_workload`)，Redis (缓存 + 会话)
 - **文档**: `docs/API接口文档.md`（22 个 Controller、121 个端点）、`docs/代码审查报告.md`（33 个问题修复记录）
-- **Excel**: Apache POI 5.5.1（导入导出）
+- **Excel**: Apache POI 5.5.1（导出）+ EasyExcel 4.0.3（流式导入，见 A14/B1 整改）
 - **API 文档**: Springdoc OpenAPI (Swagger UI at `/swagger-ui.html`)
 
 ## 目录结构
@@ -183,12 +183,13 @@ mysql -u root -p wflg_workload < rear/sql/15_fix_menu_buttons.sql
 ## 配置要点
 
 - 后端端口: `8084` (application.yml)
-- 数据库: `172.19.80.1:3306/wflg_workload`（历史 WSL 桥接 IP，指向 Windows 宿主；**在 macOS 本机运行需改为 `127.0.0.1` 或实际地址**），用户 `root`，密码 `123456` (application-druid.yml)
+- 数据库: `application-druid.yml` 中默认写 `172.19.80.1:3306/wflg_workload`（历史 WSL 桥接 IP），用户 `root`，密码 `123456`。**当前活跃开发环境为 Windows 本机，需将 host 改为 `127.0.0.1`**（`.mcp.json` 的 MySQL MCP 已指向 `127.0.0.1:3306`）
 - Redis: `localhost:6379`，无密码
 - 文件上传路径: `rear/uploadPath/`
 - 前端开发端口: `3000` (vite.config.js)
 - 前端 API 代理: 开发环境 `/dev-api` 前缀请求代理到 `http://localhost:8084`（去掉前缀）
 - 学期校历: `application.yml` 的 `wl.semester` 节点（秋季 09-01~01-31，春季 02-20~07-15）
+- MySQL MCP: 仓库根 `.mcp.json` 注册了 `mysql` MCP server（`127.0.0.1:3306/wflg_workload`），可直接用 MCP 工具查库/看表结构，无需手写 `mysql` CLI
 
 ### 测试账号（密码均为 `123456`，来自 `06_test_accounts.sql`）
 
