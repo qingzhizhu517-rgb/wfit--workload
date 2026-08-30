@@ -546,7 +546,7 @@ onUnmounted(() => {
 
       .card-panel-text {
         line-height: 18px;
-        color: rgba(0, 0, 0, 0.45);
+        color: #5a5e66;
         font-size: 15px;
         margin-bottom: 10px;
       }

@@ -454,15 +454,15 @@ onMounted(() => {
       box-shadow: 0 4px 20px rgba(0, 0, 0, .15);
     }
 
-    &.card-info    { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-    &.card-success { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: #1a3a2a; }
-    &.card-warning { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); color: #3a2a1a; }
+    &.card-info    { background: linear-gradient(135deg, #5b73e8 0%, #6f4bc0 100%); }
+    &.card-success { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
+    &.card-warning { background: linear-gradient(135deg, #f5576c 0%, #f79d3c 100%); }
 
-    .stat-label   { font-size: 15px; opacity: 0.9; }
+    .stat-label   { font-size: 15px; opacity: 0.95; }
     .stat-value   { margin: 8px 0; display: flex; align-items: baseline; gap: 6px; }
-    .stat-big     { font-size: 30px; font-weight: bold; }
-    .stat-unit    { font-size: 14px; opacity: 0.75; }
-    .stat-footer  { font-size: 12px; opacity: 0.8; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.2); }
+    .stat-big     { font-size: 30px; font-weight: bold; text-shadow: 0 1px 2px rgba(0,0,0,0.18); }
+    .stat-unit    { font-size: 14px; opacity: 0.8; }
+    .stat-footer  { font-size: 12px; opacity: 0.9; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.28); }
   }
 
   .card-title {

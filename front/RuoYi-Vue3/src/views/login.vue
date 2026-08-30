@@ -244,7 +244,8 @@ getCookie()
 .title {
   margin: 0px auto 30px auto;
   text-align: center;
-  color: var(--el-text-color-primary);
+  // 登录卡片始终为浅色玻璃面板，文字固定深色，避免深色模式下 --el-text-color-primary 变浅导致白字白底不可见
+  color: #303133;
   font-size: var(--wfit-font-2xl);
   font-weight: 700;
   letter-spacing: 2px;
@@ -275,7 +276,7 @@ getCookie()
       box-shadow: 0 0 0 1px var(--el-color-primary) inset;
     }
     :deep(.el-input__inner) {
-      color: var(--el-text-color-primary);
+      color: #303133;
       height: 44px;
     }
   }
@@ -284,7 +285,8 @@ getCookie()
 .input-label {
   font-size: var(--wfit-font-md);
   font-weight: 600;
-  color: var(--el-text-color-primary);
+  // 同 .title：卡片固定浅色，标签用固定深色，防止深色模式下不可见
+  color: #303133;
   margin-bottom: var(--wfit-space-sm);
 }
 

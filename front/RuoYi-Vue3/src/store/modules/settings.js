@@ -2,7 +2,9 @@ import defaultSettings from '@/settings'
 import { useDark, useToggle } from '@vueuse/core'
 import { useDynamicTitle } from '@/utils/dynamicTitle'
 
-const isDark = useDark()
+// 默认锁定浅色模式：initialValue 'light' 使其在无存储偏好时不跟随系统深色
+// （用户仍可通过导航栏主题按钮手动切换，切换结果会持久化）
+const isDark = useDark({ initialValue: 'light' })
 const toggleDark = useToggle(isDark)
 
 const { sideTheme, showSettings, navType, tagsView, tagsViewPersist, tagsIcon, fixedHeader, sidebarLogo, dynamicTitle, footerVisible, footerContent } = defaultSettings
