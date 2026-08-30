@@ -180,17 +180,17 @@
         label="教师"
         align="center"
         prop="userId"
-        width="150"
+        width="120"
       >
         <template #default="scope">
-          {{ userLabel(scope.row.userId) }}
+          {{ userName(scope.row.userId) }}
         </template>
       </el-table-column>
       <el-table-column
         label="院部"
         align="center"
         prop="deptId"
-        min-width="140"
+        min-width="180"
         show-overflow-tooltip
       >
         <template #default="scope">
@@ -239,7 +239,7 @@
       <el-table-column
         label="操作"
         align="center"
-        width="180"
+        width="220"
         fixed="right"
         class-name="small-padding fixed-width"
       >
@@ -294,7 +294,10 @@
         border
       >
         <el-descriptions-item label="教师">
-          {{ userLabel(detailData.userId) }}
+          {{ userName(detailData.userId) }}
+        </el-descriptions-item>
+        <el-descriptions-item label="工号">
+          {{ userCode(detailData.userId) }}
         </el-descriptions-item>
         <el-descriptions-item label="院部">
           {{ deptName(detailData.userId) }}
@@ -570,7 +573,7 @@
 <script setup name="TeacherProfile">
 import { listTeacherProfile, getTeacherProfile, delTeacherProfile, addTeacherProfile, updateTeacherProfile } from '@/api/system/teacherProfile'
 import UserSelect from '@/components/UserSelect/index.vue'
-import { useUserMap } from '@/utils/userCache'
+import { useUserMap, refresh as refreshUserCache } from '@/utils/userCache'
 import { getToken } from '@/utils/auth'
 import {
   teacherTitleOptions, teacherNatureOptions, specialStatusOptions, enterpriseEvalOptions,
@@ -578,7 +581,7 @@ import {
 } from '@/utils/bizDict'
 
 const { proxy } = getCurrentInstance()
-const { userLabel, deptName } = useUserMap()
+const { userName, userCode, deptName } = useUserMap()
 
 /** 职称/人员性质列 biz-tag 映射（由 bizDict Options 转换） */
 const teacherTitleMap = optionsToMap(teacherTitleOptions)
@@ -770,7 +773,8 @@ function handleFileSuccess(response, file, fileList) {
   upload.isUploading = false
   proxy.$refs['uploadRef'].clearFiles()
   proxy.$alert('<div style=\'overflow: auto;overflow-x: hidden;max-height: 70vh;padding: 10px 20px 0;\'>' + response.msg + '</div>', '导入结果', { dangerouslyUseHTMLString: true })
-  getList()
+  // 导入会新增用户，先刷新用户缓存，教师/院部列才能正确回显姓名而非裸 userId
+  refreshUserCache().then(getList)
 }
 
 /** 文件上传失败处理 */

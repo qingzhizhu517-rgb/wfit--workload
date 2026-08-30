@@ -141,10 +141,19 @@
         label="教师"
         align="center"
         prop="userId"
-        width="160"
+        width="100"
       >
         <template #default="scope">
-          {{ userLabel(scope.row.userId) }}
+          {{ userName(scope.row.userId) }}
+        </template>
+      </el-table-column>
+      <el-table-column
+        label="工号"
+        align="center"
+        width="120"
+      >
+        <template #default="scope">
+          {{ userCode(scope.row.userId) }}
         </template>
       </el-table-column>
       <el-table-column
@@ -513,7 +522,7 @@ import { feeTypeOptions, feeSubtypeMap, normalStatusMap, formatAmount } from '@/
 import { useRoute } from 'vue-router'
 
 const { proxy } = getCurrentInstance()
-const { userLabel } = useUserMap()
+const { userName, userCode } = useUserMap()
 const route = useRoute()
 
 const feeTypeMap = Object.fromEntries(feeTypeOptions.map(o => [o.value, { label: o.label, type: 'primary' }]))

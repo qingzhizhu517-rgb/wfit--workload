@@ -157,10 +157,20 @@
         label="教师"
         align="center"
         prop="userId"
-        width="150"
+        width="100"
       >
         <template #default="scope">
-          {{ userLabel(scope.row.userId) }}
+          {{ userName(scope.row.userId) }}
+        </template>
+      </el-table-column>
+      <el-table-column
+        v-if="!isTeacher"
+        label="工号"
+        align="center"
+        width="120"
+      >
+        <template #default="scope">
+          {{ userCode(scope.row.userId) }}
         </template>
       </el-table-column>
       <el-table-column
@@ -405,7 +415,7 @@ import { useRouter } from 'vue-router'
 import useUserStore from '@/store/modules/user'
 
 const { proxy } = getCurrentInstance()
-const { userLabel } = useUserMap()
+const { userLabel, userName, userCode } = useUserMap()
 const router = useRouter()
 const userStore = useUserStore()
 

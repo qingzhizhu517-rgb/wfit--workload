@@ -174,10 +174,19 @@
         label="教师"
         align="center"
         prop="userId"
-        width="150"
+        width="100"
       >
         <template #default="scope">
-          {{ userLabel(scope.row.userId) }}
+          {{ userName(scope.row.userId) }}
+        </template>
+      </el-table-column>
+      <el-table-column
+        label="工号"
+        align="center"
+        width="120"
+      >
+        <template #default="scope">
+          {{ userCode(scope.row.userId) }}
         </template>
       </el-table-column>
       <el-table-column
@@ -698,7 +707,7 @@ import {
 } from '@/utils/bizDict'
 
 const { proxy } = getCurrentInstance()
-const { userLabel } = useUserMap()
+const { userName, userCode } = useUserMap()
 
 /** 层次/类别/性质列 biz-tag 映射（由 bizDict Options 转换） */
 const educationLevelMap = optionsToMap(educationLevelOptions)

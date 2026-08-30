@@ -136,10 +136,19 @@
         label="教师"
         align="center"
         prop="userId"
-        width="150"
+        width="100"
       >
         <template #default="scope">
-          {{ userLabel(scope.row.userId) }}
+          {{ userName(scope.row.userId) }}
+        </template>
+      </el-table-column>
+      <el-table-column
+        label="工号"
+        align="center"
+        width="120"
+      >
+        <template #default="scope">
+          {{ userCode(scope.row.userId) }}
         </template>
       </el-table-column>
       <el-table-column
@@ -399,7 +408,7 @@ import { useUserMap } from '@/utils/userCache'
 import { roleTypeOptions, normalStatusMap, roleTypeMap, formatNumber } from '@/utils/bizDict'
 
 const { proxy } = getCurrentInstance()
-const { userLabel } = useUserMap()
+const { userName, userCode } = useUserMap()
 
 const roleAssignmentList = ref([])
 const open = ref(false)

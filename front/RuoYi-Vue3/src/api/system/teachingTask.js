@@ -50,6 +50,9 @@ export function importTeachingTask(file) {
   return request({
     url: '/system/teachingTask/importExcel',
     method: 'post',
+    // 必须显式指定 multipart，否则会命中 axios 全局默认的 application/json 头，
+    // 浏览器不生成 boundary，后端 @RequestParam("file") 解析失败（MultipartException）
+    headers: { 'Content-Type': 'multipart/form-data' },
     data: formData
   })
 }

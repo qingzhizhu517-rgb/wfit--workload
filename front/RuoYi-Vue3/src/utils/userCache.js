@@ -11,16 +11,7 @@ let loadingPromise = null
 
 export function useUserMap() {
   if (!loadingPromise) {
-    loadingPromise = listUserSimple().then(res => {
-      const list = res.data || []
-      userList.value = list
-      const map = {}
-      list.forEach(u => { map[u.userId] = u })
-      userMap.value = map
-      return map
-    }).catch(() => {
-      loadingPromise = null
-    })
+    loadingPromise = load()
   }
 
   /** 表格展示：张三（2025001） */
@@ -33,8 +24,34 @@ export function useUserMap() {
   /** 仅姓名 */
   const userName = (userId) => userMap.value[userId]?.nickName || (userId ?? '-')
 
+  /** 仅工号 */
+  const userCode = (userId) => userMap.value[userId]?.userName || (userId ?? '-')
+
   /** 院部名 */
   const deptName = (userId) => userMap.value[userId]?.deptName || '-'
 
-  return { userMap, userList, userLabel, userName, deptName }
+  return { userMap, userList, userLabel, userName, userCode, deptName, refresh }
+}
+
+/** 拉取并填充缓存 */
+function load() {
+  return listUserSimple().then(res => {
+    const list = res.data || []
+    userList.value = list
+    const map = {}
+    list.forEach(u => { map[u.userId] = u })
+    userMap.value = map
+    return map
+  }).catch(() => {
+    loadingPromise = null
+  })
+}
+
+/**
+ * 强制刷新缓存：用于导入等会新增/变更用户的场景，
+ * 使新用户能立即在姓名/院部列正确回显（否则命中旧的模块级缓存显示原始 userId）。
+ */
+export function refresh() {
+  loadingPromise = load()
+  return loadingPromise
 }

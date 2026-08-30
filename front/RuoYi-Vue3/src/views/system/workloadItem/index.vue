@@ -177,10 +177,19 @@
         label="教师"
         align="center"
         prop="userId"
-        width="150"
+        width="100"
       >
         <template #default="scope">
-          {{ userLabel(scope.row.userId) }}
+          {{ userName(scope.row.userId) }}
+        </template>
+      </el-table-column>
+      <el-table-column
+        label="工号"
+        align="center"
+        width="120"
+      >
+        <template #default="scope">
+          {{ userCode(scope.row.userId) }}
         </template>
       </el-table-column>
       <el-table-column
@@ -371,7 +380,10 @@
           {{ detailData.id }}
         </el-descriptions-item>
         <el-descriptions-item label="教师">
-          {{ userLabel(detailData.userId) }}
+          {{ userName(detailData.userId) }}
+        </el-descriptions-item>
+        <el-descriptions-item label="工号">
+          {{ userCode(detailData.userId) }}
         </el-descriptions-item>
         <el-descriptions-item label="学年学期">
           {{ detailData.semester }}
@@ -664,7 +676,7 @@ import {
 } from '@/utils/bizDict'
 
 const { proxy } = getCurrentInstance()
-const { userLabel } = useUserMap()
+const { userLabel, userName, userCode } = useUserMap()
 
 const workloadItemList = ref([])
 const open = ref(false)
