@@ -101,6 +101,29 @@ mysql -u root -p wflg_workload < 12_fix_dept_mapping.sql
 
 注意：`03_calc_rules.sql` 使用 `INSERT INTO`（非幂等），重复执行会因唯一键冲突报错，仅执行一次。
 
+### 配置环境变量（首次运行必做）
+
+后端凭据不硬编码在配置文件里，一律从环境变量注入。复制样例并填值：
+
+```bash
+cp .env.example .env       # PowerShell: Copy-Item .env.example .env
+```
+
+`.env` 已被 `.gitignore` 排除。必填三项（**无默认值，缺失则启动失败**）：
+
+| 变量 | 说明 |
+|------|------|
+| `WFIT_DB_PASSWORD` | 数据库口令。建议用仅授权 `wflg_workload` 库的专用账号（配合 `WFIT_DB_USER`，默认 `wfit`），不要用 root |
+| `WFIT_DRUID_PASSWORD` | Druid 监控台口令（`WFIT_DRUID_USER` 默认 `admin`）。生产环境建议把 `statViewServlet.enabled` 置 false 直接关闭该页 |
+| `WFIT_TOKEN_SECRET` | JWT 签名密钥，HS512 需 ≥64 字节：`openssl rand -base64 48`。**泄露即可伪造任意用户令牌绕过登录**；更换后所有已发放令牌失效，需全员重新登录 |
+
+其余变量（`WFIT_DB_HOST`/`WFIT_DB_PORT`/`WFIT_DB_NAME`/`WFIT_REDIS_*`/`WFIT_DEFAULT_PASSWORD`）均有默认值，本机开发可不填。
+
+注入方式：
+- **IDEA**：Run/Debug Configurations → Environment variables，填 `WFIT_DB_PASSWORD=xxx;WFIT_TOKEN_SECRET=yyy`（或装 EnvFile 插件直接读 `.env`）
+- **PowerShell**：`$env:WFIT_DB_PASSWORD='xxx'` 后再启动
+- **部署环境**：由容器/systemd/CI 的 secret 机制注入
+
 ### 启动后端
 
 ```bash
@@ -135,6 +158,8 @@ RuoYi 内置账号 `admin / admin123`。业务测试账号（密码均为 `12345
 | `jiaowu_test` | 教务助理 | 审批权限 |
 | `teacher_test` | 教师 | 仅看本人数据 |
 | `leader_test` | 院领导 | 签字权限 |
+
+> ⚠️ 这批账号与 `admin/admin123` 仅供本地开发和演示。部署到任何他人可访问的环境前，必须改密或删除。
 
 ## 项目结构
 

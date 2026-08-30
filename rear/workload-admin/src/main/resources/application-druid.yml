@@ -1,4 +1,11 @@
 # 数据源配置
+#
+# 凭据一律从环境变量注入，不再硬编码入库（见仓库根 .env.example）：
+#   WFIT_DB_HOST / WFIT_DB_PORT / WFIT_DB_NAME / WFIT_DB_USER / WFIT_DB_PASSWORD
+#   WFIT_DRUID_USER / WFIT_DRUID_PASSWORD
+# 其中 *_PASSWORD 故意不设默认值：未注入则启动即失败，避免沿用弱口令而不自知。
+# IDEA: Run/Debug Configurations -> Environment variables
+# PowerShell: $env:WFIT_DB_PASSWORD='xxx' 后再启动
 spring:
     datasource:
         type: com.alibaba.druid.pool.DruidDataSource
@@ -6,9 +13,9 @@ spring:
         druid:
             # 主库数据源
             master:
-                url: jdbc:mysql://127.0.0.1:3306/wflg_workload?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
-                username: root
-                password: 123456 # TODO: 生产环境请使用环境变量或加密方式管理密码
+                url: jdbc:mysql://${WFIT_DB_HOST:127.0.0.1}:${WFIT_DB_PORT:3306}/${WFIT_DB_NAME:wflg_workload}?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
+                username: ${WFIT_DB_USER:wfit}
+                password: ${WFIT_DB_PASSWORD}
             # 从库数据源
             slave:
                 # 从数据源开关/默认关闭
@@ -42,13 +49,14 @@ spring:
             webStatFilter: 
                 enabled: true
             statViewServlet:
+                # 生产环境建议置 false 直接关闭监控页（或配 allow 白名单限内网）
                 enabled: true
                 # 设置白名单，不填则允许所有访问
                 allow:
                 url-pattern: /druid/*
-                # 控制台管理用户名和密码
-                login-username: ruoyi
-                login-password: 123456
+                # 控制台管理用户名和密码（原 ruoyi/123456 为框架默认值，全网皆知，已改为环境变量注入）
+                login-username: ${WFIT_DRUID_USER:admin}
+                login-password: ${WFIT_DRUID_PASSWORD}
             filter:
                 stat:
                     enabled: true

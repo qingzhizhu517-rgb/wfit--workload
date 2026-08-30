@@ -32,7 +32,7 @@ front/RuoYi-Vue3/               # Vue 3.5 + Vite 6 + Element Plus
 
 ## Non-Obvious Facts
 
-- **DB host is `172.19.80.1`** (legacy WSL bridge IP, not localhost). On a macOS/local checkout this must be changed in `rear/workload-admin/src/main/resources/application-druid.yml`.
+- **Credentials come from environment variables.** `WFIT_DB_PASSWORD`, `WFIT_DRUID_PASSWORD`, and `WFIT_TOKEN_SECRET` have no defaults — the backend fails to start if they are unset. Copy `.env.example` to `.env` (gitignored) and fill them in, or inject via IDEA run configuration. DB host defaults to `127.0.0.1`; the `172.19.80.1` in older docs is a retired WSL bridge IP.
 - **Limited automated tests.** Only `workload-system` has JUnit 5 tests (`CalcStrategyFactoryTest`, `StrategyCacheTest` in `src/test/**/calc/strategy/`); run via `mvn test -pl workload-system`. No `spring-boot-starter-test` / integration tests. Verify other changes via Swagger UI (`/swagger-ui.html`) or frontend.
 - **Frontend proxy**: all `/dev-api` requests strip prefix and proxy to `http://localhost:8084` (see `vite.config.js`).
 - **Calculation engine uses Spring bean names** — `biz_workload_category_dict.calc_strategy` column stores bean names like `theoryCalcStrategy`. `CalcStrategyFactory` resolves by bean name, not by class.
@@ -96,11 +96,13 @@ ry_20260321.sql → quartz.sql → 01_biz_schema.sql → 02_biz_seed.sql → 03_
 
 - Backend port: `8084`
 - Frontend dev port: `3000`
-- Redis: `localhost:6379`, no password
-- DB password: `123456` (in `application-druid.yml`)
-- Test accounts: `admin_test`, `jiaowu_test`, `teacher_test`, `leader_test` (all password `123456`)
+- Redis: `WFIT_REDIS_HOST` (default `localhost`) : `WFIT_REDIS_PORT` (default 6379), no password locally
+- DB credentials: from `WFIT_DB_USER` / `WFIT_DB_PASSWORD` (see `.env.example`)
+- Test accounts: `admin_test`, `jiaowu_test`, `teacher_test`, `leader_test` (all password `123456`) — local development only; change or remove before any shared deployment
 
-## Files with Sensitive Config (git-tracked)
+## Secrets Handling
 
-- `.env.development` — API base URL
-- `rear/workload-admin/src/main/resources/application-druid.yml` — DB credentials
+- All credentials are injected via environment variables; see `.env.example` (tracked) and `.env` (gitignored).
+- `.mcp.json` holds a local MySQL password and is gitignored — do not commit it.
+- ⚠️ Historical leak: the DB password, Druid console password, and JWT secret were committed in plaintext in earlier commits. The working tree is clean now, but old commits remain reachable. The real remediation is **rotating those credentials**, not editing the files.
+- `front/RuoYi-Vue3/.env.development` is tracked but contains only the page title and `/dev-api` prefix — no secrets.

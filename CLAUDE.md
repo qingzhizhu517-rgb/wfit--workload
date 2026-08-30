@@ -182,16 +182,25 @@ mysql -u root -p wflg_workload < rear/sql/15_fix_menu_buttons.sql
 
 ## 配置要点
 
+> **凭据一律走环境变量，不再硬编码入库。** 复制仓库根 `.env.example` 为 `.env` 填值，
+> 或在 IDEA 的 Run/Debug Configurations → Environment variables 中注入。
+> `WFIT_DB_PASSWORD` / `WFIT_DRUID_PASSWORD` / `WFIT_TOKEN_SECRET` **无默认值**，
+> 未注入则后端启动直接失败（刻意设计，避免沿用弱口令而不自知）。
+
 - 后端端口: `8084` (application.yml)
-- 数据库: `application-druid.yml` 中默认写 `172.19.80.1:3306/wflg_workload`（历史 WSL 桥接 IP），用户 `root`，密码 `123456`。**当前活跃开发环境为 Windows 本机，需将 host 改为 `127.0.0.1`**（`.mcp.json` 的 MySQL MCP 已指向 `127.0.0.1:3306`）
-- Redis: `localhost:6379`，无密码
+- 数据库: `application-druid.yml`，连接串由 `WFIT_DB_HOST`(默认 `127.0.0.1`) / `WFIT_DB_PORT` / `WFIT_DB_NAME` / `WFIT_DB_USER`(默认 `wfit`) / `WFIT_DB_PASSWORD` 组装。建议用仅授权 `wflg_workload` 库的专用账号，勿用 root
+- JWT 密钥: `application.yml` 的 `token.secret` 由 `WFIT_TOKEN_SECRET` 注入（HS512 需 ≥64 字节，`openssl rand -base64 48` 生成）。**该值泄露即可伪造任意用户令牌绕过登录**；更换会使所有已发放令牌失效，需全员重新登录
+- Druid 监控台: `/druid/*`，账密由 `WFIT_DRUID_USER`(默认 `admin`) / `WFIT_DRUID_PASSWORD` 注入（原框架默认 `ruoyi/123456` 已移除）。生产环境建议 `statViewServlet.enabled: false`
+- Redis: `WFIT_REDIS_HOST`(默认 `localhost`) / `WFIT_REDIS_PORT`(默认 6379) / `WFIT_REDIS_PASSWORD`(本机留空)
 - 文件上传路径: `rear/uploadPath/`
 - 前端开发端口: `3000` (vite.config.js)
 - 前端 API 代理: 开发环境 `/dev-api` 前缀请求代理到 `http://localhost:8084`（去掉前缀）
 - 学期校历: `application.yml` 的 `wl.semester` 节点（秋季 09-01~01-31，春季 02-20~07-15）
-- MySQL MCP: 仓库根 `.mcp.json` 注册了 `mysql` MCP server（`127.0.0.1:3306/wflg_workload`），可直接用 MCP 工具查库/看表结构，无需手写 `mysql` CLI
+- MySQL MCP: 仓库根 `.mcp.json` 注册了 `mysql` MCP server（`127.0.0.1:3306/wflg_workload`），可直接用 MCP 工具查库/看表结构，无需手写 `mysql` CLI。**该文件含本机明文口令，已在 `.gitignore` 中排除，不入库**
 
 ### 测试账号（密码均为 `123456`，来自 `06_test_accounts.sql`）
+
+> 仅供本地开发/演示。部署到任何可被他人访问的环境前，必须改密或删除这批账号。
 
 | 账号 | user_id | 角色 | 说明 |
 |------|---------|------|------|
@@ -362,7 +371,8 @@ mysql -u root -p wflg_workload < rear/sql/15_fix_menu_buttons.sql
 - `rear/manage/` 模块是空壳占位（仅有 hello-world 的 `Main.java`），无业务逻辑
 - 学期格式为 `2025-2026-1`（学年+学期号），校历配置在 `application.yml` 的 `wl.semester` 节点
 - 业务表前缀 `biz_`，系统表前缀 `sys_`（RuoYi 内置）
-- `.env.development` 和 `application-druid.yml` 包含敏感配置且已被 git 跟踪
+- `front/RuoYi-Vue3/.env.development` 已被 git 跟踪，但仅含页面标题与 `/dev-api` 前缀，**无敏感信息**；后端凭据已全部改为环境变量注入（见「配置要点」）
+- ⚠️ **历史遗留**：`application-druid.yml`(DB root/123456、Druid ruoyi/123456) 与 `application.yml`(JWT secret) 的明文值曾提交入库，仍留在 git 历史中。当前工作树已清除，但旧 commit 可追溯 —— 唯一有效的补救是**轮换这些口令**（DB 改专用账号、JWT secret 重新生成），而非只改文件
 - G11 管理服务条目由 `ManagementItemGenerator` 从 `biz_role_assignment` 自动生成，也可手动录入
 - 汇总表 `biz_workload_summary` 使用 JSON 字段 `category_details` 存储动态分类汇总，扩展新类别无需改表结构
 - `DataScopeUtil.resolveUserId()` 强制教师角色只能看自己的数据，防止 IDOR，已在 calc/export/dashboard 控制器中使用

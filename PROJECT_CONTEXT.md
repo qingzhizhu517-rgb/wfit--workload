@@ -19,19 +19,23 @@
 | 后端 | Spring Boot **4.0.7** / Java **17** / Maven 多模块 / MyBatis / Druid |
 | 安全 | Spring Security + JWT（HS512，30 分钟过期） |
 | 前端 | Vue 3.5 + Vite 6 + Element Plus 2.13 + Pinia 3 |
-| 数据库 | MySQL 8，**`172.19.80.1:3306/wflg_workload`**（WSL 桥接 IP，指向 Windows 宿主，非 localhost） |
-| 缓存 | Redis `localhost:6379`（无密码） |
+| 数据库 | MySQL 8，`wflg_workload`。连接串由 `WFIT_DB_HOST`(默认 `127.0.0.1`)/`WFIT_DB_PORT`/`WFIT_DB_NAME`/`WFIT_DB_USER`(默认 `wfit`)/`WFIT_DB_PASSWORD` 组装 |
+| 缓存 | Redis `WFIT_REDIS_HOST`(默认 `localhost`):`WFIT_REDIS_PORT`(默认 6379)，本机无密码 |
 | 后端端口 | `8084`，Swagger 在 `/swagger-ui.html` |
 | 前端端口 | `3000`（dev），`/dev-api` 代理到 `http://localhost:8084`（去掉前缀） |
 
+**凭据管理**：一律从环境变量注入，见仓库根 `.env.example`（复制为 `.env`，已 gitignore）。
+`WFIT_DB_PASSWORD` / `WFIT_DRUID_PASSWORD` / `WFIT_TOKEN_SECRET` 无默认值，未注入则启动失败。
+
 **关键配置位置**
-- 数据源/DB 密码：`rear/workload-admin/src/main/resources/application-druid.yml`（root/123456）
-- 端口/Redis/学期校历/导入密码：`rear/workload-admin/src/main/resources/application.yml`
+- 数据源：`rear/workload-admin/src/main/resources/application-druid.yml`（凭据走 `WFIT_DB_*` / `WFIT_DRUID_*`）
+- 端口/Redis/JWT/学期校历/导入密码：`rear/workload-admin/src/main/resources/application.yml`
+  - `token.secret` ← `WFIT_TOKEN_SECRET`（HS512 需 ≥64 字节，`openssl rand -base64 48`）
   - `wl.semester`：秋 `09-01~01-31`，春 `02-20~07-15`
-  - `wfit.default-password: 123456`（导入新建教师账号初始密码）
+  - `wfit.default-password` ← `WFIT_DEFAULT_PASSWORD`（默认 `123456`，导入新建教师账号初始密码）
   - `wfit.import.max-size: 10`（Excel 上传上限 MB）
 
-**账号（密码均 `123456`）**：`admin_test`(管理员) / `jiaowu_test`(教务助理) / `teacher_test`(教师) / `leader_test`(院领导)；RuoYi 内置 `admin/admin123`。
+**账号（密码均 `123456`）**：`admin_test`(管理员) / `jiaowu_test`(教务助理) / `teacher_test`(教师) / `leader_test`(院领导)；RuoYi 内置 `admin/admin123`。**仅供本地开发，对外部署前必须改密或删除。**
 
 ---
 
@@ -218,14 +222,14 @@ PayCalcService → biz_pay_record + biz_allowance_item（酬金层）
 
 ## 11. 非显然事实 / 坑点（AI 必读）
 
-1. **DB 主机是 `172.19.80.1`**（WSL 桥接 IP，指向 Windows 宿主 MySQL），不是 localhost —— 连不上数据库先查这个。
+1. **凭据全走环境变量**：`WFIT_DB_PASSWORD`/`WFIT_DRUID_PASSWORD`/`WFIT_TOKEN_SECRET` 无默认值，未注入后端启动即失败 —— 起不来先查这个（见根目录 `.env.example`）。DB host 默认 `127.0.0.1`，历史文档里的 `172.19.80.1` 是已废弃的 WSL 桥接 IP。
 2. **无自动化测试**：`spring-boot-starter-test` 未引入。验证靠 Swagger（`/swagger-ui.html`）或前端页面；`test_api.sh` 提供 12 项 curl 冒烟测试（需先关验证码）。
 3. **策略按 bean 名解析**：`biz_workload_category_dict.calc_strategy` 列必须与 `@Component("xxx")` 精确一致，改错就取不到策略（返回 null → 该类别无计算）。
 4. **G8/G9 无策略**（手动录入）；**酬金 D 档（代阅卷）未注册**。
 5. **`manage` 模块是空壳**；`rear/workload-ui`（Vue2）已废弃，活跃前端只有 `front/RuoYi-Vue3`。
 6. **学期格式** `2025-2026-1`（学年+学期号），校历在 `application.yml` 的 `wl.semester`。
 7. **数据隔离**：`DataScopeUtil.resolveUserId()` 强制教师角色只能看本人数据（防 IDOR），已在 calc/export/dashboard 控制器收口。
-8. **敏感配置已 git 跟踪**：`.env.development`、`application-druid.yml`（DB 密码明文 123456）。
+8. **明文口令的历史遗留**：`application-druid.yml`(DB root/123456、Druid ruoyi/123456) 与 `application.yml`(JWT secret) 曾以明文提交，现工作树已改环境变量，但旧 commit 仍可追溯 —— 补救靠**轮换口令**，不是改文件。`front/RuoYi-Vue3/.env.development` 虽被跟踪，但只有标题与 `/dev-api`，无敏感信息。
 9. **汇总表动态分类**：`biz_workload_summary.category_details` 是 JSON，新增类别无需改表结构。
 10. **验证码**：默认 `math` 类型，自动化脚本需先 `UPDATE sys_config SET config_value='false' WHERE config_key='sys.account.captchaEnabled'`。
 

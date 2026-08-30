@@ -72,13 +72,13 @@ spring:
     # redis 配置
     redis:
       # 地址
-      host: localhost
+      host: ${WFIT_REDIS_HOST:localhost}
       # 端口，默认为6379
-      port: 6379
+      port: ${WFIT_REDIS_PORT:6379}
       # 数据库索引
       database: 0
-      # 密码（本机 Redis 未设密码，留空）
-      password:
+      # 密码（本机 Redis 未设密码，留空；生产环境经 WFIT_REDIS_PASSWORD 注入）
+      password: ${WFIT_REDIS_PASSWORD:}
       # 连接超时时间
       timeout: 10s
       lettuce:
@@ -97,7 +97,10 @@ token:
   # 令牌自定义标识
   header: Authorization
   # 令牌密钥（HS512 要求至少 64 字节）
-  secret: /utUJnBW3LzgzgrdrszvrZgSljnkSkkoIhlYC1MbUadWsnrzIoLRnW0Rq0OdUtS6
+  # 从环境变量 WFIT_TOKEN_SECRET 注入，不设默认值：未注入则启动失败。
+  # 该密钥用于 JWT 签名，泄露即可伪造任意用户令牌绕过登录，禁止硬编码入库。
+  # 生成方式：openssl rand -base64 48
+  secret: ${WFIT_TOKEN_SECRET}
   # 令牌有效期（默认30分钟）
   expireTime: 30
 
@@ -160,4 +163,5 @@ wfit:
     # Excel 导入单文件大小上限（MB），对应 @Value("${wfit.import.max-size:10}")
     max-size: 10
   # 导入新建教师账号的默认初始密码，对应 @Value("${wfit.default-password:123456}")
-  default-password: '123456'
+  # 这是业务配置（非密钥）：教师首次登录后须自行改密。可用 WFIT_DEFAULT_PASSWORD 覆盖。
+  default-password: ${WFIT_DEFAULT_PASSWORD:123456}
