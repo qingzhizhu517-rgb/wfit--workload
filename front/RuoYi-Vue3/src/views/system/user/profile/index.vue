@@ -69,6 +69,14 @@
               <span>基本资料</span>
             </div>
           </template>
+          <el-alert
+            v-if="userStore.mustChangePwd"
+            type="warning"
+            :closable="false"
+            show-icon
+            title="您正在使用初始密码，请先在「修改密码」页设置新密码，之后才能使用系统其他功能。"
+            style="margin-bottom: 12px"
+          />
           <el-tabs v-model="selectedTab">
             <el-tab-pane
               label="基本资料"
@@ -94,9 +102,12 @@ import userAvatar from './userAvatar'
 import userInfo from './userInfo'
 import resetPwd from './resetPwd'
 import { getUserProfile } from '@/api/system/user'
+import useUserStore from '@/store/modules/user'
 
 const route = useRoute()
-const selectedTab = ref('userinfo')
+const userStore = useUserStore()
+// 强制改密时直接落在「修改密码」页，省去用户自己切页签
+const selectedTab = ref(userStore.mustChangePwd ? 'resetPwd' : 'userinfo')
 const state = reactive({
   user: {},
   roleGroup: {},

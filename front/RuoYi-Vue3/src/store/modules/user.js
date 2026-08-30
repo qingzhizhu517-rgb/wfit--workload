@@ -16,7 +16,10 @@ const useUserStore = defineStore(
       nickName: '',
       avatar: '',
       roles: [],
-      permissions: []
+      permissions: [],
+      // 仍在使用初始密码（后端 getInfo 的 isDefaultModifyPwd）。
+      // 为 true 时 permission.js 的路由守卫只放行改密页，后端拦截器同步兜底返回 602。
+      mustChangePwd: false
     }),
     actions: {
       // 登录
@@ -55,14 +58,16 @@ const useUserStore = defineStore(
             this.name = user.userName
             this.nickName = user.nickName
             this.avatar = avatar
-            /* 初始密码提示 */
-            if(res.isDefaultModifyPwd) {
-              ElMessageBox.confirm('您的密码还是初始密码，请修改密码！',  '安全提示', {  confirmButtonText: '确定',  cancelButtonText: '取消',  type: 'warning' }).then(() => {
+            this.mustChangePwd = !!res.isDefaultModifyPwd
+            /* 初始密码：强制改密，不可取消。路由守卫据 mustChangePwd 只放行改密页，
+               后端 ForcePasswordChangeInterceptor 同步拦截业务接口（602），双侧兜底 */
+            if (res.isDefaultModifyPwd) {
+              ElMessageBox.confirm('您正在使用初始密码，为保障账号安全，请先修改密码。', '安全提示', { confirmButtonText: '去修改密码', showCancelButton: false, closeOnClickModal: false, showClose: false, type: 'warning' }).then(() => {
                 router.push({ name: 'Profile', params: { activeTab: 'resetPwd' } })
               }).catch(() => {})
             }
-            /* 过期密码提示 */
-            if(!res.isDefaultModifyPwd && res.isPasswordExpired) {
+            /* 过期密码提示（可取消，不强制） */
+            if (!res.isDefaultModifyPwd && res.isPasswordExpired) {
               ElMessageBox.confirm('您的密码已过期，请尽快修改密码！',  '安全提示', {  confirmButtonText: '确定',  cancelButtonText: '取消',  type: 'warning' }).then(() => {
                 router.push({ name: 'Profile', params: { activeTab: 'resetPwd' } })
               }).catch(() => {})
@@ -80,6 +85,7 @@ const useUserStore = defineStore(
             this.token = ''
             this.roles = []
             this.permissions = []
+            this.mustChangePwd = false
             removeToken()
             resolve()
           }).catch(error => {

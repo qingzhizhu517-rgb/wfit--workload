@@ -13,6 +13,7 @@ import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import com.workload.common.config.RuoYiConfig;
 import com.workload.common.constant.Constants;
+import com.workload.framework.interceptor.ForcePasswordChangeInterceptor;
 import com.workload.framework.interceptor.RepeatSubmitInterceptor;
 
 /**
@@ -25,6 +26,9 @@ public class ResourcesConfig implements WebMvcConfigurer
 {
     @Autowired
     private RepeatSubmitInterceptor repeatSubmitInterceptor;
+
+    @Autowired
+    private ForcePasswordChangeInterceptor forcePasswordChangeInterceptor;
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry)
@@ -46,6 +50,8 @@ public class ResourcesConfig implements WebMvcConfigurer
     public void addInterceptors(InterceptorRegistry registry)
     {
         registry.addInterceptor(repeatSubmitInterceptor).addPathPatterns("/**");
+        // 强制首次改密：初始密码未修改时拦截业务请求（白名单在拦截器内维护）
+        registry.addInterceptor(forcePasswordChangeInterceptor).addPathPatterns("/**");
     }
 
     /**

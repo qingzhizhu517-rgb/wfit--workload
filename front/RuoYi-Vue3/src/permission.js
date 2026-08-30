@@ -18,6 +18,12 @@ const isWhiteList = (path) => {
   return whiteList.some(pattern => isPathMatch(pattern, path))
 }
 
+/** 强制改密时唯一放行的页面（/user/profile/:activeTab? 为静态路由，无需等待动态路由生成） */
+const PWD_RESET_PATH = '/user/profile/resetPwd'
+
+/** 是否为个人中心页（改密表单所在处），强制改密期间只允许停留在此 */
+const isProfilePath = (path) => path.startsWith('/user/profile')
+
 router.beforeEach((to, from, next) => {
   NProgress.start()
   if (getToken()) {
@@ -48,7 +54,12 @@ router.beforeEach((to, from, next) => {
                 router.addRoute(route) // 动态添加可访问路由表
               }
             })
-            next({ ...to, replace: true }) // hack方法 确保addRoutes已完成
+            // 仍在使用初始密码：改密前只放行个人中心，避免绕过后端 602 拦截白跑一趟
+            if (useUserStore().mustChangePwd && !isProfilePath(to.path)) {
+              next({ path: PWD_RESET_PATH, replace: true })
+            } else {
+              next({ ...to, replace: true }) // hack方法 确保addRoutes已完成
+            }
           })
         }).catch(err => {
           useUserStore().logOut().then(() => {
@@ -56,6 +67,10 @@ router.beforeEach((to, from, next) => {
             next({ path: '/' })
           })
         })
+      } else if (useUserStore().mustChangePwd && !isProfilePath(to.path)) {
+        // 已登录且未改初始密码，任何跳转都收敛到改密页（改密成功后 store 标记会被清除）
+        next({ path: PWD_RESET_PATH, replace: true })
+        NProgress.done()
       } else {
         next()
       }

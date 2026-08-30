@@ -5,6 +5,7 @@ import errorCode from '@/utils/errorCode'
 import { tansParams, blobValidate } from '@/utils/ruoyi'
 import cache from '@/plugins/cache'
 import { saveAs } from 'file-saver'
+import router from '@/router'
 import useUserStore from '@/store/modules/user'
 
 let downloadLoadingInstance
@@ -97,6 +98,19 @@ service.interceptors.response.use(res => {
     return Promise.reject('无效的会话，或者会话已过期，请重新登录。')
   } else if (code === 500) {
     ElMessage({ message: msg, type: 'error' })
+    return Promise.reject(new Error(msg))
+  } else if (code === 602) {
+    // 602 = 后端 ForcePasswordChangeInterceptor：仍在使用初始密码，必须先改密。
+    // 与 401 同样用 isRelogin 去重，避免并发请求弹出多个对话框。
+    if (!isRelogin.show) {
+      isRelogin.show = true
+      ElMessageBox.confirm(msg, '安全提示', { confirmButtonText: '去修改密码', showCancelButton: false, closeOnClickModal: false, showClose: false, type: 'warning' }).then(() => {
+        isRelogin.show = false
+        router.push({ name: 'Profile', params: { activeTab: 'resetPwd' } })
+      }).catch(() => {
+        isRelogin.show = false
+      })
+    }
     return Promise.reject(new Error(msg))
   } else if (code === 601) {
     ElMessage({ message: msg, type: 'warning' })

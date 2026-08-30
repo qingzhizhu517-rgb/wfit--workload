@@ -212,7 +212,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 	<update id="resetUserPwd" parameterType="SysUser">
  		update sys_user set pwd_update_date = sysdate(), password = #{password}, update_time = sysdate() where user_id = #{userId}
 	</update>
-	
+
+	<!-- 管理员重置密码：pwd_update_date 置 NULL，使 ForcePasswordChangeInterceptor 要求该用户下次登录先自行改密 -->
+	<update id="resetUserPwdRequireChange" parameterType="SysUser">
+ 		update sys_user set pwd_update_date = NULL, password = #{password}, update_time = sysdate() where user_id = #{userId}
+	</update>
+
 	<delete id="deleteUserById" parameterType="Long">
  		update sys_user set del_flag = '2' where user_id = #{userId}
  	</delete>

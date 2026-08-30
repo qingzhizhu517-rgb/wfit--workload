@@ -369,20 +369,26 @@ public class SysUserServiceImpl implements ISysUserService
     }
 
     /**
-     * 重置用户密码
-     * 
+     * 重置用户密码（管理员操作）
+     * <p>
+     * 走 resetUserPwdRequireChange：把 pwd_update_date 置 NULL，
+     * 使该用户下次登录被 ForcePasswordChangeInterceptor 要求先自行改密。
+     * 管理员重置出的口令管理员本人知晓，不能算作“用户已改过密码”。
+     *
      * @param user 用户信息
      * @return 结果
      */
     @Override
     public int resetPwd(SysUser user)
     {
-        return userMapper.resetUserPwd(user.getUserId(), user.getPassword());
+        return userMapper.resetUserPwdRequireChange(user.getUserId(), user.getPassword());
     }
 
     /**
-     * 重置用户密码
-     * 
+     * 重置用户密码（用户自行改密，见 SysProfileController.updatePwd）
+     * <p>
+     * 走 resetUserPwd：刷新 pwd_update_date 为当前时间，解除强制改密拦截。
+     *
      * @param userId 用户ID
      * @param password 密码
      * @return 结果

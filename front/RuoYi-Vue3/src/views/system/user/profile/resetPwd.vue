@@ -57,8 +57,12 @@
 
 <script setup>
 import { updateUserPwd } from '@/api/system/user'
+import { useRouter } from 'vue-router'
+import useUserStore from '@/store/modules/user'
 
 const { proxy } = getCurrentInstance()
+const router = useRouter()
+const userStore = useUserStore()
 
 const user = reactive({
   oldPassword: undefined,
@@ -86,6 +90,11 @@ function submit() {
     if (valid) {
       updateUserPwd(user.oldPassword, user.newPassword).then(() => {
         proxy.$modal.msgSuccess('修改成功')
+        // 强制改密场景：改完解除限制并回首页，否则路由守卫会一直把用户按在本页
+        if (userStore.mustChangePwd) {
+          userStore.mustChangePwd = false
+          router.push({ path: '/' })
+        }
       })
     }
   })

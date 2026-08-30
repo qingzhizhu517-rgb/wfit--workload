@@ -180,6 +180,11 @@ public class TeacherProfileImportServiceImpl implements ITeacherProfileImportSer
 
         // 设置初始密码（统一默认密码策略，见 defaultPassword 字段注释）
         user.setPassword(SecurityUtils.encryptPassword(defaultPassword));
+        // pwdUpdateDate 刻意保持 null：表示“从未修改过初始密码”，
+        // ForcePasswordChangeInterceptor 据此强制该教师首次登录后必须改密。
+        // SysUserMapper.insertUser 对该字段有 <if test="pwdUpdateDate != null"> 条件，
+        // 不赋值即不写入该列，DDL 无默认值故落库为 NULL。切勿在此设置当前时间。
+        user.setPwdUpdateDate(null);
 
         // 设置状态正常
         user.setStatus("0");

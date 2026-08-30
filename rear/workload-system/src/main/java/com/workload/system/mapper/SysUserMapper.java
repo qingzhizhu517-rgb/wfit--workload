@@ -97,13 +97,25 @@ public interface SysUserMapper
     public int updateLoginInfo(@Param("userId") Long userId, @Param("loginIp") String loginIp, @Param("loginDate") Date loginDate);
 
     /**
-     * 重置用户密码
-     * 
+     * 重置用户密码（用户自行改密：同时刷新 pwd_update_date 为当前时间）
+     *
      * @param userId 用户ID
      * @param password 密码
      * @return 结果
      */
     public int resetUserPwd(@Param("userId") Long userId, @Param("password") String password);
+
+    /**
+     * 管理员重置用户密码（把 pwd_update_date 置 NULL，要求用户下次登录必须自行改密）
+     * <p>
+     * 与 {@link #resetUserPwd} 的区别：管理员重置后的口令管理员本人知晓，
+     * 不能视为“用户已改过密码”，否则会绕过 ForcePasswordChangeInterceptor 的强制改密。
+     *
+     * @param userId 用户ID
+     * @param password 密码
+     * @return 结果
+     */
+    public int resetUserPwdRequireChange(@Param("userId") Long userId, @Param("password") String password);
 
     /**
      * 通过用户ID删除用户

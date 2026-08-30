@@ -351,6 +351,14 @@ mysql -u root -p wflg_workload < rear/sql/15_fix_menu_buttons.sql
 | C2 | 审批 `submit`/`batchSubmit` 无归属校验，教师可提交他人汇总（横向越权） | ✅ `BizAuditServiceImpl.submit()` 增加 `DataScopeUtil.assertOwnOrAdmin(summary.getUserId())`，与 teacherConfirm 对齐 |
 | C3 | 菜单 20301 登记 `system:calc:recalc` 为死权限（无代码引用） | ✅ perms 改为 BizCalcController 实际使用的 `system:workloadItem:edit` |
 
+### 凭据治理与强制改密（2026-08-30）
+
+| # | 问题 | 修复 |
+|---|------|------|
+| D1 | DB 口令 / Druid 台账密 / JWT secret 明文硬编码入库（公开仓库） | ✅ 全改环境变量注入（`WFIT_*`），`*_PASSWORD` 与 `WFIT_TOKEN_SECRET` **无默认值**，未注入则启动失败；新增 `.env.example`，`.env` 与 `.mcp.json` 入 `.gitignore`。轮换清单见 `docs/口令轮换清单-2026-08-30.md`（明文仍留在 git 历史，唯一补救是换口令） |
+| D2 | 初始弱口令仅前端弹窗提醒，可取消、路由不设卡，等于无强制力 | ✅ 新增 `ForcePasswordChangeInterceptor`：`pwd_update_date IS NULL` 时除白名单外一切请求返回 **602**；前端 `request.js` 拦 602 弹不可取消对话框，`permission.js` 守卫只放行 `/user/profile*`，改密成功后清标记回首页 |
+| D3 | 管理员重置密码后 `pwd_update_date = sysdate()`，用户拿着管理员知晓的口令即可畅通使用 | ✅ 拆分两个 mapper：用户自改走 `resetUserPwd`(置当前时间)，管理员重置走 `resetUserPwdRequireChange`(置 NULL)，强制用户再次自行改密 |
+
 ### 待办（未处理，需排期/决策）
 
 | # | 问题 | 优先级 | 说明 |
@@ -362,7 +370,7 @@ mysql -u root -p wflg_workload < rear/sql/15_fix_menu_buttons.sql
 | 5 | G5 艺术类 K5 映射 | 低 | 暂按文史类处理，待艺术类专业目录确认 |
 | 6 | `assertOwnOrAdmin` 豁免范围偏宽（`!isTeacherOnly`） | 低 | 已裁决保留：现有角色仅 admin/biz_admin/assistant/leader/teacher，除教师外均应豁免且先过 `@PreAuthorize`；彻底收严需引入显式管理角色白名单，属权限模型改造 |
 | 7 | 策略缓存 `StrategyCache.evict/clear` 无调用方 | 低 | 字典改绑策略后缓存永久陈旧到重启，建议在字典增改删 Service 调 evict |
-| 8 | 教师账号默认弱口令 123456 无强制改密 | 低 | 密码已加密入库，但初始弱口令建议强制首次改密 |
+| 8 | ~~教师账号默认弱口令 123456 无强制改密~~ | ✅ 已修复 | `ForcePasswordChangeInterceptor` 服务端拦截（`pwd_update_date IS NULL` → 602）+ 前端路由守卫只放行改密页；管理员重置密码走 `resetUserPwdRequireChange` 置 NULL，要求用户再次自行改密 |
 | 9 | 200%/540 封顶边界 `>` vs `>=`、`teacherNature` 为 null 当专任发绩效 | 低 | 需业务确认口径，非明确 bug |
 
 ## 注意事项
