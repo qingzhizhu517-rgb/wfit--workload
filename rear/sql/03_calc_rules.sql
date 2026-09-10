@@ -16,6 +16,8 @@ INSERT INTO biz_workload_rule (rule_code, rule_value, rule_desc, effective_from)
 ('PAY_F_CLASS_UNITS',    1.00, 'F运动会 每体测班工作量', '2025-09-01'),
 ('PAY_UNIT_FEE',        30.00, 'F/G 每单位工作量酬金(元)', '2025-09-01');
 
--- G5 本科毕业论文院长审批阈值（>8 须审批，硬上限 CAP_R5_BACHELOR=10）
+-- G5 毕业论文院长报批阈值（办法第十四条5：本科 R5≤10 按实际计、＞8 须报批；
+-- 专科 R5≤15 按实际计、＞15 须报批。条文未写「超出不计算」，故无硬上限，仅报批标记）
 INSERT INTO biz_workload_rule (rule_code, rule_value, rule_desc, effective_from) VALUES
-('APPROVAL_R5_BACHELOR', 8.00, 'G5毕业论文本科院长审批阈值(>8须批)', '2025-09-01');
+('APPROVAL_R5_BACHELOR', 8.00, 'G5毕业论文本科院长审批阈值(>8须批)', '2025-09-01'),
+('APPROVAL_R5_JUNIOR',  15.00, 'G5毕业论文专科院长审批阈值(>15须批)', '2025-09-01');

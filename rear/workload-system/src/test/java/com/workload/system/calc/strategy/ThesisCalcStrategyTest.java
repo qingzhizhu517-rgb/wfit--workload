@@ -52,11 +52,11 @@ class ThesisCalcStrategyTest
     @BeforeEach
     void setUp()
     {
-        // CAP_R5_JUNIOR 默认 15、APPROVAL_R5_BACHELOR 默认 8
+        // APPROVAL_R5_JUNIOR 默认 15、APPROVAL_R5_BACHELOR 默认 8
         lenient().when(ruleParamService.get(anyString(), any(BigDecimal.class)))
                 .thenAnswer(inv -> {
                     String code = inv.getArgument(0);
-                    if ("CAP_R5_JUNIOR".equals(code))
+                    if ("APPROVAL_R5_JUNIOR".equals(code))
                     {
                         return new BigDecimal("15");
                     }

@@ -12,7 +12,8 @@ import com.workload.system.mapper.BizWlThesisMapper;
 
 /**
  * G5 毕业论文(设计)计算策略：G5 = R5 × K5
- * 人数不截断；本科 R5&gt;8 或专科 R5&gt;15 置 is_over_limit=1 触发院长审批
+ * 人数不截断（第十四条5 明写「按实际人数计算」）；
+ * 本科 R5＞8、专科 R5＞15 须报院长批准 → 置 is_over_limit=1
  *
  * @author wflg
  * @date 2026-07-21
@@ -49,7 +50,8 @@ public class ThesisCalcStrategy extends AbstractWorkloadCalcStrategy
         boolean overLimit;
         if (level != null && level.contains("专"))
         {
-            overLimit = r5.compareTo(ruleParamService.get("CAP_R5_JUNIOR", new BigDecimal("15"))) > 0;
+            // 第十四条5 专科：R5≤15 按实际计，＞15 须报院长批准
+            overLimit = r5.compareTo(ruleParamService.get("APPROVAL_R5_JUNIOR", new BigDecimal("15"))) > 0;
         }
         else
         {

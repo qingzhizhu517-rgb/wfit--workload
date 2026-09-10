@@ -38,8 +38,9 @@ INSERT IGNORE INTO biz_workload_rule (rule_code, rule_value, rule_desc, effectiv
 ('CONST_COURSE_DESIGN',0.40, '课程设计/集中实习常数', '2025-09-01'),
 ('CAP_R4_MAX',         60.00,'课程设计指导人数上限', '2025-09-01'),
 ('CAP_R6_MAX',         20.00,'集中实习指导人数上限', '2025-09-01'),
-('CAP_R5_BACHELOR',    10.00,'毕业论文本科人数上限', '2025-09-01'),
-('CAP_R5_JUNIOR',      15.00,'毕业论文专科人数上限', '2025-09-01'),
+-- CAP_R5_BACHELOR/CAP_R5_JUNIOR 已删除（2026-09-10）：
+-- 办法第十四条5 未规定「超出不计算」，硬上限属死配置；
+-- 报批阈值见 03_calc_rules.sql 的 APPROVAL_R5_BACHELOR(8)/APPROVAL_R5_JUNIOR(15)
 ('RATED_WORKLOAD',     180.00,'学期绩效额定', '2025-09-01'),
 ('CAP_200PCT',         540.00,'200%封顶阈值(180*3)', '2025-09-01'),
 ('BASIC_TEACH_PROF',   128.00,'达标基本教学量教授/年', '2025-09-01'),
