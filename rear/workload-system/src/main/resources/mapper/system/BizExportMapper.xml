@@ -84,4 +84,88 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         order by d.dept_id, u.user_name
     </select>
 
+    <!--
+      附件1（标准表一）：按开课任务聚合的任务行。
+      分组键 ifnull(task_id, -id)：同一 task 的 G1~G6 明细合一行，手工/申报明细无 task_id 各自成行。
+      系数取 max、学时/工作量取 sum——任务与明细按 (task_id, item_type) 一一对应时二者等价，
+      出现多明细（如论文分文科/理工多行）时 sum 保证 G5 双列各自累计正确。
+      G5 文理分流：discipline_category 缺省按文史（艺术类归文史，同 calcG5K5 口径）。
+      only_full_group_by：非聚合列全部走 max/coalesce 包装，不裸选。
+    -->
+    <select id="selectAttachment1Rows" resultType="com.workload.system.domain.dto.Attachment1RowDTO">
+        select
+            max(coalesce(t.course_name, i.course_name))                     as courseName,
+            max(i.education_level)                                         as educationLevel,
+            sum(th.J1)                                                     as j1,
+            max(th.C1)                                                     as c1,
+            max(th.K1)                                                     as k1,
+            max(th.Q1)                                                     as q1,
+            max(th.Q2)                                                     as q2,
+            max(th.Q3)                                                     as q3,
+            max(th.N)                                                      as n,
+            sum(case when i.item_type = 'G1' then i.calculated_workload end) as g1,
+            sum(pr.J2)                                                     as j2,
+            max(pr.K)                                                      as practiceK,
+            max(pr.C2)                                                     as c2,
+            sum(case when i.item_type = 'G2' then i.calculated_workload end) as g2,
+            sum(itr.T)                                                     as t,
+            max(itr.D)                                                     as d,
+            max(itr.K)                                                     as internK,
+            sum(case when i.item_type = 'G3' then i.calculated_workload end) as g3,
+            sum(cd.J4)                                                     as j4,
+            sum(cd.R4)                                                     as r4,
+            sum(case when i.item_type = 'G4' then i.calculated_workload end) as g4,
+            sum(case when i.item_type = 'G5'
+                      and ifnull(ts.discipline_category, 'LIBERAL_ARTS') = 'LIBERAL_ARTS'
+                     then i.calculated_workload end)                        as g5Liberal,
+            sum(case when i.item_type = 'G5'
+                      and ts.discipline_category = 'SCITECH'
+                     then i.calculated_workload end)                        as g5Scitech,
+            sum(ci.W)                                                      as w,
+            sum(ci.R6)                                                     as r6,
+            sum(case when i.item_type = 'G6' then i.calculated_workload end) as g6
+        from biz_workload_item i
+            left join biz_teaching_task t   on t.id = i.task_id
+            left join biz_wl_theory th      on th.item_id = i.id  and i.item_type = 'G1'
+            left join biz_wl_practice pr    on pr.item_id = i.id  and i.item_type = 'G2'
+            left join biz_wl_internship_training itr on itr.item_id = i.id and i.item_type = 'G3'
+            left join biz_wl_course_design cd on cd.item_id = i.id and i.item_type = 'G4'
+            left join biz_wl_thesis ts      on ts.item_id = i.id  and i.item_type = 'G5'
+            left join biz_wl_concentrated_internship ci on ci.item_id = i.id and i.item_type = 'G6'
+        where i.user_id = #{userId}
+          and i.semester = #{semester}
+          and i.item_type in ('G1', 'G2', 'G3', 'G4', 'G5', 'G6')
+        group by ifnull(i.task_id, -i.id)
+        order by min(i.id)
+    </select>
+
+    <!--
+      附件1（标准表一）：教师级信息。
+      取 summary 落库值（G7~AM 与页面同源）；无 summary 返回 null，由 Controller 决定提示。
+      teacher_sign 线上签署才有值，线下签为空——导出留空待签。
+    -->
+    <select id="selectAttachment1Teacher" resultType="com.workload.system.domain.dto.Attachment1TeacherDTO">
+        select
+            d.dept_name          as collegeName,
+            u.nick_name          as teacherName,
+            s.academic_year      as academicYear,
+            s.G7                 as g7,
+            s.G8                 as g8,
+            s.G9                 as g9,
+            s.g8_remark          as g8Remark,
+            s.G10                as g10,
+            s.G11                as g11,
+            s.g11_remark         as g11Remark,
+            s.total_workload     as totalWorkload,
+            s.rated_workload     as ratedWorkload,
+            s.excess_workload    as excessWorkload,
+            s.teacher_sign       as teacherSign
+        from biz_workload_summary s
+            left join sys_user u on u.user_id = s.user_id
+            left join sys_dept d on d.dept_id = u.dept_id
+        where s.user_id = #{userId}
+          and s.semester = #{semester}
+        limit 1
+    </select>
+
 </mapper>

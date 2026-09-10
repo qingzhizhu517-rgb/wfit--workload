@@ -10,6 +10,16 @@ export function exportPersonalWorkload(params) {
   })
 }
 
+// 导出标准表一（附件1「-新」模板：一行一开课任务，39 列）
+export function exportAttachment1(params) {
+  return request({
+    url: '/system/export/attachment1',
+    method: 'get',
+    params,
+    responseType: 'blob'
+  })
+}
+
 // 导出绩效酬金统计表（附件2格式）
 export function exportPaySummary(params) {
   return request({

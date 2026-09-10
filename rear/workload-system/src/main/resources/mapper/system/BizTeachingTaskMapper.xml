@@ -21,6 +21,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="theoryHours"    column="theory_hours"    />
         <result property="practiceHours"    column="practice_hours"    />
         <result property="repeatOrder"    column="repeat_order"    />
+        <result property="isRetake"    column="is_retake"    />
         <result property="importSource"    column="import_source"    />
         <result property="importBatch"    column="import_batch"    />
         <result property="importTime"    column="import_time"    />
@@ -33,7 +34,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectBizTeachingTaskVo">
-        select id, user_id, semester, academic_year, course_name, course_code, education_level, major_category, course_nature, course_level, course_role, class_name, student_count, theory_hours, practice_hours, repeat_order, import_source, import_batch, import_time, status, create_by, create_time, update_by, update_time, remark from biz_teaching_task
+        select id, user_id, semester, academic_year, course_name, course_code, education_level, major_category, course_nature, course_level, course_role, class_name, student_count, theory_hours, practice_hours, repeat_order, is_retake, import_source, import_batch, import_time, status, create_by, create_time, update_by, update_time, remark from biz_teaching_task
     </sql>
 
     <select id="selectBizTeachingTaskList" parameterType="BizTeachingTask" resultMap="BizTeachingTaskResult">
@@ -84,6 +85,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="theoryHours != null">theory_hours,</if>
             <if test="practiceHours != null">practice_hours,</if>
             <if test="repeatOrder != null">repeat_order,</if>
+            <if test="isRetake != null">is_retake,</if>
             <if test="importSource != null">import_source,</if>
             <if test="importBatch != null">import_batch,</if>
             <if test="importTime != null">import_time,</if>
@@ -110,6 +112,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="theoryHours != null">#{theoryHours},</if>
             <if test="practiceHours != null">#{practiceHours},</if>
             <if test="repeatOrder != null">#{repeatOrder},</if>
+            <if test="isRetake != null">#{isRetake},</if>
             <if test="importSource != null">#{importSource},</if>
             <if test="importBatch != null">#{importBatch},</if>
             <if test="importTime != null">#{importTime},</if>
@@ -140,6 +143,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="theoryHours != null">theory_hours = #{theoryHours},</if>
             <if test="practiceHours != null">practice_hours = #{practiceHours},</if>
             <if test="repeatOrder != null">repeat_order = #{repeatOrder},</if>
+            <if test="isRetake != null">is_retake = #{isRetake},</if>
             <if test="importSource != null">import_source = #{importSource},</if>
             <if test="importBatch != null">import_batch = #{importBatch},</if>
             <if test="importTime != null">import_time = #{importTime},</if>

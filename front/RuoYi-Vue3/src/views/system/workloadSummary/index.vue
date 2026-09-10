@@ -188,7 +188,23 @@
       </el-col>
       <el-col :span="1.5">
         <el-tooltip
-          content="附件1：本人/所选教师该学期工作量明细，含重复次序、班级与各项系数"
+          content="表一（标准格式）：对齐教务处模板，一行一开课任务，39 列，教师级列只填首行"
+          placement="top"
+        >
+          <el-button
+            v-hasPermi="['system:export:personal']"
+            type="success"
+            plain
+            icon="Tickets"
+            @click="handleExportStdForm1"
+          >
+            导出表一
+          </el-button>
+        </el-tooltip>
+      </el-col>
+      <el-col :span="1.5">
+        <el-tooltip
+          content="附件1明细（追溯用）：本人/所选教师该学期工作量明细，含重复次序、班级与各项系数"
           placement="top"
         >
           <el-button
@@ -716,7 +732,7 @@
 <script setup name="WorkloadSummary">
 import { listWorkloadSummary, delWorkloadSummary } from '@/api/system/workloadSummary'
 import { recalcSummary, recalcAll, recalcAllBatch, previewSummary, genG11 } from '@/api/system/calc'
-import { exportPersonalWorkload, exportPaySummary } from '@/api/system/export'
+import { exportPersonalWorkload, exportPaySummary, exportAttachment1 } from '@/api/system/export'
 import { ElMessageBox } from 'element-plus'
 import { saveBlobAsFile } from '@/utils/blobDownload'
 import { auditSubmit, auditApprove, auditReject, auditUnlock, auditBatchSubmit, auditTeacherConfirm } from '@/api/system/audit'
@@ -899,6 +915,24 @@ function handleRecalcSemester() {
     notifyBatchResult(res.data)
   }).catch(() => {}).finally(() => {
     batchCalcLoading.value = false
+  })
+}
+
+/** 导出表一（标准格式）：对齐教务处「-新」模板，一行一开课任务 39 列 */
+function handleExportStdForm1(row) {
+  const uid = row ? row.userId : (isTeacher.value ? userStore.id : queryParams.value.userId)
+  const semester = row ? row.semester : queryParams.value.semester
+  if (!uid || !semester) {
+    proxy.$modal.alertWarning(isTeacher.value
+      ? '请先填写「学年学期」'
+      : '请先在搜索栏选择「教师」并填写「学年学期」，或在行内「更多」中导出')
+    return
+  }
+  proxy.$modal.loading('正在导出表一...')
+  exportAttachment1({ userId: uid, semester }).then(res => {
+    saveBlobAsFile(res, `表一_${userLabel(uid)}_${semester}.xlsx`)
+  }).finally(() => {
+    proxy.$modal.closeLoading()
   })
 }
 

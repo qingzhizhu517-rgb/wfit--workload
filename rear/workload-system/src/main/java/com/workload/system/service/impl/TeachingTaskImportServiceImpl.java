@@ -222,7 +222,7 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
             return dto.getRepeatOrder().longValue();
         }
         // 与 createTeachingTask 写库值保持一致，否则默认「本科」的行会分到不同组
-        String educationLevel = defaultStr(dto.getEducationLevel(), "本科");
+        String educationLevel = normalizeEducationLevel(dto.getEducationLevel());
         int existing = teachingTaskMapper.countSameCourseTask(userId, dto.getSemester(),
                 dto.getCourseName(), educationLevel);
         return existing + 1L;
@@ -252,7 +252,7 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
         task.setAcademicYear(extractAcademicYear(dto.getSemester()));
         task.setCourseName(dto.getCourseName());
         task.setCourseCode(dto.getCourseCode());
-        task.setEducationLevel(defaultStr(dto.getEducationLevel(), "本科"));
+        task.setEducationLevel(normalizeEducationLevel(dto.getEducationLevel()));
         task.setMajorCategory(defaultStr(dto.getMajorCategory(), "理工类"));
         task.setCourseNature(defaultStr(dto.getCourseNature(), "必修"));
         task.setCourseLevel(defaultStr(dto.getCourseLevel(), "其他"));
@@ -264,6 +264,8 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
         task.setPracticeHours(isG2(dto) ? dto.getBaseValue() : BigDecimal.ZERO);
         // 重复次序落库：既是 C1/K 的取值依据，也是事后审计「为什么这条只算 0.8」的唯一凭据
         task.setRepeatOrder(repeatOrder);
+        // 重修标志不占层次列（用户拍板）：课程名含「重修」即置 1
+        task.setIsRetake(dto.getCourseName() != null && dto.getCourseName().contains("重修") ? 1 : 0);
         task.setImportSource("EXCEL");
         task.setImportBatch(batchNo);
         task.setImportTime(new Date());
@@ -286,7 +288,7 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
         item.setSourceType("IMPORT");
         item.setTaskId(taskId);
         item.setCourseName(dto.getCourseName());
-        item.setEducationLevel(defaultStr(dto.getEducationLevel(), "本科"));
+        item.setEducationLevel(normalizeEducationLevel(dto.getEducationLevel()));
         item.setMajorCategory(defaultStr(dto.getMajorCategory(), "理工类"));
         item.setCalculatedWorkload(BigDecimal.ZERO);
         item.setStatus(0);
@@ -398,6 +400,9 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
         detail.setItemId(item.getId());
         detail.setR5(dto.getStudentCount() != null ? dto.getStudentCount().longValue() : 0L);
         detail.setK5(calcG5K5(dto)); // K5：理工本 9 / 理工专 5 / 文史本 6 / 文史专 4
+        // 学科门类随 K5 同口径落库（附件1 X/Y 双列分列用；艺术/其他按文史，同 calcG5K5 归档）
+        detail.setDisciplineCategory("理工类".equals(defaultStr(dto.getMajorCategory(), "理工类"))
+                ? "SCITECH" : "LIBERAL_ARTS");
         wlThesisMapper.insertBizWlThesis(detail);
 
         return calcStrategyFactory.get("G5").calculate(item);
@@ -642,6 +647,19 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
             return semester.substring(0, 9);
         }
         return semester;
+    }
+
+    /**
+     * 层次归一化（用户拍板，2026-09-10）：专升本归「本科」；空值落「本科」。
+     * 重修不进层次列（另有 is_retake 标志）。
+     */
+    private String normalizeEducationLevel(String level)
+    {
+        if (!StringUtils.hasText(level) || "专升本".equals(level))
+        {
+            return "本科";
+        }
+        return level;
     }
 
     private String defaultStr(String value, String defaultVal)

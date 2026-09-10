@@ -65,6 +65,12 @@ public class BizWorkloadSummary extends BaseEntity
     @Excel(name = "超额定=max(0,total-rated)")
     private BigDecimal excessWorkload;
 
+    /** 其他工作量说明（附件1 AF 列） */
+    private String g8Remark;
+
+    /** 管理服务工作量说明（附件1 AI 列） */
+    private String g11Remark;
+
     /** 职称快照 */
     @Excel(name = "职称快照")
     private String title;
@@ -234,6 +240,26 @@ public class BizWorkloadSummary extends BaseEntity
     public void setExcessWorkload(BigDecimal excessWorkload) 
     {
         this.excessWorkload = excessWorkload;
+    }
+
+    public String getG8Remark() 
+    {
+        return g8Remark;
+    }
+
+    public void setG8Remark(String g8Remark) 
+    {
+        this.g8Remark = g8Remark;
+    }
+
+    public String getG11Remark() 
+    {
+        return g11Remark;
+    }
+
+    public void setG11Remark(String g11Remark) 
+    {
+        this.g11Remark = g11Remark;
     }
 
     public BigDecimal getExcessWorkload() 

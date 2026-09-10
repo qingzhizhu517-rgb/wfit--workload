@@ -4,6 +4,8 @@ import java.util.List;
 
 import org.apache.ibatis.annotations.Param;
 
+import com.workload.system.domain.dto.Attachment1RowDTO;
+import com.workload.system.domain.dto.Attachment1TeacherDTO;
 import com.workload.system.domain.dto.PaySummaryExportDTO;
 import com.workload.system.domain.dto.PersonalWorkloadDetailExportDTO;
 
@@ -37,4 +39,30 @@ public interface BizExportMapper
      */
     public List<PaySummaryExportDTO> selectPaySummaryExport(@Param("semester") String semester,
                                                            @Param("userId") Long userId);
+
+    /**
+     * 附件1（标准表一）：按「开课任务」聚合的教师工作量子句行。
+     * <p>
+     * 同一 task_id 的 G1~G6 明细合为一行（系数取 max、工作量/学时取 sum），
+     * 手工/申报明细无 task_id，按 item_id 独立成行（分组键 ifnull(task_id, -id)）。
+     *
+     * @param userId   教师用户ID
+     * @param semester 学年学期
+     * @return 任务行，按明细主键插入序排序
+     */
+    public List<Attachment1RowDTO> selectAttachment1Rows(@Param("userId") Long userId,
+                                                         @Param("semester") String semester);
+
+    /**
+     * 附件1（标准表一）：教师级信息（首行 A/B 列、AC~AM 列、标题行学年/学院）。
+     * <p>
+     * 取 biz_workload_summary 落库值而非现算——导出必须与「汇总页/酬金页」同源，
+     * 否则教师看到导出数字与系统页面不一致。
+     *
+     * @param userId   教师用户ID
+     * @param semester 学年学期
+     * @return 教师级数据；未核算（无 summary）返回 null
+     */
+    public Attachment1TeacherDTO selectAttachment1Teacher(@Param("userId") Long userId,
+                                                          @Param("semester") String semester);
 }

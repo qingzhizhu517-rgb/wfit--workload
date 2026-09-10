@@ -35,6 +35,9 @@ public class BizWlThesis extends BaseEntity
     @Excel(name = "理工类/文史类")
     private String major;
 
+    /** 学科门类 SCITECH/LIBERAL_ARTS，附件1 X/Y 双列分列用；艺术类按文史 */
+    private String disciplineCategory;
+
     public void setItemId(Long itemId) 
     {
         this.itemId = itemId;
@@ -83,6 +86,16 @@ public class BizWlThesis extends BaseEntity
     public String getMajor() 
     {
         return major;
+    }
+
+    public String getDisciplineCategory() 
+    {
+        return disciplineCategory;
+    }
+
+    public void setDisciplineCategory(String disciplineCategory) 
+    {
+        this.disciplineCategory = disciplineCategory;
     }
 
     @Override

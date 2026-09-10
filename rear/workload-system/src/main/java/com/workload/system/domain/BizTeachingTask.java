@@ -81,6 +81,9 @@ public class BizTeachingTask extends BaseEntity
     @Excel(name = "同名课第几次(1/2/3+ -&gt; C1 1.0/0.9/0.8)")
     private Long repeatOrder;
 
+    /** 重修标志（不占层次列；课程名含「重修」时置1） */
+    private Integer isRetake;
+
     /** $column.columnComment */
     @Excel(name = "${comment}", readConverterExp = "$column.readConverterExp()")
     private String importSource;
@@ -250,6 +253,16 @@ public class BizTeachingTask extends BaseEntity
     public void setRepeatOrder(Long repeatOrder) 
     {
         this.repeatOrder = repeatOrder;
+    }
+
+    public Integer getIsRetake() 
+    {
+        return isRetake;
+    }
+
+    public void setIsRetake(Integer isRetake) 
+    {
+        this.isRetake = isRetake;
     }
 
     public Long getRepeatOrder() 
