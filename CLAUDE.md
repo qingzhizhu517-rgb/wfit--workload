@@ -330,8 +330,8 @@ mysql -u root -p wflg_workload < rear/sql/15_fix_menu_buttons.sql
 | A3 | G11 折算多除了一个 2，与公式/种子数据/封顶矛盾 | ✅ `ManagementItemGeneratorImpl` 删除 `divide(2)`（rate 定性为学期标准） |
 | A4 | 教学任务导入自调用致 `@Transactional` 失效，部分失败提交半截数据 | ✅ 改用 `AopContext.currentProxy()` 每行独立事务 |
 | A5 | 院领导待签(2)环节无驳回路径 | ✅ `BizAuditServiceImpl.reject` 放开 `from∈{1,2}`；院领导授 `reject` 权限 |
-| A6 | G4 人数上限 20 与权威文档 R4≤60 冲突 | ✅ `CourseDesignCalcStrategy` 默认值改 60；`14_fix_calc_rules.sql` 已随 02 并入。**注意：本机库直到 2026-08-31 才真正执行到 60**（原记「已部署库」不实），且 `RuleParamServiceImpl` 缓存无 TTL，改库后必须删 Redis 键 `wl_rule:CAP_R4_MAX`，否则重启也读旧值 —— 见待办 #10 |
-| A7 | 自学辅导 ≥20 人错算 260 元 | ✅ `AllowanceAStrategy` 增加 `count≥20` 走手工金额分支 |
+| A6 | G4 人数上限 20 与权威文档 R4≤60 冲突 | ✅ `CourseDesignCalcStrategy` 默认值改 60；`14_fix_calc_rules.sql` 已随 02 并入。**注意：本机库直到 2026-08-31 才真正执行到 60**（原记「已部署库」不实），且 `RuleParamServiceImpl` 缓存无 TTL，改库后必须删 Redis 键 `wl_rule:CAP_R4_MAX`，否则重启也读旧值 —— 见待办 #10。**2026-09-10 起语义变更：CAP_R4_MAX 由截断上限改为告警阈值，R4 按实际人数计算不再 min()**（办法第十四条4 未写「超出不计」） |
+| A7 | 自学辅导 ≥20 人错算 260 元 | ⚠️ **2026-09-10 已按办法第十五条1(2) 改为归零**：≥20 人应单独开班按基本工作量（G1 路线）计，本项不再计绩效酬金；原「走手工金额分支」无条文依据且可绕过 260 上限。存量 0 行受影响 |
 | A8 | 导入批次 status 语义与表定义错位 | ✅ 对齐为 2=已导入 / 4=失败 |
 | A9 | 学期格式无校验，脏数据入库 | ✅ `validateRow` 增加 `^\d{4}-\d{4}-[12]$` 正则 |
 | A10 | AdminDashboard 图表切换传字符串致 `TypeError` | ✅ 缓存 `lastCollegeData`，切换时无参重绘 |
