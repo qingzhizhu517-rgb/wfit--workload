@@ -450,7 +450,7 @@ unlock 走 submit→approve→sign→unlock 往返：签字三栏与 `lock_time`
 |---|------|--------|------|
 | 1 | ~~collegeStats 返回空~~ | ✅ 已修复 | 执行 `12_fix_dept_mapping.sql` 补充 sys_dept 数据 |
 | 2 | G8/G9 策略为空 | 低 | 设计如此：第二课堂/其他工作量为手动录入金额 |
-| 3 | 代阅卷酬金 D 档位 | 低 | 待正式文件确认，首期不启用 |
+| 3 | ~~代阅卷酬金 D 档位~~ | ✅ 已启用 | 办法第十五条5 给出完整五档（<20→0、[20,60)→30、[60,120)→80、[120,200)→100、≥200→150），「待正式文件」不成立。`AllowanceDStrategy` 已注册，规则见 `03_calc_rules.sql` / `19_enable_allowance_d.sql`（2026-09-10） |
 | 4 | Q3 全外文课程系数 | 低 | 取值待外部门文件确认 |
 | 5 | G5 艺术类 K5 映射 | 低 | 暂按文史类处理，待艺术类专业目录确认 |
 | 6 | `assertOwnOrAdmin` 豁免范围偏宽（`!isTeacherOnly`） | 低 | 已裁决保留：现有角色仅 admin/biz_admin/assistant/leader/teacher，除教师外均应豁免且先过 `@PreAuthorize`；彻底收严需引入显式管理角色白名单，属权限模型改造 |

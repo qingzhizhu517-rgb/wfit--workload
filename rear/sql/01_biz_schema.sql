@@ -361,7 +361,7 @@ CREATE TABLE biz_allowance_item (
   lecture_name    VARCHAR(200)  DEFAULT NULL            COMMENT 'E讲座名称',
   ext             JSON          DEFAULT NULL            COMMENT '扩展字段',
   amount          DECIMAL(10,2) NOT NULL                COMMENT '计算金额',
-  status          TINYINT(1)    DEFAULT 1               COMMENT '1正常0停用(D代阅卷默认0)',
+  status          TINYINT(1)    DEFAULT 1               COMMENT '1正常0停用',
   create_by VARCHAR(64) DEFAULT '', create_time DATETIME DEFAULT NULL,
   update_by VARCHAR(64) DEFAULT '', update_time DATETIME DEFAULT NULL,
   remark VARCHAR(500) DEFAULT NULL,

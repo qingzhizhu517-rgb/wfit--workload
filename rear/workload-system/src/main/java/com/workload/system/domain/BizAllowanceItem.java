@@ -71,8 +71,8 @@ public class BizAllowanceItem extends BaseEntity
     @Excel(name = "计算金额")
     private BigDecimal amount;
 
-    /** 1正常0停用(D代阅卷默认0) */
-    @Excel(name = "1正常0停用(D代阅卷默认0)")
+    /** 1正常0停用 */
+    @Excel(name = "1正常0停用")
     private Integer status;
 
     public void setId(Long id) 

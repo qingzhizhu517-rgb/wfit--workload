@@ -127,14 +127,14 @@ public class BizAllowanceItemServiceImpl implements IBizAllowanceItemService
     }
 
     /**
-     * 按 fee_type 策略计算金额（D 代阅卷首期未启用；A 跟班/单独开班保留手工金额）
+     * 按 fee_type 策略计算金额（A~G 已全量注册，D 代阅卷 2026-09-10 起按第十五条5 启用）
      */
     private void recalcAmount(BizAllowanceItem item)
     {
         AllowanceCalcStrategy strategy = allowanceStrategyFactory.get(item.getFeeType());
         if (strategy == null)
         {
-            throw new ServiceException("酬金类型未启用: " + item.getFeeType() + "（D代阅卷待正式文件）");
+            throw new ServiceException("酬金类型未启用: " + item.getFeeType());
         }
         item.setAmount(strategy.calculate(item));
     }

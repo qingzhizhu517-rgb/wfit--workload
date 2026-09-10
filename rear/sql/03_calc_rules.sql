@@ -16,6 +16,14 @@ INSERT INTO biz_workload_rule (rule_code, rule_value, rule_desc, effective_from)
 ('PAY_F_CLASS_UNITS',    1.00, 'F运动会 每体测班工作量', '2025-09-01'),
 ('PAY_UNIT_FEE',        30.00, 'F/G 每单位工作量酬金(元)', '2025-09-01');
 
+-- D 代阅卷（协助外聘教师阅卷）五档（办法第十五条5，2026-09-10 启用）
+INSERT INTO biz_workload_rule (rule_code, rule_value, rule_desc, effective_from) VALUES
+('PAY_D_MARKING_LT20',    0.00, 'D代阅卷 <20人(元)', '2025-09-01'),
+('PAY_D_MARKING_20_60',  30.00, 'D代阅卷 [20,60)人(元)', '2025-09-01'),
+('PAY_D_MARKING_60_120', 80.00, 'D代阅卷 [60,120)人(元)', '2025-09-01'),
+('PAY_D_MARKING_120_200',100.00, 'D代阅卷 [120,200)人(元)', '2025-09-01'),
+('PAY_D_MARKING_GE200', 150.00, 'D代阅卷 >=200人(元)', '2025-09-01');
+
 -- G5 毕业论文院长报批阈值（办法第十四条5：本科 R5≤10 按实际计、＞8 须报批；
 -- 专科 R5≤15 按实际计、＞15 须报批。条文未写「超出不计算」，故无硬上限，仅报批标记）
 INSERT INTO biz_workload_rule (rule_code, rule_value, rule_desc, effective_from) VALUES
