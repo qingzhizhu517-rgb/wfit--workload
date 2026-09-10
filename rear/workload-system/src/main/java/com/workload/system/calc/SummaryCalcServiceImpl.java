@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import com.workload.common.exception.ServiceException;
 import com.workload.common.utils.DateUtils;
+import com.workload.system.calc.rule.ComplianceChecker;
 import com.workload.system.calc.rule.RuleParamService;
 import com.workload.system.domain.BizPayRate;
 import com.workload.system.domain.BizTeacherProfile;
@@ -60,6 +61,9 @@ public class SummaryCalcServiceImpl implements SummaryCalcService
     @Autowired
     private SemesterCalendar semesterCalendar;
 
+    @Autowired
+    private ComplianceChecker complianceChecker;
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public BizWorkloadSummary recalcSummary(Long userId, String semester, boolean persist)
@@ -83,8 +87,9 @@ public class SummaryCalcServiceImpl implements SummaryCalcService
             summary.setStatus(0);
         }
 
-        // 1. 聚合明细（排除已驳回）
-        Map<String, BigDecimal> typeSum = aggregateItems(userId, semester);
+        // 1. 聚合明细（排除已驳回）；明细列表同时供制度性校验复用
+        List<BizWorkloadItem> items = loadItems(userId, semester);
+        Map<String, BigDecimal> typeSum = aggregateItems(items);
         BigDecimal g7 = sumOf(typeSum, "G1", "G2", "G3", "G4", "G5", "G6");
         BigDecimal g8 = sumOf(typeSum, "G8");
         BigDecimal g9 = sumOf(typeSum, "G9");
@@ -123,8 +128,14 @@ public class SummaryCalcServiceImpl implements SummaryCalcService
         summary.setPerformancePay(scale(performance));
         summary.setIsCapped(capped ? 1 : 0);
 
-        // 3. 达标（第五条，展示用）
-        applyBasicTeaching(summary, profile, g10, semester);
+        // 3. 达标（第五条，展示用）；第六条「三门理论课视同完成」参与判定
+        ComplianceChecker.Result compliance = complianceChecker.check(userId, semester, items);
+        applyBasicTeaching(summary, profile, g10, semester, compliance.isThreeTheoryCourses());
+
+        // 4. 制度性告警写入 remark（第六/八/九/十条，只提示不改变计算结果）。
+        //    每次重算覆盖重写，保证告警与当前数据一致；无告警时清空，
+        //    驳回原因在教师重新提交后由本机制覆盖属预期行为。
+        summary.setRemark(String.join("；", compliance.getWarnings()));
 
         // 4. 落库（并发撞 uk_user_sem 唯一键时降级为更新，消除 check-then-act 竞态）
         if (persist)
@@ -171,10 +182,12 @@ public class SummaryCalcServiceImpl implements SummaryCalcService
     }
 
     /**
-     * 达标标准与结果：年标准/2 -> 产假×0.5 / 在职读博 128/2 / 访学视同完成
+     * 达标标准与结果：年标准/2 -> 产假×0.5 / 在职读博 128/2 / 访学视同完成；
+     * 第六条「每学期独立完成三门理论课视同为完成基本教学工作量（重复课等同于一门
+     * 课程，三门课不包含实践类课程）」——独立完成无法从数据核验，按 G1 去重课程名≥3 判定
      */
     private void applyBasicTeaching(BizWorkloadSummary summary, BizTeacherProfile profile,
-            BigDecimal g10, String semester)
+            BigDecimal g10, String semester, boolean threeTheoryCourses)
     {
         BigDecimal annual = annualStandard(summary.getTitle());
         BigDecimal standard = annual.divide(new BigDecimal("2"), 2, RoundingMode.HALF_UP);
@@ -200,7 +213,7 @@ public class SummaryCalcServiceImpl implements SummaryCalcService
             }
         }
         summary.setBasicTeachingStandard(scale(standard));
-        summary.setBasicTeachingMet(deemedMet || g10.compareTo(standard) >= 0 ? 1 : 0);
+        summary.setBasicTeachingMet(deemedMet || threeTheoryCourses || g10.compareTo(standard) >= 0 ? 1 : 0);
     }
 
     /**
@@ -292,12 +305,16 @@ public class SummaryCalcServiceImpl implements SummaryCalcService
         return list.isEmpty() ? null : list.get(0);
     }
 
-    private Map<String, BigDecimal> aggregateItems(Long userId, String semester)
+    private List<BizWorkloadItem> loadItems(Long userId, String semester)
     {
         BizWorkloadItem query = new BizWorkloadItem();
         query.setUserId(userId);
         query.setSemester(semester);
-        List<BizWorkloadItem> items = bizWorkloadItemMapper.selectBizWorkloadItemList(query);
+        return bizWorkloadItemMapper.selectBizWorkloadItemList(query);
+    }
+
+    private Map<String, BigDecimal> aggregateItems(List<BizWorkloadItem> items)
+    {
         Map<String, BigDecimal> typeSum = new HashMap<>();
         for (BizWorkloadItem item : items)
         {
