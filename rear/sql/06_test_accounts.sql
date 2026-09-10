@@ -115,8 +115,8 @@ INSERT INTO sys_role_menu(role_id, menu_id) VALUES
 (5, 2021),
 -- 按钮权限：学期汇总 查询/导出
 (5, 20201), (5, 20204),
--- 按钮权限：审批（签字；08_review_fixes.sql 已撤销错位的 20206 approve 授权，见 P2-03）
-(5, 20208),
+-- 2026-09-10 审批简化为两级后，院领导不再有任何审批环节：
+--   原 (5, 20208) sign 授权已随 17_simplify_approval.sql 移除（08_review_fixes.sql 已先撤销错位的 20206 approve）
 -- 按钮权限：导出报表
 (5, 20210), (5, 20211),
 -- 按钮权限：酬金记录 查询/导出

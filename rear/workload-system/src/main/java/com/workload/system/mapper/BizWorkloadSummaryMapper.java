@@ -100,19 +100,6 @@ public interface BizWorkloadSummaryMapper
             @Param("toStatus") Integer toStatus, @Param("remark") String remark, @Param("updateBy") String updateBy);
 
     /**
-     * 审批域专用：院领导签字确认（同时写 dept_leader_sign 与 lock_time），带前置状态条件
-     *
-     * @param id 汇总主键
-     * @param fromStatus 前置状态
-     * @param toStatus 目标状态
-     * @param signName 院领导签字（登录账户）
-     * @param updateBy 更新人
-     * @return 影响行数
-     */
-    public int signSummary(@Param("id") Long id, @Param("fromStatus") Integer fromStatus,
-            @Param("toStatus") Integer toStatus, @Param("signName") String signName, @Param("updateBy") String updateBy);
-
-    /**
      * 审批域专用：解锁（显式 SET lock_time = NULL，规避动态 SQL 对 null 值跳过的问题）
      *
      * @param id 汇总主键

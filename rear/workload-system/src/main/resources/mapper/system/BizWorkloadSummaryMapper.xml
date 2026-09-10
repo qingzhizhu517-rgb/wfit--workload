@@ -205,19 +205,22 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where id = #{id} and status = #{fromStatus}
     </update>
 
-    <!-- 教务助理审核通过：同时写 academic_assistant_sign 签字与时间 -->
+    <!-- 教务处审核通过（终态）：写 academic_assistant_sign 与 lock_time 并锁定。
+         2026-09-10 审批简化为两级后，本语句即终态变更，故在此写 lock_time -->
     <update id="approveSummary">
         update biz_workload_summary
         set status = #{toStatus},
             academic_assistant_sign = #{signName},
             academic_assistant_sign_time = NOW(),
+            lock_time = NOW(),
             update_by = #{updateBy},
             update_time = NOW()
         where id = #{id} and status = #{fromStatus}
     </update>
 
     <!-- 驳回：回到填报中(0)，清空已产生的签字痕迹，写 remark 驳回原因
-         （from∈{1,2}：可能已有教务助理/教师签字，必须一并清除，避免草稿态残留已签状态） -->
+         （from=1：待审阶段可能已有教师签字，必须一并清除，避免草稿态残留已签状态；
+          院领导签字列虽已不再写入，仍一并清空以防存量数据残留） -->
     <update id="rejectSummary">
         update biz_workload_summary
         set status = #{toStatus},
@@ -234,19 +237,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where id = #{id} and status = #{fromStatus}
     </update>
 
-    <!-- 院领导签字确认：同时写 dept_leader_sign 与 lock_time -->
-    <update id="signSummary">
-        update biz_workload_summary
-        set status = #{toStatus},
-            dept_leader_sign = #{signName},
-            dept_leader_sign_time = NOW(),
-            lock_time = NOW(),
-            update_by = #{updateBy},
-            update_time = NOW()
-        where id = #{id} and status = #{fromStatus}
-    </update>
+    <!-- 院领导签字（signSummary）已于 2026-09-10 审批简化时移除：
+         新流程审核即终态，由 approveSummary 一并写 lock_time。
+         dept_leader_sign / dept_leader_sign_time 两列保留不再写入，
+         rejectSummary / unlockById 仍会清空它们，防止存量数据残留旧签字。 -->
 
-    <!-- 解锁：已完结(3) 回填报中(0)。显式 SET 各列为 NULL——动态 SQL 对 null 值跳过，
+    <!-- 解锁：已完结(2) 回填报中(0)。显式 SET 各列为 NULL——动态 SQL 对 null 值跳过，
          通用 update 清不掉这些列。签字与 rejectSummary 同口径全部清空：记录退回草稿态后
          数字可被重算，旧签字若留着，等于让教务/院领导/教师为改动后的新数字背书，
          重走流程时须重新签一遍 -->
@@ -262,14 +258,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             dept_leader_sign_time = NULL,
             update_by = #{updateBy},
             update_time = NOW()
-        where id = #{id} and status = 3
+        where id = #{id} and status = 2
     </update>
 
-    <!-- 教师本人确认：限定本人记录且状态为待审(1)/待签(2) -->
+    <!-- 教师本人确认：限定本人记录且状态为待审(1)。
+         2026-09-10 简化两级审批后，待签(2) 已成为终态，教师确认只在待审阶段有效 -->
     <update id="teacherConfirmById">
         update biz_workload_summary
         set teacher_sign = #{teacherSign},
             teacher_sign_time = NOW()
-        where id = #{id} and user_id = #{userId} and status in (1, 2)
+        where id = #{id} and user_id = #{userId} and status in (1)
     </update>
 </mapper>

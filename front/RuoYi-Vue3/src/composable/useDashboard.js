@@ -18,16 +18,15 @@ export function useDashboard() {
   const auditCounts = reactive({
     draft: 0,
     pending: 0,
-    signed: 0,
     completed: 0
   })
 
   async function fetchAuditCounts() {
+    // 2026-09-10 审批简化为两级：0 填报中 / 1 教务处待审 / 2 已完结
     const statuses = [
       { key: 'draft', status: 0 },
       { key: 'pending', status: 1 },
-      { key: 'signed', status: 2 },
-      { key: 'completed', status: 3 }
+      { key: 'completed', status: 2 }
     ]
     // 并行请求各状态计数，单个失败不影响其他面板
     await Promise.all(statuses.map(s =>
@@ -86,8 +85,7 @@ export function useDashboard() {
 
     const auditData = [
       { value: auditCounts.draft, name: '填报中', itemStyle: { color: '#909399' } },
-      { value: auditCounts.pending, name: '教务助理待审', itemStyle: { color: '#e6a23c' } },
-      { value: auditCounts.signed, name: '院领导待签', itemStyle: { color: '#409eff' } },
+      { value: auditCounts.pending, name: '教务处待审', itemStyle: { color: '#e6a23c' } },
       { value: auditCounts.completed, name: '已完结', itemStyle: { color: '#67c23a' } }
     ]
 

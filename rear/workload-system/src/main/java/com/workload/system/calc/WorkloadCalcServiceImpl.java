@@ -35,8 +35,8 @@ public class WorkloadCalcServiceImpl implements WorkloadCalcService
     /** 明细状态：已核对（冻结） */
     private static final int ITEM_STATUS_CONFIRMED = 1;
 
-    /** 汇总状态：已锁定 */
-    private static final int SUMMARY_STATUS_LOCKED = 3;
+    /** 汇总状态：已锁定（2026-09-10 审批简化后终态为 2） */
+    private static final int SUMMARY_STATUS_LOCKED = 2;
 
     @Autowired
     private BizWorkloadItemMapper bizWorkloadItemMapper;

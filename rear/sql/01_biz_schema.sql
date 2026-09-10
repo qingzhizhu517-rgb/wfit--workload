@@ -312,7 +312,7 @@ CREATE TABLE biz_workload_summary (
   is_capped                TINYINT(1)    DEFAULT 0              COMMENT '触200%封顶',
   basic_teaching_standard  DECIMAL(10,2) DEFAULT NULL           COMMENT '第五条达标标准/学期',
   basic_teaching_met       TINYINT(1)    DEFAULT 0              COMMENT '达标G10>=standard',
-  status                   TINYINT(1)    DEFAULT 0              COMMENT '0填报中/1待教务审核/2待院领导签字/3已完结',
+  status                   TINYINT(1)    DEFAULT 0              COMMENT '0填报中/1教务处待审/2已完结(锁定)',
   teacher_sign             VARCHAR(64)   DEFAULT NULL,
   teacher_sign_time        DATETIME      DEFAULT NULL,
   dept_leader_sign         VARCHAR(64)   DEFAULT NULL,

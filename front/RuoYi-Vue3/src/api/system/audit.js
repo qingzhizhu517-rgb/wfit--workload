@@ -9,7 +9,7 @@ export function auditSubmit(id) {
   })
 }
 
-// 教务助理审核通过（待审 → 待签）
+// 教务处审核通过（待审 → 已完结，审核即终态）—— 2026-09-10 审批简化为两级
 export function auditApprove(id) {
   return request({
     url: '/system/audit/approve',
@@ -18,21 +18,12 @@ export function auditApprove(id) {
   })
 }
 
-// 教务助理驳回（待审 → 草稿）
+// 教务处驳回（待审 → 草稿）
 export function auditReject(id, reason) {
   return request({
     url: '/system/audit/reject',
     method: 'post',
     params: { id, reason }
-  })
-}
-
-// 院领导签字确认（待签 → 已完结）
-export function auditSign(id) {
-  return request({
-    url: '/system/audit/sign',
-    method: 'post',
-    params: { id }
   })
 }
 
@@ -54,7 +45,7 @@ export function auditBatchSubmit(ids) {
   })
 }
 
-// 教师确认工作量（待教务审核/待院领导签字阶段）
+// 教师确认工作量（待教务审核阶段）
 export function auditTeacherConfirm(id) {
   return request({
     url: '/system/audit/teacherConfirm',

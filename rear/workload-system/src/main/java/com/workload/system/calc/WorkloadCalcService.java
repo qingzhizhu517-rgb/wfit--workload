@@ -30,7 +30,7 @@ public interface WorkloadCalcService
     public int recalcItems(Long userId, String semester);
 
     /**
-     * 可编辑护栏：明细已核对（status=1）或学期汇总已锁定（status=3）时抛 ServiceException
+     * 可编辑护栏：明细已核对（status=1）或学期汇总已锁定（status=2）时抛 ServiceException
      *
      * @param itemId 明细主表 id
      */

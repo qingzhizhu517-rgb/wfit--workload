@@ -33,8 +33,8 @@ import com.workload.common.core.page.TableDataInfo;
 @RequestMapping("/system/workloadSummary")
 public class BizWorkloadSummaryController extends BaseController
 {
-    /** 汇总状态：已完结（锁定） */
-    private static final int STATUS_FINISHED = 3;
+    /** 汇总状态：已完结（锁定）—— 2026-09-10 审批简化后为 2 */
+    private static final int STATUS_FINISHED = 2;
 
     @Autowired
     private IBizWorkloadSummaryService bizWorkloadSummaryService;
@@ -121,7 +121,7 @@ public class BizWorkloadSummaryController extends BaseController
         // 按数据库记录的归属人校验，防止伪造 userId 绕过
         DataScopeUtil.assertOwnOrAdmin(existing.getUserId());
 
-        // 已完结(3)记录锁定，任何角色不可经通用 edit 修改；如需变更请先走审批解锁
+        // 已完结(2)记录锁定，任何角色不可经通用 edit 修改；如需变更请先走审批解锁
         if (existing.getStatus() != null && existing.getStatus() == STATUS_FINISHED)
         {
             throw new ServiceException("该汇总已完结锁定，禁止修改；如需变更请先解锁");

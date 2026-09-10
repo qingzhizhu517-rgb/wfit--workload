@@ -13,16 +13,19 @@
 --
 -- 口径说明：
 --   biz_audit_log.from_status / to_status 采用 TINYINT(1)，与
---   01_biz_schema.sql 中 biz_workload_summary.status（TINYINT(1)，
---   0填报中/1待教务审核/2待院领导签字/3已完结）保持一致（已核对）。
+--   01_biz_schema.sql 中 biz_workload_summary.status（TINYINT(1)）保持一致（已核对）。
+--   ⚠ 2026-09-10 审批简化为两级，状态口径由
+--     「0填报中/1待教务审核/2待院领导签字/3已完结」改为
+--     「0填报中/1教务处待审/2已完结(锁定)」（见 17_simplify_approval.sql）。
+--     简化的存量日志中仍可能出现 from/to = 3，属历史值，不是脏数据。
 -- ============================================================
 
 -- ==================== 1. 审批流转日志表（P1-03/P1-05） ====================
 CREATE TABLE IF NOT EXISTS biz_audit_log (
   id            BIGINT       NOT NULL AUTO_INCREMENT COMMENT '主键',
   summary_id    BIGINT       NOT NULL COMMENT '学期汇总ID',
-  action        VARCHAR(32)  NOT NULL COMMENT '动作: submit/approve/reject/sign/unlock/teacherConfirm',
-  from_status   TINYINT(1)   DEFAULT NULL COMMENT '流转前状态（与 biz_workload_summary.status 同口径: 0填报中/1待教务审核/2待院领导签字/3已完结）',
+  action        VARCHAR(32)  NOT NULL COMMENT '动作: submit/approve/reject/unlock/teacherConfirm（sign 为 2026-09-10 前的历史值）',
+  from_status   TINYINT(1)   DEFAULT NULL COMMENT '流转前状态: 0填报中/1教务处待审/2已完结（历史值可能为 3 待院领导签字/已完结）',
   to_status     TINYINT(1)   DEFAULT NULL COMMENT '流转后状态',
   operator_id   BIGINT       DEFAULT NULL COMMENT '操作人ID',
   operator_name VARCHAR(64)  DEFAULT NULL COMMENT '操作人',

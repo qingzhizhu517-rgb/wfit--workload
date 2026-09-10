@@ -89,11 +89,17 @@ ry_20260321.sql → quartz.sql → 01_biz_schema.sql → 02_biz_seed.sql → 03_
 
 ## Approval State Machine
 
+Simplified to two levels on 2026-09-10 (leader-sign step removed; old status 3 migrated to 2
+by `sql/17_simplify_approval.sql`).
+
 ```
-0 (draft) → 1 (assistant review) → 2 (leader sign) → 3 (locked)
-                                                            ↑
--1 (rejected) → back to 0, can resubmit
+0 (draft) → 1 (registry review) → 2 (locked)
+                 └── reject ──→ back to 0
 ```
+
+Reject returns to 0, **not** to -1 (-1 was never implemented).
+Note: `biz_workload_item.status` is a **different** state machine
+(0 draft / 1 confirmed / 2 disputed / 3 rejected) — do not mix them up.
 
 ## Environment
 

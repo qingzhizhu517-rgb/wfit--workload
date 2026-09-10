@@ -426,7 +426,7 @@
             提交
           </el-button>
           <el-button
-            v-if="isTeacher && (scope.row.status === 1 || scope.row.status === 2) && scope.row.userId === userStore.id"
+            v-if="isTeacher && scope.row.status === 1 && scope.row.userId === userStore.id"
             v-hasPermi="['system:audit:teacherConfirm']"
             link
             type="primary"
@@ -435,7 +435,7 @@
           >
             确认工作量
           </el-button>
-          <!-- 教务/院领导审批操作 -->
+          <!-- 教务处审批操作 -->
           <template v-if="!isTeacher">
             <el-button
               v-if="scope.row.status === 0"
@@ -469,16 +469,6 @@
             </el-button>
             <el-button
               v-if="scope.row.status === 2"
-              v-hasPermi="['system:audit:sign']"
-              link
-              type="primary"
-              icon="EditPen"
-              @click="handleSign(scope.row)"
-            >
-              签字
-            </el-button>
-            <el-button
-              v-if="scope.row.status === 3"
               v-hasPermi="['system:audit:unlock']"
               link
               type="info"
@@ -729,7 +719,7 @@ import { recalcSummary, recalcAll, recalcAllBatch, previewSummary, genG11 } from
 import { exportPersonalWorkload, exportPaySummary } from '@/api/system/export'
 import { ElMessageBox } from 'element-plus'
 import { saveBlobAsFile } from '@/utils/blobDownload'
-import { auditSubmit, auditApprove, auditReject, auditSign, auditUnlock, auditBatchSubmit, auditTeacherConfirm } from '@/api/system/audit'
+import { auditSubmit, auditApprove, auditReject, auditUnlock, auditBatchSubmit, auditTeacherConfirm } from '@/api/system/audit'
 import UserSelect from '@/components/UserSelect/index.vue'
 import SemesterSelect from '@/components/SemesterSelect/index.vue'
 import { useUserMap } from '@/utils/userCache'
@@ -1025,13 +1015,13 @@ function handleTeacherConfirm(row) {
   }).catch(() => {})
 }
 
-/** 审核通过 */
+/** 审核通过（即完结） */
 function handleApprove(row) {
-  proxy.$modal.confirm(`确认审核通过「${userLabel(row.userId)}」${row.semester} 的工作量汇总？`).then(() => {
+  proxy.$modal.confirm(`确认审核通过「${userLabel(row.userId)}」${row.semester} 的工作量汇总？通过后汇总即完结锁定。`).then(() => {
     return auditApprove(row.id)
   }).then(() => {
     getList()
-    proxy.$modal.msgSuccess('审核通过，已转院领导签字')
+    proxy.$modal.msgSuccess('审核通过，汇总已完结')
   }).catch(() => {})
 }
 
@@ -1047,16 +1037,6 @@ function handleReject(row) {
   }).then(() => {
     getList()
     proxy.$modal.msgSuccess('已驳回，退回填报中')
-  }).catch(() => {})
-}
-
-/** 院领导签字 */
-function handleSign(row) {
-  proxy.$modal.confirm(`确认签字确认「${userLabel(row.userId)}」${row.semester} 的工作量汇总？签字后汇总将完结。`).then(() => {
-    return auditSign(row.id)
-  }).then(() => {
-    getList()
-    proxy.$modal.msgSuccess('签字确认完成，汇总已完结')
   }).catch(() => {})
 }
 

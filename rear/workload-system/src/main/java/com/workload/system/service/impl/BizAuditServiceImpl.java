@@ -26,7 +26,10 @@ import com.workload.system.service.BizAuditService;
 /**
  * 工作量审批领域服务实现
  * <p>
- * 审批状态机：0填报中 → 1教务助理待审 → 2院领导待签 → 3已完结。
+ * 审批状态机（2026-09-10 简化为两级）：0 填报中 → 1 教务处待审 → 2 已完结(锁定)。
+ * 驳回从 1 回到 0。院领导签字环节已移除：{@code dept_leader_sign} 列保留但不再写入
+ * （保留列便于将来恢复）。
+ * <p>
  * 每个动作：前置校验 → 带前置状态的原子条件更新（按影响行数判定并发冲突）
  * → 同事务写入 biz_audit_log 审批日志。
  * <p>
@@ -44,19 +47,18 @@ public class BizAuditServiceImpl implements BizAuditService
     /** 状态：填报中 */
     private static final int STATUS_DRAFT = 0;
 
-    /** 状态：教务助理待审 */
+    /** 状态：教务处待审 */
     private static final int STATUS_PENDING_AUDIT = 1;
 
-    /** 状态：院领导待签 */
-    private static final int STATUS_PENDING_SIGN = 2;
-
-    /** 状态：已完结（已锁定） */
-    private static final int STATUS_FINISHED = 3;
+    /** 状态：已完结（已锁定）—— 教务处审核通过即终态 */
+    private static final int STATUS_FINISHED = 2;
 
     /** 审批动作枚举（biz_audit_log.action 列取值） */
     private static final String ACTION_SUBMIT = "submit";
     private static final String ACTION_APPROVE = "approve";
     private static final String ACTION_REJECT = "reject";
+    /** 历史日志值：2026-09-10 简化为两级审批前存在院领导签字环节，存量日志中仍有此 action，
+     *  保留常量以免后人误以为可清理；新流程不再产生 */
     private static final String ACTION_SIGN = "sign";
     private static final String ACTION_UNLOCK = "unlock";
     private static final String ACTION_TEACHER_CONFIRM = "teacherConfirm";
@@ -101,9 +103,10 @@ public class BizAuditServiceImpl implements BizAuditService
         assertStatus(summary, STATUS_PENDING_AUDIT, "只有待审状态才能审核");
 
         String username = SecurityUtils.getUsername();
-        int rows = bizWorkloadSummaryMapper.approveSummary(id, STATUS_PENDING_AUDIT, STATUS_PENDING_SIGN, username, username);
-        assertUpdated(rows, id, STATUS_PENDING_AUDIT, STATUS_PENDING_SIGN);
-        writeAuditLog(id, ACTION_APPROVE, STATUS_PENDING_AUDIT, STATUS_PENDING_SIGN, null);
+        // 教务处审核通过即终态：置已完结(2)，同时写 academic_assistant_sign 与 lock_time
+        int rows = bizWorkloadSummaryMapper.approveSummary(id, STATUS_PENDING_AUDIT, STATUS_FINISHED, username, username);
+        assertUpdated(rows, id, STATUS_PENDING_AUDIT, STATUS_FINISHED);
+        writeAuditLog(id, ACTION_APPROVE, STATUS_PENDING_AUDIT, STATUS_FINISHED, null);
     }
 
     @Override
@@ -111,13 +114,12 @@ public class BizAuditServiceImpl implements BizAuditService
     public void reject(Long id, String reason)
     {
         BizWorkloadSummary summary = requireSummary(id);
-        // 任意审批环节（教务助理待审 1 / 院领导待签 2）均可驳回，回到填报中 0
+        // 简化两级审批后只剩一个审批环节（教务处待审 1），故驳回只支持 1 → 0
         Integer current = summary.getStatus();
-        if (current == null
-                || (current != STATUS_PENDING_AUDIT && current != STATUS_PENDING_SIGN))
+        if (current == null || current != STATUS_PENDING_AUDIT)
         {
             throw new ServiceException(
-                    "只有待审或待签状态才能驳回（当前状态: " + current + "）", CODE_STATUS_CONFLICT);
+                    "只有待审状态才能驳回（当前状态: " + current + "）", CODE_STATUS_CONFLICT);
         }
 
         String username = SecurityUtils.getUsername();
@@ -126,19 +128,6 @@ public class BizAuditServiceImpl implements BizAuditService
         int rows = bizWorkloadSummaryMapper.rejectSummary(id, current, STATUS_DRAFT, remark, username);
         assertUpdated(rows, id, current, STATUS_DRAFT);
         writeAuditLog(id, ACTION_REJECT, current, STATUS_DRAFT, reason);
-    }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void sign(Long id)
-    {
-        BizWorkloadSummary summary = requireSummary(id);
-        assertStatus(summary, STATUS_PENDING_SIGN, "只有待签状态才能签字");
-
-        String username = SecurityUtils.getUsername();
-        int rows = bizWorkloadSummaryMapper.signSummary(id, STATUS_PENDING_SIGN, STATUS_FINISHED, username, username);
-        assertUpdated(rows, id, STATUS_PENDING_SIGN, STATUS_FINISHED);
-        writeAuditLog(id, ACTION_SIGN, STATUS_PENDING_SIGN, STATUS_FINISHED, null);
     }
 
     @Override
@@ -160,10 +149,9 @@ public class BizAuditServiceImpl implements BizAuditService
     public void teacherConfirm(Long id)
     {
         BizWorkloadSummary summary = requireSummary(id);
-        if (summary.getStatus() == null
-                || (summary.getStatus() != STATUS_PENDING_AUDIT && summary.getStatus() != STATUS_PENDING_SIGN))
+        if (summary.getStatus() == null || summary.getStatus() != STATUS_PENDING_AUDIT)
         {
-            throw new ServiceException("只有待审或待签状态才能教师确认（当前状态: " + summary.getStatus() + "）", CODE_STATUS_CONFLICT);
+            throw new ServiceException("只有待审状态才能教师确认（当前状态: " + summary.getStatus() + "）", CODE_STATUS_CONFLICT);
         }
 
         // SecurityUtils 无 getNickName 方法，按约定取登录账户

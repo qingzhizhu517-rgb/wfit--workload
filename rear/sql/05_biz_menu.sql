@@ -130,8 +130,8 @@ INSERT INTO sys_menu(menu_id, menu_name, parent_id, order_num, path, component, 
 VALUES(20206, '审批通过', 2020, 6, '', '', '', '', 1, 0, 'F', '0', '0', 'system:audit:approve', '#', 'admin', sysdate(), '', NULL, '');
 INSERT INTO sys_menu(menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark)
 VALUES(20207, '审批驳回', 2020, 7, '', '', '', '', 1, 0, 'F', '0', '0', 'system:audit:reject', '#', 'admin', sysdate(), '', NULL, '');
-INSERT INTO sys_menu(menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark)
-VALUES(20208, '审批签字', 2020, 8, '', '', '', '', 1, 0, 'F', '0', '0', 'system:audit:sign', '#', 'admin', sysdate(), '', NULL, '');
+-- 20208 '审批签字' (system:audit:sign) 已于 2026-09-10 审批简化为两级时移除：
+-- 审核即终态，无独立签字环节。存量库由 17_simplify_approval.sql 清理。
 INSERT INTO sys_menu(menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark)
 VALUES(20209, '审批解锁', 2020, 9, '', '', '', '', 1, 0, 'F', '0', '0', 'system:audit:unlock', '#', 'admin', sysdate(), '', NULL, '');
 

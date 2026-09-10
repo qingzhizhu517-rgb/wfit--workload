@@ -65,18 +65,6 @@ public class BizAuditController extends BaseController
     }
 
     /**
-     * 院领导签字确认（待签 → 已完结）
-     */
-    @PreAuthorize("@ss.hasPermi('system:audit:sign')")
-    @Log(title = "院领导签字确认", businessType = BusinessType.UPDATE)
-    @PostMapping("/sign")
-    public AjaxResult sign(@RequestParam("id") Long id)
-    {
-        bizAuditService.sign(id);
-        return success();
-    }
-
-    /**
      * 解锁（管理员：已完结 → 填报中）
      */
     @PreAuthorize("@ss.hasPermi('system:audit:unlock')")
