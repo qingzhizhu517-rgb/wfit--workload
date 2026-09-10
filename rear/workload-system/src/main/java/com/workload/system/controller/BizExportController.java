@@ -185,13 +185,23 @@ public class BizExportController extends BaseController
         }
         if (dto.getOverLimit() != null && dto.getOverLimit() == 1)
         {
-            // 同一个 is_over_limit 标记在 G5 与 G6 上语义不同，不能共用一句话：
-            // G6 真按 min(R6, CAP_R6_MAX) 封顶算；G5 从不封顶（ThesisCalcStrategy 无 min），
-            // 其标记只表示「人数超申报门槛，须报院长批准、教务处备案」，学时仍按实际人数计。
-            // 一律写「已按封顶值核算」会让审核人误判 G5 行的学时被砍过。
-            parts.add("G5".equals(dto.getItemType())
-                    ? "人数超申报上限，须报院长批准、教务处备案（学时按实际人数计，未封顶）"
-                    : "人数超上限，已按封顶值核算");
+            // is_over_limit 三类语义（2026-09-10 起 G4 也置标记）：
+            // G4 超告警阈值但未封顶（第十四条4 无「超出不计」，按实际人数计）；
+            // G5 超报批门槛但未封顶（第十四条5 按实际人数计）；
+            // G6 真按 min(R6, CAP_R6_MAX) 封顶算（第十四条6注4）。
+            // 一律写「已按封顶值核算」会让审核人误判 G4/G5 行的学时被砍过。
+            if ("G4".equals(dto.getItemType()))
+            {
+                parts.add("人数超 60 告警阈值，学时按实际人数计（第十四条4 无「超出不计」）");
+            }
+            else if ("G5".equals(dto.getItemType()))
+            {
+                parts.add("人数超申报上限，须报院长批准、教务处备案（学时按实际人数计，未封顶）");
+            }
+            else
+            {
+                parts.add("人数超上限，已按封顶值核算");
+            }
         }
         if (StringUtils.isNotEmpty(dto.getRoleType()))
         {

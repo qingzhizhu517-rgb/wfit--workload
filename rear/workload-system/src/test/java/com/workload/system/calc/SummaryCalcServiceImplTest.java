@@ -119,6 +119,34 @@ class SummaryCalcServiceImplTest
         assertThat(service.recalcSummary(USER, SEMESTER, false).getRemark()).isEmpty();
     }
 
+    @Test
+    @DisplayName("G11 累计 200 超 180/学期 → 封顶为 180 且 remark 含封顶告警（第十六条注）")
+    void g11CapWarningWritten()
+    {
+        when(complianceChecker.check(any(), anyString(), any())).thenReturn(result(false));
+        when(bizWorkloadItemMapper.selectBizWorkloadItemList(any())).thenReturn(Collections.singletonList(
+                item("G11", "200.00")));
+
+        BizWorkloadSummary summary = service.recalcSummary(USER, SEMESTER, false);
+
+        assertThat(summary.getG11()).isEqualByComparingTo("180.00");
+        assertThat(summary.getRemark()).contains("G11 管理服务累计 200").contains("180/学期封顶");
+    }
+
+    @Test
+    @DisplayName("总工作量 580 超 CAP_200PCT=540 → isCapped=1 且 remark 含绩效封顶告警（第二十条）")
+    void cap200WarningWritten()
+    {
+        when(complianceChecker.check(any(), anyString(), any())).thenReturn(result(false));
+        when(bizWorkloadItemMapper.selectBizWorkloadItemList(any())).thenReturn(Collections.singletonList(
+                item("G1", "580.00")));
+
+        BizWorkloadSummary summary = service.recalcSummary(USER, SEMESTER, false);
+
+        assertThat(summary.getIsCapped()).isEqualTo(1);
+        assertThat(summary.getRemark()).contains("CAP_200PCT=540").contains("绩效酬金已按封顶值核算");
+    }
+
     private ComplianceChecker.Result result(boolean threeTheory)
     {
         ComplianceChecker.Result result = new ComplianceChecker.Result();

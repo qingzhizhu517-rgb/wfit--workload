@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
@@ -132,10 +133,25 @@ public class SummaryCalcServiceImpl implements SummaryCalcService
         ComplianceChecker.Result compliance = complianceChecker.check(userId, semester, items);
         applyBasicTeaching(summary, profile, g10, semester, compliance.isThreeTheoryCourses());
 
-        // 4. 制度性告警写入 remark（第六/八/九/十条，只提示不改变计算结果）。
-        //    每次重算覆盖重写，保证告警与当前数据一致；无告警时清空，
+        // 4. 截断与降级统一告警（2026-09-10 原则：静默截断 = 教师无声少拿钱）。
+        //    制度性校验（第六/八/九/十条）+ G11 学期封顶 + 540 绩效封顶，
+        //    只提示不改变计算结果；每次重算覆盖重写保持与当前数据一致，
         //    驳回原因在教师重新提交后由本机制覆盖属预期行为。
-        summary.setRemark(String.join("；", compliance.getWarnings()));
+        List<String> warnings = new ArrayList<>(compliance.getWarnings());
+        BigDecimal g11Raw = sumOf(typeSum, "G11");
+        if (g11Raw.compareTo(g11Cap) > 0)
+        {
+            warnings.add(String.format("G11 管理服务累计 %s 已按 %s/学期封顶（第十六条注）",
+                    scale(g11Raw).stripTrailingZeros().toPlainString(),
+                    g11Cap.stripTrailingZeros().toPlainString()));
+        }
+        if (capped)
+        {
+            warnings.add(String.format("总工作量 %s 超 CAP_200PCT=%s，绩效酬金已按封顶值核算（第二十条）",
+                    scale(total).stripTrailingZeros().toPlainString(),
+                    cap200.stripTrailingZeros().toPlainString()));
+        }
+        summary.setRemark(String.join("；", warnings));
 
         // 4. 落库（并发撞 uk_user_sem 唯一键时降级为更新，消除 check-then-act 竞态）
         if (persist)

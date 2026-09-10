@@ -137,5 +137,14 @@ public class BizAllowanceItemServiceImpl implements IBizAllowanceItemService
             throw new ServiceException("酬金类型未启用: " + item.getFeeType());
         }
         item.setAmount(strategy.calculate(item));
+        // 第十五条1(2)：≥20 人应单独开班走 G1（理论课）路线，本项归零。
+        // 静默归零教师无从判断是漏报还是规则如此，故落 remark 告警
+        // （2026-09-10 统一原则：截断与降级必须告警）
+        if ("A".equals(item.getFeeType()) && item.getFeeSubtype() != null
+                && item.getFeeSubtype().contains("自学")
+                && item.getStudentCount() != null && item.getStudentCount() >= 20)
+        {
+            item.setRemark("人数≥20 已达单独开班标准（第十五条1(2)），本项不计酬金，工作量按理论课路线核算");
+        }
     }
 }
