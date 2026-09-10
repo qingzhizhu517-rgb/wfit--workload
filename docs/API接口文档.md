@@ -101,7 +101,8 @@
 | 4 | GET | `/system/calc/preview` | 汇总预览 | `userId`, `semester` (Query) | 不落库仿真预览，用于导出前确认 |
 | 5 | POST | `/system/calc/recalcPay` | 重算酬金 | `userId`, `semester` (Query) | 需先重算汇总，计算课时酬金+其他酬金 |
 | 6 | POST | `/system/calc/genG11` | 生成 G11 | `semester` (必填), `userId` (可选) | 从岗位任职自动生成管理服务明细，支持全量或单人 |
-| 7 | POST | `/system/calc/recalcAll` | **一键核算** | `userId`, `semester` (Query) | 重算明细 → 汇总 → 酬金，完整流程 |
+| 7 | POST | `/system/calc/recalcAll` | **一键核算（单教师）** | `userId`, `semester` (Query) | 重算明细 → 汇总 → 酬金，Service 层单事务，失败整体回滚 |
+| 8 | POST | `/system/calc/recalcAllBatch` | **批量一键核算** | `semester` (Query) + Body `[userId,...]`（可省略/传空 = 该学期全部有明细的教师） | 逐教师执行「明细→汇总→酬金」，**每人独立事务**：单人失败只记入 `failures`，其余照算。返回 `{successCount, failCount, recalcItemCount, failures:[{userId,userName,reason}]}`。教师角色被 `DataScopeUtil` 强制收敛为只能算自己 |
 
 **核算公式**：
 
@@ -150,35 +151,37 @@
 
 | # | 方法 | 路径 | 功能 | 参数 | 说明 |
 |---|------|------|------|------|------|
-| 1 | GET | `/system/export/personalWorkload` | 附件1：个人工作量明细表 | `userId`, `semester` | 返回 Excel 文件流 |
-| 2 | GET | `/system/export/paySummary` | 附件2：绩效酬金统计表 | `semester` | 返回 Excel 文件流 |
+| 1 | GET | `/system/export/personalWorkload` | 附件1：个人工作量明细表 | `userId`, `semester` | 权限 `system:export:personal`（菜单 20210）。教师角色的 `userId` 被 `DataScopeUtil.resolveUserId` 强制改写为本人，传别人的 ID 无效 |
+| 2 | GET | `/system/export/paySummary` | 附件2：绩效酬金统计表 | `semester` | 权限 `system:export:paySummary`（菜单 20211，**教师不持有**）。全院一张表，教师角色调用会被收敛成只有自己一行 |
 
-**附件1 格式**：
+**前端入口**：原先只挂在各角色仪表盘上；现已同时落到「学期汇总」页 —— 工具栏导出附件2（取搜索栏的学期），行内「附件1」按钮导出该行教师本学期明细。两处都走 `utils/blobDownload.js`，失败时能读出后端返回的 `text/plain` 文本而不是抛一个空 blob。
+
+**附件1 实际列集**（EasyExcel 平铺一张 sheet「工作量明细」，列序 = `PersonalWorkloadDetailExportDTO` 字段声明序，共 19 列）：
+
 ```
-潍坊理工学院教师工作量统计表
-学年学期：2025-2026-1    教师：张三    职称：讲师
-
-一、教学工作量
-序号 | 类别 | 课程名称 | 学时 | 系数 | 核算工作量
-1    | G1   | 高等数学 | 32   | ...  | 34.85
-小计：G7 = xxx
-二、第二课堂 G8 = xxx
-三、其他 G9 = xxx
-四、教学工作量合计 G10 = xxx
-五、管理服务 G11 = xxx
-六、总工作量 = xxx
-七、额定工作量 = xxx
-八、超额工作量 = xxx
+类别 | 项目名称 | 班级 | 授课层次 | 专业大类 | 基数(学时/天/周/学分) | 人数 |
+重复次序 | 重复系数 | 课程类型K1 | 教学质量Q1 | 课程质量Q2 | 全外文Q3 | 合堂系数N |
+其他系数(D/K5/K) | 核算工作量 | 系数说明 | 数据来源 | 状态
 ```
 
-**附件2 格式**：
-```
-潍坊理工学院教师绩效酬金统计表
-学年学期：2025-2026-1
+- 「重复次序 / 重复系数 / 班级」是本轮新增的可追溯性三件套：直接回答「这条为什么只算 0.8、是哪个班」。
+- 「系数说明」由 `buildCoefRemark` 拼成人话（第几次开课、合堂人数档、是否触封顶），无需再回查 `biz_wl_*`。
+- 「数据来源」区分 `IMPORT`(Excel 导入) / `SELF`(教师自主申报) / `AUTO`(G11 自动生成)。
+- 无明细时**不写空 Excel**，返回 `text/plain` 提示「未找到该教师该学期的工作量明细」，避免空文件被误读成「本学期没工作量」。
 
-序号 | 姓名 | 职称 | 总工作量 | 额定 | 超额 | 单价 | 课时酬金 | 其他酬金 | 总计
-1    | 张三 | 讲师 | 300     | 180  | 120  | 50   | 6000    | 1296.5  | 7297
+**附件2 实际列集**（sheet「绩效酬金统计」，列序 = `PaySummaryExportDTO` 字段声明序，共 17 列）：
+
 ```
+工号 | 姓名 | 院部 | 学年学期 | 职称 | 人员性质 | 总工作量 | 额定工作量 | 超额工作量 |
+是否触顶 | 计酬超额工作量 | 单位酬金(元) | 绩效酬金(元) | 其他酬金(元) | 总金额(元) | 审批状态 | 备注
+```
+
+- 绩效/其他/总金额三列**读 `biz_pay_record` 落库值**（与「酬金记录」页同源），不在导出时重算。
+  `biz_pay_record` 是 LEFT JOIN，未核算酬金的教师照样在册，金额列为空即「待核算」。
+- 「超额工作量」= 总工作量 − 额定，**不封顶**；触顶(>`CAP_200PCT`)时它不是计酬基数，故并排给出
+  「计酬超额工作量」= `min(总工作量, CAP_200PCT) − 额定`。两列并排是为了让「超额 × 单位酬金 ≠ 绩效酬金」
+  不被当成算错。封顶线取 `biz_workload_rule` 的 `CAP_200PCT` 当前值，未在 SQL 里写死 540。
+- 「备注」写明金额为 0 的原因：人员性质非「专任」不计发 / 已触 200% 上限 / 尚未核算。
 
 ---
 
@@ -204,12 +207,25 @@
 |---|------|------|------|------|------|
 | 1 | GET | `/system/teachingTask/list` | 查询列表 | Query 参数绑定 | 分页 |
 | 2 | POST | `/system/teachingTask/importExcel` | **Excel 导入** | `file` (MultipartFile) | 自动解析并创建工作量明细 |
-| 3 | POST | `/system/teachingTask/importTemplate` | 下载导入模板 | - | 返回 Excel 模板文件 |
+| 3 | POST | `/system/teachingTask/importTemplate` | 下载导入模板 | - | 返回 Excel 模板文件（17 列，列序见下） |
 | 4 | POST | `/system/teachingTask/export` | 导出列表 | Query 参数绑定 | 返回 Excel |
 | 5 | GET | `/system/teachingTask/{id}` | 查询详情 | `id` (路径) | |
 | 6 | POST | `/system/teachingTask` | 新增 | JSON Body | |
 | 7 | PUT | `/system/teachingTask` | 修改 | JSON Body | |
 | 8 | DELETE | `/system/teachingTask/{ids}` | 批量删除 | `ids` (路径) | |
+
+**导入模板 17 列**（列序 = `TeachingTaskImportDTO` 的 `@ExcelProperty` 声明序；EasyExcel 按表头名匹配，列可换位但名不能改）：
+
+```
+学年学期 | 教师工号 | 教师姓名 | 课程名称 | 课程代码 | 工作量类别 | 授课层次 | 专业大类 |
+课程性质 | 课程级别 | 课程角色 | 教学评价 | 选课人数 | 计划学时/天数/周数 | 课程系数 |
+班级 | 重复次序
+```
+
+- 必填：`学年学期`(须形如 `2025-2026-1`)、`教师工号`(须已存在于 `sys_user`)、`课程名称`、`工作量类别`(G1~G6)、`计划学时/天数/周数`(>0)。其余留空走默认值（授课层次=本科、专业大类=理工类、课程性质=必修…）。
+- **`班级`**：落 `biz_teaching_task.class_name`，是附件1「系数说明」能指名到具体班次的唯一来源。同一门课的不同班务必填写，否则导出只能看到课程名。
+- **`重复次序`**：可选，决定重复系数 C1(G1) / K(G3) 取第几档。**填了以填的为准**（教务可人工指定哪个班算第一次）；留空则按 `countSameCourseTask` 的同组已入库条数 +1 自动补位。分组口径 = 教师 + 学年学期 + 课程名称 + 授课层次 + 工作量类别（**不含课程代码与班级**，与 `else/工作量.md:15-18` 一致）。填 0 或负数视为笔误直接报错，不静默当 1。
+- 自动补位依赖流式导入的「逐行独立事务、顺序提交」，因此分两次导入同一门课的不同班级也能正确续算（计数走库，不走批次内存）。
 
 ---
 
@@ -483,7 +499,8 @@ user、role、menu、dept、dict、config、notice、post 等系统管理页面�
 | | `previewSummary(userId, semester)` | GET | `/system/calc/preview` | 预览汇总 |
 | | `recalcPay(userId, semester)` | POST | `/system/calc/recalcPay` | 重算酬金 |
 | | `genG11(semester, userId)` | POST | `/system/calc/genG11` | 生成G11 |
-| | `recalcAll(userId, semester)` | POST | `/system/calc/recalcAll` | 一键核算 |
+| | `recalcAll(userId, semester)` | POST | `/system/calc/recalcAll` | 一键核算（单教师） |
+| | `recalcAllBatch(semester, userIds)` | POST | `/system/calc/recalcAllBatch` | 批量核算（`userIds` 传空数组 = 全学期） |
 | **audit.js** | `auditSubmit(id)` | POST | `/system/audit/submit` | 提交审核 |
 | | `auditApprove(id)` | POST | `/system/audit/approve` | 审核通过 |
 | | `auditReject(id, reason)` | POST | `/system/audit/reject` | 驳回 |
@@ -548,8 +565,8 @@ user、role、menu、dept、dict、config、notice、post 等系统管理页面�
         ↓ 读取 RuleParamService 的规则参数（Redis 缓存）
         ↓ 计算 final_workload，更新 biz_workload_item + biz_wl_* 明细
       SummaryCalcService.recalcSummary(userId, semester)
-        ↓ 按类别 GROUP BY 汇总 → JSON 填入 category_details
-        ↓ 计算 G7/G10/总工作量/超额/酬金 → 更新 biz_workload_summary
+        ↓ 按类别 GROUP BY 汇总（结果不落 JSON，biz_workload_summary 无 category_details 列）
+        ↓ 计算 G7/G10/G11(封顶180)/总工作量/超额(不封顶)/绩效(按 min(总量,540)−180，仅专任) → 更新 biz_workload_summary
       PayCalcService.recalcPay(userId, semester)
         ↓ 读取 pay_rate 获取职称单价
         ↓ 计算课时酬金 + 其他酬金(A-G) → 写入 biz_pay_record
@@ -584,11 +601,19 @@ user、role、menu、dept、dict、config、notice、post 等系统管理页面�
 ### 7.4 报表导出流程
 
 ```
-前端: exportPersonalWorkload({userId, semester}) — responseType: blob
-        ↓
-后端: 查询 workload_item + wl_* 明细 + summary 汇总
-        ↓ 按学校规定格式填充 Excel
-        ↓ 写入 HttpServletResponse 返回文件流
+附件1  前端: exportPersonalWorkload({userId, semester}) — responseType: blob
+        ↓ DataScopeUtil.resolveUserId(userId)（教师收敛为本人）
+        ↓ BizExportMapper.selectPersonalWorkloadExport：workload_item LEFT JOIN 6 张 wl_* 明细 + teaching_task（取班级/重复次序）
+        ↓ 空结果 → 直接写 text/plain「未找到该教师该学期的工作量明细」并 return（不产出空 Excel）
+        ↓ 逐行 buildCoefRemark(dto) 生成「系数说明」人话
+        ↓ EasyExcel 写 19 列平铺 sheet → 工作量明细_<姓名>_<学期>.xlsx
+
+附件2  前端: exportPaySummary({semester})
+        ↓ BizExportMapper.selectPaySummaryExport(semester, resolveUserId(null))
+          summary LEFT JOIN pay_record（金额读落库值，不重算）LEFT JOIN teacher_profile（取人员性质）
+        ↓ cap200 = RuleParamService.get("CAP_200PCT", 540)
+        ↓ 逐行 fillPayExplain(dto, cap200)：算「计酬超额工作量」+ 写「备注」（非专任/已触顶/未核算）
+        ↓ EasyExcel 写 17 列平铺 sheet → 绩效酬金统计_<学期>.xlsx
 ```
 
 ---
@@ -597,7 +622,7 @@ user、role、menu、dept、dict、config、notice、post 等系统管理页面�
 
 | # | 问题 | 影响范围 | 优先级 |
 |---|------|----------|--------|
-| 1 | collegeStats 返回空数组 | Dashboard 院系统计图 | 中 |
+| 1 | ~~collegeStats 返回空数组~~ | ✅ 已修复：执行 `12_fix_dept_mapping.sql` 补 `sys_dept` 数据 | - |
 | 2 | G8/G9 无自动计算策略 | 第二课堂/其他工作量需手动录金额 | 低 |
 | 3 | 代阅卷酬金 D 档位待确认 | 其他酬金明细 | 低 |
 | 4 | Q3 全外文课程系数待确认 | G1 理论课计算 | 低 |

@@ -33,7 +33,8 @@ export const itemTypeOptions = [
   opt('G11 管理服务', 'G11')
 ]
 
-export const sourceTypeOptions = [opt('导入', 'IMPORT'), opt('手工录入', 'MANUAL')]
+// SELF 由教师自主申报页（myWorkload/declare.vue）写入，缺了它明细页「数据来源」列会空白
+export const sourceTypeOptions = [opt('导入', 'IMPORT'), opt('手工录入', 'MANUAL'), opt('教师申报', 'SELF')]
 
 export const feeTypeOptions = [
   opt('A 重修辅导金', 'A'), opt('B 实习指导费', 'B'), opt('C 论文重修指导', 'C'),
@@ -92,7 +93,7 @@ export function optionsToMap(options, type = 'primary') {
 export const itemTypeMap = optionsToMap(itemTypeOptions)
 
 /** 数据来源 biz-tag Map（原 workloadItem/index.vue 内联收敛，键值保持不变） */
-export const sourceTypeMap = { IMPORT: st('导入', 'info'), MANUAL: st('手工', 'success') }
+export const sourceTypeMap = { IMPORT: st('导入', 'info'), MANUAL: st('手工', 'success'), SELF: st('教师申报', 'warning') }
 
 /** 管理岗位 biz-tag Map（原 roleAssignment/index.vue 内联收敛，键值同 roleTypeOptions） */
 export const roleTypeMap = optionsToMap(roleTypeOptions)

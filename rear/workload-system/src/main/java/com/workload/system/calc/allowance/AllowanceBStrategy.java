@@ -30,8 +30,12 @@ public class AllowanceBStrategy implements AllowanceCalcStrategy
     {
         long count = item.getStudentCount() == null ? 0 : item.getStudentCount();
         String subtype = item.getFeeSubtype();
-        String ruleCode = (subtype != null && subtype.contains("集中")) ? "PAY_B_CONCENTRATED" : "PAY_B_DISPERSED";
-        BigDecimal perHead = ruleParamService.get(ruleCode, new BigDecimal("10"));
+        boolean concentrated = subtype != null && subtype.contains("集中");
+        // 兜底默认值须与档位对应：集中 15 / 分散 10。原先两档共用 10，
+        // 一旦 PAY_B_CONCENTRATED 规则行被删或停用，集中实习会按分散价少发 1/3
+        String ruleCode = concentrated ? "PAY_B_CONCENTRATED" : "PAY_B_DISPERSED";
+        BigDecimal fallback = concentrated ? new BigDecimal("15") : new BigDecimal("10");
+        BigDecimal perHead = ruleParamService.get(ruleCode, fallback);
         return perHead.multiply(new BigDecimal(count)).setScale(2, RoundingMode.HALF_UP);
     }
 }

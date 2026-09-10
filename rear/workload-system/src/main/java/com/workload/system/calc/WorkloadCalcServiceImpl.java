@@ -1,9 +1,12 @@
 package com.workload.system.calc;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.springframework.aop.framework.AopContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,6 +20,8 @@ import com.workload.system.domain.BizWorkloadSummary;
 import com.workload.system.mapper.BizTeacherProfileMapper;
 import com.workload.system.mapper.BizWorkloadItemMapper;
 import com.workload.system.mapper.BizWorkloadSummaryMapper;
+import com.workload.system.service.ISysUserService;
+import com.workload.common.core.domain.entity.SysUser;
 
 /**
  * 工作量明细计算服务实现
@@ -50,6 +55,9 @@ public class WorkloadCalcServiceImpl implements WorkloadCalcService
 
     @Autowired
     private PayCalcService payCalcService;
+
+    @Autowired
+    private ISysUserService sysUserService;
 
     @Override
     public BigDecimal recalcItem(Long itemId)
@@ -129,6 +137,67 @@ public class WorkloadCalcServiceImpl implements WorkloadCalcService
         data.put("payRecord", payRecord);
         data.put("unconfirmedCount", summaryCalcService.countUnconfirmed(userId, semester));
         return data;
+    }
+
+    @Override
+    public Map<String, Object> recalcAllBatch(List<Long> userIds, String semester)
+    {
+        // 刻意不加 @Transactional：本方法只做编排，事务边界必须落在每位教师身上，
+        // 否则任一教师失败会把已成功的教师一起回滚。
+        List<Long> targets = (userIds == null || userIds.isEmpty())
+                ? bizWorkloadItemMapper.selectUserIdsBySemester(semester)
+                : userIds.stream().filter(java.util.Objects::nonNull).distinct().toList();
+
+        // 通过代理自调用，让每位教师的 recalcAll 各起一个新事务（exposeProxy=true，见 ApplicationConfig）
+        WorkloadCalcService proxy = (WorkloadCalcService) AopContext.currentProxy();
+
+        List<Map<String, Object>> failures = new ArrayList<>();
+        int successCount = 0;
+        for (Long uid : targets)
+        {
+            try
+            {
+                proxy.recalcAll(uid, semester);
+                successCount++;
+            }
+            catch (Exception e)
+            {
+                Map<String, Object> fail = new LinkedHashMap<>();
+                fail.put("userId", uid);
+                fail.put("userName", resolveUserLabel(uid));
+                fail.put("reason", e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName());
+                failures.add(fail);
+            }
+        }
+
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("semester", semester);
+        data.put("total", targets.size());
+        data.put("successCount", successCount);
+        data.put("failCount", failures.size());
+        data.put("failures", failures);
+        return data;
+    }
+
+    /**
+     * 失败明细里的教师标识：优先「姓名(工号)」，查不到用户则退回裸 userId，
+     * 让教务能直接定位到人，而不是拿着一串数字回头翻库。
+     */
+    private String resolveUserLabel(Long userId)
+    {
+        try
+        {
+            SysUser user = sysUserService.selectUserById(userId);
+            if (user == null)
+            {
+                return "userId=" + userId;
+            }
+            return user.getNickName() + "(" + user.getUserName() + ")";
+        }
+        catch (Exception e)
+        {
+            return "userId=" + userId;
+        }
     }
 
     @Override

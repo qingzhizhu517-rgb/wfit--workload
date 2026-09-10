@@ -1,6 +1,8 @@
 package com.workload.system.controller;
 
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -8,6 +10,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import com.workload.common.annotation.Log;
@@ -131,5 +134,26 @@ public class BizCalcController extends BaseController
     public AjaxResult recalcAll(@RequestParam Long userId, @RequestParam String semester)
     {
         return success(workloadCalcService.recalcAll(userId, semester));
+    }
+
+    /**
+     * 批量一键核算：逐教师执行「明细 -> 汇总 -> 酬金」，每人独立事务。
+     * <p>
+     * userIds 传空（或整个 body 省略）表示该学期全部有明细的教师；传列表则只算勾选的这几位。
+     * 与 {@code /recalcAll} 的差别在事务粒度：本端点单个教师失败只记入 failures，其余照算。
+     * <p>
+     * 教师角色被 {@link DataScopeUtil#resolveUserId} 强制收敛为「只能算自己」，
+     * 不允许借批量入口绕开数据范围拿到他人数据。
+     */
+    @PreAuthorize("@ss.hasPermi('system:workloadSummary:edit')")
+    @Log(title = "计算引擎", businessType = BusinessType.UPDATE)
+    @PostMapping("/recalcAllBatch")
+    public AjaxResult recalcAllBatch(@RequestParam String semester,
+                                     @RequestBody(required = false) List<Long> userIds)
+    {
+        // 教师角色：无论传了谁，一律收敛成本人；管理角色下 resolveUserId(null) 返回 null，保持全量语义
+        Long scoped = DataScopeUtil.resolveUserId(null);
+        List<Long> targets = scoped != null ? Collections.singletonList(scoped) : userIds;
+        return success(workloadCalcService.recalcAllBatch(targets, semester));
     }
 }

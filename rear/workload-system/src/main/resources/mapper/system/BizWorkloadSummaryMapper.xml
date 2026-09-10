@@ -246,11 +246,20 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where id = #{id} and status = #{fromStatus}
     </update>
 
-    <!-- 解锁：显式 SET lock_time = NULL（动态 SQL 对 null 值跳过，通用 update 无法清空该列） -->
+    <!-- 解锁：已完结(3) 回填报中(0)。显式 SET 各列为 NULL——动态 SQL 对 null 值跳过，
+         通用 update 清不掉这些列。签字与 rejectSummary 同口径全部清空：记录退回草稿态后
+         数字可被重算，旧签字若留着，等于让教务/院领导/教师为改动后的新数字背书，
+         重走流程时须重新签一遍 -->
     <update id="unlockById">
         update biz_workload_summary
         set lock_time = NULL,
             status = 0,
+            academic_assistant_sign = NULL,
+            academic_assistant_sign_time = NULL,
+            teacher_sign = NULL,
+            teacher_sign_time = NULL,
+            dept_leader_sign = NULL,
+            dept_leader_sign_time = NULL,
             update_by = #{updateBy},
             update_time = NOW()
         where id = #{id} and status = 3

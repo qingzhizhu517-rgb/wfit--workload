@@ -1,6 +1,7 @@
 package com.workload.system.mapper;
 
 import java.util.List;
+import org.apache.ibatis.annotations.Param;
 import com.workload.system.domain.BizWorkloadItem;
 
 /**
@@ -58,4 +59,16 @@ public interface BizWorkloadItemMapper
      * @return 结果
      */
     public int deleteBizWorkloadItemByIds(Long[] ids);
+
+    /**
+     * 查该学期存在工作量明细的教师ID（去重、升序）。
+     * <p>
+     * 全学期批量核算的教师清单来源。刻意不与 biz_teacher_profile 内联：
+     * 缺档案的教师应当作为「失败明细」暴露给教务，而不是被静默跳过
+     * —— 有明细却没档案本身就是需要修的数据问题。
+     *
+     * @param semester 学年学期
+     * @return 教师ID列表
+     */
+    public List<Long> selectUserIdsBySemester(@Param("semester") String semester);
 }

@@ -2,6 +2,7 @@ import { ref, reactive, onMounted, onUnmounted, getCurrentInstance } from 'vue'
 import * as echarts from 'echarts'
 import { listWorkloadSummary } from '@/api/system/workloadSummary'
 import { exportPaySummary, exportPersonalWorkload } from '@/api/system/export'
+import { saveBlobAsFile } from '@/utils/blobDownload'
 
 /**
  * 教务/院领导仪表盘共享逻辑
@@ -50,13 +51,7 @@ export function useDashboard() {
     }).then(({ value }) => {
       proxy.$modal.loading('正在导出...')
       exportPaySummary({ semester: value }).then(res => {
-        const blob = new Blob([res], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
-        const url = window.URL.createObjectURL(blob)
-        const link = document.createElement('a')
-        link.href = url
-        link.download = `绩效酬金统计_${value}.xlsx`
-        link.click()
-        window.URL.revokeObjectURL(url)
+        saveBlobAsFile(res, `绩效酬金统计_${value}.xlsx`)
         proxy.$modal.closeLoading()
       }).catch(() => {
         proxy.$modal.closeLoading()
@@ -75,13 +70,7 @@ export function useDashboard() {
     }).then(({ value }) => {
       proxy.$modal.loading('正在导出...')
       exportPersonalWorkload({ userId, semester: value }).then(res => {
-        const blob = new Blob([res], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
-        const url = window.URL.createObjectURL(blob)
-        const link = document.createElement('a')
-        link.href = url
-        link.download = `工作量明细_${fileNamePrefix}_${value}.xlsx`
-        link.click()
-        window.URL.revokeObjectURL(url)
+        saveBlobAsFile(res, `工作量明细_${fileNamePrefix}_${value}.xlsx`)
         proxy.$modal.closeLoading()
       }).catch(() => {
         proxy.$modal.closeLoading()

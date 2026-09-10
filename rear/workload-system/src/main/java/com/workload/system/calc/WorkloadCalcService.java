@@ -1,6 +1,7 @@
 package com.workload.system.calc;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -51,4 +52,16 @@ public interface WorkloadCalcService
      * @return 结果 Map：recalcItemCount / summary / payRecord / unconfirmedCount
      */
     public Map<String, Object> recalcAll(Long userId, String semester);
+
+    /**
+     * 批量一键核算：对每位教师依次执行「明细 → 汇总 → 酬金」。
+     * <p>
+     * 每位教师独立事务，单个教师失败（缺档案、策略未配等）只记入失败明细，
+     * 不回滚也不中断其余教师 —— 一个人的脏数据不该让整批核算停摆。
+     *
+     * @param userIds  教师ID列表；为 null 或空表示该学期全部有明细的教师
+     * @param semester 学年学期
+     * @return 汇总结果：total / successCount / failCount / failures（每项含 userId、userName、reason）
+     */
+    public Map<String, Object> recalcAllBatch(List<Long> userIds, String semester);
 }

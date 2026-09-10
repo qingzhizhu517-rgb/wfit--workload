@@ -127,7 +127,7 @@ Excel 导入（教务员）→ biz_import_batch + biz_teaching_task / biz_role_a
    ↓ calc_strategy 列 → CalcStrategyFactory 解析 bean
 策略 calculate() → biz_workload_item（主表）+ biz_wl_*（G1~G6/G11 明细层）
    ↓
-SummaryCalcService → biz_workload_summary（汇总层；JSON 字段 category_details 动态分类，扩展类别不改表）
+SummaryCalcService → biz_workload_summary（汇总层；G7~G11 定长列 + 总量/超额/绩效/触顶标记，无 G1~G6 分项）
    ↓
 PayCalcService → biz_pay_record + biz_allowance_item（酬金层）
 ```
@@ -141,7 +141,7 @@ PayCalcService → biz_pay_record + biz_allowance_item（酬金层）
 | 支撑层 | biz_teacher_profile / biz_workload_category_dict / biz_workload_rule / biz_pay_rate / biz_import_batch | 类别字典的 calc_strategy 列绑定策略 bean |
 | 源数据层 | biz_teaching_task / biz_role_assignment | Excel 导入原始数据 / 岗位任职 |
 | 明细层 | biz_workload_item + biz_wl_theory / practice / internship_training / course_design / thesis / concentrated_internship / management | 主表 + 7 张 G 明细 |
-| 汇总层 | biz_workload_summary | 含审批状态 + JSON category_details |
+| 汇总层 | biz_workload_summary | 含审批状态 + G7~G11 定长列（**无** category_details JSON 列） |
 | 酬金层 | biz_pay_record / biz_allowance_item | 酬金汇总 / 其他酬金明细(A-G) |
 | 审计 | biz_audit_log | **在 `08_review_fixes.sql` 创建**（不在 01 schema 里），审批流审计 |
 
@@ -230,7 +230,7 @@ PayCalcService → biz_pay_record + biz_allowance_item（酬金层）
 6. **学期格式** `2025-2026-1`（学年+学期号），校历在 `application.yml` 的 `wl.semester`。
 7. **数据隔离**：`DataScopeUtil.resolveUserId()` 强制教师角色只能看本人数据（防 IDOR），已在 calc/export/dashboard 控制器收口。
 8. **明文口令的历史遗留**：`application-druid.yml`(DB root/123456、Druid ruoyi/123456) 与 `application.yml`(JWT secret) 曾以明文提交，现工作树已改环境变量，但旧 commit 仍可追溯 —— 补救靠**轮换口令**，不是改文件。`front/RuoYi-Vue3/.env.development` 虽被跟踪，但只有标题与 `/dev-api`，无敏感信息。
-9. **汇总表动态分类**：`biz_workload_summary.category_details` 是 JSON，新增类别无需改表结构。
+9. **汇总表没有 category_details**：该 JSON 字段只见于 `else/` 设计稿，DDL 与代码里都没有。汇总只落 G7~G11 定长列；G1~G6 分项要看明细表 `biz_workload_item` 或导出附件1（含班级/重复次序/各系数/系数说明）。
 10. **验证码**：默认 `math` 类型，自动化脚本需先 `UPDATE sys_config SET config_value='false' WHERE config_key='sys.account.captchaEnabled'`。
 
 ---

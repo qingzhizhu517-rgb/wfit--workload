@@ -61,3 +61,13 @@ export function recalcAll(userId, semester) {
     params: { userId, semester }
   })
 }
+
+// 批量一键核算：userIds 传空数组/不传 = 该学期全部有明细的教师，逐教师独立事务
+export function recalcAllBatch(semester, userIds) {
+  return request({
+    url: '/system/calc/recalcAllBatch',
+    method: 'post',
+    params: { semester },
+    data: userIds && userIds.length ? userIds : []
+  })
+}

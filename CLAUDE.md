@@ -245,7 +245,7 @@ mysql -u root -p wflg_workload < rear/sql/15_fix_menu_buttons.sql
 
 3. `CalcStrategyFactory` — `@Autowired Map<String,WorkloadCalcStrategy>` 按 bean 名注入；查 `biz_workload_category_dict.calc_strategy` 列得 bean 名后 `strategyMap.get(name)` 解析，结果缓存在 `ConcurrentHashMap`（`StrategyCache`）。**聚合类别 G7/G8/G9/G10 无策略，返回 null**
 4. `RuleParamService` — 规则参数读取（Redis 缓存），政策变动改数据库即可
-5. `SummaryCalcService` — 学期汇总 → `biz_workload_summary.category_details` JSON 动态分类
+5. `SummaryCalcService` — 学期汇总：按类别累加后落 `biz_workload_summary` 的定长列 `G7`/`G8`/`G9`/`G10`/`G11`/`total_workload`/`excess_workload`/`performance_pay`/`is_capped`。**G1~G6 的分项合计不落汇总表**（只有 G7 一个合计列），要看分项须回 `biz_workload_item` 明细或导出附件1
 6. `PayCalcService` + `allowance/AllowanceStrategyFactory`（`@Autowired List<AllowanceCalcStrategy>` 按 `getFeeType()` 建 map）— 其他酬金 A/B/C/E/F/G 六个策略；**D（代阅卷）未注册，首期不启用**
 7. `ManagementItemGenerator` — 自动从 roleAssignment 生成 G11 条目
 
@@ -259,7 +259,8 @@ mysql -u root -p wflg_workload < rear/sql/15_fix_menu_buttons.sql
 | `/recalcPay` | POST | 酬金计算 |
 | `/preview` | GET | 预览汇总数据 |
 | `/genG11` | POST | 自动生成管理服务条目 |
-| `/recalcAll` | POST | 全量重算（需 userId） |
+| `/recalcAll` | POST | 单教师全量重算：明细→汇总→酬金，单事务，失败整体回滚（需 userId） |
+| `/recalcAllBatch` | POST | **批量一键核算**：`?semester=` + body `[userId...]`；body 空/省略 = 该学期全部有明细的教师。每位教师独立事务，单人失败只记入 `failures`，其余照算。教师角色被强制收敛为只能算自己 |
 
 ## 审批流状态机
 
@@ -322,7 +323,7 @@ mysql -u root -p wflg_workload < rear/sql/15_fix_menu_buttons.sql
 | A3 | G11 折算多除了一个 2，与公式/种子数据/封顶矛盾 | ✅ `ManagementItemGeneratorImpl` 删除 `divide(2)`（rate 定性为学期标准） |
 | A4 | 教学任务导入自调用致 `@Transactional` 失效，部分失败提交半截数据 | ✅ 改用 `AopContext.currentProxy()` 每行独立事务 |
 | A5 | 院领导待签(2)环节无驳回路径 | ✅ `BizAuditServiceImpl.reject` 放开 `from∈{1,2}`；院领导授 `reject` 权限 |
-| A6 | G4 人数上限 20 与权威文档 R4≤60 冲突 | ✅ `CourseDesignCalcStrategy` 默认值改 60；`14_fix_calc_rules.sql` UPDATE 已部署库 |
+| A6 | G4 人数上限 20 与权威文档 R4≤60 冲突 | ✅ `CourseDesignCalcStrategy` 默认值改 60；`14_fix_calc_rules.sql` 已随 02 并入。**注意：本机库直到 2026-08-31 才真正执行到 60**（原记「已部署库」不实），且 `RuleParamServiceImpl` 缓存无 TTL，改库后必须删 Redis 键 `wl_rule:CAP_R4_MAX`，否则重启也读旧值 —— 见待办 #10 |
 | A7 | 自学辅导 ≥20 人错算 260 元 | ✅ `AllowanceAStrategy` 增加 `count≥20` 走手工金额分支 |
 | A8 | 导入批次 status 语义与表定义错位 | ✅ 对齐为 2=已导入 / 4=失败 |
 | A9 | 学期格式无校验，脏数据入库 | ✅ `validateRow` 增加 `^\d{4}-\d{4}-[12]$` 正则 |
@@ -359,6 +360,83 @@ mysql -u root -p wflg_workload < rear/sql/15_fix_menu_buttons.sql
 | D2 | 初始弱口令仅前端弹窗提醒，可取消、路由不设卡，等于无强制力 | ✅ 新增 `ForcePasswordChangeInterceptor`：`pwd_update_date IS NULL` 时除白名单外一切请求返回 **602**；前端 `request.js` 拦 602 弹不可取消对话框，`permission.js` 守卫只放行 `/user/profile*`，改密成功后清标记回首页 |
 | D3 | 管理员重置密码后 `pwd_update_date = sysdate()`，用户拿着管理员知晓的口令即可畅通使用 | ✅ 拆分两个 mapper：用户自改走 `resetUserPwd`(置当前时间)，管理员重置走 `resetUserPwdRequireChange`(置 NULL)，强制用户再次自行改密 |
 
+### 可追溯性与批量核算（2026-08-31）
+
+用户诉求：一键核算只能单人？总金额怎么算？报表在哪导出？汇总完的记录「重复系数是哪个班」查不出来。
+四项口径由用户拍板，下表按项落地。
+
+| # | 问题 | 修复 |
+|---|------|------|
+| E1 | 重复系数 C1 在导入时硬编码 1.0，「第几次」这个事实从未落库，事后无从追溯 | ✅ 导入模板新增「重复次序」列（第 17 列）；留空则按 `countSameCourseTask` 自动补位。分组口径 = 教师 + 学期 + 课程名称 + 授课层次 + 工作量类别（**不含课程代码与班级**，依 `else/工作量.md:15-18`「课程名称一致即同一门课，本专科分别算」）。次序落 `biz_teaching_task.repeat_order`，C1 取 `COEF_REPEAT_1ST/2ND/3RD_UP` |
+| E2 | G3 的 K 同为重复系数，也一直是常量 | ✅ `calcG3RepeatK`：第一轮 1.0，第二轮起 0.9。`else/工作量.md:67-68` 对 G3 只规定两档，故第三轮**不**套用 0.8 |
+| E3 | `biz_teaching_task.class_name` 字段存在但导入模板无「班级」列，报表无法指名到具体班次 | ✅ 模板新增「班级」列（第 16 列），附件1 增「班级」列与「系数说明」列，把「这条为什么只算 0.8」写成人话 |
+| E4 | 一键核算只能单教师（前后端两层都是） | ✅ 后端 `WorkloadCalcService.recalcAllBatch` + `POST /system/calc/recalcAllBatch`（每教师独立事务，失败收集进 `failures`）；前端学期汇总页新增「核算所选(n)」与「全学期核算」，原单人按钮保留 |
+| E5 | 报表入口只在仪表盘，且靠 `$prompt` 手输学期；附件2 自己重算酬金而非读账 | ✅ 报表入口挪到学期汇总页（工具栏 + 行内「更多」），学期/教师取搜索栏；附件2 改读 `biz_pay_record`，并列「超额工作量」（未封顶）与「计酬超额工作量」（`min(总量,CAP_200PCT)−额定`）+「是否触顶」+「备注」，回答「这个人为什么没钱」（非专任/未核算/触顶） |
+| E6 | 「G1~G6 分项落汇总表」 | ⛔ 用户明确不做。分项仍只在 `biz_workload_item` 明细层，靠附件1 导出追溯 |
+
+**导入模板 17 列**（顺序须与 `TeachingTaskImportDTO` 的 `@ExcelProperty` 完全一致）：
+学年学期 / 教师工号 / 教师姓名 / 课程名称 / 课程代码 / 工作量类别 / 授课层次 / 专业大类 / 课程性质 /
+课程级别 / 课程角色 / 教学评价 / 选课人数 / 计划学时·天数·周数 / 课程系数 / **班级** / **重复次序**
+
+**报表列集**：附件1 = 19 列（含 班级 / 重复次序 / 重复系数 / K1 / Q1 / Q2 / Q3 / N / 其他系数(D·K5·K) / 系数说明 / 数据来源）；
+附件2 = 17 列（含 人员性质 / 是否触顶 / 计酬超额工作量 / 备注）。
+
+**总金额口径**（`SummaryCalcServiceImpl`，勿凭直觉推）：
+`G7=ΣG1..G6`（跳过 `status==3` 的明细）→ `G10=G7+G8+G9` → `G11=min(ΣG11,180)` → `总工作量=G10+G11`；
+`绩效酬金=(min(总工作量,540)−180)×职称费率`，且仅当 `总工作量>180` **且 `teacher_nature ∈ {专任, null}`**（外聘/校企/银龄不计发，是设计如此，不是 bug）；
+`其他酬金=Σ biz_allowance_item.amount(status=1)`；`total_pay=round(绩效+其他)`。
+`excess_workload` 刻意**不封顶**，故触顶教师「超额×单位酬金 ≠ 绩效酬金」，附件2 用两列并排 + 备注解释。
+
+**测试用例**：仓库根 `gen_qianwei_repeat_coef_import.py` → `教学任务导入_钱伟_重复系数专项_18条.xlsx`，
+A~K 共 11 组覆盖 本专科分别计数 / 代码相同但课名不同不算重复 / N 与 C1 叠加 / G2 的 C2 恒 0.9 / G3 两档 K /
+G4 触 60 上限 / G5·G6 超限标记 / **K 组显式「重复次序」优先于文件行序**。Sheet2 逐行列出期望系数、期望工作量与落库校验点。
+
+### 端到端验证发现并修复（2026-08-31，18 条样例实测导入 → 核算 → 导出）
+
+| # | 问题 | 修复 |
+|---|------|------|
+| F1 | 教师自主申报（`declare.vue`）的 G11 只写 `biz_workload_item` 主表，而 `biz_wl_management.assignment_id` 为 NOT NULL 且外键指向 `biz_role_assignment` —— 手工申报没有任职记录，明细行**构造不出来**。`ManagementCalcStrategy` 遇 null 明细无条件抛异常，这条申报因此永远无法重算；又因批量核算的事务粒度是「每教师一个事务」，一条申报会让该教师整学期 明细→汇总→酬金 全线失败（实测 `recalcAllBatch` failCount 1，reason=`G11管理服务明细缺失, itemId=9056`） | ✅ `ManagementCalcStrategy.calculate` 增加 SELF 分支：`source_type=SELF` 且无明细时取主表 `calculated_workload`（教师按管理办法自行核定的学时）；AUTO/IMPORT 来源缺明细仍 fail-loud，保持 A2 口径 |
+| F2 | `afterCalculated` 的唯一调用点是 `WorkloadCalcServiceImpl:79`，导入路径从不触发 → G5/G6 的 `is_over_limit` 导入后恒为 0，要等下一次重算才置位（而重算又被 F1 挡住） | ✅ `TeachingTaskImportServiceImpl.processSingleRow` 在回写前调 `calcStrategyFactory.get(type).afterCalculated(item, calculated)`，超限标记与工作量共用同一条 UPDATE 落库。实测超限行置 1、未超限行仍 0 |
+
+**实测结论**（钱伟 `T20270001` / `2026-2027-1`，18 条导入 + 3 条自主申报）：
+
+- 系数 **18/18** 与样例工作簿「预期结果」表逐行一致：本专科分别计数、课程代码相同但课名不同不算重复、显式「重复次序」优先于文件行序、G2 的 C2 恒 0.9、G3 两档 K、G4 触 60 上限
+- 汇总链：`G7 947.33`（18 条之和）+ G8 10 + G9 5 → `G10 962.33`；`G11 min(20,180)=20` → `总工作量 982.33`；额定 180；`excess_workload 802.33`（刻意不封顶）；`is_capped=1`
+- `performance_pay=0` **不是 bug**：该教师 `teacher_nature=外聘`，按设计不计发绩效
+- 附件1 = 19 列 / 21 条明细，系数说明渲染为「第 1 次（计算机2401），重复系数 1」，G5/G6 超限行追加「人数超上限，已按封顶值核算」；附件2 = 17 列，超额 802.33 与计酬超额 360.0（=`min(982.33,540)−180`）并列，备注同时点出「外聘不计发」与「已触 200% 上限 540」
+- `recalcAllBatch` 三种入参（指定 `userIds` / 空数组 / 省略 body）均 `successCount 1` `failCount 0`
+- 导出端点是 **GET** `/system/export/personalWorkload` 与 **GET** `/system/export/paySummary`（不是 POST，也不是 `/export/personal`）；导入端点是 **POST** `/system/teachingTask/importExcel`（不是 `/importData`）
+
+### 逻辑审计与修复（2026-09-01，代码 × `else/工作量.md` × `biz_workload_rule` 三方对读）
+
+| # | 问题 | 修复 |
+|---|------|------|
+| G1 | **导入时「按专业大类/授课层次取系数」的逻辑根本不存在**：`createG2Detail`/`createG3Detail`/`createG5Detail` 只取 Excel「课程系数」列，留空就硬编码兜底 `1.0`/`4.0`/`9`——全是理工本科档。规则表 `COEF_PRACTICE_LG/OTHER`、`COEF_TRAIN_D_LG/ART/HUM/UNIT`、`COEF_THESIS_K5_{LG,HU}_{B,C}` 全部 status=1 却**零处引用**；DTO 与库里都有 `major_category`/`education_level`，只是从未参与选系数。实测偏差：G5 文史专科 K5 落 9 而非 4（+125%）、G3 文史 D 落 4.0 而非 2.0（+100%）、G2 文史 K 落 1.0 而非 0.9（+11%） | ✅ 新增 `calcG2K`/`calcG3D`/`calcG5K5`：**Excel「课程系数」列填了仍优先**（教务按个案覆盖，G3「单位指导 D=2.0」只能这样表达），留空才按 专业大类(×授课层次) 查规则表。艺术类与「其他」在 G5 归文史档（文档 K5 只分理工/文史两支，见待办 #5），在 G3 分别取 `D_ART 3.0` / `D_HUM 2.0`。`calcN` 同步改读 `COEF_CLASS_120_150/151_UP` |
+| G2 | **解锁不清签字**：`unlockById` 只置 `lock_time=NULL, status=0`，三个签字字段及时间全部保留。记录退回草稿态后数字可被重算，旧签字等于让教务/院领导/教师为改动后的新数字背书（B2 修 reject 时是同一理由，unlock 漏改） | ✅ `unlockById` 与 `rejectSummary` 同口径清空 `academic_assistant_sign`/`teacher_sign`/`dept_leader_sign` 及三个时间 |
+| G3 | 附件1 对 G5 行写「人数超上限，已按封顶值核算」是**假的**：G5 从不封顶（`ThesisCalcStrategy` 无 `min`），其 `is_over_limit` 只表示「须报院长批准、教务处备案」；G6 才是真按 `min(R6,20)` 封顶。该缺陷是 F2 让标记真正落库后才显形 | ✅ `buildCoefRemark` 按 `item_type` 分流文案，G5 写「人数超申报上限，须报院长批准、教务处备案（学时按实际人数计，未封顶）」 |
+| G4 | `ManagementItemGeneratorImpl` 类注释仍写「标准学时/学年 ÷ 2 ×…」，A3 删掉该除法时漏改注释，照注释维护会把 ÷2 补回去 | ✅ 注释更正为「rate 已定性为学期标准」，并写明勿再补 ÷2 |
+| G5 | `AllowanceBStrategy` 取 `PAY_B_CONCENTRATED` 时兜底默认值写的是 `10`（分散价），规则行若被删/停用，集中实习按 10 元/人少发 1/3 | ✅ 兜底按档位分流：集中 15 / 分散 10 |
+
+**实测验证**（8 条专项样本导入 → 读库 → 删除，钱伟基线 947.33/982.33/21 条已恢复）：
+
+| 样本 | 期望 | 实落 | 期望学时 | 实算 |
+|------|------|------|----------|------|
+| G5 文史·专科 R5=6 | K5=4 | 4.00 | 24.00 | 24.00 |
+| G5 文史·本科 R5=5 | K5=6 | 6.00 | 30.00 | 30.00 |
+| G5 理工·专科 R5=4 | K5=5 | 5.00 | 20.00 | 20.00 |
+| G3 文史 T=5 | D=2.0 | 2.00 | 10.00 | 10.00 |
+| G3 艺术 T=5 | D=3.0 | 3.00 | 15.00 | 15.00 |
+| G3 理工·显式填 2.0 | 覆盖 4.0 | 2.00 | 10.00 | 10.00 |
+| G2 文史 J2=16 | K=0.9 | 0.90 | 12.96 | 12.96 |
+| G1 160 人 J1=32 | N=1.2 | 1.20 | 42.24 | 42.24 |
+
+unlock 走 submit→approve→sign→unlock 往返：签字三栏与 `lock_time` 在 status 3 时齐全，解锁后全部为 NULL、status 回 0。
+附件1 导出 19 列，G5 行文案为「…须报院长批准、教务处备案（学时按实际人数计，未封顶）」，G6 行仍为「已按封顶值核算」。
+
+> ⚠️ **G1 只对新导入生效**。D/K5/K 是导入时算好写进 `biz_wl_*` 的，重算只读回不重算系数，
+> 因此**存量明细必须改数据才能纠正**（重跑导入或直接 UPDATE 明细表后重算）。
+> 另：`04_biz_test_data.sql` 手写的种子里 G5 文史类本科 K5=9（应 6）、专业大类「其他」的 G5 K5=9（按上述口径应 6）本身就是错的。
+
 ### 待办（未处理，需排期/决策）
 
 | # | 问题 | 优先级 | 说明 |
@@ -372,6 +450,17 @@ mysql -u root -p wflg_workload < rear/sql/15_fix_menu_buttons.sql
 | 7 | 策略缓存 `StrategyCache.evict/clear` 无调用方 | 低 | 字典改绑策略后缓存永久陈旧到重启，建议在字典增改删 Service 调 evict |
 | 8 | ~~教师账号默认弱口令 123456 无强制改密~~ | ✅ 已修复 | `ForcePasswordChangeInterceptor` 服务端拦截（`pwd_update_date IS NULL` → 602）+ 前端路由守卫只放行改密页；管理员重置密码走 `resetUserPwdRequireChange` 置 NULL，要求用户再次自行改密 |
 | 9 | 200%/540 封顶边界 `>` vs `>=`、`teacherNature` 为 null 当专任发绩效 | 低 | 需业务确认口径，非明确 bug |
+| 10 | `RuleParamServiceImpl` 写 Redis 不设 TTL（`setCacheObject(key, value)`），改 `biz_workload_rule` 后即使重启后端也仍读旧值 | 中 | 已有 `evict(code)` 但无调用方，规则维护 Service 保存后应调 evict；临时手段是删 `wl_rule:<CODE>` 键。本轮 `CAP_R4_MAX` 即因此卡在 20 |
+| 11 | 自主申报的 G11 与生成器的 G11 是两套模型：前者只有主表已核定学时，后者才有 `biz_wl_management` 折算明细 | 低 | F1 已让重算不再崩（SELF 取主表值），但「教师能不能自主申报 G11」这个产品口径未定。彻底方案二选一：① `declare.vue` + 后端禁掉 G11 自主申报，只走 `biz_role_assignment` → 生成器；② 申报时一并建任职记录与明细行。定了再改 |
+| 12 | **本科毕业论文 R5 要不要封顶 10**：规则 `CAP_R5_BACHELOR=10` 存在且启用但**无人读取**，`ThesisCalcStrategy` 不做任何封顶，只标记 >8（本）/>15（专）须报批。文档写「R5≤10时，按实际人数计算」 | 中 | 实测 R5=12 得 108.00，若封顶则 90.00 —— **改了是减教师工作量**，须业务拍板后再动 |
+| 13 | **G6 的 `CAP_R6_MAX=20` 缺文档依据**：`else/工作量.md` 的 G6 只有 `W*R6*0.4`，通篇无人数上限（只有 G4 写了 R4≤60），但代码在做 `min(R6,20)` | 中 | 实测 R6=25/W=4 得 32.00，不封顶应 40.00 —— **目前是少算**。CLAUDE.md 早期「R6 上限 20」是照代码写的，属循环论证 |
+| 14 | **审批中（status 1/2）允许重算**：汇总/酬金重算只拒 status=3，`assertEditable` 只看 item.status=1 与 summary.status=3。待审/待签期间重算会改数字，而教务助理签字仍挂在旧数字上 | 中 | 与 A12（教师 status≠0 不能改明细）、B2（只有驳回才清签）不同口径。修法可选：重算前拒 status∈{1,2}，或改数后自动清签退回 0 |
+| 15 | **停用的教学任务仍计入重复次序**：`countSameCourseTask` 不过滤 `t.status`（1正常/0停用），停用行照数，后续班次被多降一档系数 | 中 | 方向是少算。逻辑上停用即不成立，倾向加 `and ifnull(t.status,1)=1`，待确认「停用是否等于该次开课不成立」 |
+| 16 | `CONST_COURSE_DESIGN`(0.40) 被 G4 与 G6 共用一个规则键 | 低 | 两条独立政策捆在一起，改一个静默动另一个。拆键需同步改 02 种子与两个策略 |
+| 17 | `onDetailDeleted` 只清零明细，不刷汇总、不校验可编辑性 | 低 | 汇总滞后于已删明细，直到下次重算；已完结记录的明细被删也照清零 |
+| 18 | 生成器写 `source_type='IMPORT'` 而非 AUTO | 低 | 与 `ManagementCalcStrategy` 注释、本文档的「生成器(AUTO)/导入(IMPORT)」口径不符，三态实际只有两态可辨。改需同步迁移存量数据 |
+| 19 | 已核对(status=1)的 G11 再跑生成器：`biz_wl_management.prorated_amount` 被改写，主表 `calculated_workload` 冻结不动 | 低 | 明细与主表数字打架，审计时以哪个为准不明确 |
+| 20 | `SemesterCalendar` 硬假设秋季学期结束落在次年（`atYear(yearEnd)`） | 低 | 若有人把 `wl.semester.autumn-end` 配成 `12-31`，区间会变成 16 个月，G11 折算分母随之失真。建议加区间跨度校验 |
 
 ## 注意事项
 
@@ -382,7 +471,7 @@ mysql -u root -p wflg_workload < rear/sql/15_fix_menu_buttons.sql
 - `front/RuoYi-Vue3/.env.development` 已被 git 跟踪，但仅含页面标题与 `/dev-api` 前缀，**无敏感信息**；后端凭据已全部改为环境变量注入（见「配置要点」）
 - ⚠️ **历史遗留**：`application-druid.yml`(DB root/123456、Druid ruoyi/123456) 与 `application.yml`(JWT secret) 的明文值曾提交入库，仍留在 git 历史中。当前工作树已清除，但旧 commit 可追溯 —— 唯一有效的补救是**轮换这些口令**（DB 改专用账号、JWT secret 重新生成），而非只改文件
 - G11 管理服务条目由 `ManagementItemGenerator` 从 `biz_role_assignment` 自动生成，也可手动录入
-- 汇总表 `biz_workload_summary` 使用 JSON 字段 `category_details` 存储动态分类汇总，扩展新类别无需改表结构
+- ⚠️ `biz_workload_summary` **没有** `category_details` JSON 列 —— 该字段只存在于 `else/潍理工工作量管理系统设计new).md` 的设计稿中，DDL(`01_biz_schema.sql`)、实际库与 Java 代码里均无此列，早期文档把它写成了既成事实。现状是 G7~G11 定长列；如需 G1~G6 分项汇总，属未实施的增强项（本轮已由用户明确不做）
 - `DataScopeUtil.resolveUserId()` 强制教师角色只能看自己的数据，防止 IDOR，已在 calc/export/dashboard 控制器中使用
 - 策略 bean 名称必须与 `biz_workload_category_dict.calc_strategy` 列精确匹配（如 `theoryCalcStrategy`），`CalcStrategyFactory` 按 bean 名解析
 

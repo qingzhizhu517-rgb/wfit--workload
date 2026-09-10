@@ -16,6 +16,7 @@ import org.springframework.util.StringUtils;
 import com.workload.common.exception.ServiceException;
 import com.workload.common.utils.excel.ExcelReadUtil;
 import com.workload.common.utils.excel.ImportResult;
+import com.workload.system.calc.rule.RuleParamService;
 import com.workload.system.calc.strategy.CalcStrategyFactory;
 import com.workload.system.domain.BizImportBatch;
 import com.workload.system.domain.BizTeachingTask;
@@ -83,6 +84,9 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
     @Autowired
     private CalcStrategyFactory calcStrategyFactory;
 
+    @Autowired
+    private RuleParamService ruleParamService;
+
     @Override
     public ImportResult importTeachingTasksStreaming(InputStream inputStream, String fileName)
     {
@@ -131,18 +135,25 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
         // 2. 查找教师
         SysUser user = findUser(dto.getUserCode());
 
-        // 3. 创建教学任务
-        BizTeachingTask task = createTeachingTask(dto, user.getUserId(), batchNo);
+        // 3. 定重复次序：必须在落库前算，否则 countSameCourseTask 会把本行也数进去
+        long repeatOrder = resolveRepeatOrder(dto, user.getUserId());
+
+        // 4. 创建教学任务
+        BizTeachingTask task = createTeachingTask(dto, user.getUserId(), batchNo, repeatOrder);
         teachingTaskMapper.insertBizTeachingTask(task);
 
-        // 4. 创建工作量明细主表
+        // 5. 创建工作量明细主表
         BizWorkloadItem item = createWorkloadItem(dto, user.getUserId(), task.getId());
         workloadItemMapper.insertBizWorkloadItem(item);
 
-        // 5. 创建类别明细并计算
-        BigDecimal calculated = createDetailAndCalc(dto, item);
+        // 6. 创建类别明细并计算（重复系数按 repeatOrder 取值）
+        BigDecimal calculated = createDetailAndCalc(dto, item, repeatOrder);
 
-        // 6. 回写计算结果
+        // 7. 触发策略后置回调：G5/G6 据此在 item 上置 is_over_limit 超标标记。
+        // 漏调的后果是「是否超限」要等到下一次重算才落库，刚导完看列表和附件1 全显示未超限。
+        calcStrategyFactory.get(dto.getWorkloadType().toUpperCase()).afterCalculated(item, calculated);
+
+        // 8. 回写计算结果（连同回调置上的 is_over_limit 一并落库，共用同一条 UPDATE）
         item.setCalculatedWorkload(calculated);
         workloadItemMapper.updateBizWorkloadItem(item);
 
@@ -185,6 +196,37 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
         {
             throw new ServiceException("工作量类别必须为 G1~G6，当前: " + dto.getWorkloadType());
         }
+        // 重复次序为可选列；填了就必须是正整数，填 0 或负数属笔误，直接拒绝而非静默当 1
+        if (dto.getRepeatOrder() != null && dto.getRepeatOrder() < 1)
+        {
+            throw new ServiceException("重复次序必须为不小于 1 的整数，当前: " + dto.getRepeatOrder());
+        }
+    }
+
+    /**
+     * 定重复系数的「第几次」。
+     * <p>
+     * 优先取 Excel「重复次序」列的显式值（教务可人工指定哪个班算第一次）；
+     * 留空则按同组已入库条数 +1 自动补位，见 {@code countSameCourseTask} 的分组口径
+     * （教师 + 学期 + 课程名称 + 授课层次 + 工作量类别，不含课程代码与班级）。
+     * <p>
+     * 自动补位依赖流式导入的「逐行独立事务、顺序提交」：处理第 N 行时前 N-1 行已提交可见。
+     * 分两次导入同一门课的不同班级也能正确续算，因为计数走库而非批次内存。
+     *
+     * @return 次序（≥1）
+     */
+    private long resolveRepeatOrder(TeachingTaskImportDTO dto, Long userId)
+    {
+        if (dto.getRepeatOrder() != null)
+        {
+            return dto.getRepeatOrder().longValue();
+        }
+        String itemType = dto.getWorkloadType().toUpperCase();
+        // 与 createTeachingTask 写库值保持一致，否则默认「本科」的行会分到不同组
+        String educationLevel = defaultStr(dto.getEducationLevel(), "本科");
+        int existing = teachingTaskMapper.countSameCourseTask(userId, dto.getSemester(),
+                dto.getCourseName(), educationLevel, itemType);
+        return existing + 1L;
     }
 
     /**
@@ -203,7 +245,7 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
     /**
      * 创建教学任务记录
      */
-    private BizTeachingTask createTeachingTask(TeachingTaskImportDTO dto, Long userId, String batchNo)
+    private BizTeachingTask createTeachingTask(TeachingTaskImportDTO dto, Long userId, String batchNo, long repeatOrder)
     {
         BizTeachingTask task = new BizTeachingTask();
         task.setUserId(userId);
@@ -216,10 +258,13 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
         task.setCourseNature(defaultStr(dto.getCourseNature(), "必修"));
         task.setCourseLevel(defaultStr(dto.getCourseLevel(), "其他"));
         task.setCourseRole(defaultStr(dto.getCourseRole(), "独立"));
+        // 班级：区分同一门课的不同班次，附件1「系数说明」列据此指名道姓到具体班级
+        task.setClassName(dto.getClassName());
         task.setStudentCount(dto.getStudentCount() != null ? dto.getStudentCount().longValue() : 0L);
         task.setTheoryHours(isG1(dto) ? dto.getBaseValue() : BigDecimal.ZERO);
         task.setPracticeHours(isG2(dto) ? dto.getBaseValue() : BigDecimal.ZERO);
-        task.setRepeatOrder(1L); // 默认第一次，后续可由用户手动调整
+        // 重复次序落库：既是 C1/K 的取值依据，也是事后审计「为什么这条只算 0.8」的唯一凭据
+        task.setRepeatOrder(repeatOrder);
         task.setImportSource("EXCEL");
         task.setImportBatch(batchNo);
         task.setImportTime(new Date());
@@ -252,18 +297,18 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
     /**
      * 创建类别明细并调用策略计算
      */
-    private BigDecimal createDetailAndCalc(TeachingTaskImportDTO dto, BizWorkloadItem item)
+    private BigDecimal createDetailAndCalc(TeachingTaskImportDTO dto, BizWorkloadItem item, long repeatOrder)
     {
         String type = dto.getWorkloadType().toUpperCase();
 
         switch (type)
         {
             case "G1":
-                return createG1Detail(dto, item);
+                return createG1Detail(dto, item, repeatOrder);
             case "G2":
                 return createG2Detail(dto, item);
             case "G3":
-                return createG3Detail(dto, item);
+                return createG3Detail(dto, item, repeatOrder);
             case "G4":
                 return createG4Detail(dto, item);
             case "G5":
@@ -278,12 +323,12 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
     /**
      * G1 理论课：J1 × C1 × K1 × Q1 × Q2 × Q3 × N
      */
-    private BigDecimal createG1Detail(TeachingTaskImportDTO dto, BizWorkloadItem item)
+    private BigDecimal createG1Detail(TeachingTaskImportDTO dto, BizWorkloadItem item, long repeatOrder)
     {
         BizWlTheory detail = new BizWlTheory();
         detail.setItemId(item.getId());
         detail.setJ1(dto.getBaseValue());
-        detail.setC1(calcC1(dto)); // 重复系数：根据同名课次数
+        detail.setC1(calcC1(repeatOrder)); // 重复系数：按同名课第几次，1.0/0.9/0.8
         detail.setK1(calcK1(dto)); // 课程类型系数
         detail.setQ1(calcQ1(dto)); // 教学质量系数
         detail.setQ2(calcQ2(dto)); // 课程质量系数
@@ -303,7 +348,7 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
         BizWlPractice detail = new BizWlPractice();
         detail.setItemId(item.getId());
         detail.setJ2(dto.getBaseValue());
-        detail.setK(dto.getCourseCoefficient() != null ? dto.getCourseCoefficient() : BigDecimal.ONE);
+        detail.setK(calcG2K(dto)); // 专业大类系数：理工 1.0 / 其他 0.9
         detail.setC2(new BigDecimal("0.9")); // 实践课重复系数固定 0.9
         detail.setQ1(calcQ1(dto));
         detail.setQ2(calcQ2(dto));
@@ -316,13 +361,13 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
     /**
      * G3 实习实训：T × D × K × Q1 × Q2
      */
-    private BigDecimal createG3Detail(TeachingTaskImportDTO dto, BizWorkloadItem item)
+    private BigDecimal createG3Detail(TeachingTaskImportDTO dto, BizWorkloadItem item, long repeatOrder)
     {
         BizWlInternshipTraining detail = new BizWlInternshipTraining();
         detail.setItemId(item.getId());
         detail.setT(dto.getBaseValue()); // 天数
-        detail.setD(dto.getCourseCoefficient() != null ? dto.getCourseCoefficient() : new BigDecimal("4.0"));
-        detail.setK(BigDecimal.ONE);
+        detail.setD(calcG3D(dto)); // 指导系数：理工 4.0 / 艺术 3.0 / 文史 2.0
+        detail.setK(calcG3RepeatK(repeatOrder)); // 重复系数：第一轮 1.0，第二轮起 0.9
         detail.setQ1(calcQ1(dto));
         detail.setQ2(calcQ2(dto));
         detail.setQ3(BigDecimal.ONE);
@@ -353,7 +398,7 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
         BizWlThesis detail = new BizWlThesis();
         detail.setItemId(item.getId());
         detail.setR5(dto.getStudentCount() != null ? dto.getStudentCount().longValue() : 0L);
-        detail.setK5(dto.getCourseCoefficient() != null ? dto.getCourseCoefficient() : new BigDecimal("9"));
+        detail.setK5(calcG5K5(dto)); // K5：理工本 9 / 理工专 5 / 文史本 6 / 文史专 4
         wlThesisMapper.insertBizWlThesis(detail);
 
         return calcStrategyFactory.get("G5").calculate(item);
@@ -376,13 +421,126 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
     // --- 系数计算辅助方法 ---
 
     /**
-     * C1 重复系数：根据同名课第几次
-     * 第一次 1.0，第二次 0.9，第三次及以后 0.8
+     * G1 理论课重复系数 C1：第一次 1.0，第二次 0.9，第三次及以后 0.8。
+     * <p>
+     * 取值走 {@code biz_workload_rule} 的 COEF_REPEAT_1ST / 2ND / 3RD_UP，
+     * 政策调整改库即可，不必改代码。默认值与 02_biz_seed.sql 种子一致，
+     * 仅在规则被误删时兜底，避免整批导入因缺一条参数而全数失败。
+     *
+     * @param repeatOrder 同名课第几次（≥1）
      */
-    private BigDecimal calcC1(TeachingTaskImportDTO dto)
+    private BigDecimal calcC1(long repeatOrder)
     {
-        // 默认第一次，后续可通过 repeatOrder 字段或查重逻辑确定
-        return new BigDecimal("1.0");
+        if (repeatOrder <= 1L)
+        {
+            return ruleParamService.get("COEF_REPEAT_1ST", new BigDecimal("1.0"));
+        }
+        if (repeatOrder == 2L)
+        {
+            return ruleParamService.get("COEF_REPEAT_2ND", new BigDecimal("0.9"));
+        }
+        return ruleParamService.get("COEF_REPEAT_3RD_UP", new BigDecimal("0.8"));
+    }
+
+    /**
+     * G3 实习实训重复系数 K：第一轮 1.0，第二轮及以后 0.9。
+     * <p>
+     * 与 G1 的 C1 不同，{@code else/工作量.md:67-68} 对 G3 只规定两档
+     * （"从第二轮次重复系数K＝0.9"），没有第三轮 0.8 的说法，
+     * 故第三轮及以后继续沿用 0.9，不套用 COEF_REPEAT_3RD_UP。
+     *
+     * @param repeatOrder 同一门实习实训第几轮（≥1）
+     */
+    private BigDecimal calcG3RepeatK(long repeatOrder)
+    {
+        if (repeatOrder <= 1L)
+        {
+            return BigDecimal.ONE;
+        }
+        return ruleParamService.get("COEF_REPEAT_2ND", new BigDecimal("0.9"));
+    }
+
+    /**
+     * G2 实践课专业大类系数 K：理工类 1.0，其他专业 0.9（{@code else/工作量.md:57}）。
+     * <p>
+     * Excel「课程系数」列填了就以它为准（教务按个案覆盖），留空才按专业大类自动取值。
+     * 此前留空一律落 1.0，等于把文史/艺术/其他专业的实践课都按理工计，多算 11%。
+     */
+    private BigDecimal calcG2K(TeachingTaskImportDTO dto)
+    {
+        if (dto.getCourseCoefficient() != null)
+        {
+            return dto.getCourseCoefficient();
+        }
+        return isLiGong(dto.getMajorCategory())
+                ? ruleParamService.get("COEF_PRACTICE_LG", new BigDecimal("1.0"))
+                : ruleParamService.get("COEF_PRACTICE_OTHER", new BigDecimal("0.9"));
+    }
+
+    /**
+     * G3 实习实训指导系数 D：理工类 4.0，艺术类 3.0，文史类 2.0（{@code else/工作量.md:66}）。
+     * <p>
+     * 「单位指导 D=2.0」无法从导入列区分（模板没有「指导方式」列），只能由教务在
+     * 「课程系数」列显式填 2.0 覆盖；本方法只负责按专业大类自动取值。
+     * 专业大类为「其他」时按文史类取 2.0——文档未单列该档，取最低档避免多算。
+     */
+    private BigDecimal calcG3D(TeachingTaskImportDTO dto)
+    {
+        if (dto.getCourseCoefficient() != null)
+        {
+            return dto.getCourseCoefficient();
+        }
+        String category = dto.getMajorCategory();
+        if (isLiGong(category))
+        {
+            return ruleParamService.get("COEF_TRAIN_D_LG", new BigDecimal("4.0"));
+        }
+        if (category != null && category.contains("艺术"))
+        {
+            return ruleParamService.get("COEF_TRAIN_D_ART", new BigDecimal("3.0"));
+        }
+        return ruleParamService.get("COEF_TRAIN_D_HUM", new BigDecimal("2.0"));
+    }
+
+    /**
+     * G5 毕业论文指导系数 K5：理工本 9 / 理工专 5 / 文史本 6 / 文史专 4
+     * （{@code else/工作量.md:79-83}，取值见 {@code biz_workload_rule.COEF_THESIS_K5_*}）。
+     * <p>
+     * 艺术类按文史类取值——文档的 K5 只分理工/文史两支，艺术类归属待专业目录确认
+     * （见 CLAUDE.md 待办 #5）；「其他」同理归文史，取低档避免多算。
+     * <p>
+     * 此前留空一律落 9（理工本科档），文史专科因此按 9 而非 4 计，多算 125%。
+     */
+    private BigDecimal calcG5K5(TeachingTaskImportDTO dto)
+    {
+        if (dto.getCourseCoefficient() != null)
+        {
+            return dto.getCourseCoefficient();
+        }
+        String discipline = isLiGong(dto.getMajorCategory()) ? "LG" : "HU";
+        // 授课层次只有本科/专科两档，非「专科」一律按本科（与 createTeachingTask 默认「本科」一致）
+        String level = "专科".equals(dto.getEducationLevel()) ? "C" : "B";
+        BigDecimal fallback = defaultK5(discipline, level);
+        return ruleParamService.get("COEF_THESIS_K5_" + discipline + "_" + level, fallback);
+    }
+
+    /** K5 兜底默认值，与 02_biz_seed.sql 的 COEF_THESIS_K5_* 一致，仅在规则被误删时生效 */
+    private BigDecimal defaultK5(String discipline, String level)
+    {
+        if ("LG".equals(discipline))
+        {
+            return "C".equals(level) ? new BigDecimal("5") : new BigDecimal("9");
+        }
+        return "C".equals(level) ? new BigDecimal("4") : new BigDecimal("6");
+    }
+
+    /**
+     * 专业大类是否理工类。库中实际取值为 理工类/文史类/艺术类/其他，
+     * 用 contains 而非 equals，容忍「理工」「理工科」等写法差异。
+     */
+    private boolean isLiGong(String majorCategory)
+    {
+        return majorCategory != null && majorCategory.contains("理工");
     }
 
     /**
@@ -446,20 +604,23 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
     }
 
     /**
-     * N 合堂系数：120-150人 1.1，151+人 1.2，否则 1.0
+     * N 合堂系数：120-150 人 1.1，151 人及以上 1.2，否则 1.0。
+     * <p>
+     * 取值走 {@code biz_workload_rule} 的 COEF_CLASS_120_150 / COEF_CLASS_151_UP，
+     * 与 C1 一致改库即可生效；人数档位阈值仍在代码里（规则表只存系数值，不存区间）。
      */
     private BigDecimal calcN(TeachingTaskImportDTO dto)
     {
         int count = dto.getStudentCount() != null ? dto.getStudentCount() : 0;
         if (count >= 151)
         {
-            return new BigDecimal("1.2");
+            return ruleParamService.get("COEF_CLASS_151_UP", new BigDecimal("1.2"));
         }
         if (count >= 120)
         {
-            return new BigDecimal("1.1");
+            return ruleParamService.get("COEF_CLASS_120_150", new BigDecimal("1.1"));
         }
-        return new BigDecimal("1.0");
+        return BigDecimal.ONE;
     }
 
     // --- 工具方法 ---

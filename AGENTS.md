@@ -81,7 +81,7 @@ ry_20260321.sql → quartz.sql → 01_biz_schema.sql → 02_biz_seed.sql → 03_
 - **Support**: `biz_teacher_profile`, `biz_workload_category_dict`, `biz_workload_rule`, `biz_pay_rate`, `biz_import_batch`
 - **Source data**: `biz_teaching_task`, `biz_role_assignment`
 - **Calc detail**: `biz_workload_item` + `biz_wl_*` (theory/practice/internship/courseDesign/thesis/concentratedInternship/management)
-- **Summary**: `biz_workload_summary` (JSON `category_details` field for dynamic category aggregation)
+- **Summary**: `biz_workload_summary` (fixed columns `G7`..`G11`, `total_workload`, `excess_workload`, `performance_pay`, `is_capped`). NOTE: there is **no** `category_details` JSON column - it exists only in the design docs under `else/`, never in the DDL or code. G1..G6 subtotals are not persisted; read them from `biz_workload_item` or export Attachment 1.
 - **Pay**: `biz_pay_record`, `biz_allowance_item`
 
 ## Approval State Machine

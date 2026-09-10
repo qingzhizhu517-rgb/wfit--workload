@@ -23,7 +23,12 @@ import com.workload.system.mapper.BizWorkloadItemMapper;
 /**
  * G11 管理服务工作量生成器实现
  *
- * 折算：prorated = 标准学时/学年 ÷ 2 × (任职区间 ∩ 学期区间 天数 / 学期总天数)，
+ * 折算：prorated = 岗位标准学时（allowance_rate，已定性为「学期」标准）
+ * × (任职区间 ∩ 学期区间 天数 / 学期总天数)。
+ * <p>
+ * 早期版本此处多除了一个 2（把 rate 当学年标准），与公式/种子数据/180 封顶三方矛盾，
+ * 已在 A3 整改中删除，注释同步更正——勿据旧注释再补回 ÷2。
+ * <p>
  * end_date 为 NULL 视为任职至学期末；多岗叠加与 180 封顶在汇总层处理
  *
  * @author wflg

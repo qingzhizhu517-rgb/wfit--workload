@@ -124,6 +124,20 @@ cp .env.example .env       # PowerShell: Copy-Item .env.example .env
 - **PowerShell**：`$env:WFIT_DB_PASSWORD='xxx'` 后再启动
 - **部署环境**：由容器/systemd/CI 的 secret 机制注入
 
+`WFIT_DB_USER` 的默认值是 `wfit`，这个 MySQL 账号**不会自动存在**，新库需先建号授权（口令与 `.env` 里的 `WFIT_DB_PASSWORD` 保持一致）：
+
+```sql
+CREATE USER 'wfit'@'localhost' IDENTIFIED BY '<你填的 WFIT_DB_PASSWORD>';
+CREATE USER 'wfit'@'127.0.0.1' IDENTIFIED BY '<你填的 WFIT_DB_PASSWORD>';
+GRANT ALL PRIVILEGES ON `wflg_workload`.* TO 'wfit'@'localhost';
+GRANT ALL PRIVILEGES ON `wflg_workload`.* TO 'wfit'@'127.0.0.1';
+```
+
+只授这一个库，不给全局权限（`SHOW GRANTS` 里全局那行应当只有 `USAGE`）。两个 host 都建是因为
+JDBC 连 `127.0.0.1` 时，MySQL 实际匹配到的可能是 `localhost`。若报
+`ERROR 4058 ... authentication policy`，说明服务端 `authentication_policy` 首因子锁定了
+`mysql_native_password`，把 `IDENTIFIED BY` 写成 `IDENTIFIED WITH mysql_native_password BY` 即可。
+
 ### 启动后端
 
 ```bash
@@ -132,6 +146,15 @@ mvn clean package -DskipTests
 java -jar workload-admin/target/workload-admin.jar
 # 或
 mvn spring-boot:run -pl workload-admin
+```
+
+本机开发也可以用脚本启动，它会读取仓库根 `.env` 注入变量、校验必填三项（口令只留在 `.env`，脚本不复制）：
+
+```powershell
+cd rear
+.\scripts\start-backend.ps1           # 跑已打好的 jar
+.\scripts\start-backend.ps1 -Build    # 先 mvn package 再跑
+.\scripts\start-backend.ps1 -Mvn      # 改用 mvn spring-boot:run
 ```
 
 后端启动后访问 http://localhost:8084/swagger-ui.html 查看 API 文档。

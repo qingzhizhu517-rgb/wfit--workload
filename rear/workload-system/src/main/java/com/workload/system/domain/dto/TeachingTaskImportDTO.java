@@ -74,6 +74,18 @@ public class TeachingTaskImportDTO
     @ColumnWidth(10)
     private BigDecimal courseCoefficient;
 
+    /** 班级：用于区分同一门课的不同班次，落库到 biz_teaching_task.class_name，
+     *  参与重复系数分组的可追溯展示（附件1「系数说明」列显示"第2次(自动化2402)"）。 */
+    @ExcelProperty("班级")
+    @ColumnWidth(16)
+    private String className;
+
+    /** 重复次序：同名课在本学期是第几次开课（1/2/3+）。
+     *  留空则由导入按同组已入库条数自动补位，见 TeachingTaskImportServiceImpl#resolveRepeatOrder。 */
+    @ExcelProperty("重复次序")
+    @ColumnWidth(10)
+    private Integer repeatOrder;
+
     // --- Getters / Setters ---
 
     public String getSemester()
@@ -226,10 +238,31 @@ public class TeachingTaskImportDTO
         this.courseCoefficient = courseCoefficient;
     }
 
+    public String getClassName()
+    {
+        return className;
+    }
+
+    public void setClassName(String className)
+    {
+        this.className = className;
+    }
+
+    public Integer getRepeatOrder()
+    {
+        return repeatOrder;
+    }
+
+    public void setRepeatOrder(Integer repeatOrder)
+    {
+        this.repeatOrder = repeatOrder;
+    }
+
     @Override
     public String toString()
     {
         return "TeachingTaskImportDTO{semester='" + semester + "', userCode='" + userCode
-                + "', courseName='" + courseName + "', workloadType='" + workloadType + "'}";
+                + "', courseName='" + courseName + "', className='" + className
+                + "', workloadType='" + workloadType + "'}";
     }
 }

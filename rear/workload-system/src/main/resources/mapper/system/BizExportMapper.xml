@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.workload.system.mapper.BizExportMapper">
+
+    <!--
+      附件1：明细 + 系数原值。
+      每张 G 明细表都带 item_type 条件 LEFT JOIN，既让 MySQL 少扫无关表，
+      也保证 coalesce 不会把别的类别的同名列（如 practice.K 与 internship.K）串到一起。
+      班级来自 biz_teaching_task（手工录入的明细无 task_id，班级为空，属正常）。
+    -->
+    <select id="selectPersonalWorkloadExport" resultType="com.workload.system.domain.dto.PersonalWorkloadDetailExportDTO">
+        select
+            i.item_type                                          as itemType,
+            ifnull(i.course_name, '-')                           as courseName,
+            t.class_name                                         as className,
+            i.education_level                                    as educationLevel,
+            i.major_category                                     as majorCategory,
+            coalesce(th.J1, pr.J2, itr.T, cd.J4, ci.W)           as baseValue,
+            coalesce(cd.R4, ts.R5, ci.R6, t.student_count)       as studentCount,
+            t.repeat_order                                       as repeatOrder,
+            coalesce(th.C1, pr.C2, itr.K)                        as repeatCoef,
+            th.K1                                                as k1,
+            coalesce(th.Q1, pr.Q1, itr.Q1)                       as q1,
+            coalesce(th.Q2, pr.Q2, itr.Q2)                       as q2,
+            coalesce(th.Q3, pr.Q3, itr.Q3)                       as q3,
+            th.N                                                 as n,
+            coalesce(itr.D, ts.K5, pr.K)                         as otherCoef,
+            i.calculated_workload                                as calculatedWorkload,
+            case i.source_type when 'IMPORT' then '导入' when 'MANUAL' then '手工'
+                 when 'SELF' then '教师申报' else i.source_type end          as sourceType,
+            case i.status when 0 then '草稿' when 1 then '已核对' when 2 then '有异议' when 3 then '已驳回'
+                 else cast(i.status as char) end                 as status,
+            i.is_over_limit                                      as overLimit,
+            mg.role_type                                         as roleType,
+            mg.proration_basis                                   as prorationBasis
+        from biz_workload_item i
+            left join biz_teaching_task t   on t.id = i.task_id
+            left join biz_wl_theory th      on th.item_id = i.id  and i.item_type = 'G1'
+            left join biz_wl_practice pr    on pr.item_id = i.id  and i.item_type = 'G2'
+            left join biz_wl_internship_training itr on itr.item_id = i.id and i.item_type = 'G3'
+            left join biz_wl_course_design cd on cd.item_id = i.id and i.item_type = 'G4'
+            left join biz_wl_thesis ts      on ts.item_id = i.id  and i.item_type = 'G5'
+            left join biz_wl_concentrated_internship ci on ci.item_id = i.id and i.item_type = 'G6'
+            left join biz_wl_management mg   on mg.item_id = i.id  and i.item_type = 'G11'
+        where i.user_id = #{userId}
+          and i.semester = #{semester}
+        order by i.item_type, i.id
+    </select>
+
+    <!--
+      附件2：汇总为主表 LEFT JOIN 酬金记录。
+      刻意不用 INNER JOIN：未跑过 recalcPay 的教师必须照样出现（酬金列空 = 待核算），
+      否则导出表会「凭空少人」，教务对不上名单。
+    -->
+    <select id="selectPaySummaryExport" resultType="com.workload.system.domain.dto.PaySummaryExportDTO">
+        select
+            u.user_name          as userCode,
+            u.nick_name          as userName,
+            d.dept_name          as deptName,
+            s.semester           as semester,
+            s.title              as title,
+            pf.teacher_nature    as teacherNature,
+            s.total_workload     as totalWorkload,
+            s.rated_workload     as ratedWorkload,
+            s.excess_workload    as excessWorkload,
+            s.is_capped          as capped,
+            s.pay_rate           as payRate,
+            p.course_hour_pay    as coursePay,
+            p.other_pay_total    as otherPayTotal,
+            p.total_pay          as totalPay,
+            case s.status when 0 then '填报中' when 1 then '待教务审核' when 2 then '待院领导签字'
+                 when 3 then '已完结' when -1 then '已驳回' else cast(s.status as char) end as statusLabel
+        from biz_workload_summary s
+            left join biz_pay_record p on p.user_id = s.user_id and p.semester = s.semester
+            left join sys_user u on u.user_id = s.user_id
+            left join sys_dept d on d.dept_id = u.dept_id
+            left join biz_teacher_profile pf on pf.user_id = s.user_id
+        where s.semester = #{semester}
+        <if test="userId != null">
+            and s.user_id = #{userId}
+        </if>
+        order by d.dept_id, u.user_name
+    </select>
+
+</mapper>

@@ -164,7 +164,7 @@ CREATE TABLE biz_workload_item (
   semester             VARCHAR(20)   NOT NULL,
   academic_year        VARCHAR(20)   DEFAULT NULL,
   item_type            VARCHAR(10)   NOT NULL                    COMMENT 'G1..G9,G11',
-  source_type          VARCHAR(10)   NOT NULL                    COMMENT 'IMPORT/MANUAL',
+  source_type          VARCHAR(10)   NOT NULL                    COMMENT 'IMPORT导入/MANUAL手工/SELF教师申报',
   task_id              BIGINT(20)    DEFAULT NULL                COMMENT 'FK biz_teaching_task',
   assignment_id        BIGINT(20)    DEFAULT NULL                COMMENT 'FK biz_role_assignment(G11)',
   role_type            VARCHAR(20)   DEFAULT NULL                COMMENT '岗位类型(G11): 班主任/系主任/教研室主任/专业负责人/俱乐部经理/实验人员/督导/中层副职/心理中心',

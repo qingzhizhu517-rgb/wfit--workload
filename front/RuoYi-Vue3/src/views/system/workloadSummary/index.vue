@@ -85,6 +85,41 @@
         </el-col>
         <el-col :span="1.5">
           <el-tooltip
+            content="对表格中勾选的教师逐个核算，单人失败不影响其他人"
+            placement="top"
+          >
+            <el-button
+              v-hasPermi="['system:workloadSummary:edit']"
+              type="primary"
+              plain
+              icon="Files"
+              :loading="batchCalcLoading"
+              :disabled="multiple"
+              @click="handleRecalcSelected"
+            >
+              核算所选{{ selectedUserIds.length ? `(${selectedUserIds.length})` : '' }}
+            </el-button>
+          </el-tooltip>
+        </el-col>
+        <el-col :span="1.5">
+          <el-tooltip
+            content="按搜索栏学期，核算该学期全部有明细的教师，耗时较长"
+            placement="top"
+          >
+            <el-button
+              v-hasPermi="['system:workloadSummary:edit']"
+              type="danger"
+              plain
+              icon="Odometer"
+              :loading="batchCalcLoading"
+              @click="handleRecalcSemester"
+            >
+              全学期核算
+            </el-button>
+          </el-tooltip>
+        </el-col>
+        <el-col :span="1.5">
+          <el-tooltip
             content="按搜索栏学期，由岗位任职批量生成 G11 管理服务明细"
             placement="top"
           >
@@ -150,6 +185,41 @@
         >
           导出
         </el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-tooltip
+          content="附件1：本人/所选教师该学期工作量明细，含重复次序、班级与各项系数"
+          placement="top"
+        >
+          <el-button
+            v-hasPermi="['system:export:personal']"
+            type="success"
+            plain
+            icon="Document"
+            @click="handleExportAttach1"
+          >
+            导出附件1
+          </el-button>
+        </el-tooltip>
+      </el-col>
+      <el-col
+        v-if="!isTeacher"
+        :span="1.5"
+      >
+        <el-tooltip
+          content="附件2：该学期绩效酬金统计表（金额取自酬金记录）"
+          placement="top"
+        >
+          <el-button
+            v-hasPermi="['system:export:paySummary']"
+            type="success"
+            plain
+            icon="Money"
+            @click="handleExportAttach2"
+          >
+            导出附件2
+          </el-button>
+        </el-tooltip>
       </el-col>
       <right-toolbar
         v-model:show-search="showSearch"
@@ -437,6 +507,13 @@
                     重算
                   </el-dropdown-item>
                   <el-dropdown-item
+                    v-hasPermi="['system:export:personal']"
+                    command="exportItem"
+                    icon="Document"
+                  >
+                    导出附件1
+                  </el-dropdown-item>
+                  <el-dropdown-item
                     v-hasPermi="['system:workloadSummary:remove']"
                     command="delete"
                     icon="Delete"
@@ -648,7 +725,10 @@
 
 <script setup name="WorkloadSummary">
 import { listWorkloadSummary, delWorkloadSummary } from '@/api/system/workloadSummary'
-import { recalcSummary, recalcAll, previewSummary, genG11 } from '@/api/system/calc'
+import { recalcSummary, recalcAll, recalcAllBatch, previewSummary, genG11 } from '@/api/system/calc'
+import { exportPersonalWorkload, exportPaySummary } from '@/api/system/export'
+import { ElMessageBox } from 'element-plus'
+import { saveBlobAsFile } from '@/utils/blobDownload'
 import { auditSubmit, auditApprove, auditReject, auditSign, auditUnlock, auditBatchSubmit, auditTeacherConfirm } from '@/api/system/audit'
 import UserSelect from '@/components/UserSelect/index.vue'
 import SemesterSelect from '@/components/SemesterSelect/index.vue'
@@ -670,7 +750,10 @@ const loading = ref(true)
 const calcLoading = ref(false)
 const showSearch = ref(true)
 const ids = ref([])
+// 勾选行对应的教师 userId：ids 存的是汇总主键，批量核算按教师维度调用，两者不可混用
+const selectedUserIds = ref([])
 const multiple = ref(true)
+const batchCalcLoading = ref(false)
 const total = ref(0)
 
 const detailOpen = ref(false)
@@ -719,6 +802,8 @@ function resetQuery() {
 // 多选框选中数据
 function handleSelectionChange(selection) {
   ids.value = selection.map(item => item.id)
+  // 同一教师同学期只会有一条汇总，但跨学期查询时可能重复，去重后再送批量核算
+  selectedUserIds.value = [...new Set(selection.map(item => item.userId).filter(Boolean))]
   multiple.value = !selection.length
 }
 
@@ -757,6 +842,106 @@ function handleRecalcAll() {
     proxy.$modal.msgSuccess(`核算完成，共重算 ${count} 条明细`)
   }).catch(() => {}).finally(() => {
     calcLoading.value = false
+  })
+}
+
+/**
+ * 批量核算结果提示：成功数 + 失败明细。
+ * 失败按教师逐条列出原因，避免「部分成功」被一句"完成"糊过去。
+ */
+function notifyBatchResult(data) {
+  const success = data?.successCount ?? 0
+  const fail = data?.failCount ?? 0
+  const items = data?.recalcItemCount ?? 0
+  if (!fail) {
+    proxy.$modal.msgSuccess(`核算完成：${success} 位教师，共 ${items} 条明细`)
+    return
+  }
+  // 失败原因来自后端异常消息，可能含尖括号，转义后再拼 HTML
+  const esc = (v) => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  const lines = (data?.failures || [])
+    .map(f => `${esc(f.userName || f.userId)}：${esc(f.reason)}`)
+    .join('<br/>')
+  // 不走 $modal.alertError：它不开 HTML 渲染，多行失败原因会挤成一行
+  ElMessageBox.alert(
+    `成功 ${success} 位，失败 ${fail} 位：<br/>${lines}`,
+    '批量核算结果',
+    { type: 'warning', dangerouslyUseHTMLString: true }
+  ).catch(() => {})
+}
+
+/** 批量核算所选教师 */
+function handleRecalcSelected() {
+  const { semester } = queryParams.value
+  if (!semester) {
+    proxy.$modal.alertWarning('请先在搜索栏填写「学年学期」')
+    return
+  }
+  if (!selectedUserIds.value.length) {
+    proxy.$modal.alertWarning('请先勾选需要核算的教师')
+    return
+  }
+  const names = selectedUserIds.value.map(id => userLabel(id)).join('、')
+  proxy.$modal.confirm(`确认对 ${selectedUserIds.value.length} 位教师（${names}）执行 ${semester} 一键核算吗？`).then(function() {
+    batchCalcLoading.value = true
+    return recalcAllBatch(semester, selectedUserIds.value)
+  }).then((res) => {
+    getList()
+    notifyBatchResult(res.data)
+  }).catch(() => {}).finally(() => {
+    batchCalcLoading.value = false
+  })
+}
+
+/** 全学期核算：该学期所有有明细的教师 */
+function handleRecalcSemester() {
+  const { semester } = queryParams.value
+  if (!semester) {
+    proxy.$modal.alertWarning('请先在搜索栏填写「学年学期」')
+    return
+  }
+  proxy.$modal.confirm(`确认核算 ${semester} 学期全部有工作量明细的教师吗？人数多时耗时较长，期间请勿重复点击。`).then(function() {
+    batchCalcLoading.value = true
+    // 不传 userIds = 全学期语义（后端对教师角色仍强制收敛为本人）
+    return recalcAllBatch(semester, [])
+  }).then((res) => {
+    getList()
+    notifyBatchResult(res.data)
+  }).catch(() => {}).finally(() => {
+    batchCalcLoading.value = false
+  })
+}
+
+/** 导出附件1：工作量明细（含系数与班级），学期取搜索栏，教师取搜索栏/本人 */
+function handleExportAttach1(row) {
+  const uid = row ? row.userId : (isTeacher.value ? userStore.id : queryParams.value.userId)
+  const semester = row ? row.semester : queryParams.value.semester
+  if (!uid || !semester) {
+    proxy.$modal.alertWarning(isTeacher.value
+      ? '请先填写「学年学期」'
+      : '请先在搜索栏选择「教师」并填写「学年学期」，或在行内「更多」中导出')
+    return
+  }
+  proxy.$modal.loading('正在导出附件1...')
+  exportPersonalWorkload({ userId: uid, semester }).then(res => {
+    saveBlobAsFile(res, `工作量明细_${userLabel(uid)}_${semester}.xlsx`)
+  }).finally(() => {
+    proxy.$modal.closeLoading()
+  })
+}
+
+/** 导出附件2：绩效酬金统计（全学期） */
+function handleExportAttach2() {
+  const { semester } = queryParams.value
+  if (!semester) {
+    proxy.$modal.alertWarning('请先在搜索栏填写「学年学期」')
+    return
+  }
+  proxy.$modal.loading('正在导出附件2...')
+  exportPaySummary({ semester }).then(res => {
+    saveBlobAsFile(res, `绩效酬金统计_${semester}.xlsx`)
+  }).finally(() => {
+    proxy.$modal.closeLoading()
   })
 }
 
@@ -889,6 +1074,8 @@ function handleUnlock(row) {
 function handleMoreCmd(cmd, row) {
   if (cmd === 'recalc') {
     handleRecalcSummary(row)
+  } else if (cmd === 'exportItem') {
+    handleExportAttach1(row)
   } else if (cmd === 'delete') {
     handleDelete(row)
   }

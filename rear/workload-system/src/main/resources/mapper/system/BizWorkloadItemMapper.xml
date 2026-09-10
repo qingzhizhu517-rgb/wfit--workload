@@ -173,4 +173,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             #{id}
         </foreach>
     </delete>
+
+    <!-- 全学期批量核算的教师清单：该学期有明细的全部教师 -->
+    <select id="selectUserIdsBySemester" resultType="java.lang.Long">
+        select distinct user_id from biz_workload_item
+        where semester = #{semester} and user_id is not null
+        order by user_id
+    </select>
 </mapper>
