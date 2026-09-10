@@ -23,13 +23,18 @@ import com.workload.system.mapper.BizWorkloadItemMapper;
 /**
  * G11 管理服务工作量生成器实现
  *
- * 折算：prorated = 岗位标准学时（allowance_rate，已定性为「学期」标准）
- * × (任职区间 ∩ 学期区间 天数 / 学期总天数)。
+ * 折算：prorated = 学期标准学时 × (任职区间 ∩ 学期区间 天数 / 学期总天数)。
  * <p>
- * 早期版本此处多除了一个 2（把 rate 当学年标准），与公式/种子数据/180 封顶三方矛盾，
- * 已在 A3 整改中删除，注释同步更正——勿据旧注释再补回 ÷2。
+ * <b>口径（2026-09-10 依《办法》第十六条/十七条统一）</b>：
+ * {@code allowance_rate} 一律存<b>学年值</b>（与列注释「该岗位标准学时/学年」一致），
+ * 引擎折半得学期标准。唯一例外是「督导」——第十七条明写 15 学时/学期，
+ * 本身就是学期值，不折半。
  * <p>
- * end_date 为 NULL 视为任职至学期末；多岗叠加与 180 封顶在汇总层处理
+ * 历史注记：早期版本曾把 rate 当学年标准多除一个 2（A3 删除），当时种子按学期值
+ * 供给才自洽；本次改回 ÷2 的前提是<b>存储约定同步改为学年值</b>（04 种子已更新），
+ * 与 A3 时点不是同一数据前提，勿再据 A3 结论改回。
+ * <p>
+ * end_date 为 NULL 视为任职至学期末；多岗叠加与 180/学期封顶在汇总层处理
  *
  * @author wflg
  * @date 2026-07-21
@@ -116,9 +121,10 @@ public class ManagementItemGeneratorImpl implements ManagementItemGenerator
         long overlapDays = ChronoUnit.DAYS.between(overlapStart, overlapEnd) + 1;
         long semesterDays = ChronoUnit.DAYS.between(semStart, semEnd) + 1;
 
-        // G11 = 岗位标准学时（学期标准）× 任职天数占比；学期封顶见 CAP_G11_SEMESTER
+        // G11 = 学期标准学时 × 任职天数占比；学期封顶见 CAP_G11_SEMESTER
         BigDecimal rate = assignment.getAllowanceRate() == null ? BigDecimal.ZERO : assignment.getAllowanceRate();
-        BigDecimal prorated = rate.multiply(new BigDecimal(overlapDays))
+        BigDecimal semesterRate = toSemesterRate(assignment.getRoleType(), rate);
+        BigDecimal prorated = semesterRate.multiply(new BigDecimal(overlapDays))
                 .divide(new BigDecimal(semesterDays), 2, RoundingMode.HALF_UP);
         String basis = String.format("任职 %s 至 %s，学期 %s 至 %s，折算 %d/%d 天",
                 assignStart, assignEnd, semStart, semEnd, overlapDays, semesterDays);
@@ -184,8 +190,35 @@ public class ManagementItemGeneratorImpl implements ManagementItemGenerator
         return items.isEmpty() ? null : items.get(0);
     }
 
+    /**
+     * 学年标准 -> 学期标准：第十六条各岗位为学时/学年，÷2；
+     * 「督导」例外——第十七条 15 学时/学期本身即学期值，不折半
+     */
+    private BigDecimal toSemesterRate(String roleType, BigDecimal yearRate)
+    {
+        if (yearRate == null)
+        {
+            return BigDecimal.ZERO;
+        }
+        if ("督导".equals(roleType))
+        {
+            return yearRate;
+        }
+        return yearRate.divide(new BigDecimal("2"), 2, RoundingMode.HALF_UP);
+    }
+
     private LocalDate toLocalDate(Date date)
     {
-        return date == null ? null : date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+        // MyBatis 把 DATE/DATETIME 列映射为 java.sql.Date/Timestamp，
+        // 而 java.sql.Date.toInstant() 会抛 UnsupportedOperationException，须分流处理
+        if (date == null)
+        {
+            return null;
+        }
+        if (date instanceof java.sql.Date sqlDate)
+        {
+            return sqlDate.toLocalDate();
+        }
+        return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
     }
 }

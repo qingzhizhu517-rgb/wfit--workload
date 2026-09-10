@@ -351,7 +351,7 @@
           </el-col>
           <el-col :span="12">
             <el-form-item
-              label="标准学时"
+              label="标准学时/学年"
               prop="allowanceRate"
             >
               <el-input-number
@@ -361,6 +361,9 @@
                 controls-position="right"
                 style="width: 100%"
               />
+              <div class="form-tip">
+                按学年值填写（办法第十六条，引擎自动折半）；督导为例外，按学期值 15 填写（第十七条）
+              </div>
             </el-form-item>
           </el-col>
           <el-col :span="24">

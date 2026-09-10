@@ -219,7 +219,7 @@ mysql -u root -p wflg_workload < rear/sql/15_fix_menu_buttons.sql
 | G4 课程设计 | `J4 * min(R4,60) * 0.4` | J4=学分, R4=人数(上限60，见 A6/14_fix_calc_rules.sql) |
 | G5 毕业论文 | `R5 * K5` | K5=理工本9/专5, 文史本6/专4 |
 | G6 集中实习 | `W * min(R6,20) * 0.4` | W=周数, R6=人数(上限20) |
-| G11 管理服务 | 按岗位标准学时 * 任职天数/学期天数 | 学期封顶 180 |
+| G11 管理服务 | 岗位标准学时(**学年**)/2 × 任职天数/学期天数 | 学期封顶 180；督导例外（第十七条 15/学期不折半，2026-09-10 统一） |
 | 绩效酬金 | `(min(总工作量,540) - 180) * 职称单位酬金` | 教授70/副60/讲50/助40 |
 
 汇总层级：G7=G1~G6合计, G10=G7+G8+G9, 总工作量=G10+G11
@@ -327,7 +327,7 @@ mysql -u root -p wflg_workload < rear/sql/15_fix_menu_buttons.sql
 |---|------|------|
 | A1 | 教务助理(role3)被越权授予 `unlock`，可复活院领导已完结记录 | ✅ `13_fix_audit_perm.sql` 撤销授权，unlock 仅授管理员 |
 | A2 | 策略解析失败（bean 名配错）静默返回 null，工作量被无声置 0 | ✅ `CalcStrategyFactory.resolve()` 改为抛 `ServiceException` |
-| A3 | G11 折算多除了一个 2，与公式/种子数据/封顶矛盾 | ✅ `ManagementItemGeneratorImpl` 删除 `divide(2)`（rate 定性为学期标准） |
+| A3 | G11 折算多除了一个 2，与公式/种子数据/封顶矛盾 | ✅（**2026-09-10 依办法第十六条反向修正**）`allowance_rate` 约定改为存**学年值**，`ManagementItemGeneratorImpl` 恢复 ÷2；督导（第十七条 15/学期）不折半。A3 当年按学期值种子自洽，与现约定不是同一数据前提 |
 | A4 | 教学任务导入自调用致 `@Transactional` 失效，部分失败提交半截数据 | ✅ 改用 `AopContext.currentProxy()` 每行独立事务 |
 | A5 | 院领导待签(2)环节无驳回路径 | ✅ `BizAuditServiceImpl.reject` 放开 `from∈{1,2}`；院领导授 `reject` 权限 |
 | A6 | G4 人数上限 20 与权威文档 R4≤60 冲突 | ✅ `CourseDesignCalcStrategy` 默认值改 60；`14_fix_calc_rules.sql` 已随 02 并入。**注意：本机库直到 2026-08-31 才真正执行到 60**（原记「已部署库」不实），且 `RuleParamServiceImpl` 缓存无 TTL，改库后必须删 Redis 键 `wl_rule:CAP_R4_MAX`，否则重启也读旧值 —— 见待办 #10。**2026-09-10 起语义变更：CAP_R4_MAX 由截断上限改为告警阈值，R4 按实际人数计算不再 min()**（办法第十四条4 未写「超出不计」） |

@@ -222,7 +222,17 @@ public class SummaryCalcServiceImpl implements SummaryCalcService
 
     private LocalDate toLocalDate(Date date)
     {
-        return date == null ? null : date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+        // MyBatis 把 DATE/DATETIME 列映射为 java.sql.Date/Timestamp，
+        // 而 java.sql.Date.toInstant() 会抛 UnsupportedOperationException，须分流处理
+        if (date == null)
+        {
+            return null;
+        }
+        if (date instanceof java.sql.Date sqlDate)
+        {
+            return sqlDate.toLocalDate();
+        }
+        return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
     }
 
     /**
