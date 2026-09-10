@@ -36,7 +36,10 @@ front/RuoYi-Vue3/               # Vue 3.5 + Vite 6 + Element Plus
 - **Limited automated tests.** Only `workload-system` has JUnit 5 tests (`CalcStrategyFactoryTest`, `StrategyCacheTest` in `src/test/**/calc/strategy/`); run via `mvn test -pl workload-system`. No `spring-boot-starter-test` / integration tests. Verify other changes via Swagger UI (`/swagger-ui.html`) or frontend.
 - **Frontend proxy**: all `/dev-api` requests strip prefix and proxy to `http://localhost:8084` (see `vite.config.js`).
 - **Calculation engine uses Spring bean names** — `biz_workload_category_dict.calc_strategy` column stores bean names like `theoryCalcStrategy`. `CalcStrategyFactory` resolves by bean name, not by class.
-- **`manage` module is empty** — just a hello-world `Main.java`, no business logic.
+- **Removed 2026-09-10**: `workload-quartz`, `workload-generator`, `manage` modules were deleted
+  (`rear/pom.xml` now has 4 modules). Their frontend pages and menus were cleaned up too —
+  see `sql/16_remove_unused_modules.sql` (idempotent). Swagger (`系统接口`) and the rest of
+  `系统监控` are kept.
 - **Vue 2 `workload-ui` has been removed** - the only frontend is `front/RuoYi-Vue3` (Vue 3).
 - **G8/G9 have no auto-calculation** — second classroom and other workload are manual entry only.
 - **Semester format**: `2025-2026-1` (academic year + semester number). Calendar config in `application.yml` under `wl.semester`.

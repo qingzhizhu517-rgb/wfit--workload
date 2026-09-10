@@ -24,11 +24,6 @@
             <optional>true</optional> <!-- 表示依赖不会传递 -->
         </dependency>
 
-        <dependency>
-            <groupId>com.workload</groupId>
-            <artifactId>manage</artifactId>
-        </dependency>
-
         <!-- spring-doc -->
         <dependency>
             <groupId>org.springdoc</groupId>
@@ -45,18 +40,6 @@
         <dependency>
             <groupId>com.workload</groupId>
             <artifactId>workload-framework</artifactId>
-        </dependency>
-
-        <!-- 定时任务-->
-        <dependency>
-            <groupId>com.workload</groupId>
-            <artifactId>workload-quartz</artifactId>
-        </dependency>
-
-        <!-- 代码生成-->
-        <dependency>
-            <groupId>com.workload</groupId>
-            <artifactId>workload-generator</artifactId>
         </dependency>
 
     </dependencies>

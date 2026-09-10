@@ -48,17 +48,16 @@ wfit--workload/
 │   ├── workload-system/           # ★ 全部业务逻辑（calc 引擎 + 22 个 Biz Controller）
 │   ├── workload-framework/        # Security、数据源、AOP、配置
 │   ├── workload-common/           # 通用工具、注解、异常
-│   ├── workload-quartz/           # 定时任务
-│   ├── workload-generator/        # 代码生成器
-│   ├── manage/                    # 空壳（仅 hello-world Main.java，无业务）
-│   └── sql/                       # 建表/种子/规则/菜单（新库：01→06 + 08 + 13）
+│   └── sql/                       # 建表/种子/规则/菜单（新库：01→06 + 08 + 13 →16）
 ├── front/RuoYi-Vue3/              # 前端（Vue 3）
 │   └── src/{api,views}/system/    # 31 个 API 文件 + 19 个业务页面
 ├── else/                          # 需求/设计原始文档（工作量.md 是 G1-G11 权威公式）
 └── docs/                          # API 文档、审查报告、测试、superpowers specs/plans
 ```
 
-**Maven 模块依赖方向**：`workload-admin → workload-system → workload-framework → workload-common`（quartz/generator/manage 为旁支）。
+**Maven 模块依赖方向**：`workload-admin → workload-system → workload-framework → workload-common`（4 模块）。
+> 2026-09-10 减量：`workload-quartz` / `workload-generator` / `manage` 已删除；
+> 相关前端页面与菜单一并清理（`sql/16_remove_unused_modules.sql`，幂等）。
 
 ---
 

@@ -55,9 +55,6 @@ wfit--workload/                         # 仓库根（GitHub: qingzhizhu517-rgb/
 │   │   └── src/test/**/calc/strategy/ # JUnit 5 单元测试（CalcStrategyFactoryTest, StrategyCacheTest）
 │   ├── workload-framework/            # 框架层：Security、数据源、AOP、配置
 │   ├── workload-common/               # 通用工具、注解、异常处理
-│   ├── workload-quartz/               # 定时任务模块
-│   ├── workload-generator/            # 代码生成器
-│   ├── manage/                        # 空壳占位（仅 hello-world Main.java，无业务）
 │   └── sql/                           # 建表 + 种子数据 + 计算规则 + 菜单
 │       ├── 01_biz_schema.sql          # 18 张业务表 DDL
 │       ├── 02_biz_seed.sql            # 种子数据（字典11条、规则39条、费率4条）
@@ -74,6 +71,7 @@ wfit--workload/                         # 仓库根（GitHub: qingzhizhu517-rgb/
 │       ├── 13_fix_audit_perm.sql      # 撤销教务助理 unlock 越权 + 院领导授 reject（幂等）
 │       ├── 14_fix_calc_rules.sql      # G4 人数上限 CAP_R4_MAX 20→60（幂等 UPDATE）
 │       ├── 15_fix_menu_buttons.sql    # 补 63 个明细/配置页按钮权限 + 清理死权限（幂等，已并入 05/06）
+│       ├── 16_remove_unused_modules.sql # 随 quartz/generator 模块下线清理菜单（幂等）
 │       ├── ry_20260321.sql            # RuoYi 基础系统表
 │       └── quartz.sql                 # Quartz 调度器表
 ├── front/RuoYi-Vue3/                  # 前端 Vue 3 项目
@@ -465,7 +463,11 @@ unlock 走 submit→approve→sign→unlock 往返：签字三栏与 `lock_time`
 ## 注意事项
 
 - 活跃前端只有 `front/RuoYi-Vue3`（Vue 3）；历史上的 Vue2 `workload-ui` 已移除，不在仓库内
-- `rear/manage/` 模块是空壳占位（仅有 hello-world 的 `Main.java`），无业务逻辑
+- **2026-09-10 减量**：`workload-quartz` / `workload-generator` / `manage` 三模块已删除
+  （`rear/pom.xml` 的 `modules` 现为 4 个）。前端 `views/tool/gen`、`views/tool/build`、
+  `views/monitor/job` 与对应菜单/按钮权限（`monitor:job:*`、`tool:gen:*`、`tool:build:*`）
+  已一并清理，脚本 `sql/16_remove_unused_modules.sql`（幂等）。后台任务若将来需要异步重算，
+  再按需引入 `spring-boot-starter-quartz` 或 `@Scheduled`（后者无需独立模块）
 - 学期格式为 `2025-2026-1`（学年+学期号），校历配置在 `application.yml` 的 `wl.semester` 节点
 - 业务表前缀 `biz_`，系统表前缀 `sys_`（RuoYi 内置）
 - `front/RuoYi-Vue3/.env.development` 已被 git 跟踪，但仅含页面标题与 `/dev-api` 前缀，**无敏感信息**；后端凭据已全部改为环境变量注入（见「配置要点」）

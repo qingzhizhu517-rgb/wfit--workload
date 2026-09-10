@@ -180,20 +180,6 @@
                 <version>${kaptcha.version}</version>
             </dependency>
 
-            <!-- 定时任务-->
-            <dependency>
-                <groupId>com.workload</groupId>
-                <artifactId>workload-quartz</artifactId>
-                <version>${workload.version}</version>
-            </dependency>
-
-            <!-- 代码生成-->
-            <dependency>
-                <groupId>com.workload</groupId>
-                <artifactId>workload-generator</artifactId>
-                <version>${workload.version}</version>
-            </dependency>
-
             <!-- 核心模块-->
             <dependency>
                 <groupId>com.workload</groupId>
@@ -215,12 +201,6 @@
                 <version>${workload.version}</version>
             </dependency>
 
-            <dependency>
-                <groupId>com.workload</groupId>
-                <artifactId>manage</artifactId>
-                <version>${workload.version}</version>
-            </dependency>
-
         </dependencies>
     </dependencyManagement>
 
@@ -228,10 +208,7 @@
         <module>workload-admin</module>
         <module>workload-framework</module>
         <module>workload-system</module>
-        <module>workload-quartz</module>
-        <module>workload-generator</module>
         <module>workload-common</module>
-        <module>manage</module>
     </modules>
     <packaging>pom</packaging>
 
