@@ -61,25 +61,24 @@ public interface BizTeachingTaskMapper
     public int deleteBizTeachingTaskByIds(Long[] ids);
 
     /**
-     * 统计同一教师、同一学期、同名课程、同一授课层次、同一工作量类别下已入库的教学任务条数。
+     * 统计同一教师、同一学期、同名课程、同一授课层次下已入库的教学任务条数。
      * <p>
      * 用于推导重复系数的「第几次」：本方法返回 n，则当前正在导入的这一条为第 n+1 次。
-     * 分组口径来自 else/工作量.md:15-18「课程名称一致即为同一门课，不分年级，
+     * 分组口径来自《办法》第十四条1「课程名称一致即为同一门课，不分年级，
      * 不以课程代码为准。本专科分别算。」故只按 course_name + education_level 分组，
-     * 刻意不含 course_code / 班级 / 课程性质。
+     * 刻意不含 course_code / 班级 / 课程性质 / <b>工作量类别</b>
+     * （2026-09-10 移除 item_type：办法条文无类别要求，
+     * 原口径同名理论课与实习实训各自从第一次起算，无依据）。
      * <p>
-     * 类别经 biz_workload_item.item_type 限定：G1 的 C1 与 G3 的 K 各自独立计数，
-     * 同名的理论课与实习实训不互相干扰。
+     * 直接统计 biz_teaching_task 行数，不再经 biz_workload_item 关联。
      *
      * @param userId         教师ID
      * @param semester       学年学期
      * @param courseName     课程名称
      * @param educationLevel 授课层次（本科/专科，NULL 与空串视作同组）
-     * @param itemType       工作量类别（G1/G3...）
      * @return 已入库条数
      */
     public int countSameCourseTask(@Param("userId") Long userId, @Param("semester") String semester,
                                    @Param("courseName") String courseName,
-                                   @Param("educationLevel") String educationLevel,
-                                   @Param("itemType") String itemType);
+                                   @Param("educationLevel") String educationLevel);
 }

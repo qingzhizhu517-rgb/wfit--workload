@@ -374,7 +374,7 @@ mysql -u root -p wflg_workload < rear/sql/15_fix_menu_buttons.sql
 
 | # | 问题 | 修复 |
 |---|------|------|
-| E1 | 重复系数 C1 在导入时硬编码 1.0，「第几次」这个事实从未落库，事后无从追溯 | ✅ 导入模板新增「重复次序」列（第 17 列）；留空则按 `countSameCourseTask` 自动补位。分组口径 = 教师 + 学期 + 课程名称 + 授课层次 + 工作量类别（**不含课程代码与班级**，依 `else/工作量.md:15-18`「课程名称一致即同一门课，本专科分别算」）。次序落 `biz_teaching_task.repeat_order`，C1 取 `COEF_REPEAT_1ST/2ND/3RD_UP` |
+| E1 | 重复系数 C1 在导入时硬编码 1.0，「第几次」这个事实从未落库，事后无从追溯 | ✅ 导入模板新增「重复次序」列（第 17 列）；留空则按 `countSameCourseTask` 自动补位。分组口径 = 教师 + 学期 + 课程名称 + 授课层次（**不含课程代码、班级与工作量类别**，依《办法》第十四条1「课程名称一致即同一门课，本专科分别算」；2026-09-10 移除 item_type——条文无类别要求，同名理论课与实习实训原各自从第一次起算无依据）。次序落 `biz_teaching_task.repeat_order`，C1 取 `COEF_REPEAT_1ST/2ND/3RD_UP` |
 | E2 | G3 的 K 同为重复系数，也一直是常量 | ✅ `calcG3RepeatK`：第一轮 1.0，第二轮起 0.9。`else/工作量.md:67-68` 对 G3 只规定两档，故第三轮**不**套用 0.8 |
 | E3 | `biz_teaching_task.class_name` 字段存在但导入模板无「班级」列，报表无法指名到具体班次 | ✅ 模板新增「班级」列（第 16 列），附件1 增「班级」列与「系数说明」列，把「这条为什么只算 0.8」写成人话 |
 | E4 | 一键核算只能单教师（前后端两层都是） | ✅ 后端 `WorkloadCalcService.recalcAllBatch` + `POST /system/calc/recalcAllBatch`（每教师独立事务，失败收集进 `failures`）；前端学期汇总页新增「核算所选(n)」与「全学期核算」，原单人按钮保留 |

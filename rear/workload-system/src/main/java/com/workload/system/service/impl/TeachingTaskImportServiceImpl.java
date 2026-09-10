@@ -208,7 +208,7 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
      * <p>
      * 优先取 Excel「重复次序」列的显式值（教务可人工指定哪个班算第一次）；
      * 留空则按同组已入库条数 +1 自动补位，见 {@code countSameCourseTask} 的分组口径
-     * （教师 + 学期 + 课程名称 + 授课层次 + 工作量类别，不含课程代码与班级）。
+     * （教师 + 学期 + 课程名称 + 授课层次，不含课程代码、班级与工作量类别）。
      * <p>
      * 自动补位依赖流式导入的「逐行独立事务、顺序提交」：处理第 N 行时前 N-1 行已提交可见。
      * 分两次导入同一门课的不同班级也能正确续算，因为计数走库而非批次内存。
@@ -221,11 +221,10 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
         {
             return dto.getRepeatOrder().longValue();
         }
-        String itemType = dto.getWorkloadType().toUpperCase();
         // 与 createTeachingTask 写库值保持一致，否则默认「本科」的行会分到不同组
         String educationLevel = defaultStr(dto.getEducationLevel(), "本科");
         int existing = teachingTaskMapper.countSameCourseTask(userId, dto.getSemester(),
-                dto.getCourseName(), educationLevel, itemType);
+                dto.getCourseName(), educationLevel);
         return existing + 1L;
     }
 

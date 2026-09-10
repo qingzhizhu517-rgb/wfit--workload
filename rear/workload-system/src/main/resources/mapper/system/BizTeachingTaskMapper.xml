@@ -164,17 +164,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </foreach>
     </delete>
 
-    <!-- 重复系数「第几次」计数：同教师+同学期+同课名+同层次+同类别的已入库条数。
-         分组口径见 else/工作量.md:15-18，刻意不含 course_code / class_name / course_nature。
-         education_level 用 ifnull 归一，避免 NULL 与 '' 被判为不同组。 -->
+    <!-- 重复系数「第几次」计数：同教师+同学期+同课名+同层次的已入库条数。
+         分组口径见《办法》第十四条1，刻意不含 course_code / class_name / course_nature / item_type。
+         education_level 用 ifnull 归一，避免 NULL 与 '' 被判为不同组。
+         2026-09-10 移除 item_type 限定与 biz_workload_item 关联（办法无类别要求）。 -->
     <select id="countSameCourseTask" resultType="int">
         select count(1)
         from biz_teaching_task t
-        inner join biz_workload_item i on i.task_id = t.id
         where t.user_id = #{userId}
           and t.semester = #{semester}
           and t.course_name = #{courseName}
           and ifnull(t.education_level, '') = ifnull(#{educationLevel}, '')
-          and i.item_type = #{itemType}
     </select>
 </mapper>
