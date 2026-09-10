@@ -189,7 +189,8 @@ PayCalcService → biz_pay_record + biz_allowance_item（酬金层）
 ## 8. 前端页面索引（`front/RuoYi-Vue3/src/views/`）
 
 - **业务页（19，`system/`）**：teacherProfile, teachingTask, roleAssignment, importBatch, workloadItem, wlTheory, wlPractice, wlInternshipTraining, wlCourseDesign, wlThesis, wlConcentratedInternship, wlManagement, workloadSummary(含审批), payRecord, allowanceItem, workloadCategoryDict, workloadRule, payRate, myWorkload/declare.vue（教师自主申报）
-- **仪表盘（4，`dashboard/`）**：AdminDashboard, TeacherDashboard, JiaoWuDashboard, LeaderDashboard
+- **仪表盘（3，`dashboard/`）**：AdminDashboard, TeacherDashboard, JiaoWuDashboard
+  （LeaderDashboard 已于 2026-09-10 随院领导签字环节一并删除）
 - **API（31，`api/system/*.js`）**：与页面一一对应 + `calc.js`/`audit.js`/`export.js`/`dashboard.js`
 
 ---

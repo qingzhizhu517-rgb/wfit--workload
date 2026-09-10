@@ -81,8 +81,8 @@ wfit--workload/                         # 仓库根（GitHub: qingzhizhu517-rgb/
 │       └── views/dashboard/           # 仪表盘
 │           ├── AdminDashboard.vue     # 管理员大屏（4统计+ECharts+待办）
 │           ├── TeacherDashboard.vue   # 教师工作台（数据卡+明细+达标面板）
-│           ├── JiaoWuDashboard.vue    # 教务助理工作台
-│           └── LeaderDashboard.vue    # 院领导工作台
+│           └── JiaoWuDashboard.vue    # 教务助理工作台
+│           # LeaderDashboard.vue 已于 2026-09-10 删除（院领导签字环节移除后无对应功能）
 ├── else/                              # 原始需求文档、管理办法
 │   ├── 工作量.md                      # 业务需求权威来源（G1-G11 公式）
 │   ├── 潍理工工作量管理系统设计new).md  # 系统设计文档（E-R图+SOP+路线图）

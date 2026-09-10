@@ -121,7 +121,9 @@ INSERT INTO sys_role_menu(role_id, menu_id) VALUES
 (5, 20210), (5, 20211),
 -- 按钮权限：酬金记录 查询/导出
 (5, 20212), (5, 20214),
--- 按钮权限：管理员仪表盘统计（LeaderDashboard 需要 menu_id 20216）
+-- 按钮权限：管理员仪表盘统计
+--   注 2026-09-10：LeaderDashboard（院领导工作台）已删除，20216 现仅 AdminDashboard 使用；
+--   院领导(role 5)保留此授权属历史遗留，随角色模型收敛一并清理
 (5, 20216);
 
 -- 8. 创建测试用户（密码均为 bcrypt 加密的 123456）
