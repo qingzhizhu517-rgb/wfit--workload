@@ -2,6 +2,7 @@ package com.workload.system.service;
 
 import java.util.List;
 import com.workload.system.domain.BizTeachingTask;
+import com.workload.system.domain.dto.TeachingTaskExportDTO;
 
 /**
  * 导入教学任务Service接口
@@ -26,6 +27,14 @@ public interface IBizTeachingTaskService
      * @return 导入教学任务集合
      */
     public List<BizTeachingTask> selectBizTeachingTaskList(BizTeachingTask bizTeachingTask);
+
+    /**
+     * 查询教学任务导出列表
+     *
+     * @param bizTeachingTask 查询条件
+     * @return 教学任务导出数据集合
+     */
+    public List<TeachingTaskExportDTO> selectBizTeachingTaskExportList(BizTeachingTask bizTeachingTask);
 
     /**
      * 新增导入教学任务

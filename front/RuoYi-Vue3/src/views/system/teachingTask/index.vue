@@ -123,7 +123,7 @@
           type="danger"
           plain
           icon="Delete"
-          :disabled="multiple"
+          :disabled="multiple || deletePending"
           @click="handleDelete"
         >
           删除
@@ -337,6 +337,7 @@
             link
             type="primary"
             icon="Delete"
+            :disabled="deletePending"
             @click="handleDelete(scope.row)"
           >
             删除
@@ -357,6 +358,9 @@
     <el-dialog
       v-model="importOpen"
       title="Excel 导入教学任务"
+      :close-on-click-modal="!importPending"
+      :close-on-press-escape="!importPending"
+      :show-close="!importPending"
       width="500px"
       append-to-body
     >
@@ -367,6 +371,7 @@
         accept=".xlsx,.xls"
         :on-exceed="handleExceed"
         :on-change="handleFileChange"
+        :on-remove="handleFileRemove"
         :file-list="importFileList"
         drag
       >
@@ -417,12 +422,16 @@
         </div>
       </div>
       <template #footer>
-        <el-button @click="importOpen = false">
+        <el-button
+          :disabled="importPending"
+          @click="importOpen = false"
+        >
           关闭
         </el-button>
         <el-button
           type="primary"
           :loading="importLoading"
+          :disabled="importPending"
           @click="submitImport"
         >
           开始导入
@@ -434,6 +443,9 @@
     <el-dialog
       v-model="open"
       :title="title"
+      :close-on-click-modal="!submitLoading"
+      :close-on-press-escape="!submitLoading"
+      :show-close="!submitLoading"
       width="720px"
       append-to-body
     >
@@ -681,11 +693,15 @@
         <div class="dialog-footer">
           <el-button
             type="primary"
+            :loading="submitLoading"
             @click="submitForm"
           >
             确 定
           </el-button>
-          <el-button @click="cancel">
+          <el-button
+            :disabled="submitLoading"
+            @click="cancel"
+          >
             取 消
           </el-button>
         </div>
@@ -723,9 +739,12 @@ const single = ref(true)
 const multiple = ref(true)
 const total = ref(0)
 const title = ref('')
+const submitLoading = ref(false)
+const deletePending = ref(false)
 
 // 导入相关
 const importOpen = ref(false)
+const importPending = ref(false)
 const importLoading = ref(false)
 const importFileList = ref([])
 const importResult = ref(null)
@@ -821,7 +840,7 @@ function resetQuery() {
 // 多选框选中数据
 function handleSelectionChange(selection) {
   ids.value = selection.map(item => item.id)
-  single.value = selection.length != 1
+  single.value = selection.length !== 1
   multiple.value = !selection.length
 }
 
@@ -845,34 +864,52 @@ function handleUpdate(row) {
 
 /** 提交按钮 */
 function submitForm() {
-  proxy.$refs['teachingTaskRef'].validate(valid => {
-    if (valid) {
-      if (form.value.id != null) {
-        updateTeachingTask(form.value).then(() => {
-          proxy.$modal.msgSuccess('修改成功')
-          open.value = false
-          getList()
-        })
-      } else {
-        addTeachingTask(form.value).then(() => {
-          proxy.$modal.msgSuccess('新增成功')
-          open.value = false
-          getList()
-        })
+  if (submitLoading.value) {
+    return
+  }
+  proxy.$refs['teachingTaskRef'].validate(async valid => {
+    if (!valid || submitLoading.value) {
+      return
+    }
+    submitLoading.value = true
+    try {
+      const isUpdate = form.value.id !== null && form.value.id !== undefined
+      await proxy.$modal.confirm(isUpdate
+        ? '确认保存对该教学任务的修改？'
+        : '确认新增该教学任务？')
+      await (isUpdate ? updateTeachingTask(form.value) : addTeachingTask(form.value))
+      proxy.$modal.msgSuccess(isUpdate ? '修改成功' : '新增成功')
+      open.value = false
+      getList()
+    } catch (err) {
+      if (err !== 'cancel' && err !== 'close') {
+        proxy.$modal.msgError('保存失败: ' + (err?.message || '未知错误'))
       }
+    } finally {
+      submitLoading.value = false
     }
   })
 }
 
 /** 删除按钮操作 */
-function handleDelete(row) {
-  const _ids = row.id || ids.value
-  proxy.$modal.confirm('是否确认删除选中的教学任务？删除后需重新核算对应明细。').then(function() {
-    return delTeachingTask(_ids)
-  }).then(() => {
+async function handleDelete(row) {
+  if (deletePending.value) {
+    return
+  }
+  const _ids = row?.id || ids.value
+  deletePending.value = true
+  try {
+    await proxy.$modal.confirm('是否确认删除选中的教学任务？删除后需重新核算对应明细。')
+    await delTeachingTask(_ids)
     getList()
     proxy.$modal.msgSuccess('删除成功')
-  }).catch(() => {})
+  } catch (err) {
+    if (err !== 'cancel' && err !== 'close') {
+      proxy.$modal.msgError('删除失败: ' + (err?.message || '未知错误'))
+    }
+  } finally {
+    deletePending.value = false
+  }
 }
 
 /** 导出按钮操作 */
@@ -895,6 +932,11 @@ function handleFileChange(file) {
   importFile.value = file.raw
 }
 
+/** 移除已选文件 */
+function handleFileRemove() {
+  importFile.value = null
+}
+
 /** 文件数量超出限制 */
 function handleExceed() {
   proxy.$modal.msgWarning('只能上传 1 个文件，请先移除已选文件')
@@ -906,24 +948,35 @@ function handleDownloadTemplate() {
 }
 
 /** 提交导入 */
-function submitImport() {
+async function submitImport() {
+  if (importPending.value) {
+    return
+  }
   if (!importFile.value) {
     proxy.$modal.msgWarning('请先选择 Excel 文件')
     return
   }
-  importLoading.value = true
-  importResult.value = null
-  importTeachingTask(importFile.value).then(response => {
+  importPending.value = true
+  try {
+    await proxy.$modal.confirm('确认导入所选 Excel 文件中的教学任务？')
+    importLoading.value = true
+    importResult.value = null
+    const response = await importTeachingTask(importFile.value)
     importResult.value = response.data
-    importLoading.value = false
     if (response.data.failCount === 0) {
       proxy.$modal.msgSuccess(`导入成功，共 ${response.data.successCount} 条`)
+    }
+    if (response.data.successCount > 0) {
       getList()
     }
-  }).catch(err => {
+  } catch (err) {
+    if (err !== 'cancel' && err !== 'close') {
+      proxy.$modal.msgError('导入失败: ' + (err?.message || '未知错误'))
+    }
+  } finally {
     importLoading.value = false
-    proxy.$modal.msgError('导入失败: ' + (err.message || '未知错误'))
-  })
+    importPending.value = false
+  }
 }
 
 getList()

@@ -196,7 +196,7 @@
             type="success"
             plain
             icon="Tickets"
-            @click="handleExportStdForm1"
+            @click="handleExportStdForm1()"
           >
             导出表一
           </el-button>
@@ -212,7 +212,7 @@
             type="success"
             plain
             icon="Document"
-            @click="handleExportAttach1"
+            @click="handleExportAttach1()"
           >
             导出附件1
           </el-button>

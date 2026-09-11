@@ -23,8 +23,10 @@ import com.workload.common.annotation.Log;
 import com.workload.common.core.controller.BaseController;
 import com.workload.common.core.domain.AjaxResult;
 import com.workload.common.enums.BusinessType;
+import com.workload.common.utils.DataScopeUtil;
 import com.workload.common.utils.excel.ImportResult;
 import com.workload.system.domain.BizTeachingTask;
+import com.workload.system.domain.dto.TeachingTaskExportDTO;
 import com.workload.system.domain.dto.TeachingTaskImportDTO;
 import com.workload.system.service.IBizTeachingTaskService;
 import com.workload.system.service.ITeachingTaskImportService;
@@ -127,8 +129,9 @@ public class BizTeachingTaskController extends BaseController
     @PostMapping("/export")
     public void export(HttpServletResponse response, BizTeachingTask bizTeachingTask)
     {
-        List<BizTeachingTask> list = bizTeachingTaskService.selectBizTeachingTaskList(bizTeachingTask);
-        ExcelUtil<BizTeachingTask> util = new ExcelUtil<BizTeachingTask>(BizTeachingTask.class);
+        bizTeachingTask.setUserId(DataScopeUtil.resolveUserId(bizTeachingTask.getUserId()));
+        List<TeachingTaskExportDTO> list = bizTeachingTaskService.selectBizTeachingTaskExportList(bizTeachingTask);
+        ExcelUtil<TeachingTaskExportDTO> util = new ExcelUtil<TeachingTaskExportDTO>(TeachingTaskExportDTO.class);
         util.exportExcel(response, list, "导入教学任务数据");
     }
 

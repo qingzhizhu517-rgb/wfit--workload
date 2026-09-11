@@ -62,6 +62,53 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </where>
     </select>
     
+    <select id="selectBizTeachingTaskExportList" parameterType="BizTeachingTask"
+            resultType="com.workload.system.domain.dto.TeachingTaskExportDTO">
+        select u.user_name as userCode,
+               u.nick_name as userName,
+               t.semester as semester,
+               t.academic_year as academicYear,
+               t.course_name as courseName,
+               t.course_code as courseCode,
+               t.education_level as educationLevel,
+               t.major_category as majorCategory,
+               t.course_nature as courseNature,
+               t.course_level as courseLevel,
+               t.course_role as courseRole,
+               t.class_name as className,
+               t.student_count as studentCount,
+               t.theory_hours as theoryHours,
+               t.practice_hours as practiceHours,
+               t.repeat_order as repeatOrder,
+               t.import_source as importSource,
+               t.import_batch as importBatch,
+               t.import_time as importTime,
+               t.status as status
+        from biz_teaching_task t
+        left join sys_user u on u.user_id = t.user_id
+        <where>
+            <if test="userId != null "> and t.user_id = #{userId}</if>
+            <if test="semester != null  and semester != ''"> and t.semester = #{semester}</if>
+            <if test="academicYear != null  and academicYear != ''"> and t.academic_year = #{academicYear}</if>
+            <if test="courseName != null  and courseName != ''"> and t.course_name like concat('%', #{courseName}, '%')</if>
+            <if test="courseCode != null  and courseCode != ''"> and t.course_code = #{courseCode}</if>
+            <if test="educationLevel != null  and educationLevel != ''"> and t.education_level = #{educationLevel}</if>
+            <if test="majorCategory != null  and majorCategory != ''"> and t.major_category = #{majorCategory}</if>
+            <if test="courseNature != null  and courseNature != ''"> and t.course_nature = #{courseNature}</if>
+            <if test="courseLevel != null  and courseLevel != ''"> and t.course_level = #{courseLevel}</if>
+            <if test="courseRole != null  and courseRole != ''"> and t.course_role = #{courseRole}</if>
+            <if test="className != null  and className != ''"> and t.class_name like concat('%', #{className}, '%')</if>
+            <if test="studentCount != null "> and t.student_count = #{studentCount}</if>
+            <if test="theoryHours != null "> and t.theory_hours = #{theoryHours}</if>
+            <if test="practiceHours != null "> and t.practice_hours = #{practiceHours}</if>
+            <if test="repeatOrder != null "> and t.repeat_order = #{repeatOrder}</if>
+            <if test="importSource != null  and importSource != ''"> and t.import_source = #{importSource}</if>
+            <if test="importBatch != null  and importBatch != ''"> and t.import_batch = #{importBatch}</if>
+            <if test="importTime != null "> and t.import_time = #{importTime}</if>
+            <if test="status != null "> and t.status = #{status}</if>
+        </where>
+    </select>
+
     <select id="selectBizTeachingTaskById" parameterType="Long" resultMap="BizTeachingTaskResult">
         <include refid="selectBizTeachingTaskVo"/>
         where id = #{id}

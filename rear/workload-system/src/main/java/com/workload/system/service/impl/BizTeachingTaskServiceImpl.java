@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.workload.system.mapper.BizTeachingTaskMapper;
 import com.workload.system.mapper.BizWorkloadItemMapper;
 import com.workload.system.domain.BizTeachingTask;
+import com.workload.system.domain.dto.TeachingTaskExportDTO;
 import com.workload.system.domain.BizWorkloadItem;
 import com.workload.system.service.IBizTeachingTaskService;
 
@@ -49,6 +50,18 @@ public class BizTeachingTaskServiceImpl implements IBizTeachingTaskService
     public List<BizTeachingTask> selectBizTeachingTaskList(BizTeachingTask bizTeachingTask)
     {
         return bizTeachingTaskMapper.selectBizTeachingTaskList(bizTeachingTask);
+    }
+
+    /**
+     * 查询教学任务导出列表
+     *
+     * @param bizTeachingTask 查询条件
+     * @return 教学任务导出数据集合
+     */
+    @Override
+    public List<TeachingTaskExportDTO> selectBizTeachingTaskExportList(BizTeachingTask bizTeachingTask)
+    {
+        return bizTeachingTaskMapper.selectBizTeachingTaskExportList(bizTeachingTask);
     }
 
     /**
