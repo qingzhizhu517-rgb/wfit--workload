@@ -406,22 +406,24 @@
 </template>
 
 <script setup name="PayRecord">
+import { useRoute, useRouter } from 'vue-router'
 import { listPayRecord, getPayRecord, delPayRecord, addPayRecord, updatePayRecord } from '@/api/system/payRecord'
 import { recalcPay } from '@/api/system/calc'
 import UserSelect from '@/components/UserSelect/index.vue'
 import { useUserMap } from '@/utils/userCache'
 import { formatAmount, payStatusMap } from '@/utils/bizDict'
-import { useRouter } from 'vue-router'
 import useUserStore from '@/store/modules/user'
 
 const { proxy } = getCurrentInstance()
-const { userLabel, userName, userCode } = useUserMap()
+const route = useRoute()
 const router = useRouter()
+const { userLabel, userName, userCode } = useUserMap()
 const userStore = useUserStore()
 
 const isTeacher = computed(() => userStore.roles.includes('teacher'))
 
 const payRecordList = ref([])
+let listRequestId = 0
 const open = ref(false)
 const loading = ref(true)
 const calcLoading = ref(false)
@@ -454,14 +456,17 @@ const { queryParams, form, rules } = toRefs(data)
 
 /** 查询酬金汇总列表 */
 function getList() {
+  const requestId = ++listRequestId
   loading.value = true
   listPayRecord(queryParams.value).then(response => {
+    if (requestId !== listRequestId) return
     payRecordList.value = response.rows
     total.value = response.total
   }).catch(() => {
+    if (requestId !== listRequestId) return
     proxy.$modal.msgError('获取酬金汇总列表失败')
   }).finally(() => {
-    loading.value = false
+    if (requestId === listRequestId) loading.value = false
   })
 }
 
@@ -491,10 +496,10 @@ function reset() {
   proxy.resetForm('payRecordRef')
 }
 
-/** 搜索按钮操作 */
+/** 搜索按钮操作；URL 变化时由路由 watcher 统一发起请求，避免重复查询。 */
 function handleQuery() {
   queryParams.value.pageNum = 1
-  getList()
+  if (!syncQueryRoute()) getList()
 }
 
 /** 重置按钮操作 */
@@ -506,7 +511,7 @@ function resetQuery() {
 // 多选框选中数据
 function handleSelectionChange(selection) {
   ids.value = selection.map(item => item.id)
-  single.value = selection.length != 1
+  single.value = selection.length !== 1
   multiple.value = !selection.length
 }
 
@@ -532,7 +537,7 @@ function handleUpdate(row) {
 function submitForm() {
   proxy.$refs['payRecordRef'].validate(valid => {
     if (valid) {
-      if (form.value.id != null) {
+      if (form.value.id !== null && form.value.id !== undefined) {
         updatePayRecord(form.value).then(() => {
           proxy.$modal.msgSuccess('修改成功')
           open.value = false
@@ -591,7 +596,30 @@ function handleExport() {
   }, `payRecord_${new Date().getTime()}.xlsx`)
 }
 
-getList()
+const PAY_RECORD_PATH = '/workload/payRecord'
+
+function syncQueryRoute() {
+  const query = { ...route.query }
+  const semester = typeof queryParams.value.semester === 'string'
+    ? queryParams.value.semester.trim()
+    : ''
+  if (semester) query.semester = semester
+  else delete query.semester
+  const changed = query.semester !== route.query.semester
+  if (changed) router.replace({ query })
+  return changed
+}
+
+watch(
+  () => [route.path, route.query.semester],
+  ([path, semester]) => {
+    if (path !== PAY_RECORD_PATH) return
+    queryParams.value.semester = typeof semester === 'string' && semester.trim() ? semester : null
+    queryParams.value.pageNum = 1
+    getList()
+  },
+  { immediate: true }
+)
 </script>
 
 <style scoped>

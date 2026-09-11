@@ -50,9 +50,8 @@ export function useDashboard() {
     }).then(({ value }) => {
       proxy.$modal.loading('正在导出...')
       exportPaySummary({ semester: value }).then(res => {
-        saveBlobAsFile(res, `绩效酬金统计_${value}.xlsx`)
-        proxy.$modal.closeLoading()
-      }).catch(() => {
+        return saveBlobAsFile(res, `绩效酬金统计_${value}.xlsx`)
+      }).finally(() => {
         proxy.$modal.closeLoading()
       })
     }).catch(() => {})
@@ -69,9 +68,8 @@ export function useDashboard() {
     }).then(({ value }) => {
       proxy.$modal.loading('正在导出...')
       exportPersonalWorkload({ userId, semester: value }).then(res => {
-        saveBlobAsFile(res, `工作量明细_${fileNamePrefix}_${value}.xlsx`)
-        proxy.$modal.closeLoading()
-      }).catch(() => {
+        return saveBlobAsFile(res, `工作量明细_${fileNamePrefix}_${value}.xlsx`)
+      }).finally(() => {
         proxy.$modal.closeLoading()
       })
     }).catch(() => {})

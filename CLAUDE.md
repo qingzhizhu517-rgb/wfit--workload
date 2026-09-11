@@ -180,8 +180,9 @@ mysql -u root -p wflg_workload < rear/sql/15_fix_menu_buttons.sql
 
 ## 配置要点
 
-> **凭据一律走环境变量，不再硬编码入库。** 复制仓库根 `.env.example` 为 `.env` 填值，
-> 或在 IDEA 的 Run/Debug Configurations → Environment variables 中注入。
+> **凭据一律走环境变量，不再硬编码入库。** 复制仓库根 `.env.example` 为 `.env` 填值。
+> 本地从仓库根或 `rear/` 启动时，`application.yml` 会自动、可选地读取该 `.env`；
+> 部署环境仍可通过环境变量覆盖，不需要在 IDEA Run Configuration 中重复粘贴。
 > `WFIT_DB_PASSWORD` / `WFIT_DRUID_PASSWORD` / `WFIT_TOKEN_SECRET` **无默认值**，
 > 未注入则后端启动直接失败（刻意设计，避免沿用弱口令而不自知）。
 
@@ -312,7 +313,7 @@ A 项 ≥20 人归零（第十五条1(2)，落 `biz_allowance_item.remark`）；
 | 计算明细层 | biz_wl_thesis | G5 毕业论文明细 |
 | 计算明细层 | biz_wl_concentrated_internship | G6 集中实习明细 |
 | 计算明细层 | biz_wl_management | G11 管理服务明细 |
-| 汇总层 | biz_workload_summary | 学期汇总（含审批状态、JSON 动态分类） |
+| 汇总层 | biz_workload_summary | 学期汇总（含审批状态、G7~G11 定长汇总列） |
 | 酬金层 | biz_pay_record | 酬金汇总记录 |
 | 酬金层 | biz_allowance_item | 其他酬金明细（A-G） |
 | 审计层 | biz_audit_log | 审批流审计日志（**在 `08_review_fixes.sql` 创建，不在 01 schema**） |

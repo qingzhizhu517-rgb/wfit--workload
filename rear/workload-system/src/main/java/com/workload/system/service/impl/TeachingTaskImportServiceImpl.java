@@ -401,8 +401,7 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
         detail.setR5(dto.getStudentCount() != null ? dto.getStudentCount().longValue() : 0L);
         detail.setK5(calcG5K5(dto)); // K5：理工本 9 / 理工专 5 / 文史本 6 / 文史专 4
         // 学科门类随 K5 同口径落库（附件1 X/Y 双列分列用；艺术/其他按文史，同 calcG5K5 归档）
-        detail.setDisciplineCategory("理工类".equals(defaultStr(dto.getMajorCategory(), "理工类"))
-                ? "SCITECH" : "LIBERAL_ARTS");
+        detail.setDisciplineCategory(isLiGong(dto.getMajorCategory()) ? "SCITECH" : "LIBERAL_ARTS");
         wlThesisMapper.insertBizWlThesis(detail);
 
         return calcStrategyFactory.get("G5").calculate(item);

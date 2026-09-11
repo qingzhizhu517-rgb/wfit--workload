@@ -22,6 +22,8 @@ import com.workload.system.service.IBizAllowanceItemService;
 @Service
 public class BizAllowanceItemServiceImpl implements IBizAllowanceItemService
 {
+    private static final String SELF_STUDY_ZERO_WARNING =
+            "人数≥20 已达单独开班标准（第十五条1(2)），本项不计酬金，工作量按理论课路线核算";
     @Autowired
     private BizAllowanceItemMapper bizAllowanceItemMapper;
 
@@ -144,7 +146,11 @@ public class BizAllowanceItemServiceImpl implements IBizAllowanceItemService
                 && item.getFeeSubtype().contains("自学")
                 && item.getStudentCount() != null && item.getStudentCount() >= 20)
         {
-            item.setRemark("人数≥20 已达单独开班标准（第十五条1(2)），本项不计酬金，工作量按理论课路线核算");
+            item.setRemark(SELF_STUDY_ZERO_WARNING);
+        }
+        else if (SELF_STUDY_ZERO_WARNING.equals(item.getRemark()))
+        {
+            item.setRemark(null);
         }
     }
 }

@@ -2,6 +2,8 @@ package com.workload.system.controller;
 
 import java.util.List;
 import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +23,7 @@ import com.workload.system.domain.BizWorkloadItem;
 import com.workload.system.domain.BizWorkloadSummary;
 import com.workload.system.service.IBizWorkloadItemService;
 import com.workload.system.service.IBizWorkloadSummaryService;
+import com.workload.system.service.IWorkloadFactorFormulaService;
 import com.workload.common.utils.poi.ExcelUtil;
 import com.workload.common.utils.DataScopeUtil;
 import com.workload.common.exception.ServiceException;
@@ -39,15 +42,20 @@ import com.workload.common.core.page.TableDataInfo;
 @RequestMapping("/system/workloadItem")
 public class BizWorkloadItemController extends BaseController
 {
+    private static final Logger log = LoggerFactory.getLogger(BizWorkloadItemController.class);
+
     @Autowired
     private IBizWorkloadItemService bizWorkloadItemService;
 
     @Autowired
     private IBizWorkloadSummaryService bizWorkloadSummaryService;
 
+    @Autowired
+    private IWorkloadFactorFormulaService factorFormulaService;
+
     /**
      * 校验该教师该学期的汇总是否处于可编辑状态（填报中 0 或 驳回退回后的 0）。
-     * 汇总一旦提交进入审批链（1 待审 / 2 待签 / 3 已完结），底层明细即冻结，
+     * 汇总一旦提交进入审批链（1 教务处待审 / 2 已完结），底层明细即冻结，
      * 教师不得再增删改，防止绕过审批修改在审数据。
      * 仅对教师角色生效；管理端（教务/管理员）不受此限，仍可修订。
      */
@@ -107,10 +115,27 @@ public class BizWorkloadItemController extends BaseController
     public AjaxResult getInfo(@PathVariable("id") Long id)
     {
         BizWorkloadItem bizWorkloadItem = bizWorkloadItemService.selectBizWorkloadItemById(id);
-        if (bizWorkloadItem != null)
+        if (bizWorkloadItem == null)
         {
-            // 教师只能查看本人记录，防 IDOR 遍历
+            throw new ServiceException("工作量明细不存在");
+        }
+        // 对不存在与无权访问返回相同消息，避免通过响应差异探测记录 ID。
+        try
+        {
             DataScopeUtil.assertOwnOrAdmin(bizWorkloadItem.getUserId());
+        }
+        catch (ServiceException e)
+        {
+            throw new ServiceException("工作量明细不存在");
+        }
+        try
+        {
+            bizWorkloadItem.setFactorFormula(factorFormulaService.build(bizWorkloadItem));
+        }
+        catch (RuntimeException e)
+        {
+            // 公式说明是兼容增强字段；子表或规则缓存故障不得阻断原详情和编辑能力
+            log.warn("工作量公式说明加载失败, itemId={}", id, e);
         }
         return success(bizWorkloadItem);
     }

@@ -48,5 +48,9 @@ dump.rdb
 # 例外：附件1 导出模板是 classpath 资源，必须入库
 !rear/workload-system/src/main/resources/templates/*.xlsx
 
+# ---- Python 临时产物 ----
+__pycache__/
+*.py[cod]
+
 # ---- AI 工具本地记忆 ----
 .workbuddy/

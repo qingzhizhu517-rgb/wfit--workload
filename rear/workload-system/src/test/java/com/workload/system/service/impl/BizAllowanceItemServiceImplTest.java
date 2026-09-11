@@ -77,6 +77,23 @@ class BizAllowanceItemServiceImplTest
         assertThat(item.getRemark()).isNull();
     }
 
+    @Test
+    @DisplayName("A 自学辅导从 25 人改为 15 人 → 清除此前系统生成的归零告警")
+    void belowTwentyClearsPreviousSystemWarning()
+    {
+        AllowanceCalcStrategy strategy = mock(AllowanceCalcStrategy.class);
+        when(strategy.calculate(any())).thenReturn(new BigDecimal("260"));
+        when(allowanceStrategyFactory.get("A")).thenReturn(strategy);
+
+        BizAllowanceItem item = selfItem(15L);
+        item.setId(7L);
+        item.setRemark("人数≥20 已达单独开班标准（第十五条1(2)），本项不计酬金，工作量按理论课路线核算");
+
+        service.updateBizAllowanceItem(item);
+
+        assertThat(item.getRemark()).isNull();
+    }
+
     private BizAllowanceItem selfItem(long count)
     {
         BizAllowanceItem item = new BizAllowanceItem();

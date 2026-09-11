@@ -17,6 +17,10 @@
             />
             <div class="info-text">
               <h2>{{ userStore.nickName || userStore.name }} 老师，您好</h2>
+              <p class="semester-context">
+                当前学期：{{ currentSemester }}
+                <span v-if="stats.updateTime"> · 汇总更新于 {{ parseTime(stats.updateTime, '{y}-{m}-{d} {h}:{i}') }}</span>
+              </p>
               <p class="role-desc">
                 <el-tag
                   v-for="role in userStore.roles"
@@ -48,7 +52,7 @@
       >
         <div
           class="stat-card card-info"
-          @click="router.push('/workload/workloadSummary')"
+          @click="goWorkloadSummary"
         >
           <div class="stat-label">
             本学期承担课程
@@ -73,7 +77,7 @@
       >
         <div
           class="stat-card card-success"
-          @click="router.push('/workload/workloadSummary')"
+          @click="goWorkloadSummary"
         >
           <div class="stat-label">
             已核算工作量
@@ -103,7 +107,7 @@
       >
         <div
           class="stat-card card-warning"
-          @click="router.push('/workload/payRecord')"
+          @click="goPayRecord"
         >
           <div class="stat-label">
             预计超工作量绩效
@@ -117,10 +121,10 @@
                 type="warning"
                 size="small"
               >
-                已达上限 ({{ SEMESTER_WORKLOAD_CAP }}学时)
+                已达上限 ({{ formatNumber(workloadCap) }}学时)
               </el-tag>
             </template>
-            <template v-else-if="stats.summaryStatus">
+            <template v-else-if="stats.hasSummary">
               汇总状态：
               <el-tag
                 size="small"
@@ -137,7 +141,19 @@
       </el-col>
     </el-row>
 
-    <!-- 近期明细 + 学期汇总 -->
+    <teacher-overview
+      v-if="stats.hasSummary"
+      :row="stats"
+      class="mb20"
+    />
+    <el-empty
+      v-else
+      class="summary-empty mb20"
+      :description="`${currentSemester} 暂无学期汇总数据`"
+      :image-size="64"
+    />
+
+    <!-- 近期明细与快捷操作 -->
     <el-row :gutter="20">
       <el-col
         :xs="24"
@@ -150,7 +166,7 @@
               <el-button
                 type="primary"
                 link
-                @click="router.push('/workload/workloadSummary')"
+                @click="goWorkloadSummary"
               >
                 查看全部 &gt;&gt;
               </el-button>
@@ -164,16 +180,16 @@
             empty-text="暂无核算明细"
           >
             <el-table-column
-              prop="typeCode"
+              prop="itemType"
               label="类型"
               width="100"
             >
               <template #default="{ row }">
                 <el-tag
                   size="small"
-                  :type="typeTagType(row.typeCode)"
+                  :type="typeTagType(row.itemType)"
                 >
-                  {{ row.typeName || row.typeCode }}
+                  {{ itemTypeLabel(row.itemType) }}
                 </el-tag>
               </template>
             </el-table-column>
@@ -216,59 +232,6 @@
         :xs="24"
         :lg="8"
       >
-        <el-card
-          shadow="hover"
-          class="mb20"
-        >
-          <template #header>
-            <div class="card-title">
-              <span>学期达标情况</span>
-            </div>
-          </template>
-          <div
-            v-if="stats.totalWorkload != null"
-            class="goal-panel"
-          >
-            <div class="goal-row">
-              <span class="goal-label">额定工作量</span>
-              <span class="goal-value">{{ formatNumber(stats.ratedWorkload) }}</span>
-            </div>
-            <el-divider style="margin: 10px 0" />
-            <div class="goal-row">
-              <span class="goal-label">已核算</span>
-              <span
-                class="goal-value"
-                style="color: var(--el-color-primary);"
-              >{{ formatNumber(stats.totalWorkload) }}</span>
-            </div>
-            <el-divider style="margin: 10px 0" />
-            <div class="goal-row">
-              <span class="goal-label">超额</span>
-              <span
-                class="goal-value"
-                :style="{ color: stats.excessWorkload > 0 ? 'var(--el-color-success)' : 'var(--el-color-info)' }"
-              >
-                {{ formatNumber(stats.excessWorkload) }}
-              </span>
-            </div>
-            <el-divider style="margin: 10px 0" />
-            <div class="goal-row">
-              <span class="goal-label">是否达标</span>
-              <el-tag
-                size="small"
-                :type="stats.basicTeachingMet ? 'success' : 'info'"
-              >
-                {{ stats.basicTeachingMet ? '已达标' : '核算中' }}
-              </el-tag>
-            </div>
-          </div>
-          <el-empty
-            v-else
-            description="暂无汇总数据"
-            :image-size="60"
-          />
-        </el-card>
-
         <el-card shadow="hover">
           <template #header>
             <div class="card-title">
@@ -290,7 +253,7 @@
               plain
               class="action-btn"
               icon="DataLine"
-              @click="router.push('/workload/workloadSummary')"
+              @click="goWorkloadSummary"
             >
               查看学期汇总
             </el-button>
@@ -299,7 +262,7 @@
               plain
               class="action-btn"
               icon="Money"
-              @click="router.push('/workload/payRecord')"
+              @click="goPayRecord"
             >
               查看酬金记录
             </el-button>
@@ -321,17 +284,18 @@
 
 <script setup name="TeacherDashboard">
 import { ref, reactive, computed, onMounted, getCurrentInstance } from 'vue'
+import TeacherOverview from '@/components/TeacherOverview'
 import { useRouter } from 'vue-router'
-import { Document, Warning, Download } from '@element-plus/icons-vue'
 import { getTeacherStats } from '@/api/system/dashboard'
 import { listWorkloadItem } from '@/api/system/workloadItem'
 import { useDashboard } from '@/composable/useDashboard'
-import { workloadItemStatusMap, summaryStatusMap, SEMESTER_WORKLOAD_CAP, formatAmount, formatNumber } from '@/utils/bizDict'
+import { workloadItemStatusMap, summaryStatusMap, itemTypeMap, SEMESTER_WORKLOAD_CAP, formatAmount, formatNumber, getCurrentSemester } from '@/utils/bizDict'
 import useUserStore from '@/store/modules/user'
 
 const router = useRouter()
 const userStore = useUserStore()
 const { proxy } = getCurrentInstance()
+const currentSemester = getCurrentSemester()
 
 /** 个人工作量导出复用仪表盘共享逻辑，金额/数值格式化统一用 bizDict */
 const { handleExportPersonalWorkload } = useDashboard()
@@ -345,15 +309,37 @@ const recentItems = ref([])
 const stats = reactive({
   courseCount: 0,
   itemCount: 0,
+  hasSummary: false,
+  G7: 0,
+  G8: 0,
+  G9: 0,
+  G11: 0,
   totalWorkload: 0,
   excessWorkload: 0,
   performancePay: 0,
   ratedWorkload: 0,
+  basicTeachingStandard: 0,
   summaryStatus: 0,
   isCapped: 0,
   basicTeachingMet: 0,
-  appealCount: 0
+  remark: '',
+  updateTime: null,
+  appealCount: 0,
+  workloadCap: SEMESTER_WORKLOAD_CAP
 })
+
+const workloadCap = computed(() => {
+  const value = Number(stats.workloadCap)
+  return Number.isFinite(value) && value > 0 ? value : SEMESTER_WORKLOAD_CAP
+})
+
+function goWorkloadSummary() {
+  router.push({ path: '/workload/workloadSummary', query: { semester: currentSemester } })
+}
+
+function goPayRecord() {
+  router.push({ path: '/workload/payRecord', query: { semester: currentSemester } })
+}
 
 /** 状态文案/标签类型统一取自 bizDict，消除页面内双口径 */
 function statusLabel(status) {
@@ -362,6 +348,10 @@ function statusLabel(status) {
 
 function statusTagType(status) {
   return workloadItemStatusMap[status]?.type ?? ''
+}
+
+function itemTypeLabel(code) {
+  return itemTypeMap[code]?.label ?? code ?? '-'
 }
 
 function typeTagType(code) {
@@ -383,7 +373,7 @@ function summaryTagType(status) {
 
 async function fetchStats() {
   try {
-    const res = await getTeacherStats()
+    const res = await getTeacherStats(currentSemester)
     Object.assign(stats, res.data)
   } catch (e) {
     proxy.$modal.msgError('获取统计数据失败')
@@ -393,7 +383,12 @@ async function fetchStats() {
 async function fetchRecentItems() {
   itemLoading.value = true
   try {
-    const res = await listWorkloadItem({ pageSize: 5, pageNum: 1, userId: currentUserId.value })
+    const res = await listWorkloadItem({
+      pageSize: 5,
+      pageNum: 1,
+      userId: currentUserId.value,
+      semester: currentSemester
+    })
     recentItems.value = (res.rows || []).map(r => ({
       ...r,
       sourceDesc: r.courseName || r.description || `明细 #${r.id}`
@@ -418,21 +413,22 @@ onMounted(() => {
 <style scoped lang="scss">
 .teacher-dashboard {
   padding: 20px;
-  background-color: #f0f2f5;
+  background-color: var(--el-fill-color-lighter);
   min-height: calc(100vh - 84px);
 
   .mb20 { margin-bottom: 20px; }
 
   .welcome-card {
-    background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
+    background: var(--el-fill-color-light);
     .user-info {
       display: flex;
       align-items: center;
       padding: 6px 0;
       .info-text {
         margin-left: 16px;
-        h2 { margin: 0 0 8px 0; color: #303133; font-size: 20px; font-weight: 600; }
-        .role-desc { margin: 0; color: #606266; font-size: 13px; display: flex; align-items: center; }
+        h2 { margin: 0 0 4px 0; color: var(--el-text-color-primary); font-size: 20px; font-weight: 600; }
+        .semester-context { margin: 0 0 8px; color: var(--el-text-color-secondary); font-size: 12px; }
+        .role-desc { margin: 0; color: var(--el-text-color-regular); font-size: 13px; display: flex; align-items: center; flex-wrap: wrap; gap: 4px; }
       }
     }
   }
@@ -479,9 +475,16 @@ onMounted(() => {
       justify-content: space-between;
       align-items: center;
       font-size: 14px;
-      .goal-label { color: #606266; }
+      .goal-label { color: var(--el-text-color-regular); }
       .goal-value { font-weight: 600; font-size: 16px; }
     }
+  }
+
+  .summary-empty {
+    padding: var(--wfit-space-md);
+    border: 1px solid var(--el-border-color-lighter);
+    border-radius: var(--wfit-radius-md);
+    background: var(--el-bg-color);
   }
 
   .action-list {

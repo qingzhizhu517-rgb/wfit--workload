@@ -57,7 +57,7 @@
       >
         <div
           class="card-panel"
-          @click="router.push('/workload/workloadItem')"
+          @click="router.push(`/workload/workloadItem?semester=${fallbackSemester}`)"
         >
           <div class="card-panel-icon-wrapper icon-workload">
             <el-icon :size="36">
@@ -109,7 +109,7 @@
       >
         <div
           class="card-panel"
-          @click="router.push('/workload/workloadItem?appealStatus=1')"
+          @click="router.push(`/workload/workloadItem?semester=${fallbackSemester}&appealStatus=1`)"
         >
           <div class="card-panel-icon-wrapper icon-warning">
             <el-icon :size="36">
@@ -131,8 +131,31 @@
       </el-col>
     </el-row>
 
+    <!-- 学期任务中心：所有数字均来自当前学期真实汇总/明细 -->
+    <el-row
+      :gutter="20"
+      class="task-center"
+    >
+      <el-col
+        v-for="task in taskCards"
+        :key="task.label"
+        :xs="12"
+        :sm="12"
+        :lg="6"
+      >
+        <button
+          type="button"
+          class="task-card"
+          @click="router.push(task.path)"
+        >
+          <span class="task-label">{{ task.label }}</span>
+          <strong>{{ task.value }}</strong>
+          <small>{{ task.hint }}</small>
+        </button>
+      </el-col>
+    </el-row>
+
     <el-row :gutter="20">
-      <!-- 快捷操作 + 待办事项 -->
       <el-col
         :xs="24"
         :sm="24"
@@ -160,7 +183,7 @@
               type="success"
               plain
               icon="Edit"
-              @click="router.push('/workload/workloadItem')"
+              @click="router.push(`/workload/workloadItem?semester=${fallbackSemester}`)"
             >
               录入特殊工作量
             </el-button>
@@ -203,7 +226,7 @@
             <div
               v-if="stats.appealCount > 0"
               class="todo-item todo-warning"
-              @click="router.push('/workload/workloadItem?appealStatus=1')"
+              @click="router.push(`/workload/workloadItem?semester=${fallbackSemester}&appealStatus=1`)"
             >
               <el-icon><WarningFilled /></el-icon>
               <span>{{ stats.appealCount }} 条工作量异议待处理</span>
@@ -224,7 +247,7 @@
             <div
               v-if="stats.totalExcess > 0"
               class="todo-item todo-success"
-              @click="router.push('/workload/payRecord')"
+              @click="router.push(`/workload/payRecord?semester=${fallbackSemester}`)"
             >
               <el-icon><Money /></el-icon>
               <span>超工作量酬金合计 ¥{{ formatAmount(stats.totalPay) }}</span>
@@ -253,7 +276,7 @@
         >
           <template #header>
             <div class="card-header">
-              <span>各学院教学任务概况</span>
+              <span>各学院教学任务概况 · {{ stats.semester || fallbackSemester }}</span>
               <el-radio-group
                 v-model="chartView"
                 size="small"
@@ -280,16 +303,16 @@
 </template>
 
 <script setup name="AdminDashboard">
-import { ref, reactive, onMounted, onUnmounted, nextTick, getCurrentInstance } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, getCurrentInstance } from 'vue'
 import { useRouter } from 'vue-router'
 import * as echarts from 'echarts'
 import {
-  Document, DataLine, User, Warning, Upload, Edit,
-  Download, Setting, WarningFilled, ArrowRight, Clock, Money
+  Document, DataLine, User, Warning, WarningFilled,
+  ArrowRight, Clock, Money
 } from '@element-plus/icons-vue'
 import { getAdminStats, getCollegeStats } from '@/api/system/dashboard'
 import { useDashboard } from '@/composable/useDashboard'
-import { getCurrentSemester, formatAmount } from '@/utils/bizDict'
+import { getCurrentSemester, formatAmount, formatNumber } from '@/utils/bizDict'
 
 const router = useRouter()
 const { proxy } = getCurrentInstance()
@@ -317,19 +340,43 @@ const stats = reactive({
   summaryCount: 0,
   totalExcess: 0,
   totalPay: 0,
+  pendingSummaryCount: 0,
+  completedSummaryCount: 0,
   semester: '',
   lastUpdated: ''
 })
 
-function formatNumber(val) {
-  if (val == null) return '--'
-  return Number(val).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-}
+const taskCards = computed(() => [
+  {
+    label: '待教务审核',
+    value: stats.pendingSummaryCount ?? 0,
+    hint: '进入学期汇总处理',
+    path: `/workload/workloadSummary?semester=${fallbackSemester}&status=1`
+  },
+  {
+    label: '异议 / 异常',
+    value: stats.appealCount ?? 0,
+    hint: '进入明细核查',
+    path: `/workload/workloadItem?semester=${fallbackSemester}&appealStatus=1`
+  },
+  {
+    label: '核算进度',
+    value: `${stats.completedSummaryCount ?? 0}/${stats.summaryCount ?? 0}`,
+    hint: '已完结 / 汇总总数',
+    path: `/workload/workloadSummary?semester=${fallbackSemester}`
+  },
+  {
+    label: '金额概览',
+    value: `¥${formatAmount(stats.totalPay)}`,
+    hint: '当前学期绩效酬金',
+    path: `/workload/payRecord?semester=${fallbackSemester}`
+  }
+])
 
 async function fetchStats() {
   loading.value = true
   try {
-    const res = await getAdminStats()
+    const res = await getAdminStats(fallbackSemester)
     Object.assign(stats, res.data)
   } catch (e) {
     proxy.$modal.msgError('获取统计数据失败')
@@ -341,7 +388,7 @@ async function fetchStats() {
 async function fetchCollegeStats() {
   chartLoading.value = true
   try {
-    const res = await getCollegeStats()
+    const res = await getCollegeStats(fallbackSemester)
     renderChart(res.data || [])
   } catch (e) {
     // fallback: 用已有 stats 画概况图
@@ -470,18 +517,18 @@ onUnmounted(() => {
 <style scoped lang="scss">
 .dashboard-editor-container {
   padding: 20px;
-  background-color: #f0f2f5;
+  background-color: var(--el-fill-color-lighter);
   min-height: calc(100vh - 84px);
 }
 
 .dashboard-title {
   margin: 0 0 5px;
-  color: #303133;
+  color: var(--el-text-color-primary);
   font-size: 22px;
 }
 
 .dashboard-subtitle {
-  color: #909399;
+  color: var(--el-text-color-secondary);
   font-size: 14px;
   margin-bottom: 20px;
   .last-updated {
@@ -489,6 +536,42 @@ onUnmounted(() => {
     font-size: 12px;
     color: #c0c4cc;
   }
+}
+
+.task-center {
+  margin-bottom: var(--wfit-space-md);
+}
+
+.task-card {
+  display: flex;
+  width: 100%;
+  min-height: 108px;
+  margin-bottom: var(--wfit-space-md);
+  padding: var(--wfit-space-md);
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: var(--wfit-space-xs);
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: var(--wfit-radius-md);
+  background: var(--el-bg-color);
+  color: var(--el-text-color-primary);
+  cursor: pointer;
+  text-align: left;
+  box-shadow: var(--wfit-shadow-md);
+  transition: transform 0.2s, box-shadow 0.2s;
+
+  &:hover,
+  &:focus-visible {
+    transform: translateY(-2px);
+    box-shadow: var(--wfit-shadow-lg);
+    outline: 2px solid var(--el-color-primary-light-5);
+    outline-offset: 2px;
+  }
+
+  .task-label { color: var(--el-text-color-regular); font-size: var(--wfit-font-sm); }
+  strong { color: var(--el-color-primary); font-size: 24px; }
+  small { color: var(--el-text-color-secondary); }
 }
 
 .panel-group {
@@ -553,7 +636,7 @@ onUnmounted(() => {
 
       .card-panel-num {
         font-size: 28px;
-        color: #303133;
+        color: var(--el-text-color-primary);
         &.has-appeal {
           color: #ff4949;
         }
@@ -572,7 +655,7 @@ onUnmounted(() => {
     align-items: center;
     font-weight: 600;
     font-size: 15px;
-    color: #303133;
+    color: var(--el-text-color-primary);
   }
 }
 

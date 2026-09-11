@@ -87,6 +87,9 @@ public class BizWorkloadSummary extends BaseEntity
     @Excel(name = "触200%封顶")
     private Integer isCapped;
 
+    /** 当前绩效封顶规则，仅用于展示，不参与持久化。 */
+    private BigDecimal workloadCap;
+
     /** 第五条达标标准/学期 */
     @Excel(name = "第五条达标标准/学期")
     private BigDecimal basicTeachingStandard;
@@ -95,8 +98,8 @@ public class BizWorkloadSummary extends BaseEntity
     @Excel(name = "达标G10&gt;=standard")
     private Integer basicTeachingMet;
 
-    /** 0草稿/1已公示/2已审核/3已锁定 */
-    @Excel(name = "0草稿/1已公示/2已审核/3已锁定")
+    /** 0填报中/1待教务审核/2已完结 */
+    @Excel(name = "审批状态", readConverterExp = "0=填报中,1=待教务审核,2=已完结")
     private Integer status;
 
     /** $column.columnComment */
@@ -302,12 +305,22 @@ public class BizWorkloadSummary extends BaseEntity
         this.isCapped = isCapped;
     }
 
-    public Integer getIsCapped() 
+    public Integer getIsCapped()
     {
         return isCapped;
     }
 
-    public void setBasicTeachingStandard(BigDecimal basicTeachingStandard) 
+    public void setWorkloadCap(BigDecimal workloadCap)
+    {
+        this.workloadCap = workloadCap;
+    }
+
+    public BigDecimal getWorkloadCap()
+    {
+        return workloadCap;
+    }
+
+    public void setBasicTeachingStandard(BigDecimal basicTeachingStandard)
     {
         this.basicTeachingStandard = basicTeachingStandard;
     }
@@ -426,6 +439,7 @@ public class BizWorkloadSummary extends BaseEntity
             .append("payRate", getPayRate())
             .append("performancePay", getPerformancePay())
             .append("isCapped", getIsCapped())
+            .append("workloadCap", getWorkloadCap())
             .append("basicTeachingStandard", getBasicTeachingStandard())
             .append("basicTeachingMet", getBasicTeachingMet())
             .append("status", getStatus())

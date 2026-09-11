@@ -3,11 +3,13 @@ package com.workload.system.domain;
 import java.math.BigDecimal;
 import java.util.Date;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.validation.constraints.NotBlank;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 import com.workload.common.annotation.Excel;
 import com.workload.common.core.domain.BaseEntity;
+import com.workload.system.domain.vo.FactorFormulaVo;
 
 /**
  * 工作量明细主表对象 biz_workload_item
@@ -120,6 +122,10 @@ public class BizWorkloadItem extends BaseEntity
     /** 0草稿/1已核对/2有异议/3已驳回 */
     @Excel(name = "0草稿/1已核对/2有异议/3已驳回")
     private Integer status;
+
+    /** 详情接口附加的计算公式说明，不参与持久化 */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private FactorFormulaVo factorFormula;
 
     public void setId(Long id) 
     {
@@ -336,9 +342,19 @@ public class BizWorkloadItem extends BaseEntity
         this.status = status;
     }
 
-    public Integer getStatus() 
+    public Integer getStatus()
     {
         return status;
+    }
+
+    public FactorFormulaVo getFactorFormula()
+    {
+        return factorFormula;
+    }
+
+    public void setFactorFormula(FactorFormulaVo factorFormula)
+    {
+        this.factorFormula = factorFormula;
     }
 
     @Override

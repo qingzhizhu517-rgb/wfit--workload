@@ -73,6 +73,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="academicAssistantSignTime != null "> and academic_assistant_sign_time = #{academicAssistantSignTime}</if>
             <if test="lockTime != null "> and lock_time = #{lockTime}</if>
         </where>
+        order by semester desc, coalesce(update_time, create_time) desc, id desc
     </select>
     
     <select id="selectBizWorkloadSummaryById" parameterType="Long" resultMap="BizWorkloadSummaryResult">

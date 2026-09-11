@@ -133,6 +133,10 @@ public class BizExportController extends BaseController
             return;
         }
         Attachment1TeacherDTO teacher = exportMapper.selectAttachment1Teacher(userId, semester);
+        if (teacher == null)
+        {
+            throw new ServiceException("该教师该学期尚未核算汇总，请先核算汇总后再导出表一");
+        }
 
         try (InputStream is = new ClassPathResource("templates/attachment1.xlsx").getInputStream();
              XSSFWorkbook wb = new XSSFWorkbook(is))

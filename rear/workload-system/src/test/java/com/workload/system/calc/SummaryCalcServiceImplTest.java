@@ -1,6 +1,7 @@
 package com.workload.system.calc;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.lenient;
@@ -145,6 +146,22 @@ class SummaryCalcServiceImplTest
 
         assertThat(summary.getIsCapped()).isEqualTo(1);
         assertThat(summary.getRemark()).contains("CAP_200PCT=540").contains("绩效酬金已按封顶值核算");
+    }
+
+    @Test
+    @DisplayName("已完结状态 2 禁止重算，防止签字后的汇总被覆盖")
+    void finishedSummaryCannotBeRecalculated()
+    {
+        BizWorkloadSummary finished = new BizWorkloadSummary();
+        finished.setUserId(USER);
+        finished.setSemester(SEMESTER);
+        finished.setStatus(2);
+        when(bizWorkloadSummaryMapper.selectBizWorkloadSummaryList(any()))
+                .thenReturn(Collections.singletonList(finished));
+
+        assertThatThrownBy(() -> service.recalcSummary(USER, SEMESTER, true))
+                .isInstanceOf(com.workload.common.exception.ServiceException.class)
+                .hasMessageContaining("已锁定");
     }
 
     private ComplianceChecker.Result result(boolean threeTheory)

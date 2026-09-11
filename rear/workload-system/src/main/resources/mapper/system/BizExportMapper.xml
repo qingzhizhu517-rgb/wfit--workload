@@ -70,8 +70,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             p.course_hour_pay    as coursePay,
             p.other_pay_total    as otherPayTotal,
             p.total_pay          as totalPay,
-            case s.status when 0 then '填报中' when 1 then '待教务审核' when 2 then '待院领导签字'
-                 when 3 then '已完结' when -1 then '已驳回' else cast(s.status as char) end as statusLabel
+            case s.status when 0 then '填报中' when 1 then '待教务审核'
+                 when 2 then '已完结' else cast(s.status as char) end as statusLabel
         from biz_workload_summary s
             left join biz_pay_record p on p.user_id = s.user_id and p.semester = s.semester
             left join sys_user u on u.user_id = s.user_id
@@ -135,6 +135,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where i.user_id = #{userId}
           and i.semester = #{semester}
           and i.item_type in ('G1', 'G2', 'G3', 'G4', 'G5', 'G6')
+          and (i.status is null or i.status != 3)
         group by ifnull(i.task_id, -i.id)
         order by min(i.id)
     </select>

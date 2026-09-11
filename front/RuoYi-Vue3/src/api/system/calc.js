@@ -68,6 +68,8 @@ export function recalcAllBatch(semester, userIds) {
     url: '/system/calc/recalcAllBatch',
     method: 'post',
     params: { semester },
-    data: userIds && userIds.length ? userIds : []
+    data: userIds && userIds.length ? userIds : [],
+    // 全学期逐教师核算明显可能超过全局 10 秒；服务端当前为同步任务。
+    timeout: 5 * 60 * 1000
   })
 }

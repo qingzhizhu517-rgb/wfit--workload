@@ -120,9 +120,9 @@ cp .env.example .env       # PowerShell: Copy-Item .env.example .env
 其余变量（`WFIT_DB_HOST`/`WFIT_DB_PORT`/`WFIT_DB_NAME`/`WFIT_REDIS_*`/`WFIT_DEFAULT_PASSWORD`）均有默认值，本机开发可不填。
 
 注入方式：
-- **IDEA**：Run/Debug Configurations → Environment variables，填 `WFIT_DB_PASSWORD=xxx;WFIT_TOKEN_SECRET=yyy`（或装 EnvFile 插件直接读 `.env`）
-- **PowerShell**：`$env:WFIT_DB_PASSWORD='xxx'` 后再启动
-- **部署环境**：由容器/systemd/CI 的 secret 机制注入
+- **本地 IDEA / Maven / `java -jar`**：从仓库根或 `rear/` 启动时，`application.yml` 会自动、可选地读取仓库根 `.env`，无需在 Run Configuration 中重复粘贴，也无需安装 EnvFile 插件；IDEA 默认以模块目录 `rear/workload-admin` 为工作目录时，请将其改为仓库根或 `rear/`
+- **本地启动脚本**：`rear/scripts/start-backend.ps1` 会读取同一个 `.env`，并在启动前校验必填项
+- **部署环境**：由容器/systemd/CI 的 secret 机制注入；显式环境变量优先于 `.env`
 
 `WFIT_DB_USER` 的默认值是 `wfit`，这个 MySQL 账号**不会自动存在**，新库需先建号授权（口令与 `.env` 里的 `WFIT_DB_PASSWORD` 保持一致）：
 

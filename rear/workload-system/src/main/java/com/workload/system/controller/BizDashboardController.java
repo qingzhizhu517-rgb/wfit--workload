@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.workload.common.core.controller.BaseController;
 import com.workload.common.core.domain.AjaxResult;
 import com.workload.common.core.domain.entity.SysDept;
+import com.workload.system.calc.rule.RuleParamService;
 import com.workload.system.domain.BizTeacherProfile;
 import com.workload.system.domain.BizTeachingTask;
 import com.workload.system.domain.BizWorkloadItem;
@@ -49,6 +50,9 @@ public class BizDashboardController extends BaseController
 
     @Autowired
     private ISysDeptService sysDeptService;
+
+    @Autowired
+    private RuleParamService ruleParamService;
 
     /**
      * 管理员仪表盘统计
@@ -110,6 +114,11 @@ public class BizDashboardController extends BaseController
                 .map(s -> s.getPerformancePay() == null ? BigDecimal.ZERO : s.getPerformancePay())
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         stats.put("totalPay", totalPay);
+        stats.put("pendingSummaryCount", summaries.stream()
+                .filter(s -> s.getStatus() != null && s.getStatus() == 1).count());
+        stats.put("completedSummaryCount", summaries.stream()
+                .filter(s -> s.getStatus() != null && s.getStatus() == 2).count());
+        stats.put("semester", semester);
 
         return success(stats);
     }
@@ -161,29 +170,62 @@ public class BizDashboardController extends BaseController
         List<BizWorkloadSummary> summaries = bizWorkloadSummaryService.selectBizWorkloadSummaryList(summaryQuery);
         if (summaries.isEmpty())
         {
-            stats.put("excessWorkload", BigDecimal.ZERO);
-            stats.put("performancePay", BigDecimal.ZERO);
-            stats.put("ratedWorkload", BigDecimal.ZERO);
-            stats.put("summaryStatus", 0);
-            stats.put("isCapped", 0);
-            stats.put("basicTeachingMet", 0);
+            putEmptyTeacherSummary(stats);
         }
         else
         {
-            BizWorkloadSummary s = summaries.get(0);
-            stats.put("excessWorkload", s.getExcessWorkload() == null ? BigDecimal.ZERO : s.getExcessWorkload());
-            stats.put("performancePay", s.getPerformancePay() == null ? BigDecimal.ZERO : s.getPerformancePay());
-            stats.put("ratedWorkload", s.getRatedWorkload() == null ? BigDecimal.ZERO : s.getRatedWorkload());
-            stats.put("summaryStatus", s.getStatus() == null ? 0 : s.getStatus());
-            stats.put("isCapped", s.getIsCapped() == null ? 0 : s.getIsCapped());
-            stats.put("basicTeachingMet", s.getBasicTeachingMet() == null ? 0 : s.getBasicTeachingMet());
+            putTeacherSummary(stats, summaries.get(0));
         }
+
+        stats.put("semester", semester);
+        stats.put("hasSummary", !summaries.isEmpty());
+        stats.put("workloadCap", ruleParamService.get("CAP_200PCT", new BigDecimal("540")));
 
         // 申诉中明细数
         long appealCount = items.stream().filter(i -> i.getAppealStatus() != null && i.getAppealStatus() == 1).count();
         stats.put("appealCount", appealCount);
 
         return success(stats);
+    }
+
+    private void putEmptyTeacherSummary(Map<String, Object> stats)
+    {
+        stats.put("G7", BigDecimal.ZERO);
+        stats.put("G8", BigDecimal.ZERO);
+        stats.put("G9", BigDecimal.ZERO);
+        stats.put("G11", BigDecimal.ZERO);
+        stats.put("excessWorkload", BigDecimal.ZERO);
+        stats.put("performancePay", BigDecimal.ZERO);
+        stats.put("ratedWorkload", BigDecimal.ZERO);
+        stats.put("basicTeachingStandard", BigDecimal.ZERO);
+        stats.put("summaryStatus", 0);
+        stats.put("isCapped", 0);
+        stats.put("basicTeachingMet", 0);
+        stats.put("remark", null);
+        stats.put("updateTime", null);
+    }
+
+    private void putTeacherSummary(Map<String, Object> stats, BizWorkloadSummary summary)
+    {
+        stats.put("G7", valueOrZero(summary.getG7()));
+        stats.put("G8", valueOrZero(summary.getG8()));
+        stats.put("G9", valueOrZero(summary.getG9()));
+        stats.put("G11", valueOrZero(summary.getG11()));
+        stats.put("totalWorkload", valueOrZero(summary.getTotalWorkload()));
+        stats.put("excessWorkload", valueOrZero(summary.getExcessWorkload()));
+        stats.put("performancePay", valueOrZero(summary.getPerformancePay()));
+        stats.put("ratedWorkload", valueOrZero(summary.getRatedWorkload()));
+        stats.put("basicTeachingStandard", valueOrZero(summary.getBasicTeachingStandard()));
+        stats.put("summaryStatus", summary.getStatus() == null ? 0 : summary.getStatus());
+        stats.put("isCapped", summary.getIsCapped() == null ? 0 : summary.getIsCapped());
+        stats.put("basicTeachingMet", summary.getBasicTeachingMet() == null ? 0 : summary.getBasicTeachingMet());
+        stats.put("remark", summary.getRemark());
+        stats.put("updateTime", summary.getUpdateTime());
+    }
+
+    private BigDecimal valueOrZero(BigDecimal value)
+    {
+        return value == null ? BigDecimal.ZERO : value;
     }
 
     /**

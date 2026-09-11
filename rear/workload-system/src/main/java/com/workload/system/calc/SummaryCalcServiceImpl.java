@@ -23,6 +23,7 @@ import com.workload.system.domain.BizPayRate;
 import com.workload.system.domain.BizTeacherProfile;
 import com.workload.system.domain.BizWorkloadItem;
 import com.workload.system.domain.BizWorkloadSummary;
+import com.workload.system.domain.WorkloadSummaryStatus;
 import com.workload.system.mapper.BizPayRateMapper;
 import com.workload.system.mapper.BizTeacherProfileMapper;
 import com.workload.system.mapper.BizWorkloadItemMapper;
@@ -41,9 +42,6 @@ import com.workload.system.mapper.BizWorkloadSummaryMapper;
 @Service
 public class SummaryCalcServiceImpl implements SummaryCalcService
 {
-    /** 汇总状态：已锁定 */
-    private static final int SUMMARY_STATUS_LOCKED = 3;
-
     @Autowired
     private BizWorkloadItemMapper bizWorkloadItemMapper;
 
@@ -75,7 +73,7 @@ public class SummaryCalcServiceImpl implements SummaryCalcService
             throw new ServiceException("教师档案不存在，无法重算");
         }
         BizWorkloadSummary summary = findSummary(userId, semester);
-        if (summary != null && summary.getStatus() != null && summary.getStatus() == SUMMARY_STATUS_LOCKED)
+        if (summary != null && summary.getStatus() != null && summary.getStatus() == WorkloadSummaryStatus.FINISHED)
         {
             throw new ServiceException("学期汇总已锁定，禁止重算");
         }

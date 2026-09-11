@@ -1,6 +1,7 @@
 package com.workload.system.controller;
 
 import java.util.List;
+import java.math.BigDecimal;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +18,7 @@ import com.workload.common.core.controller.BaseController;
 import com.workload.common.core.domain.AjaxResult;
 import com.workload.common.enums.BusinessType;
 import com.workload.system.domain.BizWorkloadSummary;
+import com.workload.system.calc.rule.RuleParamService;
 import com.workload.system.service.IBizWorkloadSummaryService;
 import com.workload.common.utils.poi.ExcelUtil;
 import com.workload.common.utils.DataScopeUtil;
@@ -39,6 +41,9 @@ public class BizWorkloadSummaryController extends BaseController
     @Autowired
     private IBizWorkloadSummaryService bizWorkloadSummaryService;
 
+    @Autowired
+    private RuleParamService ruleParamService;
+
     /**
      * 查询学期工作量汇总列表
      */
@@ -50,6 +55,8 @@ public class BizWorkloadSummaryController extends BaseController
         bizWorkloadSummary.setUserId(DataScopeUtil.resolveUserId(bizWorkloadSummary.getUserId()));
         startPage();
         List<BizWorkloadSummary> list = bizWorkloadSummaryService.selectBizWorkloadSummaryList(bizWorkloadSummary);
+        BigDecimal workloadCap = ruleParamService.get("CAP_200PCT", new BigDecimal("540"));
+        list.forEach(summary -> summary.setWorkloadCap(workloadCap));
         return getDataTable(list);
     }
 
@@ -102,7 +109,7 @@ public class BizWorkloadSummaryController extends BaseController
      *
      * 说明：审批状态迁移与签字一律走 /system/audit/* 审批链（带原子条件更新 + 审计日志），
      * 本通用 edit 端点对所有角色都禁止改动 status/各签字字段/lock_time（防状态机后门），
-     * 且已完结(3)记录整体锁定不可改。教师额外仅可改备注。
+     * 且已完结(2)记录整体锁定不可改。教师额外仅可改备注。
      */
     @PreAuthorize("@ss.hasPermi('system:workloadSummary:edit')")
     @Log(title = "学期工作量汇总", businessType = BusinessType.UPDATE)
@@ -172,16 +179,17 @@ public class BizWorkloadSummaryController extends BaseController
 	@DeleteMapping("/{ids}")
     public AjaxResult remove(@PathVariable Long[] ids)
     {
-        if (DataScopeUtil.isTeacherOnly())
+        for (Long id : ids)
         {
-            // 教师只能删除本人记录
-            for (Long id : ids)
+            BizWorkloadSummary summary = bizWorkloadSummaryService.selectBizWorkloadSummaryById(id);
+            if (summary == null)
             {
-                BizWorkloadSummary summary = bizWorkloadSummaryService.selectBizWorkloadSummaryById(id);
-                if (summary != null)
-                {
-                    DataScopeUtil.assertOwnOrAdmin(summary.getUserId());
-                }
+                continue;
+            }
+            DataScopeUtil.assertOwnOrAdmin(summary.getUserId());
+            if (summary.getStatus() != null && summary.getStatus() == STATUS_FINISHED)
+            {
+                throw new ServiceException("该汇总已完结锁定，禁止删除；如需删除请先解锁");
             }
         }
         return toAjax(bizWorkloadSummaryService.deleteBizWorkloadSummaryByIds(ids));

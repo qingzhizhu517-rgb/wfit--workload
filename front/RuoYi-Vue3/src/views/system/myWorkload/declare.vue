@@ -17,7 +17,10 @@
         label-width="120px"
       >
         <el-row :gutter="24">
-          <el-col :span="12">
+          <el-col
+            :xs="24"
+            :sm="12"
+          >
             <el-form-item
               label="学年学期"
               prop="semester"
@@ -28,7 +31,10 @@
               />
             </el-form-item>
           </el-col>
-          <el-col :span="12">
+          <el-col
+            :xs="24"
+            :sm="12"
+          >
             <el-form-item
               label="工作量类别"
               prop="itemType"
@@ -66,7 +72,10 @@
               />
             </el-form-item>
           </el-col>
-          <el-col :span="12">
+          <el-col
+            :xs="24"
+            :sm="12"
+          >
             <el-form-item
               label="核定工作量"
               prop="calculatedWorkload"
@@ -85,7 +94,8 @@
           </el-col>
           <el-col
             v-if="form.itemType === 'G11'"
-            :span="12"
+            :xs="24"
+            :sm="12"
           >
             <el-form-item
               label="岗位类型"
@@ -223,6 +233,19 @@
           </template>
         </el-table-column>
         <el-table-column
+          label="来源"
+          prop="sourceType"
+          width="100"
+          align="center"
+        >
+          <template #default="scope">
+            <biz-tag
+              :value="scope.row.sourceType"
+              :map="sourceTypeMap"
+            />
+          </template>
+        </el-table-column>
+        <el-table-column
           label="状态"
           prop="status"
           width="90"
@@ -288,11 +311,11 @@
     <el-dialog
       v-model="detailOpen"
       title="申报详情"
-      width="560px"
+      width="min(560px, 94vw)"
       append-to-body
     >
       <el-descriptions
-        :column="2"
+        :column="detailColumns"
         border
       >
         <el-descriptions-item label="明细ID">
@@ -323,7 +346,10 @@
           />
         </el-descriptions-item>
         <el-descriptions-item label="来源">
-          {{ detailData.sourceType || '-' }}
+          <biz-tag
+            :value="detailData.sourceType"
+            :map="sourceTypeMap"
+          />
         </el-descriptions-item>
         <el-descriptions-item
           label="说明"
@@ -356,8 +382,9 @@
 </template>
 
 <script setup name="MyWorkloadDeclare">
+import { useWindowSize } from '@vueuse/core'
 import { listWorkloadItem, getWorkloadItem, addWorkloadItem, delWorkloadItem } from '@/api/system/workloadItem'
-import { getCurrentSemester, roleTypeOptions, workloadItemStatusMap, itemTypeMap, formatNumber } from '@/utils/bizDict'
+import { getCurrentSemester, roleTypeOptions, workloadItemStatusMap, itemTypeMap, sourceTypeMap, formatNumber } from '@/utils/bizDict'
 import SemesterSelect from '@/components/SemesterSelect/index.vue'
 import useUserStore from '@/store/modules/user'
 
@@ -370,6 +397,10 @@ const submitting = ref(false)
 const total = ref(0)
 const detailOpen = ref(false)
 const detailData = ref({})
+let listRequestId = 0
+let detailRequestId = 0
+const { width: windowWidth } = useWindowSize()
+const detailColumns = computed(() => windowWidth.value < 640 ? 1 : 2)
 
 const queryParams = ref({
   pageNum: 1,
@@ -411,14 +442,17 @@ function onTypeChange() {
 }
 
 function getMyList() {
+  const requestId = ++listRequestId
   listLoading.value = true
   listWorkloadItem(queryParams.value).then(res => {
+    if (requestId !== listRequestId) return
     myList.value = res.rows
     total.value = res.total
   }).catch(() => {
+    if (requestId !== listRequestId) return
     proxy.$modal.msgError('获取申报记录失败')
   }).finally(() => {
-    listLoading.value = false
+    if (requestId === listRequestId) listLoading.value = false
   })
 }
 
@@ -448,10 +482,11 @@ function submitForm() {
     delete data.positionType
     addWorkloadItem(data).then(() => {
       proxy.$modal.msgSuccess('申报成功')
-      submitting.value = false
       resetForm()
       getMyList()
     }).catch(() => {
+      proxy.$modal.msgError('申报提交失败，请检查填写内容后重试')
+    }).finally(() => {
       submitting.value = false
     })
   })
@@ -470,20 +505,32 @@ function resetForm() {
   proxy.resetForm('declareRef')
 }
 
-function handleDetail(row) {
-  getWorkloadItem(row.id).then(res => {
-    detailData.value = res.data
+async function handleDetail(row) {
+  const requestId = ++detailRequestId
+  try {
+    const res = await getWorkloadItem(row.id)
+    if (requestId !== detailRequestId) return
+    detailData.value = res.data || {}
     detailOpen.value = true
-  })
+  } catch {
+    if (requestId !== detailRequestId) return
+    proxy.$modal.msgError('申报详情加载失败，请稍后重试')
+  }
 }
 
-function handleDelete(row) {
-  proxy.$modal.confirm('确认撤回该申报？').then(() => {
-    return delWorkloadItem(row.id)
-  }).then(() => {
+async function handleDelete(row) {
+  try {
+    await proxy.$modal.confirm('确认撤回该申报？')
+  } catch {
+    return
+  }
+  try {
+    await delWorkloadItem(row.id)
     getMyList()
     proxy.$modal.msgSuccess('已撤回')
-  }).catch(() => {})
+  } catch {
+    proxy.$modal.msgError('撤回失败，请确认该申报仍为草稿状态')
+  }
 }
 
 getMyList()

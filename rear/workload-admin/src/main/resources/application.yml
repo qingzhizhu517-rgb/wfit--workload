@@ -47,6 +47,10 @@ user:
 
 # Spring配置
 spring:
+  config:
+    # 本地开发自动读取仓库根 .env；文件不存在时忽略，部署环境变量仍优先。
+    # 同时兼容从仓库根或 rear/ 作为工作目录启动。
+    import: optional:file:.env[.properties],optional:file:../.env[.properties]
   # 资源信息
   messages:
     # 国际化资源文件路径

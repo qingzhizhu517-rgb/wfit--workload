@@ -5,6 +5,9 @@
  * download() 通道，故需要自己拼 Blob 并触发下载。原先这段逻辑在
  * useDashboard.js 里抄了两遍，收敛到此处，学期汇总页新增的导出入口复用同一份。
  */
+import { ElMessage } from 'element-plus'
+import { blobValidate } from '@/utils/ruoyi'
+
 const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 
 /**
@@ -12,8 +15,20 @@ const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.s
  * @param {string} fileName 保存的文件名（含扩展名）
  * @param {string} [mime] MIME 类型，默认 xlsx
  */
-export function saveBlobAsFile(data, fileName, mime = XLSX_MIME) {
-  const blob = new Blob([data], { type: mime })
+export async function saveBlobAsFile(data, fileName, mime = XLSX_MIME) {
+  const blob = data instanceof Blob ? data : new Blob([data], { type: mime })
+  if (!blobValidate(blob)) {
+    const text = await blob.text()
+    let message = '导出失败'
+    try {
+      const result = JSON.parse(text)
+      message = result.msg || message
+    } catch {
+      // 后端未返回标准 JSON 时保留统一错误消息。
+    }
+    ElMessage.error(message)
+    throw new Error(message)
+  }
   const url = window.URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = url

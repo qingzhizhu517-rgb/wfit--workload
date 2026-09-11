@@ -369,11 +369,19 @@
     <el-dialog
       v-model="detailOpen"
       title="工作量明细详情"
-      width="600px"
+      width="min(760px, 94vw)"
       append-to-body
+      @closed="handleDetailClosed"
     >
+      <factor-formula
+        :item-type="detailData.itemType"
+        :formula="detailData.factorFormula"
+        :loading="detailLoading"
+        :error="detailError"
+      />
       <el-descriptions
-        :column="2"
+        v-if="!detailLoading"
+        :column="detailColumns"
         border
       >
         <el-descriptions-item label="明细ID">
@@ -485,7 +493,7 @@
     <el-dialog
       v-model="open"
       :title="title"
-      width="680px"
+      width="min(680px, 94vw)"
       append-to-body
     >
       <el-form
@@ -664,11 +672,14 @@
 </template>
 
 <script setup name="WorkloadItem">
+import FactorFormula from '@/components/FactorFormula'
 import { listWorkloadItem, getWorkloadItem, delWorkloadItem, addWorkloadItem, updateWorkloadItem } from '@/api/system/workloadItem'
 import { recalcItem, recalcItems } from '@/api/system/calc'
 import UserSelect from '@/components/UserSelect/index.vue'
 import SemesterSelect from '@/components/SemesterSelect/index.vue'
 import { useUserMap } from '@/utils/userCache'
+import { useWindowSize } from '@vueuse/core'
+import { useRoute, useRouter } from 'vue-router'
 import {
   itemTypeOptions, educationLevelOptions, majorCategoryOptions,
   workloadItemStatusMap, approvalStatusMap, appealStatusMap, yesNoMap,
@@ -676,12 +687,20 @@ import {
 } from '@/utils/bizDict'
 
 const { proxy } = getCurrentInstance()
+const route = useRoute()
+const router = useRouter()
 const { userLabel, userName, userCode } = useUserMap()
 
 const workloadItemList = ref([])
 const open = ref(false)
 const detailOpen = ref(false)
 const detailData = ref({})
+const detailLoading = ref(false)
+const detailError = ref('')
+const { width: windowWidth } = useWindowSize()
+const detailColumns = computed(() => windowWidth.value < 640 ? 1 : 2)
+let detailRequestId = 0
+let listRequestId = 0
 const loading = ref(true)
 const recalcLoading = ref(false)
 const showSearch = ref(true)
@@ -699,7 +718,8 @@ const data = reactive({
     userId: null,
     semester: null,
     itemType: null,
-    status: null
+    status: null,
+    appealStatus: null
   },
   rules: {
     userId: [{ required: true, message: '请选择教师', trigger: 'change' }],
@@ -716,14 +736,17 @@ const { queryParams, form, rules } = toRefs(data)
 
 /** 查询工作量明细主表列表 */
 function getList() {
+  const requestId = ++listRequestId
   loading.value = true
   listWorkloadItem(queryParams.value).then(response => {
+    if (requestId !== listRequestId) return
     workloadItemList.value = response.rows
     total.value = response.total
   }).catch(() => {
+    if (requestId !== listRequestId) return
     proxy.$modal.msgError('获取工作量明细列表失败')
   }).finally(() => {
-    loading.value = false
+    if (requestId === listRequestId) loading.value = false
   })
 }
 
@@ -766,22 +789,23 @@ function reset() {
   proxy.resetForm('workloadItemRef')
 }
 
-/** 搜索按钮操作 */
+/** 搜索按钮操作；URL 变化时由路由 watcher 统一发起请求，避免重复查询。 */
 function handleQuery() {
   queryParams.value.pageNum = 1
-  getList()
+  if (!syncQueryRoute()) getList()
 }
 
 /** 重置按钮操作 */
 function resetQuery() {
   proxy.resetForm('queryRef')
+  queryParams.value.appealStatus = null
   handleQuery()
 }
 
 // 多选框选中数据
 function handleSelectionChange(selection) {
   ids.value = selection.map(item => item.id)
-  single.value = selection.length != 1
+  single.value = selection.length !== 1
   multiple.value = !selection.length
 }
 
@@ -797,25 +821,44 @@ function handleUpdate(row) {
   reset()
   const _id = row.id || ids.value
   getWorkloadItem(_id).then(response => {
-    form.value = response.data
+    const editableData = { ...response.data }
+    delete editableData.factorFormula
+    form.value = editableData
     open.value = true
     title.value = '修改工作量明细'
   })
 }
 
-/** 查看详情 */
-function handleDetail(row) {
-  getWorkloadItem(row.id).then(response => {
-    detailData.value = response.data
-    detailOpen.value = true
-  })
+/** 查看详情：主记录与结构化因子由同一鉴权接口返回，避免额外开放子表权限。 */
+async function handleDetail(row) {
+  const requestId = ++detailRequestId
+  detailData.value = { ...row, factorFormula: null }
+  detailError.value = ''
+  detailLoading.value = true
+  detailOpen.value = true
+  try {
+    const response = await getWorkloadItem(row.id)
+    if (requestId !== detailRequestId) return
+    detailData.value = response.data || {}
+  } catch {
+    if (requestId !== detailRequestId) return
+    detailError.value = '工作量详情加载失败，请稍后重试。'
+  } finally {
+    if (requestId === detailRequestId) detailLoading.value = false
+  }
+}
+
+/** 关闭详情后使尚未返回的请求失效，避免旧响应污染下一次详情。 */
+function handleDetailClosed() {
+  detailRequestId++
+  detailLoading.value = false
 }
 
 /** 提交按钮 */
 function submitForm() {
   proxy.$refs['workloadItemRef'].validate(valid => {
     if (valid) {
-      if (form.value.id != null) {
+      if (form.value.id !== null && form.value.id !== undefined) {
         updateWorkloadItem(form.value).then(() => {
           proxy.$modal.msgSuccess('修改成功')
           open.value = false
@@ -889,7 +932,42 @@ function handleExport() {
   }, `workloadItem_${new Date().getTime()}.xlsx`)
 }
 
-getList()
+const WORKLOAD_ITEM_PATH = '/workload/workloadItem'
+const allowedAppealStatuses = Object.keys(appealStatusMap).map(Number)
+
+function parseEnumQuery(value, allowedValues) {
+  if (typeof value !== 'string' || value.trim() === '') return null
+  const parsed = Number(value)
+  return Number.isInteger(parsed) && allowedValues.includes(parsed) ? parsed : null
+}
+
+function syncQueryRoute() {
+  const query = { ...route.query }
+  const semester = typeof queryParams.value.semester === 'string'
+    ? queryParams.value.semester.trim()
+    : ''
+  const appealStatus = queryParams.value.appealStatus
+  if (semester) query.semester = semester
+  else delete query.semester
+  if (appealStatus !== null && appealStatus !== undefined) query.appealStatus = String(appealStatus)
+  else delete query.appealStatus
+  const changed = query.semester !== route.query.semester
+    || query.appealStatus !== route.query.appealStatus
+  if (changed) router.replace({ query })
+  return changed
+}
+
+watch(
+  () => [route.path, route.query.semester, route.query.appealStatus],
+  ([path, semester, appealStatus]) => {
+    if (path !== WORKLOAD_ITEM_PATH) return
+    queryParams.value.semester = typeof semester === 'string' && semester.trim() ? semester : null
+    queryParams.value.appealStatus = parseEnumQuery(appealStatus, allowedAppealStatuses)
+    queryParams.value.pageNum = 1
+    getList()
+  },
+  { immediate: true }
+)
 </script>
 
 <style scoped>

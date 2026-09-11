@@ -12,6 +12,7 @@ import com.workload.common.utils.DateUtils;
 import com.workload.system.domain.BizAllowanceItem;
 import com.workload.system.domain.BizPayRecord;
 import com.workload.system.domain.BizWorkloadSummary;
+import com.workload.system.domain.WorkloadSummaryStatus;
 import com.workload.system.mapper.BizAllowanceItemMapper;
 import com.workload.system.mapper.BizPayRecordMapper;
 import com.workload.system.mapper.BizTeacherProfileMapper;
@@ -28,9 +29,6 @@ import com.workload.system.mapper.BizWorkloadSummaryMapper;
 @Service
 public class PayCalcServiceImpl implements PayCalcService
 {
-    /** 汇总状态：已锁定（酬金随之定稿） */
-    private static final int SUMMARY_STATUS_LOCKED = 3;
-
     @Autowired
     private BizWorkloadSummaryMapper bizWorkloadSummaryMapper;
 
@@ -57,7 +55,7 @@ public class PayCalcServiceImpl implements PayCalcService
         {
             throw new ServiceException("学期汇总不存在，请先重算汇总");
         }
-        if (summary.getStatus() != null && summary.getStatus() == SUMMARY_STATUS_LOCKED)
+        if (summary.getStatus() != null && summary.getStatus() == WorkloadSummaryStatus.FINISHED)
         {
             throw new ServiceException("学期汇总已锁定，酬金已定稿");
         }
@@ -121,7 +119,7 @@ public class PayCalcServiceImpl implements PayCalcService
     public void assertAllowanceEditable(Long userId, String semester)
     {
         BizWorkloadSummary summary = findSummary(userId, semester);
-        if (summary != null && summary.getStatus() != null && summary.getStatus() == SUMMARY_STATUS_LOCKED)
+        if (summary != null && summary.getStatus() != null && summary.getStatus() == WorkloadSummaryStatus.FINISHED)
         {
             throw new ServiceException("学期汇总已锁定，其他酬金禁止修改");
         }

@@ -243,6 +243,12 @@
       />
     </el-row>
 
+    <!-- 教师总览卡绑定当前筛选学期，不依赖列表返回顺序 -->
+    <teacher-overview
+      v-if="isTeacher && overviewRow"
+      :row="overviewRow"
+    />
+
     <el-table
       v-loading="loading"
       :data="workloadSummaryList"
@@ -401,6 +407,17 @@
         </template>
       </el-table-column>
       <el-table-column
+        label="备注 / 审核说明"
+        align="left"
+        prop="remark"
+        min-width="180"
+        show-overflow-tooltip
+      >
+        <template #default="scope">
+          <span class="remark-text">{{ displayRemark(scope.row.remark) }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column
         label="状态"
         align="center"
         prop="status"
@@ -547,11 +564,11 @@
     <el-drawer
       v-model="detailOpen"
       title="学期汇总详情"
-      size="640px"
+      :size="detailDrawerSize"
     >
       <el-descriptions
         v-if="detailRow"
-        :column="2"
+        :column="detailColumns"
         border
       >
         <el-descriptions-item label="教师">
@@ -619,9 +636,6 @@
         </el-descriptions-item>
         <el-descriptions-item label="教师确认">
           {{ detailRow.teacherSign || '未确认' }}<span v-if="detailRow.teacherSignTime">（{{ parseTime(detailRow.teacherSignTime, '{y}-{m}-{d}') }}）</span>
-        </el-descriptions-item>
-        <el-descriptions-item label="院部审核">
-          {{ detailRow.deptLeaderSign || '未审核' }}<span v-if="detailRow.deptLeaderSignTime">（{{ parseTime(detailRow.deptLeaderSignTime, '{y}-{m}-{d}') }}）</span>
         </el-descriptions-item>
         <el-descriptions-item label="教务确认">
           {{ detailRow.academicAssistantSign || '未确认' }}<span v-if="detailRow.academicAssistantSignTime">（{{ parseTime(detailRow.academicAssistantSignTime, '{y}-{m}-{d}') }}）</span>
@@ -730,6 +744,7 @@
 </template>
 
 <script setup name="WorkloadSummary">
+import TeacherOverview from '@/components/TeacherOverview'
 import { listWorkloadSummary, delWorkloadSummary } from '@/api/system/workloadSummary'
 import { recalcSummary, recalcAll, recalcAllBatch, previewSummary, genG11 } from '@/api/system/calc'
 import { exportPersonalWorkload, exportPaySummary, exportAttachment1 } from '@/api/system/export'
@@ -739,10 +754,17 @@ import { auditSubmit, auditApprove, auditReject, auditUnlock, auditBatchSubmit, 
 import UserSelect from '@/components/UserSelect/index.vue'
 import SemesterSelect from '@/components/SemesterSelect/index.vue'
 import { useUserMap } from '@/utils/userCache'
-import { summaryStatusMap, yesNoMap, formatAmount, formatNumber } from '@/utils/bizDict'
+import { useWindowSize } from '@vueuse/core'
+import { useRoute, useRouter } from 'vue-router'
+import { summaryStatusMap, yesNoMap, formatAmount, formatNumber, getCurrentSemester } from '@/utils/bizDict'
 import useUserStore from '@/store/modules/user'
 
 const { proxy } = getCurrentInstance()
+const route = useRoute()
+const router = useRouter()
+const { width: windowWidth } = useWindowSize()
+const detailColumns = computed(() => windowWidth.value < 640 ? 1 : 2)
+const detailDrawerSize = computed(() => windowWidth.value < 700 ? '94%' : '640px')
 const { userLabel, userName, userCode } = useUserMap()
 const userStore = useUserStore()
 
@@ -751,7 +773,14 @@ const isLeader = computed(() => userStore.roles.includes('leader'))
 
 const metStatusMap = { 1: { label: '已达标', type: 'success' }, 0: { label: '未达标', type: 'danger' } }
 
+/** 备注可能同时承载审核说明与制度提示，按原文展示，不推断结构化告警数量。 */
+function displayRemark(remark) {
+  const value = String(remark || '').trim()
+  return value && value !== '-' ? value : '-'
+}
+
 const workloadSummaryList = ref([])
+let listRequestId = 0
 const loading = ref(true)
 const calcLoading = ref(false)
 const showSearch = ref(true)
@@ -764,6 +793,11 @@ const total = ref(0)
 
 const detailOpen = ref(false)
 const detailRow = ref(null)
+const overviewRow = computed(() => {
+  if (!isTeacher.value) return null
+  const semester = queryParams.value.semester
+  return workloadSummaryList.value.find(row => row.semester === semester) || null
+})
 
 const previewOpen = ref(false)
 const previewLoading = ref(false)
@@ -775,7 +809,7 @@ const data = reactive({
     pageNum: 1,
     pageSize: 10,
     userId: null,
-    semester: null,
+    semester: getCurrentSemester(),
     status: null
   }
 })
@@ -784,24 +818,32 @@ const { queryParams } = toRefs(data)
 
 /** 查询学期工作量汇总列表 */
 function getList() {
+  const requestId = ++listRequestId
   loading.value = true
   listWorkloadSummary(queryParams.value).then(response => {
+    if (requestId !== listRequestId) return
     workloadSummaryList.value = response.rows
     total.value = response.total
-  }).catch(() => {}).finally(() => {
-    loading.value = false
+  }).catch(() => {
+    if (requestId !== listRequestId) return
+    workloadSummaryList.value = []
+    total.value = 0
+    proxy.$modal.msgError('获取学期汇总失败，请稍后重试')
+  }).finally(() => {
+    if (requestId === listRequestId) loading.value = false
   })
 }
 
-/** 搜索按钮操作 */
+/** 搜索按钮操作；URL 变化时由路由 watcher 统一发起请求，避免重复查询。 */
 function handleQuery() {
   queryParams.value.pageNum = 1
-  getList()
+  if (!syncQueryRoute()) getList()
 }
 
-/** 重置按钮操作 */
+/** 重置筛选但保留“当前学期”上下文，避免总览意外跨学期。 */
 function resetQuery() {
   proxy.resetForm('queryRef')
+  queryParams.value.semester = getCurrentSemester()
   handleQuery()
 }
 
@@ -930,7 +972,7 @@ function handleExportStdForm1(row) {
   }
   proxy.$modal.loading('正在导出表一...')
   exportAttachment1({ userId: uid, semester }).then(res => {
-    saveBlobAsFile(res, `表一_${userLabel(uid)}_${semester}.xlsx`)
+    return saveBlobAsFile(res, `表一_${userLabel(uid)}_${semester}.xlsx`)
   }).finally(() => {
     proxy.$modal.closeLoading()
   })
@@ -948,7 +990,7 @@ function handleExportAttach1(row) {
   }
   proxy.$modal.loading('正在导出附件1...')
   exportPersonalWorkload({ userId: uid, semester }).then(res => {
-    saveBlobAsFile(res, `工作量明细_${userLabel(uid)}_${semester}.xlsx`)
+    return saveBlobAsFile(res, `工作量明细_${userLabel(uid)}_${semester}.xlsx`)
   }).finally(() => {
     proxy.$modal.closeLoading()
   })
@@ -963,7 +1005,7 @@ function handleExportAttach2() {
   }
   proxy.$modal.loading('正在导出附件2...')
   exportPaySummary({ semester }).then(res => {
-    saveBlobAsFile(res, `绩效酬金统计_${semester}.xlsx`)
+    return saveBlobAsFile(res, `绩效酬金统计_${semester}.xlsx`)
   }).finally(() => {
     proxy.$modal.closeLoading()
   })
@@ -1105,7 +1147,44 @@ function handleBatchSubmit() {
   }).catch(() => {})
 }
 
-getList()
+const WORKLOAD_SUMMARY_PATH = '/workload/workloadSummary'
+const allowedSummaryStatuses = Object.keys(summaryStatusMap).map(Number)
+
+function parseEnumQuery(value, allowedValues) {
+  if (typeof value !== 'string' || value.trim() === '') return null
+  const parsed = Number(value)
+  return Number.isInteger(parsed) && allowedValues.includes(parsed) ? parsed : null
+}
+
+function syncQueryRoute() {
+  const query = { ...route.query }
+  const semester = typeof queryParams.value.semester === 'string'
+    ? queryParams.value.semester.trim()
+    : ''
+  const status = queryParams.value.status
+  if (semester) query.semester = semester
+  else delete query.semester
+  if (status !== null && status !== undefined) query.status = String(status)
+  else delete query.status
+  const changed = query.semester !== route.query.semester
+    || query.status !== route.query.status
+  if (changed) router.replace({ query })
+  return changed
+}
+
+watch(
+  () => [route.path, route.query.semester, route.query.status],
+  ([path, semester, status]) => {
+    if (path !== WORKLOAD_SUMMARY_PATH) return
+    queryParams.value.semester = typeof semester === 'string' && semester.trim()
+      ? semester
+      : getCurrentSemester()
+    queryParams.value.status = parseEnumQuery(status, allowedSummaryStatuses)
+    queryParams.value.pageNum = 1
+    getList()
+  },
+  { immediate: true }
+)
 </script>
 
 <style scoped>
@@ -1122,6 +1201,9 @@ getList()
 .excess-num {
   font-weight: 600;
   color: var(--el-color-warning);
+}
+.remark-text {
+  color: var(--el-text-color-regular);
 }
 .mb12 {
   margin-bottom: 12px;
