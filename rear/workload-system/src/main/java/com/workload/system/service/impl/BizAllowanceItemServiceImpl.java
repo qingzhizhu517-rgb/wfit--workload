@@ -83,7 +83,14 @@ public class BizAllowanceItemServiceImpl implements IBizAllowanceItemService
     @Transactional
     public int updateBizAllowanceItem(BizAllowanceItem bizAllowanceItem)
     {
-        payCalcService.assertAllowanceEditable(bizAllowanceItem.getUserId(), bizAllowanceItem.getSemester());
+        BizAllowanceItem old = bizAllowanceItemMapper.selectBizAllowanceItemById(bizAllowanceItem.getId());
+        if (old == null)
+        {
+            throw new ServiceException("其他酬金明细不存在, id=" + bizAllowanceItem.getId());
+        }
+        payCalcService.assertAllowanceEditable(old.getUserId(), old.getSemester());
+        bizAllowanceItem.setUserId(old.getUserId());
+        bizAllowanceItem.setSemester(old.getSemester());
         recalcAmount(bizAllowanceItem);
         bizAllowanceItem.setUpdateTime(DateUtils.getNowDate());
         return bizAllowanceItemMapper.updateBizAllowanceItem(bizAllowanceItem);
