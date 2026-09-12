@@ -12,5 +12,10 @@ class WorkloadSummaryStatusTest
         assertThat(WorkloadSummaryStatus.DRAFT).isZero();
         assertThat(WorkloadSummaryStatus.PENDING_AUDIT).isEqualTo(1);
         assertThat(WorkloadSummaryStatus.FINISHED).isEqualTo(2);
+        assertThat(WorkloadSummaryStatus.isWriteFrozen(null)).isFalse();
+        assertThat(WorkloadSummaryStatus.isWriteFrozen(WorkloadSummaryStatus.DRAFT)).isFalse();
+        assertThat(WorkloadSummaryStatus.isWriteFrozen(WorkloadSummaryStatus.PENDING_AUDIT)).isTrue();
+        assertThat(WorkloadSummaryStatus.isWriteFrozen(WorkloadSummaryStatus.FINISHED)).isTrue();
+        assertThat(WorkloadSummaryStatus.isWriteFrozen(3)).isTrue();
     }
 }

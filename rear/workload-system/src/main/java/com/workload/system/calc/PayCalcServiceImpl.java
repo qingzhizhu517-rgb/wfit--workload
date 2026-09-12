@@ -55,9 +55,7 @@ public class PayCalcServiceImpl implements PayCalcService
         {
             throw new ServiceException("学期汇总不存在，请先重算汇总");
         }
-        if (summary.getStatus() != null
-                && (summary.getStatus() == WorkloadSummaryStatus.PENDING_AUDIT
-                        || summary.getStatus() == WorkloadSummaryStatus.FINISHED))
+        if (WorkloadSummaryStatus.isWriteFrozen(summary.getStatus()))
         {
             throw new ServiceException("学期汇总已进入审批流程，酬金已冻结");
         }
@@ -121,9 +119,7 @@ public class PayCalcServiceImpl implements PayCalcService
     public void assertAllowanceEditable(Long userId, String semester)
     {
         BizWorkloadSummary summary = findSummary(userId, semester);
-        if (summary != null && summary.getStatus() != null
-                && (summary.getStatus() == WorkloadSummaryStatus.PENDING_AUDIT
-                        || summary.getStatus() == WorkloadSummaryStatus.FINISHED))
+        if (summary != null && WorkloadSummaryStatus.isWriteFrozen(summary.getStatus()))
         {
             throw new ServiceException("学期汇总已进入审批流程，其他酬金禁止修改");
         }

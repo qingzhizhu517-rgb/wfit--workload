@@ -223,9 +223,7 @@ public class WorkloadCalcServiceImpl implements WorkloadCalcService
         query.setSemester(item.getSemester());
         List<BizWorkloadSummary> summaries = bizWorkloadSummaryMapper.selectBizWorkloadSummaryList(query);
         boolean locked = summaries.stream()
-                .anyMatch(s -> s.getStatus() != null
-                        && (s.getStatus() == WorkloadSummaryStatus.PENDING_AUDIT
-                                || s.getStatus() == WorkloadSummaryStatus.FINISHED));
+                .anyMatch(s -> WorkloadSummaryStatus.isWriteFrozen(s.getStatus()));
         if (locked)
         {
             throw new ServiceException("学期汇总已锁定，禁止修改明细");

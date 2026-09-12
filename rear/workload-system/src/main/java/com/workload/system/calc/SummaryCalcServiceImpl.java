@@ -73,9 +73,7 @@ public class SummaryCalcServiceImpl implements SummaryCalcService
             throw new ServiceException("教师档案不存在，无法重算");
         }
         BizWorkloadSummary summary = findSummary(userId, semester);
-        if (persist && summary != null && summary.getStatus() != null
-                && (summary.getStatus() == WorkloadSummaryStatus.PENDING_AUDIT
-                        || summary.getStatus() == WorkloadSummaryStatus.FINISHED))
+        if (persist && summary != null && WorkloadSummaryStatus.isWriteFrozen(summary.getStatus()))
         {
             throw new ServiceException("学期汇总已进入审批流程，禁止重算");
         }
