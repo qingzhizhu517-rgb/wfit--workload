@@ -16,6 +16,7 @@ import org.springframework.util.StringUtils;
 import com.workload.common.exception.ServiceException;
 import com.workload.common.utils.excel.ExcelReadUtil;
 import com.workload.common.utils.excel.ImportResult;
+import com.workload.system.calc.WorkloadWriteGuard;
 import com.workload.system.calc.rule.RuleParamService;
 import com.workload.system.calc.strategy.CalcStrategyFactory;
 import com.workload.system.domain.BizImportBatch;
@@ -87,6 +88,9 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
     @Autowired
     private RuleParamService ruleParamService;
 
+    @Autowired
+    private WorkloadWriteGuard workloadWriteGuard;
+
     @Override
     public ImportResult importTeachingTasksStreaming(InputStream inputStream, String fileName)
     {
@@ -135,10 +139,13 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
         // 2. 查找教师
         SysUser user = findUser(dto.getUserCode());
 
-        // 3. 定重复次序：必须在落库前算，否则 countSameCourseTask 会把本行也数进去
+        // 3. 锁定汇总并校验冻结状态，必须先于重复计数及任何业务写入
+        workloadWriteGuard.lockDraftOrAbsent(user.getUserId(), dto.getSemester());
+
+        // 4. 定重复次序：必须在落库前算，否则 countSameCourseTask 会把本行也数进去
         long repeatOrder = resolveRepeatOrder(dto, user.getUserId());
 
-        // 4. 创建教学任务
+        // 5. 创建教学任务
         BizTeachingTask task = createTeachingTask(dto, user.getUserId(), batchNo, repeatOrder);
         teachingTaskMapper.insertBizTeachingTask(task);
 

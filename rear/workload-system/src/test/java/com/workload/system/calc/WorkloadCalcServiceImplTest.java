@@ -3,8 +3,12 @@ package com.workload.system.calc;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.math.BigDecimal;
 import java.util.Collections;
 
 import org.junit.jupiter.api.Test;
@@ -15,6 +19,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.workload.common.exception.ServiceException;
 import com.workload.system.calc.strategy.CalcStrategyFactory;
+import com.workload.system.calc.strategy.WorkloadCalcStrategy;
 import com.workload.system.domain.BizWorkloadItem;
 import com.workload.system.domain.BizWorkloadSummary;
 import com.workload.system.domain.WorkloadSummaryStatus;
@@ -35,6 +40,7 @@ class WorkloadCalcServiceImplTest
     @Mock private BizTeacherProfileMapper teacherProfileMapper;
     @Mock private BizWorkloadSummaryMapper summaryMapper;
     @Mock private CalcStrategyFactory calcStrategyFactory;
+    @Mock private WorkloadCalcStrategy strategy;
     @Mock private SummaryCalcService summaryCalcService;
     @Mock private PayCalcService payCalcService;
     @Mock private ISysUserService sysUserService;
@@ -65,6 +71,47 @@ class WorkloadCalcServiceImplTest
         assertThatThrownBy(() -> service.assertEditable(ITEM_ID))
                 .isInstanceOf(ServiceException.class)
                 .hasMessageContaining("禁止修改明细");
+    }
+
+    @Test
+    void recalcItemRejectsConcurrentFreeze()
+    {
+        BizWorkloadItem item = givenDraftItemWithoutSummary();
+        item.setItemType("G1");
+        when(calcStrategyFactory.get("G1")).thenReturn(strategy);
+        when(strategy.calculate(item)).thenReturn(new BigDecimal("52.80"));
+        when(itemMapper.updateCalculationIfEditable(any(), eq(0))).thenReturn(0);
+
+        assertThatThrownBy(() -> service.recalcItem(ITEM_ID))
+                .isInstanceOf(ServiceException.class)
+                .hasMessage("明细或汇总状态已变化，请刷新后重试");
+        verify(itemMapper, never()).updateBizWorkloadItem(any());
+    }
+
+    @Test
+    void successfulRecalcUsesOnlyConditionalCalculationUpdate()
+    {
+        BizWorkloadItem item = givenDraftItemWithoutSummary();
+        item.setItemType("G1");
+        when(calcStrategyFactory.get("G1")).thenReturn(strategy);
+        when(strategy.calculate(item)).thenReturn(new BigDecimal("52.80"));
+        when(itemMapper.updateCalculationIfEditable(any(), eq(0))).thenReturn(1);
+
+        assertThatCode(() -> service.recalcItem(ITEM_ID)).doesNotThrowAnyException();
+        verify(itemMapper).updateCalculationIfEditable(item, 0);
+        verify(itemMapper, never()).updateBizWorkloadItem(any());
+    }
+
+    private BizWorkloadItem givenDraftItemWithoutSummary()
+    {
+        BizWorkloadItem item = new BizWorkloadItem();
+        item.setId(ITEM_ID);
+        item.setUserId(USER);
+        item.setSemester(SEMESTER);
+        item.setStatus(0);
+        when(itemMapper.selectBizWorkloadItemById(ITEM_ID)).thenReturn(item);
+        when(summaryMapper.selectBizWorkloadSummaryList(any())).thenReturn(Collections.emptyList());
+        return item;
     }
 
     private void givenItemAndSummary(int summaryStatus)

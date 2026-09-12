@@ -21,6 +21,12 @@ public interface BizWorkloadSummaryMapper
     public BizWorkloadSummary selectBizWorkloadSummaryById(Long id);
 
     /**
+     * 锁定教师学期汇总行，供源数据写入事务检查冻结状态。
+     */
+    public BizWorkloadSummary selectByUserSemesterForUpdate(@Param("userId") Long userId,
+            @Param("semester") String semester);
+
+    /**
      * 查询学期工作量汇总列表
      * 
      * @param bizWorkloadSummary 学期工作量汇总

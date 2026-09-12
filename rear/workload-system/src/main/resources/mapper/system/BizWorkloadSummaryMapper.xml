@@ -81,6 +81,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where id = #{id}
     </select>
 
+    <select id="selectByUserSemesterForUpdate" resultMap="BizWorkloadSummaryResult">
+        <include refid="selectBizWorkloadSummaryVo"/>
+        where user_id = #{userId} and semester = #{semester}
+        for update
+    </select>
+
     <insert id="insertBizWorkloadSummary" parameterType="BizWorkloadSummary" useGeneratedKeys="true" keyProperty="id">
         insert into biz_workload_summary
         <trim prefix="(" suffix=")" suffixOverrides=",">

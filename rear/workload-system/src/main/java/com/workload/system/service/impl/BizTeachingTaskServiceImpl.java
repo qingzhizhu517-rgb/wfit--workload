@@ -6,6 +6,7 @@ import com.workload.common.utils.DateUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.workload.system.calc.WorkloadWriteGuard;
 import com.workload.system.mapper.BizTeachingTaskMapper;
 import com.workload.system.mapper.BizWorkloadItemMapper;
 import com.workload.system.domain.BizTeachingTask;
@@ -27,6 +28,9 @@ public class BizTeachingTaskServiceImpl implements IBizTeachingTaskService
 
     @Autowired
     private BizWorkloadItemMapper bizWorkloadItemMapper;
+
+    @Autowired
+    private WorkloadWriteGuard workloadWriteGuard;
 
     /**
      * 查询导入教学任务
@@ -71,8 +75,10 @@ public class BizTeachingTaskServiceImpl implements IBizTeachingTaskService
      * @return 结果
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public int insertBizTeachingTask(BizTeachingTask bizTeachingTask)
     {
+        workloadWriteGuard.lockDraftOrAbsent(bizTeachingTask.getUserId(), bizTeachingTask.getSemester());
         bizTeachingTask.setCreateTime(DateUtils.getNowDate());
         return bizTeachingTaskMapper.insertBizTeachingTask(bizTeachingTask);
     }
@@ -84,8 +90,11 @@ public class BizTeachingTaskServiceImpl implements IBizTeachingTaskService
      * @return 结果
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public int updateBizTeachingTask(BizTeachingTask bizTeachingTask)
     {
+        BizTeachingTask existing = requireExistingTask(bizTeachingTask.getId());
+        workloadWriteGuard.lockDraftOrAbsent(existing.getUserId(), existing.getSemester());
         bizTeachingTask.setUpdateTime(DateUtils.getNowDate());
         return bizTeachingTaskMapper.updateBizTeachingTask(bizTeachingTask);
     }
@@ -104,6 +113,8 @@ public class BizTeachingTaskServiceImpl implements IBizTeachingTaskService
     {
         for (Long id : ids)
         {
+            BizTeachingTask existing = requireExistingTask(id);
+            workloadWriteGuard.lockDraftOrAbsent(existing.getUserId(), existing.getSemester());
             assertNotReferencedByWorkloadItem(id);
         }
         return bizTeachingTaskMapper.deleteBizTeachingTaskByIds(ids);
@@ -121,8 +132,20 @@ public class BizTeachingTaskServiceImpl implements IBizTeachingTaskService
     @Transactional(rollbackFor = Exception.class)
     public int deleteBizTeachingTaskById(Long id)
     {
+        BizTeachingTask existing = requireExistingTask(id);
+        workloadWriteGuard.lockDraftOrAbsent(existing.getUserId(), existing.getSemester());
         assertNotReferencedByWorkloadItem(id);
         return bizTeachingTaskMapper.deleteBizTeachingTaskById(id);
+    }
+
+    private BizTeachingTask requireExistingTask(Long id)
+    {
+        BizTeachingTask existing = bizTeachingTaskMapper.selectBizTeachingTaskById(id);
+        if (existing == null)
+        {
+            throw new ServiceException("教学任务不存在, id=" + id);
+        }
+        return existing;
     }
 
     /**

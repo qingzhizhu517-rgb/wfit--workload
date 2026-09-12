@@ -163,6 +163,20 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where id = #{id}
     </update>
 
+    <update id="updateCalculationIfEditable">
+        update biz_workload_item i
+        set i.calculated_workload = #{item.calculatedWorkload},
+            i.is_over_limit = #{item.isOverLimit},
+            i.update_time = #{item.updateTime}
+        where i.id = #{item.id}
+          and ifnull(i.status, 0) = #{draftStatus}
+          and not exists (
+              select 1 from biz_workload_summary s
+              where s.user_id = i.user_id and s.semester = i.semester
+                and ifnull(s.status, 0) &lt;&gt; #{draftStatus}
+          )
+    </update>
+
     <delete id="deleteBizWorkloadItemById" parameterType="Long">
         delete from biz_workload_item where id = #{id}
     </delete>
