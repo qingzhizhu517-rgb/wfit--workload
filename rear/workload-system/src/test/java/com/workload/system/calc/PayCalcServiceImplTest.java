@@ -1,5 +1,6 @@
 package com.workload.system.calc;
 
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
@@ -17,6 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.workload.common.exception.ServiceException;
 import com.workload.system.domain.BizTeacherProfile;
 import com.workload.system.domain.BizWorkloadSummary;
+import com.workload.system.domain.WorkloadSummaryStatus;
 import com.workload.system.mapper.BizAllowanceItemMapper;
 import com.workload.system.mapper.BizPayRecordMapper;
 import com.workload.system.mapper.BizTeacherProfileMapper;
@@ -42,35 +44,76 @@ class PayCalcServiceImplTest
     }
 
     @Test
-    void finishedSummaryCannotHavePayRecalculated()
+    void draftSummaryAllowsPayRecalculation()
     {
-        BizWorkloadSummary finished = finishedSummary();
         when(summaryMapper.selectBizWorkloadSummaryList(any()))
-                .thenReturn(Collections.singletonList(finished));
+                .thenReturn(Collections.singletonList(summaryWithStatus(WorkloadSummaryStatus.DRAFT)));
+        when(allowanceMapper.selectBizAllowanceItemList(any())).thenReturn(Collections.emptyList());
+        when(payRecordMapper.selectBizPayRecordList(any())).thenReturn(Collections.emptyList());
 
-        assertThatThrownBy(() -> service.recalcPay(USER, SEMESTER))
-                .isInstanceOf(ServiceException.class)
-                .hasMessageContaining("已锁定");
+        assertThatCode(() -> service.recalcPay(USER, SEMESTER)).doesNotThrowAnyException();
     }
 
     @Test
-    void finishedSummaryCannotHaveAllowancesEdited()
+    void pendingAuditSummaryCannotHavePayRecalculated()
     {
-        BizWorkloadSummary finished = finishedSummary();
         when(summaryMapper.selectBizWorkloadSummaryList(any()))
-                .thenReturn(Collections.singletonList(finished));
+                .thenReturn(Collections.singletonList(summaryWithStatus(WorkloadSummaryStatus.PENDING_AUDIT)));
+
+        assertThatThrownBy(() -> service.recalcPay(USER, SEMESTER))
+                .isInstanceOf(ServiceException.class)
+                .hasMessageContaining("酬金已冻结");
+    }
+
+    @Test
+    void finishedSummaryCannotHavePayRecalculated()
+    {
+        when(summaryMapper.selectBizWorkloadSummaryList(any()))
+                .thenReturn(Collections.singletonList(summaryWithStatus(WorkloadSummaryStatus.FINISHED)));
+
+        assertThatThrownBy(() -> service.recalcPay(USER, SEMESTER))
+                .isInstanceOf(ServiceException.class)
+                .hasMessageContaining("酬金已冻结");
+    }
+
+    @Test
+    void draftSummaryAllowsAllowancesEdited()
+    {
+        when(summaryMapper.selectBizWorkloadSummaryList(any()))
+                .thenReturn(Collections.singletonList(summaryWithStatus(WorkloadSummaryStatus.DRAFT)));
+
+        assertThatCode(() -> service.assertAllowanceEditable(USER, SEMESTER)).doesNotThrowAnyException();
+    }
+
+    @Test
+    void pendingAuditSummaryCannotHaveAllowancesEdited()
+    {
+        when(summaryMapper.selectBizWorkloadSummaryList(any()))
+                .thenReturn(Collections.singletonList(summaryWithStatus(WorkloadSummaryStatus.PENDING_AUDIT)));
 
         assertThatThrownBy(() -> service.assertAllowanceEditable(USER, SEMESTER))
                 .isInstanceOf(ServiceException.class)
                 .hasMessageContaining("禁止修改");
     }
 
-    private BizWorkloadSummary finishedSummary()
+    @Test
+    void finishedSummaryCannotHaveAllowancesEdited()
+    {
+        when(summaryMapper.selectBizWorkloadSummaryList(any()))
+                .thenReturn(Collections.singletonList(summaryWithStatus(WorkloadSummaryStatus.FINISHED)));
+
+        assertThatThrownBy(() -> service.assertAllowanceEditable(USER, SEMESTER))
+                .isInstanceOf(ServiceException.class)
+                .hasMessageContaining("禁止修改");
+    }
+
+    private BizWorkloadSummary summaryWithStatus(int status)
     {
         BizWorkloadSummary summary = new BizWorkloadSummary();
+        summary.setId(10L);
         summary.setUserId(USER);
         summary.setSemester(SEMESTER);
-        summary.setStatus(2);
+        summary.setStatus(status);
         return summary;
     }
 }

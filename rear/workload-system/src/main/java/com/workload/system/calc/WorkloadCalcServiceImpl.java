@@ -210,7 +210,7 @@ public class WorkloadCalcServiceImpl implements WorkloadCalcService
     }
 
     /**
-     * 明细已核对或所在学期汇总已锁定 -> 拒绝修改
+     * 明细已核对或所在学期汇总已进入审批流程 -> 拒绝修改
      */
     private void assertEditable(BizWorkloadItem item)
     {
@@ -223,7 +223,9 @@ public class WorkloadCalcServiceImpl implements WorkloadCalcService
         query.setSemester(item.getSemester());
         List<BizWorkloadSummary> summaries = bizWorkloadSummaryMapper.selectBizWorkloadSummaryList(query);
         boolean locked = summaries.stream()
-                .anyMatch(s -> s.getStatus() != null && s.getStatus() == WorkloadSummaryStatus.FINISHED);
+                .anyMatch(s -> s.getStatus() != null
+                        && (s.getStatus() == WorkloadSummaryStatus.PENDING_AUDIT
+                                || s.getStatus() == WorkloadSummaryStatus.FINISHED));
         if (locked)
         {
             throw new ServiceException("学期汇总已锁定，禁止修改明细");

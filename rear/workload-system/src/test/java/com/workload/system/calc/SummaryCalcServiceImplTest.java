@@ -5,6 +5,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
@@ -24,6 +26,7 @@ import com.workload.system.calc.rule.RuleParamService;
 import com.workload.system.domain.BizTeacherProfile;
 import com.workload.system.domain.BizWorkloadItem;
 import com.workload.system.domain.BizWorkloadSummary;
+import com.workload.system.domain.WorkloadSummaryStatus;
 import com.workload.system.mapper.BizPayRateMapper;
 import com.workload.system.mapper.BizTeacherProfileMapper;
 import com.workload.system.mapper.BizWorkloadItemMapper;
@@ -149,19 +152,72 @@ class SummaryCalcServiceImplTest
     }
 
     @Test
-    @DisplayName("已完结状态 2 禁止重算，防止签字后的汇总被覆盖")
+    @DisplayName("草稿状态 0 允许持久化重算")
+    void draftSummaryCanBePersisted()
+    {
+        when(complianceChecker.check(any(), anyString(), any())).thenReturn(result(false));
+        BizWorkloadSummary draft = summaryWithStatus(WorkloadSummaryStatus.DRAFT);
+        when(bizWorkloadSummaryMapper.selectBizWorkloadSummaryList(any()))
+                .thenReturn(Collections.singletonList(draft));
+
+        service.recalcSummary(USER, SEMESTER, true);
+
+        verify(bizWorkloadSummaryMapper).updateBizWorkloadSummary(draft);
+    }
+
+    @Test
+    @DisplayName("待审状态 1 禁止持久化重算")
+    void pendingAuditSummaryCannotBePersisted()
+    {
+        BizWorkloadSummary pending = summaryWithStatus(WorkloadSummaryStatus.PENDING_AUDIT);
+        when(bizWorkloadSummaryMapper.selectBizWorkloadSummaryList(any()))
+                .thenReturn(Collections.singletonList(pending));
+
+        assertThatThrownBy(() -> service.recalcSummary(USER, SEMESTER, true))
+                .isInstanceOf(com.workload.common.exception.ServiceException.class)
+                .hasMessageContaining("禁止重算");
+    }
+
+    @Test
+    @DisplayName("草稿、待审和已完结状态均允许预览，且绝不落库")
+    void allSummaryStatusesCanBePreviewedWithoutPersistence()
+    {
+        when(complianceChecker.check(any(), anyString(), any())).thenReturn(result(false));
+        BizWorkloadSummary draft = summaryWithStatus(WorkloadSummaryStatus.DRAFT);
+        BizWorkloadSummary pending = summaryWithStatus(WorkloadSummaryStatus.PENDING_AUDIT);
+        BizWorkloadSummary finished = summaryWithStatus(WorkloadSummaryStatus.FINISHED);
+        when(bizWorkloadSummaryMapper.selectBizWorkloadSummaryList(any()))
+                .thenReturn(Collections.singletonList(draft), Collections.singletonList(pending),
+                        Collections.singletonList(finished));
+
+        service.recalcSummary(USER, SEMESTER, false);
+        service.recalcSummary(USER, SEMESTER, false);
+        service.recalcSummary(USER, SEMESTER, false);
+
+        verify(bizWorkloadSummaryMapper, never()).insertBizWorkloadSummary(any());
+        verify(bizWorkloadSummaryMapper, never()).updateBizWorkloadSummary(any());
+    }
+
+    @Test
+    @DisplayName("已完结状态 2 禁止持久化重算，防止签字后的汇总被覆盖")
     void finishedSummaryCannotBeRecalculated()
     {
-        BizWorkloadSummary finished = new BizWorkloadSummary();
-        finished.setUserId(USER);
-        finished.setSemester(SEMESTER);
-        finished.setStatus(2);
+        BizWorkloadSummary finished = summaryWithStatus(WorkloadSummaryStatus.FINISHED);
         when(bizWorkloadSummaryMapper.selectBizWorkloadSummaryList(any()))
                 .thenReturn(Collections.singletonList(finished));
 
         assertThatThrownBy(() -> service.recalcSummary(USER, SEMESTER, true))
                 .isInstanceOf(com.workload.common.exception.ServiceException.class)
-                .hasMessageContaining("已锁定");
+                .hasMessageContaining("禁止重算");
+    }
+
+    private BizWorkloadSummary summaryWithStatus(int status)
+    {
+        BizWorkloadSummary summary = new BizWorkloadSummary();
+        summary.setUserId(USER);
+        summary.setSemester(SEMESTER);
+        summary.setStatus(status);
+        return summary;
     }
 
     private ComplianceChecker.Result result(boolean threeTheory)
