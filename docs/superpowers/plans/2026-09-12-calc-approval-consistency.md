@@ -21,7 +21,7 @@
 - `front/RuoYi-Vue3/src/views/system/workloadSummary/index.vue`：展示批量实际重算明细数。
 - 对应 `src/test`：按三态矩阵与并发冲突编写回归测试。
 
-### Task 1: 收口状态定义
+### Task 1: 收口状态定义（已完成：`87632a8`，冻结谓词补充：`6d017ed`）
 
 **Files:**
 - Modify: `rear/workload-system/src/main/java/com/workload/system/calc/WorkloadCalcServiceImpl.java`
@@ -29,7 +29,7 @@
 - Modify: `rear/workload-system/src/main/java/com/workload/system/controller/BizWorkloadSummaryController.java`
 - Test: `rear/workload-system/src/test/java/com/workload/system/domain/WorkloadSummaryStatusTest.java`
 
-- [ ] **Step 1: 写状态契约测试**
+- [x] **Step 1: 写状态契约测试**
 
 ```java
 @Test
@@ -41,28 +41,28 @@ void exposesOnlyCurrentApprovalStates()
 }
 ```
 
-- [ ] **Step 2: 运行测试并确认当前状态契约**
+- [x] **Step 2: 运行测试并确认当前状态契约**
 
 Run: `mvn -f rear/pom.xml test -pl workload-system -am -Dtest=WorkloadSummaryStatusTest -Dsurefire.failIfNoSpecifiedTests=false`
 Expected: PASS；若测试不存在则先 testCompile 失败，证明测试尚未落地。
 
-- [ ] **Step 3: 替换生产代码中的汇总状态硬编码**
+- [x] **Step 3: 替换生产代码中的汇总状态硬编码**
 
 将 `STATUS_DRAFT`、`STATUS_PENDING_AUDIT`、`STATUS_FINISHED` 和 `SUMMARY_STATUS_LOCKED` 替换为 `WorkloadSummaryStatus.*`；明细自身的 0/1/2/3 状态不替换。
 
-- [ ] **Step 4: 运行状态及审批测试**
+- [x] **Step 4: 运行状态及审批测试**
 
 Run: `mvn -f rear/pom.xml test -pl workload-system -am -Dtest=WorkloadSummaryStatusTest,BizAuditServiceImplTest -Dsurefire.failIfNoSpecifiedTests=false`
 Expected: PASS，0 failures。
 
-- [ ] **Step 5: 提交**
+- [x] **Step 5: 提交**
 
 ```bash
 git add rear/workload-system/src/main/java/com/workload/system/domain/WorkloadSummaryStatus.java rear/workload-system/src/main/java/com/workload/system/calc/WorkloadCalcServiceImpl.java rear/workload-system/src/main/java/com/workload/system/service/impl/BizAuditServiceImpl.java rear/workload-system/src/main/java/com/workload/system/controller/BizWorkloadSummaryController.java rear/workload-system/src/test/java/com/workload/system/domain/WorkloadSummaryStatusTest.java
 git commit -m "refactor: 收口工作量汇总状态定义"
 ```
 
-### Task 2: 冻结待审阶段的明细与持久化核算
+### Task 2: 冻结待审阶段的明细与持久化核算（已完成：`d8dcfcb`）
 
 **Files:**
 - Modify: `rear/workload-system/src/main/java/com/workload/system/calc/WorkloadCalcServiceImpl.java`
@@ -72,7 +72,7 @@ git commit -m "refactor: 收口工作量汇总状态定义"
 - Test: `rear/workload-system/src/test/java/com/workload/system/calc/SummaryCalcServiceImplTest.java`
 - Test: `rear/workload-system/src/test/java/com/workload/system/calc/PayCalcServiceImplTest.java`
 
-- [ ] **Step 1: 写失败测试：待审禁止修改与持久化重算**
+- [x] **Step 1: 写失败测试：待审禁止修改与持久化重算**
 
 ```java
 assertThatThrownBy(() -> service.recalcSummary(USER, SEMESTER, true))
@@ -82,12 +82,12 @@ assertThatThrownBy(() -> service.recalcSummary(USER, SEMESTER, true))
 
 为 `WorkloadCalcServiceImpl.assertEditable` 和 `PayCalcServiceImpl.recalcPay` 各增加 status=1 同类断言；另断言 `recalcSummary(..., false)` 允许生成预览。
 
-- [ ] **Step 2: 运行定向测试验证失败**
+- [x] **Step 2: 运行定向测试验证失败**
 
 Run: `mvn -f rear/pom.xml test -pl workload-system -am -Dtest=WorkloadCalcServiceImplTest,SummaryCalcServiceImplTest,PayCalcServiceImplTest -Dsurefire.failIfNoSpecifiedTests=false`
 Expected: status=1 的写操作测试 FAIL，预览测试 PASS。
 
-- [ ] **Step 3: 实现统一冻结判断**
+- [x] **Step 3: 实现统一冻结判断**
 
 ```java
 private boolean isWriteFrozen(Integer status)
@@ -98,12 +98,12 @@ private boolean isWriteFrozen(Integer status)
 
 `persist=true`、明细写入和酬金重算使用该判断；`persist=false` 不因审批状态拒绝。
 
-- [ ] **Step 4: 运行定向测试**
+- [x] **Step 4: 运行定向测试**
 
 Run: 与 Step 2 相同。
 Expected: PASS，待审和终态写操作都被拒绝，预览仍可用。
 
-- [ ] **Step 5: 提交**
+- [x] **Step 5: 提交**
 
 ```bash
 git add rear/workload-system/src/main/java/com/workload/system/calc rear/workload-system/src/test/java/com/workload/system/calc
