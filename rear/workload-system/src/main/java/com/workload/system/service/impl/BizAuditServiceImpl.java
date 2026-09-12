@@ -19,6 +19,7 @@ import com.workload.common.utils.DataScopeUtil;
 import com.workload.common.utils.SecurityUtils;
 import com.workload.system.domain.BizAuditLog;
 import com.workload.system.domain.BizWorkloadSummary;
+import com.workload.system.domain.WorkloadSummaryStatus;
 import com.workload.system.mapper.BizAuditLogMapper;
 import com.workload.system.mapper.BizWorkloadSummaryMapper;
 import com.workload.system.service.BizAuditService;
@@ -43,15 +44,6 @@ import com.workload.system.service.BizAuditService;
 public class BizAuditServiceImpl implements BizAuditService
 {
     private static final Logger log = LoggerFactory.getLogger(BizAuditServiceImpl.class);
-
-    /** 状态：填报中 */
-    private static final int STATUS_DRAFT = 0;
-
-    /** 状态：教务处待审 */
-    private static final int STATUS_PENDING_AUDIT = 1;
-
-    /** 状态：已完结（已锁定）—— 教务处审核通过即终态 */
-    private static final int STATUS_FINISHED = 2;
 
     /** 审批动作枚举（biz_audit_log.action 列取值） */
     private static final String ACTION_SUBMIT = "submit";
@@ -84,15 +76,15 @@ public class BizAuditServiceImpl implements BizAuditService
     public void submit(Long id)
     {
         BizWorkloadSummary summary = requireSummary(id);
-        assertStatus(summary, STATUS_DRAFT, "只有填报中状态才能提交审核");
+        assertStatus(summary, WorkloadSummaryStatus.DRAFT, "只有填报中状态才能提交审核");
         // 提交是「本人动作」：教师角色仅可提交本人的汇总，防止横向越权提交他人记录
         // （与 teacherConfirm 的归属校验对齐；教务/管理角色由 assertOwnOrAdmin 放行）
         DataScopeUtil.assertOwnOrAdmin(summary.getUserId());
 
         String username = SecurityUtils.getUsername();
-        int rows = bizWorkloadSummaryMapper.updateStatusIf(id, STATUS_DRAFT, STATUS_PENDING_AUDIT, username);
-        assertUpdated(rows, id, STATUS_DRAFT, STATUS_PENDING_AUDIT);
-        writeAuditLog(id, ACTION_SUBMIT, STATUS_DRAFT, STATUS_PENDING_AUDIT, null);
+        int rows = bizWorkloadSummaryMapper.updateStatusIf(id, WorkloadSummaryStatus.DRAFT, WorkloadSummaryStatus.PENDING_AUDIT, username);
+        assertUpdated(rows, id, WorkloadSummaryStatus.DRAFT, WorkloadSummaryStatus.PENDING_AUDIT);
+        writeAuditLog(id, ACTION_SUBMIT, WorkloadSummaryStatus.DRAFT, WorkloadSummaryStatus.PENDING_AUDIT, null);
     }
 
     @Override
@@ -100,13 +92,13 @@ public class BizAuditServiceImpl implements BizAuditService
     public void approve(Long id)
     {
         BizWorkloadSummary summary = requireSummary(id);
-        assertStatus(summary, STATUS_PENDING_AUDIT, "只有待审状态才能审核");
+        assertStatus(summary, WorkloadSummaryStatus.PENDING_AUDIT, "只有待审状态才能审核");
 
         String username = SecurityUtils.getUsername();
         // 教务处审核通过即终态：置已完结(2)，同时写 academic_assistant_sign 与 lock_time
-        int rows = bizWorkloadSummaryMapper.approveSummary(id, STATUS_PENDING_AUDIT, STATUS_FINISHED, username, username);
-        assertUpdated(rows, id, STATUS_PENDING_AUDIT, STATUS_FINISHED);
-        writeAuditLog(id, ACTION_APPROVE, STATUS_PENDING_AUDIT, STATUS_FINISHED, null);
+        int rows = bizWorkloadSummaryMapper.approveSummary(id, WorkloadSummaryStatus.PENDING_AUDIT, WorkloadSummaryStatus.FINISHED, username, username);
+        assertUpdated(rows, id, WorkloadSummaryStatus.PENDING_AUDIT, WorkloadSummaryStatus.FINISHED);
+        writeAuditLog(id, ACTION_APPROVE, WorkloadSummaryStatus.PENDING_AUDIT, WorkloadSummaryStatus.FINISHED, null);
     }
 
     @Override
@@ -116,7 +108,7 @@ public class BizAuditServiceImpl implements BizAuditService
         BizWorkloadSummary summary = requireSummary(id);
         // 简化两级审批后只剩一个审批环节（教务处待审 1），故驳回只支持 1 → 0
         Integer current = summary.getStatus();
-        if (current == null || current != STATUS_PENDING_AUDIT)
+        if (current == null || current != WorkloadSummaryStatus.PENDING_AUDIT)
         {
             throw new ServiceException(
                     "只有待审状态才能驳回（当前状态: " + current + "）", CODE_STATUS_CONFLICT);
@@ -125,9 +117,9 @@ public class BizAuditServiceImpl implements BizAuditService
         String username = SecurityUtils.getUsername();
         // 驳回原因写入审批日志；同时兼容写入 remark（reason 为空时保持原 remark，维持现有行为）
         String remark = reason != null ? reason : summary.getRemark();
-        int rows = bizWorkloadSummaryMapper.rejectSummary(id, current, STATUS_DRAFT, remark, username);
-        assertUpdated(rows, id, current, STATUS_DRAFT);
-        writeAuditLog(id, ACTION_REJECT, current, STATUS_DRAFT, reason);
+        int rows = bizWorkloadSummaryMapper.rejectSummary(id, current, WorkloadSummaryStatus.DRAFT, remark, username);
+        assertUpdated(rows, id, current, WorkloadSummaryStatus.DRAFT);
+        writeAuditLog(id, ACTION_REJECT, current, WorkloadSummaryStatus.DRAFT, reason);
     }
 
     @Override
@@ -135,12 +127,12 @@ public class BizAuditServiceImpl implements BizAuditService
     public void unlock(Long id)
     {
         BizWorkloadSummary summary = requireSummary(id);
-        assertStatus(summary, STATUS_FINISHED, "只有已完结状态才能解锁");
+        assertStatus(summary, WorkloadSummaryStatus.FINISHED, "只有已完结状态才能解锁");
 
         String username = SecurityUtils.getUsername();
         int rows = bizWorkloadSummaryMapper.unlockById(id, username);
-        assertUpdated(rows, id, STATUS_FINISHED, STATUS_DRAFT);
-        writeAuditLog(id, ACTION_UNLOCK, STATUS_FINISHED, STATUS_DRAFT, null);
+        assertUpdated(rows, id, WorkloadSummaryStatus.FINISHED, WorkloadSummaryStatus.DRAFT);
+        writeAuditLog(id, ACTION_UNLOCK, WorkloadSummaryStatus.FINISHED, WorkloadSummaryStatus.DRAFT, null);
         log.info("管理员 {} 解锁了汇总 id={}", username, id);
     }
 
@@ -149,7 +141,7 @@ public class BizAuditServiceImpl implements BizAuditService
     public void teacherConfirm(Long id)
     {
         BizWorkloadSummary summary = requireSummary(id);
-        if (summary.getStatus() == null || summary.getStatus() != STATUS_PENDING_AUDIT)
+        if (summary.getStatus() == null || summary.getStatus() != WorkloadSummaryStatus.PENDING_AUDIT)
         {
             throw new ServiceException("只有待审状态才能教师确认（当前状态: " + summary.getStatus() + "）", CODE_STATUS_CONFLICT);
         }

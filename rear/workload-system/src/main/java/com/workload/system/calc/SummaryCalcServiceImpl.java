@@ -83,7 +83,7 @@ public class SummaryCalcServiceImpl implements SummaryCalcService
             summary = new BizWorkloadSummary();
             summary.setUserId(userId);
             summary.setSemester(semester);
-            summary.setStatus(0);
+            summary.setStatus(WorkloadSummaryStatus.DRAFT);
         }
 
         // 1. 聚合明细（排除已驳回）；明细列表同时供制度性校验复用

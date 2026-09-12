@@ -20,6 +20,7 @@ import com.workload.system.domain.BizTeacherProfile;
 import com.workload.system.domain.BizTeachingTask;
 import com.workload.system.domain.BizWorkloadItem;
 import com.workload.system.domain.BizWorkloadSummary;
+import com.workload.system.domain.WorkloadSummaryStatus;
 import com.workload.system.service.IBizTeacherProfileService;
 import com.workload.system.service.IBizTeachingTaskService;
 import com.workload.system.service.IBizWorkloadItemService;
@@ -115,9 +116,9 @@ public class BizDashboardController extends BaseController
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         stats.put("totalPay", totalPay);
         stats.put("pendingSummaryCount", summaries.stream()
-                .filter(s -> s.getStatus() != null && s.getStatus() == 1).count());
+                .filter(s -> s.getStatus() != null && s.getStatus() == WorkloadSummaryStatus.PENDING_AUDIT).count());
         stats.put("completedSummaryCount", summaries.stream()
-                .filter(s -> s.getStatus() != null && s.getStatus() == 2).count());
+                .filter(s -> s.getStatus() != null && s.getStatus() == WorkloadSummaryStatus.FINISHED).count());
         stats.put("semester", semester);
 
         return success(stats);
@@ -198,7 +199,7 @@ public class BizDashboardController extends BaseController
         stats.put("performancePay", BigDecimal.ZERO);
         stats.put("ratedWorkload", BigDecimal.ZERO);
         stats.put("basicTeachingStandard", BigDecimal.ZERO);
-        stats.put("summaryStatus", 0);
+        stats.put("summaryStatus", WorkloadSummaryStatus.DRAFT);
         stats.put("isCapped", 0);
         stats.put("basicTeachingMet", 0);
         stats.put("remark", null);
@@ -216,7 +217,7 @@ public class BizDashboardController extends BaseController
         stats.put("performancePay", valueOrZero(summary.getPerformancePay()));
         stats.put("ratedWorkload", valueOrZero(summary.getRatedWorkload()));
         stats.put("basicTeachingStandard", valueOrZero(summary.getBasicTeachingStandard()));
-        stats.put("summaryStatus", summary.getStatus() == null ? 0 : summary.getStatus());
+        stats.put("summaryStatus", summary.getStatus() == null ? WorkloadSummaryStatus.DRAFT : summary.getStatus());
         stats.put("isCapped", summary.getIsCapped() == null ? 0 : summary.getIsCapped());
         stats.put("basicTeachingMet", summary.getBasicTeachingMet() == null ? 0 : summary.getBasicTeachingMet());
         stats.put("remark", summary.getRemark());

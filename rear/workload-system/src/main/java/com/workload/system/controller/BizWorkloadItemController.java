@@ -21,6 +21,7 @@ import com.workload.common.core.domain.AjaxResult;
 import com.workload.common.enums.BusinessType;
 import com.workload.system.domain.BizWorkloadItem;
 import com.workload.system.domain.BizWorkloadSummary;
+import com.workload.system.domain.WorkloadSummaryStatus;
 import com.workload.system.service.IBizWorkloadItemService;
 import com.workload.system.service.IBizWorkloadSummaryService;
 import com.workload.system.service.IWorkloadFactorFormulaService;
@@ -72,7 +73,7 @@ public class BizWorkloadItemController extends BaseController
             throw new ServiceException("缺少学期信息，无法校验申报状态");
         }
         BizWorkloadSummary summary = bizWorkloadSummaryService.selectBizWorkloadSummaryByUserAndSemester(userId, semester);
-        if (summary != null && summary.getStatus() != null && summary.getStatus() != 0)
+        if (summary != null && summary.getStatus() != null && summary.getStatus() != WorkloadSummaryStatus.DRAFT)
         {
             throw new ServiceException("本学期工作量已提交审核，明细已锁定，不可修改；如需变更请等待驳回或联系教务");
         }

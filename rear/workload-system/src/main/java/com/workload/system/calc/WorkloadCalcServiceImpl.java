@@ -17,6 +17,7 @@ import com.workload.system.calc.strategy.WorkloadCalcStrategy;
 import com.workload.system.domain.BizPayRecord;
 import com.workload.system.domain.BizWorkloadItem;
 import com.workload.system.domain.BizWorkloadSummary;
+import com.workload.system.domain.WorkloadSummaryStatus;
 import com.workload.system.mapper.BizTeacherProfileMapper;
 import com.workload.system.mapper.BizWorkloadItemMapper;
 import com.workload.system.mapper.BizWorkloadSummaryMapper;
@@ -34,9 +35,6 @@ public class WorkloadCalcServiceImpl implements WorkloadCalcService
 {
     /** 明细状态：已核对（冻结） */
     private static final int ITEM_STATUS_CONFIRMED = 1;
-
-    /** 汇总状态：已锁定（2026-09-10 审批简化后终态为 2） */
-    private static final int SUMMARY_STATUS_LOCKED = 2;
 
     @Autowired
     private BizWorkloadItemMapper bizWorkloadItemMapper;
@@ -225,7 +223,7 @@ public class WorkloadCalcServiceImpl implements WorkloadCalcService
         query.setSemester(item.getSemester());
         List<BizWorkloadSummary> summaries = bizWorkloadSummaryMapper.selectBizWorkloadSummaryList(query);
         boolean locked = summaries.stream()
-                .anyMatch(s -> s.getStatus() != null && s.getStatus() == SUMMARY_STATUS_LOCKED);
+                .anyMatch(s -> s.getStatus() != null && s.getStatus() == WorkloadSummaryStatus.FINISHED);
         if (locked)
         {
             throw new ServiceException("学期汇总已锁定，禁止修改明细");

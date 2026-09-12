@@ -18,6 +18,7 @@ import com.workload.common.core.controller.BaseController;
 import com.workload.common.core.domain.AjaxResult;
 import com.workload.common.enums.BusinessType;
 import com.workload.system.domain.BizWorkloadSummary;
+import com.workload.system.domain.WorkloadSummaryStatus;
 import com.workload.system.calc.rule.RuleParamService;
 import com.workload.system.service.IBizWorkloadSummaryService;
 import com.workload.common.utils.poi.ExcelUtil;
@@ -35,9 +36,6 @@ import com.workload.common.core.page.TableDataInfo;
 @RequestMapping("/system/workloadSummary")
 public class BizWorkloadSummaryController extends BaseController
 {
-    /** 汇总状态：已完结（锁定）—— 2026-09-10 审批简化后为 2 */
-    private static final int STATUS_FINISHED = 2;
-
     @Autowired
     private IBizWorkloadSummaryService bizWorkloadSummaryService;
 
@@ -129,7 +127,7 @@ public class BizWorkloadSummaryController extends BaseController
         DataScopeUtil.assertOwnOrAdmin(existing.getUserId());
 
         // 已完结(2)记录锁定，任何角色不可经通用 edit 修改；如需变更请先走审批解锁
-        if (existing.getStatus() != null && existing.getStatus() == STATUS_FINISHED)
+        if (existing.getStatus() != null && existing.getStatus() == WorkloadSummaryStatus.FINISHED)
         {
             throw new ServiceException("该汇总已完结锁定，禁止修改；如需变更请先解锁");
         }
@@ -187,7 +185,7 @@ public class BizWorkloadSummaryController extends BaseController
                 continue;
             }
             DataScopeUtil.assertOwnOrAdmin(summary.getUserId());
-            if (summary.getStatus() != null && summary.getStatus() == STATUS_FINISHED)
+            if (summary.getStatus() != null && summary.getStatus() == WorkloadSummaryStatus.FINISHED)
             {
                 throw new ServiceException("该汇总已完结锁定，禁止删除；如需删除请先解锁");
             }
