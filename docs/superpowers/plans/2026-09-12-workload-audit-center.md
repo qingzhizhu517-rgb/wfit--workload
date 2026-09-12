@@ -12,7 +12,7 @@
 
 ## 设计边界与最终契约
 
-- 汇总状态仍为 `0 填报中 → 1 教务处待审 → 2 已完结`，驳回为 `1 → 0`；明细状态仍为 `0 草稿/1 已核对/2 有异议/3 已驳回`，两套状态不复用。
+- 汇总状态仍为 `0 填报中 → 1 教务处待审 → 2 已完结`，驳回为 `1 → 0`；状态 2 永久锁定，不再支持 `unlock 2→0`。完结后差额只允许追加独立线下补差说明，不改变原汇总、酬金和审核快照。明细状态仍为 `0 草稿/1 已核对/2 有异议/3 已驳回`，两套状态不复用。
 - 审核对象固定为 `biz_workload_item`。其他酬金不是工作量明细，本期不把 `ALLOWANCE` 塞入审核表；将来若审核其他酬金，必须新建 `biz_allowance_item_review`，禁止恢复多态目标列。
 - `review_type` 取 `TEACHING_TASK`、`MANUAL_DECLARATION`、`G11_ROLE`、`OVER_LIMIT`。优先级为 `OVER_LIMIT` > `G11_ROLE` > `MANUAL_DECLARATION` > `TEACHING_TASK`，保证一条明细只生成一条审核记录。
 - `result` 取 `PENDING/PASS/REJECT/WAIVE`；只有汇总状态 `1` 且记录属于当前 `review_batch_no` 时允许审核。`REJECT` 原因必填，`PASS/WAIVE` 原因可空。
@@ -347,7 +347,7 @@ git commit -m "feat: add versioned workload item reviews"
 
 - [ ] **Step 1: 写状态机失败测试**
 
-测试精确顺序：`submit` 在同一事务内生成审核批次，再执行 `0→1` 并写 audit log；无有效明细返回 409；`approve` 在当前批次存在 PENDING/REJECT 时返回 409，全部 PASS/WAIVE 才执行 `1→2`；`reject/unlock` 不删除历史审核；并发 submit 失败不会留下孤立批次。
+测试精确顺序：`submit` 在同一事务内生成审核批次，再执行 `0→1` 并写 audit log；无有效明细返回 409；`approve` 在当前批次存在 PENDING/REJECT 时返回 409，全部 PASS/WAIVE 才执行 `1→2`；`reject` 不删除历史审核；任何 `unlock` 请求对状态 2 均返回 409/权限撤销；并发 submit 失败不会留下孤立批次。
 
 ```java
 InOrder inOrder = inOrder(reviewService, summaryMapper, auditLogMapper);
@@ -390,7 +390,21 @@ git add rear/workload-system/src/main/java/com/workload/system/service/BizAuditS
 git commit -m "feat: gate summary approval on item reviews"
 ```
 
-### Task 5: reviews、auditLogs 分页与汇总详情
+### Task 5: 永久锁定完结结果并追加线下补差说明
+
+**Files:**
+- Create: `BizOfflineAdjustmentNote` domain/mapper/service/controller 与 SQL 表
+- Modify: `BizAuditServiceImpl`、`BizAuditController`、菜单权限、汇总详情抽屉
+- Test: 状态机、权限、只追加和审计字段测试
+
+- [ ] **Step 1: 写失败测试**：status=2 的 unlock 永远失败；新增补差说明不调用任何 summary/pay UPDATE；补差金额允许正负但不得为 0，原因必填。
+- [ ] **Step 2: 运行 RED**：补差对象不存在，现有 unlock 仍可能成功。
+- [ ] **Step 3: 撤销 `system:audit:unlock` 菜单/角色权限并使正式 API 返回“已完结记录永久锁定”**。
+- [ ] **Step 4: 创建 `biz_offline_adjustment_note(summary_id,user_id,semester,adjustment_amount,reason,handled_at,handled_by,reference_no,attachment_url,create_by,create_time)`**；只允许 INSERT/SELECT，不提供 UPDATE/DELETE。
+- [ ] **Step 5: 在汇总详情新增“线下补差说明”时间线**，明确“不计入系统原核算金额”。
+- [ ] **Step 6: 运行 GREEN 并提交**：`git commit -m "feat: 记录完结后线下补差说明"`。
+
+### Task 6: reviews、auditLogs 分页与汇总详情
 
 **Files:**
 - Create: `rear/workload-system/src/main/java/com/workload/system/domain/vo/WorkloadSummaryDetailVo.java`
@@ -467,7 +481,7 @@ git add rear/workload-system/src/main/java/com/workload/system/domain/vo/Workloa
 git commit -m "feat: add paged summary audit details"
 ```
 
-### Task 6: 独立审核中心 API
+### Task 7: 独立审核中心 API
 
 **Files:**
 - Create: `rear/workload-system/src/main/java/com/workload/system/controller/BizWorkloadItemReviewController.java`
@@ -521,7 +535,7 @@ git add rear/workload-system/src/main/java/com/workload/system/controller/BizWor
 git commit -m "feat: expose workload audit center APIs"
 ```
 
-### Task 7: 前端测试基建与 API 客户端
+### Task 8: 前端测试基建与 API 客户端
 
 **Files:**
 - Modify: `front/RuoYi-Vue3/package.json`
@@ -571,7 +585,7 @@ git add front/RuoYi-Vue3/package.json front/RuoYi-Vue3/package-lock.json front/R
 git commit -m "test: add frontend audit API coverage"
 ```
 
-### Task 8: 汇总详情抽屉
+### Task 9: 汇总详情抽屉
 
 **Files:**
 - Create: `front/RuoYi-Vue3/src/views/system/workloadSummary/SummaryAuditDrawer.vue`
@@ -621,7 +635,7 @@ git add front/RuoYi-Vue3/src/views/system/workloadSummary
 git commit -m "feat: show paged summary audit details"
 ```
 
-### Task 9: 独立审核中心页面
+### Task 10: 独立审核中心页面
 
 **Files:**
 - Create: `front/RuoYi-Vue3/src/views/system/auditCenter/index.vue`
@@ -673,7 +687,7 @@ git add front/RuoYi-Vue3/src/views/system/auditCenter
 git commit -m "feat: add workload item audit center"
 ```
 
-### Task 10: 全链路审计回归与最终验证
+### Task 11: 全链路审计回归与最终验证
 
 **Files:**
 - Modify: `rear/workload-system/src/test/java/com/workload/system/service/impl/BizAuditServiceImplTest.java`
@@ -683,7 +697,7 @@ git commit -m "feat: add workload item audit center"
 
 - [ ] **Step 1: 补齐验收矩阵**
 
-后端补：导入逐行、G11 自动生成、单条重算、批量核算、汇总提交、明细审核、驳回、解锁均断言审计字段；异常回滚不留 review；两个审核员用同 version 竞争只有一个成功。前端补：空数据、分页总数、旧响应丢弃、409 刷新、教师只读。
+后端补：导入逐行、岗位减免同步、单条重算、批量核算、汇总提交、明细审核、驳回、完结永久锁定和线下补差说明追加均断言审计字段；异常回滚不留 review；两个审核员用同 version 竞争只有一个成功。前端补：空数据、分页总数、旧响应丢弃、409 刷新、教师只读。
 
 - [ ] **Step 2: 运行后端全部测试**
 

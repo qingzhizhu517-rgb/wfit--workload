@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 完成需求 1、2、3、8、16，以可预检、可确认、可追溯、可回滚的数据契约导入教师花名册、岗位目录、岗位任职和教学任务，并提供明确的前端入口。
+**Goal:** 完成需求 1、2、3、8、16，以可预检、可确认、可追溯的导入框架支持教学任务和学期岗位减免，提供教师档案字段预检与清晰前端入口，并准备当前空环境的 fresh DB 整体重建。
 
-**Architecture:** 所有导入统一采用“模板版本识别 → 解析到 `biz_import_batch`/`biz_import_row` 暂存 → 阻断性预检 → 显式确认 → 逐行事务写入”的两阶段模型。教学任务 v2 将学时、天数、周数、学分和人数拆分，岗位目录负责制度定义，岗位任职固化标准学时快照；真实花名册只按工号匹配，敏感列不落库，测试数据清理必须经过影响预览、备份和二次确认。
+**Architecture:** 所有导入统一采用“模板版本识别 → 解析到 `biz_import_batch`/`biz_import_row` 暂存 → 阻断性预检 → 显式确认 → 逐行事务写入”的两阶段模型。教学任务 v2 将计划学时、天数、周数、课程设计学分和人数拆分；模板示例只放说明 Sheet，导入器只读空白数据 Sheet。教师花名册仅用于确定档案字段白名单；岗位侧只导入教务已经核定的“本学期岗位减免工作量”，不建设岗位职责目录、不按职务名称重复计算。
 
 **Tech Stack:** Java 17、Spring Boot 4、MyBatis、EasyExcel 4、MySQL 8、JUnit 5、Mockito、AssertJ、Vue 3、Element Plus、Axios、ESLint、Vite。
 
@@ -12,43 +12,44 @@
 
 ## 范围与默认决策
 
-1. 需求覆盖映射：需求 1 对应 Task 4；需求 2 对应 Task 3；需求 3 对应 Task 5-6；需求 8 对应 Task 7-9；需求 16 对应 Task 10-11。
+1. 需求覆盖映射：需求 1 对应 Task 4；需求 2 对应 Task 3；需求 3 对应 Task 5；需求 8 对应 Task 6-7；需求 16 对应 Task 8。
 2. 教学任务 v2 数量契约固定为：G1/G2=`plannedHours`，G3=`days`，G4=`credits + studentCount`，G5=`studentCount`，G6=`weeks + studentCount`；G5 不再要求无业务意义的基数。
-3. 旧模板只允许走 `templateVersion=V1` 兼容预检；确认时转换为 v2 规范行并保留原始 JSON，不再把旧基数无条件解释为学时。
-4. `courseCoefficient` 仅允许 G2/G3/G5 使用；G1/G4/G6 填写该列即预检失败，防止产生无法解释的“总系数”。
-5. 岗位目录 `standardHours` 已是最终制度标准，不再乘岗位系数；普通岗位单位默认为 `YEAR`，岗位名称含“督导”时必须明确为 `SEMESTER`。
+3. 模板固定包含“填写说明/示例”和“导入数据”两个 Sheet；示例覆盖 G1/G3/G4/G5/G6，但服务只解析“导入数据”，模板下载后直接回传不得产生任何业务写入。
+4. 旧模板只允许走 `templateVersion=V1` 兼容预检；确认时转换为 v2 规范行并保留原始 JSON，不再把旧基数无条件解释为学时。
+5. `courseCoefficient` 仅允许 G2/G3/G5 使用；G1/G4/G6 填写该列即预检失败，防止产生无法解释的“总系数”。
+6. 岗位导入简化为教师+学期+`positionWorkload`；该值是教务认定的学期岗位减免工作量，职务名称可空且不参与计算，不再设计 `RoleCatalog/rateUnit/standardHours`。
+7. 花名册只用于教师字段白名单和异常映射验证，本轮不自动导入其中的真实人员；工号唯一，身份证/住址等敏感列不落库。
+8. 当前环境无真实数据，结构变更通过 fresh DB 脚本整体重建；计划只生成重建检查与备份命令，真正执行重建前仍须确认连接的数据库名和环境。
 6. 岗位任职确认时固化 `roleNameSnapshot`、`standardHoursSnapshot`、`rateUnitSnapshot`，G11 后续只读取快照，不回查当前目录值。
 7. 花名册使用结构化 `Sheet1`；重复工号、未知部门、未知职称和未决人员性质均为阻断错误。已知 `WFIT1882` 两行必须由业务人员明确选择“保留一行”或“合并为一个账号并分别转任职”，系统不得自动合并。
 8. 默认人员性质映射仅有“教师→专任”“银铃教师→银龄”；“教师兼行政”“行政”进入待确认队列。“讲师待遇”“无”不自动映射职称。
 9. 身份证号、住址及未列入 `TeacherRosterImportDTO` 的敏感列只参与表头风险提示，不写 `raw_json`、日志或数据库。
-10. 清理范围默认仅允许显式白名单 `test_prof`、`test_aprof`；`admin_test`、`jiaowu_test`、`teacher_test`、`leader_test` 以及系统管理员永不进入清理候选。
-11. 前端当前没有 Vitest；本计划不引入新测试框架，前端以纯函数单测可执行性之外的 ESLint、生产构建和后端 Controller 契约测试为门禁。
-12. 本计划实施期间所有数据库演练使用副本库；对真实库只生成预览、备份清单、确认摘要和回滚脚本，不执行删除或导入。
+10. 当前环境整体重建只更新并执行 fresh DB 初始化脚本；不再开发“按测试工号逐条清理”这一过度方案。重建前输出目标库、表数量和备份命令，真正执行属于单独高风险步骤。
+11. 前端当前没有 Vitest；本计划不引入新测试框架，前端以 ESLint、生产构建和后端 Controller 契约测试为门禁。
+12. 本轮花名册只做字段白名单和异常报告，不执行真实人员导入；后续得到教务正式导出文件时复用同一预检/确认框架。
 
 ## 文件职责
 
-- Create: `rear/sql/22_workload_requirements.sql`：导入暂存、岗位目录、快照字段、索引和菜单权限的幂等迁移。
+- Create: `rear/sql/22_workload_requirements.sql`：导入暂存、学期岗位减免字段、索引和菜单权限的幂等迁移。
 - Modify: `rear/sql/01_biz_schema.sql`、`rear/sql/05_biz_menu.sql`、`rear/sql/06_test_accounts.sql`：fresh DB 等价定义和角色授权。
 - Create: `rear/workload-system/src/main/java/com/workload/system/domain/BizImportRow.java`：逐行暂存实体。
-- Create: `rear/workload-system/src/main/java/com/workload/system/domain/BizRoleCatalog.java`：岗位制度目录实体。
 - Create: `rear/workload-system/src/main/java/com/workload/system/domain/dto/importing/ImportPreviewResponse.java`、`ImportConfirmRequest.java`、`ImportRowView.java`：统一预检/确认契约。
 - Modify: `rear/workload-system/src/main/java/com/workload/system/domain/dto/TeachingTaskImportDTO.java`：教学任务 v2 数量字段。
 - Create: `rear/workload-system/src/main/java/com/workload/system/domain/dto/TeachingTaskImportV1DTO.java`：旧模板只读兼容模型。
-- Create: `rear/workload-system/src/main/java/com/workload/system/domain/dto/RoleCatalogImportDTO.java`、`RoleAssignmentImportDTO.java`、`TeacherRosterImportDTO.java`：三类基础数据行契约。
+- Create: `rear/workload-system/src/main/java/com/workload/system/domain/dto/PositionWorkloadImportDTO.java`、`TeacherRosterImportDTO.java`：学期岗位减免与教师字段行契约。
 
-- Create: `rear/workload-system/src/main/java/com/workload/system/mapper/BizImportRowMapper.java`、`BizRoleCatalogMapper.java` 及对应 XML：暂存行和岗位目录持久化。
+- Create: `rear/workload-system/src/main/java/com/workload/system/mapper/BizImportRowMapper.java` 及对应 XML：暂存行持久化。
 - Modify: `rear/workload-system/src/main/java/com/workload/system/domain/BizImportBatch.java` 及 Mapper XML：保存模板版本、文件哈希、操作者和确认时间。
 - Create: `rear/workload-system/src/main/java/com/workload/system/service/ImportPreviewStore.java`：创建批次、保存规范行、校验确认令牌、原子变更批次状态。
 - Modify: `ITeachingTaskImportService`/`TeachingTaskImportServiceImpl`：教学任务预检、确认和 v2 写入。
-- Create: `IRoleCatalogImportService`/`RoleCatalogImportServiceImpl`：岗位目录预检和确认。
-- Create: `IRoleAssignmentImportService`/`RoleAssignmentImportServiceImpl`：任职预检、快照和确认。
-- Modify: `ITeacherProfileImportService`/`TeacherProfileImportServiceImpl`：花名册预检、确认和冲突处理。
-- Modify/Create: `BizTeachingTaskController`、`BizRoleAssignmentController`、`BizTeacherProfileController`、`BizRoleCatalogController`：预检、确认、模板、错误行下载端点。
+- Create: `IPositionWorkloadImportService`/`PositionWorkloadImportServiceImpl`：本学期岗位减免预检与确认。
+- Modify: `ITeacherProfileImportService`/`TeacherProfileImportServiceImpl`：花名册字段预检和冲突报告；本期不开放确认写入真实人员。
+- Modify: `BizTeachingTaskController`、`BizRoleAssignmentController`、`BizTeacherProfileController`：预检、确认、模板、错误行下载端点。
 - Create: `front/RuoYi-Vue3/src/components/BizImportWizard/index.vue`：四步导入向导。
-- Create: `front/RuoYi-Vue3/src/views/system/baseImport/index.vue`：教师信息导入/岗位任职导入两个入口页。
+- Create: `front/RuoYi-Vue3/src/views/system/baseImport/index.vue`：教师字段预检/岗位减免导入两个入口页。
 - Modify: `front/RuoYi-Vue3/src/views/system/{teachingTask,teacherProfile,roleAssignment}/index.vue` 与对应 API：接入统一导入向导。
 - Test: 对应 `rear/workload-system/src/test/java/...`：DTO 校验、预检、确认、Controller、模板和服务测试。
-- Create: `docs/测试/fixtures/teaching-task-v2-smoke.xlsx`：两条可导入样例；仅测试资源，不进入生产模板的数据区。
+- Create: `docs/测试/fixtures/teaching-task-v2-smoke.xlsx`：仅测试回归资源；生产模板示例位于说明 Sheet，二者都不得被当作真实导入数据。
 
 ### Task 1: 建立统一导入批次与逐行暂存
 
@@ -337,22 +338,25 @@ Expected: testCompile FAIL，`importTemplate(String, response)` 尚不存在。
 
 - [ ] **Step 3: 实现模板与样例**
 
-`POST /system/teachingTask/importTemplate?version=V2` 返回两 Sheet 工作簿；说明页两行固定为：
+`POST /system/teachingTask/importTemplate?version=V2` 返回两 Sheet 工作簿；说明页至少包含以下五类字段示例：
 
 ```text
-2025-2026-2,test_prof,测试讲师,离散数学,MATH4001,G1,本科,理工类,必修,其他,独立,良好,80,48,,,,,计科2401班,1
-2025-2026-2,test_aprof,测试教授,生产实习,ME3001,G3,本科,理工类,必修,其他,独立,良好,35,,15,,,,4.00,机械2401班,1
+G1: plannedHours=48, studentCount=80
+G3: days=15, studentCount=35
+G4: credits=2, studentCount=60
+G5: studentCount=8（其余数量字段为空）
+G6: weeks=4, studentCount=25
 ```
 
-列顺序为：学期、工号、姓名、课程、代码、类别、层次、专业、性质、级别、角色、评价、人数、计划学时、天数、周数、学分、课程系数、班级、重复次序。独立夹具 `teaching-task-v2-smoke.xlsx` 使用同两行；测试通过 Apache POI 生成并断言 G1=52.80、G3=60.00，避免手工二进制漂移。
+列顺序为：学期、工号、姓名、课程、代码、类别、层次、专业、性质、级别、角色、评价、人数、计划学时、天数、周数、课程设计学分、课程系数、班级、重复次序。说明页使用“示例教师”等虚构标签；独立测试夹具由测试代码构造业务行并断言公式结果，生产模板本身不携带可确认入库的真实数据。
 
 - [ ] **Step 4: 写失败测试，预检不得写教学任务**
 
 ```java
 @Test
-void previewPersistsRowsButDoesNotCreateBusinessData()
+void previewPersistsOnlyDataSheetRowsAndDoesNotCreateBusinessData()
 {
-    ImportPreviewResponse result = service.preview(workbookStream(), "smoke.xlsx", "V2");
+    ImportPreviewResponse result = service.preview(workbookWithFiveInstructionRowsAndTwoDataRows(), "smoke.xlsx", "V2");
     assertThat(result.readyCount()).isEqualTo(2);
     verify(teachingTaskMapper, never()).insertBizTeachingTask(any());
     verify(workloadItemMapper, never()).insertBizWorkloadItem(any());
@@ -379,7 +383,7 @@ public AjaxResult importConfirm(@RequestBody ImportConfirmRequest request)
 - [ ] **Step 6: 运行教学任务测试和夹具测试**
 
 Run: `mvn -f rear/pom.xml test -pl workload-system -am -Dtest=TeachingTaskImportServiceImplTest,BizTeachingTaskControllerTest,TeachingTaskFixtureWorkbookTest -Dsurefire.failIfNoSpecifiedTests=false`
-Expected: PASS；预检 2 READY、业务表 0 写入，确认后 2 成功且计算值为 52.80/60.00。
+Expected: PASS；模板说明页含 G1/G3/G4/G5/G6 示例且数据页为空；预检只统计数据页 2 行、业务表 0 写入；确认后测试夹具 2 行成功并得到固定公式结果。
 
 - [ ] **Step 7: 提交**
 
@@ -388,7 +392,45 @@ git add rear/workload-system/src/main/java/com/workload/system/service/ITeaching
 git commit -m "feat: 增加教学任务预检与样例"
 ```
 
-### Task 5: 建立岗位目录及制度快照
+### Task 5: 导入本学期岗位减免工作量（替代原岗位目录/任职复杂模型）
+
+**Files:**
+- Create: `rear/workload-system/src/main/java/com/workload/system/domain/dto/PositionWorkloadImportDTO.java`
+- Create: `rear/workload-system/src/main/java/com/workload/system/service/IPositionWorkloadImportService.java`
+- Create: `rear/workload-system/src/main/java/com/workload/system/service/impl/PositionWorkloadImportServiceImpl.java`
+- Modify: `BizRoleAssignmentController.java`、`BizRoleAssignment.java` 及 Mapper/XML
+- Test: `PositionWorkloadImportServiceImplTest.java`
+
+- [ ] **Step 1: 写失败测试**：教师+学期+`positionWorkload` 可预检；职务为空仍 READY；相同批次重复行为 SKIPPED；状态 1/2 汇总阻断确认。
+- [ ] **Step 2: 运行 RED**：`mvn -f rear/pom.xml test -pl workload-system -am -Dtest=PositionWorkloadImportServiceImplTest -Dsurefire.failIfNoSpecifiedTests=false`，预期 DTO/服务不存在。
+- [ ] **Step 3: 实现 DTO**：表头固定为教师工号、教师姓名、学年学期、岗位减免工作量（本学期）、职务名称（可选）、备注；减免值 `>=0`、两位小数。
+- [ ] **Step 4: 实现预检/确认**：沿用 `biz_role_assignment`，`allowance_rate` 存本学期值；不除以 2、不查岗位目录、不按日期折算；保存 `import_batch`，同批次幂等。
+- [ ] **Step 5: 运行 GREEN**：预期合法行写入，冻结行零写入，重复确认不新增。
+- [ ] **Step 6: 提交**：`git commit -m "feat: 导入学期岗位减免工作量"`。
+
+### Task 6: 教师花名册字段白名单与异常报告（不导入真实人员）
+
+**Files:** `TeacherRosterImportDTO.java`、`TeacherProfileImportServiceImpl.java`、`BizTeacherProfileController.java` 及测试。
+
+- [ ] **Step 1: 写失败测试**：只保留工号、姓名、系、教研室、职称、人员性质候选、联系方式和岗位减免值；身份证/地址不进入 raw JSON；重复工号与异常职称阻断。
+- [ ] **Step 2: 运行 RED**：预期白名单 DTO/预检接口不存在。
+- [ ] **Step 3: 实现 `POST /system/teacherProfile/importPreview`**：只返回字段映射、异常统计和脱敏行，不提供 confirm 写入接口。
+- [ ] **Step 4: 前端展示“字段参考预检”**：明确当前文件不会导入真实教师，允许下载异常清单。
+- [ ] **Step 5: 验证并提交**：后端测试、前端 lint/build；`git commit -m "feat: 预检教师档案字段"`。
+
+### Task 7: Fresh DB 整体重建准备
+
+- [ ] **Step 1: 更新 `01_biz_schema.sql` 与初始化文档**，移除岗位目录方案，固化学期岗位减免字段和新导入暂存表。
+- [ ] **Step 2: 新增 `rear/scripts/verify-rebuild-target.ps1`**，只输出数据库名、主机、业务表数与待备份表，不执行 DROP。
+- [ ] **Step 3: 在临时空库执行全套初始化脚本**，预期所有表/索引/菜单创建成功。
+- [ ] **Step 4: 记录重建命令与人工确认短语**；真实环境执行放到独立高风险任务。
+- [ ] **Step 5: 提交**：`git commit -m "chore: 准备业务库整体重建"`。
+
+### 以下旧 Task 5-9 已被 2026-09-12 业务确认取代，禁止执行
+
+> 原方案错误地把岗位减免设计为岗位目录+学年标准+任职天数折算，并为无真实数据环境设计逐账号清理。现确认应直接导入本学期岗位减免值，当前库可整体重建。以下内容仅保留审查痕迹。
+
+### [已废弃] 原 Task 5: 建立岗位目录及制度快照
 
 **Files:**
 - Modify: `rear/sql/22_workload_requirements.sql`
@@ -459,7 +501,7 @@ git add rear/sql/01_biz_schema.sql rear/sql/22_workload_requirements.sql rear/wo
 git commit -m "feat: 增加岗位制度目录"
 ```
 
-### Task 6: 岗位任职预检、导入与快照
+### [已废弃] 原 Task 6: 岗位任职预检、导入与快照
 
 **Files:**
 - Modify: `rear/sql/22_workload_requirements.sql`
@@ -550,7 +592,7 @@ git add rear/sql/01_biz_schema.sql rear/sql/22_workload_requirements.sql rear/wo
 git commit -m "feat: 支持岗位任职预检导入"
 ```
 
-### Task 7: 真实教师花名册映射预检
+### [已废弃] 原 Task 7: 真实教师花名册映射预检
 
 **Files:**
 - Create: `rear/workload-system/src/main/java/com/workload/system/domain/dto/TeacherRosterImportDTO.java`
@@ -642,7 +684,7 @@ git add rear/workload-system/src/main/java/com/workload/system/domain/dto/Teache
 git commit -m "feat: 增加教师花名册预检"
 ```
 
-### Task 8: 真实教师确认导入与逐行事务
+### [已废弃] 原 Task 8: 真实教师确认导入与逐行事务
 
 **Files:**
 - Modify: `rear/workload-system/src/main/java/com/workload/system/domain/BizTeacherProfile.java`
@@ -710,7 +752,7 @@ git add rear/sql/01_biz_schema.sql rear/sql/22_workload_requirements.sql rear/wo
 git commit -m "feat: 确认导入教师花名册"
 ```
 
-### Task 9: 测试数据清理预览、备份清单与回滚
+### [已废弃] 原 Task 9: 测试数据清理预览、备份清单与回滚
 
 **Files:**
 - Create: `rear/workload-system/src/main/java/com/workload/system/domain/dto/TestDataCleanupPreview.java`
@@ -771,4 +813,6 @@ git add rear/workload-system/src/main/java/com/workload/system/domain/dto/TestDa
 git commit -m "feat: 预览测试数据清理影响"
 ```
 
-<!-- PLAN_CONTINUE -->
+## 执行边界
+
+执行者只实施 Task 1-7；所有标记“已废弃”的旧任务不得执行。

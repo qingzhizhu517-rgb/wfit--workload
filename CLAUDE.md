@@ -220,7 +220,7 @@ mysql -u root -p wflg_workload < rear/sql/15_fix_menu_buttons.sql
 | G4 课程设计 | `J4 * R4 * 0.4` | J4=学分, R4=实际人数**不截断**（第十四条4），超 CAP_R4_MAX=60 置 is_over_limit 告警 |
 | G5 毕业论文 | `R5 * K5` | K5=理工本9/专5, 文史本6/专4 |
 | G6 集中实习 | `W * min(R6,20) * 0.4` | W=周数, R6=人数(上限20) |
-| G11 管理服务 | 岗位标准学时(**学年**)/2 × 任职天数/学期天数 | 学期封顶 180；督导例外（第十七条 15/学期不折半，2026-09-10 统一） |
+| G11 管理服务 | 教务认定的本学期岗位减免值 | 直接按教师+学期有效值汇总，学期封顶 180；职务名称仅展示，不按学年折半或任职天数二次计算（2026-09-12 业务确认） |
 | 绩效酬金 | `(min(总工作量,540) - 180) * 职称单位酬金` | 教授70/副60/讲50/助40 |
 
 汇总层级：G7=G1~G6合计, G10=G7+G8+G9, 总工作量=G10+G11
@@ -256,7 +256,7 @@ A 项 ≥20 人归零（第十五条1(2)，落 `biz_allowance_item.remark`）；
 4. `RuleParamService` — 规则参数读取（Redis 缓存），政策变动改数据库即可
 5. `SummaryCalcService` — 学期汇总：按类别累加后落 `biz_workload_summary` 的定长列 `G7`/`G8`/`G9`/`G10`/`G11`/`total_workload`/`excess_workload`/`performance_pay`/`is_capped`。**G1~G6 的分项合计不落汇总表**（只有 G7 一个合计列），要看分项须回 `biz_workload_item` 明细或导出附件1
 6. `PayCalcService` + `allowance/AllowanceStrategyFactory`（`@Autowired List<AllowanceCalcStrategy>` 按 `getFeeType()` 建 map）— 其他酬金 A/B/C/E/F/G 六个策略；**D（代阅卷）未注册，首期不启用**
-7. `ManagementItemGenerator` — 自动从 roleAssignment 生成 G11 条目
+7. `ManagementItemGenerator` — 从教务确认的教师学期岗位减免来源记录幂等同步 G11 条目，不再按岗位名称或任职天数重算
 
 **API 端点**（`BizCalcController`，路径 `/system/calc/*`）：
 
@@ -267,7 +267,7 @@ A 项 ≥20 人归零（第十五条1(2)，落 `biz_allowance_item.remark`）；
 | `/recalcSummary` | POST | 学期汇总重算 |
 | `/recalcPay` | POST | 酬金计算 |
 | `/preview` | GET | 预览汇总数据 |
-| `/genG11` | POST | 自动生成管理服务条目 |
+| `/genG11` | POST | 同步教务确认的本学期岗位减免到 G11（保留兼容路径名） |
 | `/recalcAll` | POST | 单教师全量重算：明细→汇总→酬金，单事务，失败整体回滚（需 userId） |
 | `/recalcAllBatch` | POST | **批量一键核算**：`?semester=` + body `[userId...]`；body 空/省略 = 该学期全部有明细的教师。每位教师独立事务，单人失败只记入 `failures`，其余照算。教师角色被强制收敛为只能算自己 |
 
@@ -282,9 +282,9 @@ A 项 ≥20 人归零（第十五条1(2)，落 `biz_allowance_item.remark`）；
   ↓ 教务员提交
 1: 教务处待审 (教务处可审核/驳回)
   ↓ 教务处审核通过 —— 即终态，同时写 academic_assistant_sign 与 lock_time
-2: 已完结 (锁定，不可修改)
-  ↓ 管理员可解锁
-0: 回到填报中
+2: 已完结 (永久锁定，不可修改、不解锁)
+
+完结后如需补差，只追加线下补差说明，不改变原汇总、酬金和审核快照。
 
 驳回：1 → 0（仅待审阶段可驳回）
 注意：驳回**不退化为 -1**，直接回到 0（-1 从未实现，文档旧值）
@@ -304,7 +304,7 @@ A 项 ≥20 人归零（第十五条1(2)，落 `biz_allowance_item.remark`）；
 | 支撑层 | biz_pay_rate | 酬金费率（教授70/副60/讲50/助40） |
 | 支撑层 | biz_import_batch | 导入批次记录 |
 | 源数据层 | biz_teaching_task | 教学任务（Excel 导入的原始数据） |
-| 源数据层 | biz_role_assignment | 岗位任职（生成 G11 的依据） |
+| 源数据层 | biz_role_assignment | 兼容表名：教师学期岗位减免来源记录（同步 G11 的依据） |
 | 计算明细层 | biz_workload_item | 工作量明细主表 |
 | 计算明细层 | biz_wl_theory | G1 理论课明细 |
 | 计算明细层 | biz_wl_practice | G2 实践课明细 |
@@ -338,7 +338,7 @@ A 项 ≥20 人归零（第十五条1(2)，落 `biz_allowance_item.remark`）；
 |---|------|------|
 | A1 | 教务助理(role3)被越权授予 `unlock`，可复活院领导已完结记录 | ✅ `13_fix_audit_perm.sql` 撤销授权，unlock 仅授管理员 |
 | A2 | 策略解析失败（bean 名配错）静默返回 null，工作量被无声置 0 | ✅ `CalcStrategyFactory.resolve()` 改为抛 `ServiceException` |
-| A3 | G11 折算多除了一个 2，与公式/种子数据/封顶矛盾 | ✅（**2026-09-10 依办法第十六条反向修正**）`allowance_rate` 约定改为存**学年值**，`ManagementItemGeneratorImpl` 恢复 ÷2；督导（第十七条 15/学期）不折半。A3 当年按学期值种子自洽，与现约定不是同一数据前提 |
+| A3 | G11 历史折算模型曾反复调整 | ⏸️ **2026-09-12 业务口径替代**：教务导出的“职务匹配工作量”已是本学期岗位减免值。后续不再使用 `allowance_rate` 学年折半或督导例外，也不按任职天数二次计算；当前代码待按新口径改造 |
 | A4 | 教学任务导入自调用致 `@Transactional` 失效，部分失败提交半截数据 | ✅ 改用 `AopContext.currentProxy()` 每行独立事务 |
 | A5 | 院领导待签(2)环节无驳回路径 | ✅ `BizAuditServiceImpl.reject` 放开 `from∈{1,2}`；院领导授 `reject` 权限 |
 | A6 | G4 人数上限 20 与权威文档 R4≤60 冲突 | ✅ `CourseDesignCalcStrategy` 默认值改 60；`14_fix_calc_rules.sql` 已随 02 并入。**注意：本机库直到 2026-08-31 才真正执行到 60**（原记「已部署库」不实），且 `RuleParamServiceImpl` 缓存无 TTL，改库后必须删 Redis 键 `wl_rule:CAP_R4_MAX`，否则重启也读旧值 —— 见待办 #10。**2026-09-10 起语义变更：CAP_R4_MAX 由截断上限改为告警阈值，R4 按实际人数计算不再 min()**（办法第十四条4 未写「超出不计」） |
@@ -430,7 +430,7 @@ G4 触 60 上限 / G5·G6 超限标记 / **K 组显式「重复次序」优先�
 | # | 问题 | 修复 |
 |---|------|------|
 | G1 | **导入时「按专业大类/授课层次取系数」的逻辑根本不存在**：`createG2Detail`/`createG3Detail`/`createG5Detail` 只取 Excel「课程系数」列，留空就硬编码兜底 `1.0`/`4.0`/`9`——全是理工本科档。规则表 `COEF_PRACTICE_LG/OTHER`、`COEF_TRAIN_D_LG/ART/HUM/UNIT`、`COEF_THESIS_K5_{LG,HU}_{B,C}` 全部 status=1 却**零处引用**；DTO 与库里都有 `major_category`/`education_level`，只是从未参与选系数。实测偏差：G5 文史专科 K5 落 9 而非 4（+125%）、G3 文史 D 落 4.0 而非 2.0（+100%）、G2 文史 K 落 1.0 而非 0.9（+11%） | ✅ 新增 `calcG2K`/`calcG3D`/`calcG5K5`：**Excel「课程系数」列填了仍优先**（教务按个案覆盖，G3「单位指导 D=2.0」只能这样表达），留空才按 专业大类(×授课层次) 查规则表。艺术类与「其他」在 G5 归文史档（文档 K5 只分理工/文史两支，见待办 #5），在 G3 分别取 `D_ART 3.0` / `D_HUM 2.0`。`calcN` 同步改读 `COEF_CLASS_120_150/151_UP` |
-| G2 | **解锁不清签字**：`unlockById` 只置 `lock_time=NULL, status=0`，三个签字字段及时间全部保留。记录退回草稿态后数字可被重算，旧签字等于让教务/院领导/教师为改动后的新数字背书（B2 修 reject 时是同一理由，unlock 漏改） | ✅ `unlockById` 与 `rejectSummary` 同口径清空 `academic_assistant_sign`/`teacher_sign`/`dept_leader_sign` 及三个时间 |
+| G2 | **解锁不清签字**（历史问题） | ⏸️ 旧解锁路径曾补充清签；2026-09-12 已裁定完结记录永久锁定，后续应撤销 unlock 正式权限/入口，以线下补差说明替代 |
 | G3 | 附件1 对 G5 行写「人数超上限，已按封顶值核算」是**假的**：G5 从不封顶（`ThesisCalcStrategy` 无 `min`），其 `is_over_limit` 只表示「须报院长批准、教务处备案」；G6 才是真按 `min(R6,20)` 封顶。该缺陷是 F2 让标记真正落库后才显形 | ✅ `buildCoefRemark` 按 `item_type` 分流文案，G5 写「人数超申报上限，须报院长批准、教务处备案（学时按实际人数计，未封顶）」 |
 | G4 | `ManagementItemGeneratorImpl` 类注释仍写「标准学时/学年 ÷ 2 ×…」，A3 删掉该除法时漏改注释，照注释维护会把 ÷2 补回去 | ✅ 注释更正为「rate 已定性为学期标准」，并写明勿再补 ÷2 |
 | G5 | `AllowanceBStrategy` 取 `PAY_B_CONCENTRATED` 时兜底默认值写的是 `10`（分散价），规则行若被删/停用，集中实习按 10 元/人少发 1/3 | ✅ 兜底按档位分流：集中 15 / 分散 10 |
@@ -448,7 +448,7 @@ G4 触 60 上限 / G5·G6 超限标记 / **K 组显式「重复次序」优先�
 | G2 文史 J2=16 | K=0.9 | 0.90 | 12.96 | 12.96 |
 | G1 160 人 J1=32 | N=1.2 | 1.20 | 42.24 | 42.24 |
 
-unlock 走 submit→approve→sign→unlock 往返：签字三栏与 `lock_time` 在 status 3 时齐全，解锁后全部为 NULL、status 回 0。
+端到端验证中的历史 unlock 往返仅记录当时代码行为；2026-09-12 起不再作为目标验收流程，完结状态不得返回草稿。
 附件1 导出 19 列，G5 行文案为「…须报院长批准、教务处备案（学时按实际人数计，未封顶）」，G6 行仍为「已按封顶值核算」。
 
 > ⚠️ **G1 只对新导入生效**。D/K5/K 是导入时算好写进 `biz_wl_*` 的，重算只读回不重算系数，
@@ -469,7 +469,7 @@ unlock 走 submit→approve→sign→unlock 往返：签字三栏与 `lock_time`
 | 8 | ~~教师账号默认弱口令 123456 无强制改密~~ | ✅ 已修复 | `ForcePasswordChangeInterceptor` 服务端拦截（`pwd_update_date IS NULL` → 602）+ 前端路由守卫只放行改密页；管理员重置密码走 `resetUserPwdRequireChange` 置 NULL，要求用户再次自行改密 |
 | 9 | 200%/540 封顶边界 `>` vs `>=`、`teacherNature` 为 null 当专任发绩效 | 低 | 需业务确认口径，非明确 bug |
 | 10 | `RuleParamServiceImpl` 写 Redis 不设 TTL（`setCacheObject(key, value)`），改 `biz_workload_rule` 后即使重启后端也仍读旧值 | 中 | 已有 `evict(code)` 但无调用方，规则维护 Service 保存后应调 evict；临时手段是删 `wl_rule:<CODE>` 键。本轮 `CAP_R4_MAX` 即因此卡在 20 |
-| 11 | 自主申报的 G11 与生成器的 G11 是两套模型：前者只有主表已核定学时，后者才有 `biz_wl_management` 折算明细 | 低 | F1 已让重算不再崩（SELF 取主表值），但「教师能不能自主申报 G11」这个产品口径未定。彻底方案二选一：① `declare.vue` + 后端禁掉 G11 自主申报，只走 `biz_role_assignment` → 生成器；② 申报时一并建任职记录与明细行。定了再改 |
+| 11 | ~~教师是否可自由申报 G11~~ | ✅ 已裁定 | 教师不能自由填写最终 G11；正常值来自教务导入/维护的本学期岗位减免。教师只可发起缺漏反馈/补录申请，由教务核定学期值后同步 G11 |
 | 12 | ~~本科毕业论文 R5 要不要封顶 10~~ | ✅ 已裁定 | 办法第十四条5（PDF 原文）只说「R5≤10 时**按实际人数计算**、＞8 须报院长批准」，**未写「超出不计算」**→ 不封顶，仅报批标记。死配置 `CAP_R5_BACHELOR/CAP_R5_JUNIOR` 已停用（`18_fix_r5_approval.sql`），专科阈值改挂 `APPROVAL_R5_JUNIOR=15`（2026-09-10） |
 | 13 | ~~G6 的 `CAP_R6_MAX=20` 缺文档依据~~ | ✅ 已裁定 | 办法第十四条6**注4** 明写「指导实习的学生人数不超过20人，**超出部分不计算工作量及酬金**」→ `min(R6,20)` 截断**有依据**，此前「缺文档依据」系仅查 `else/工作量.md` 漏了 PDF 原文的误判（2026-09-10，已固化 `ConcentratedInternshipCalcStrategyTest`） |
 | 14 | **审批中允许重算**：汇总/酬金重算只拒已完结，`assertEditable` 只看 item.status=1（已核对）与 summary.status=2（已完结）。**待审(status=1)期间重算会改数字**，而教务处签字仍挂在旧数字上 | 中 | 2026-09-10 两级简化后已完结为 2。与 A12（教师 status≠0 不能改明细）、B2（只有驳回才清签）不同口径。修法可选：重算前拒 status=1，或改数后自动清签退回 0 |
@@ -492,7 +492,7 @@ unlock 走 submit→approve→sign→unlock 往返：签字三栏与 `lock_time`
 - 业务表前缀 `biz_`，系统表前缀 `sys_`（RuoYi 内置）
 - `front/RuoYi-Vue3/.env.development` 已被 git 跟踪，但仅含页面标题与 `/dev-api` 前缀，**无敏感信息**；后端凭据已全部改为环境变量注入（见「配置要点」）
 - ⚠️ **历史遗留**：`application-druid.yml`(DB root/123456、Druid ruoyi/123456) 与 `application.yml`(JWT secret) 的明文值曾提交入库，仍留在 git 历史中。当前工作树已清除，但旧 commit 可追溯 —— 唯一有效的补救是**轮换这些口令**（DB 改专用账号、JWT secret 重新生成），而非只改文件
-- G11 管理服务条目由 `ManagementItemGenerator` 从 `biz_role_assignment` 自动生成，也可手动录入
+- G11 管理服务条目由 `ManagementItemGenerator` 从兼容表 `biz_role_assignment` 中的教师学期岗位减免记录同步；教师不可自由手工填写最终 G11
 - ⚠️ `biz_workload_summary` **没有** `category_details` JSON 列 —— 该字段只存在于 `else/潍理工工作量管理系统设计new).md` 的设计稿中，DDL(`01_biz_schema.sql`)、实际库与 Java 代码里均无此列，早期文档把它写成了既成事实。现状是 G7~G11 定长列；如需 G1~G6 分项汇总，属未实施的增强项（本轮已由用户明确不做）
 - `DataScopeUtil.resolveUserId()` 强制教师角色只能看自己的数据，防止 IDOR，已在 calc/export/dashboard 控制器中使用
 - 策略 bean 名称必须与 `biz_workload_category_dict.calc_strategy` 列精确匹配（如 `theoryCalcStrategy`），`CalcStrategyFactory` 按 bean 名解析

@@ -1,9 +1,9 @@
 # 潍理工教学工作量管理系统 — API 接口文档
 
-> **版本**：v1.0  
-> **更新日期**：2026-07-31  
-> **基础路径**：`http://localhost:8084`  
-> **认证方式**：JWT Bearer Token（Header: `Authorization: Bearer <token>`）  
+> **版本**：v1.0
+> **更新日期**：2026-07-31
+> **基础路径**：`http://localhost:8084`
+> **认证方式**：JWT Bearer Token（Header: `Authorization: Bearer <token>`）
 > **Swagger UI**：http://localhost:8084/swagger-ui.html
 
 ---
@@ -90,7 +90,7 @@
 
 ### 3.1 计算引擎 `/system/calc/*`
 
-> **Controller**: `BizCalcController`  
+> **Controller**: `BizCalcController`
 > **职责**: 工作量核算的核心调度，支持单条重算、批量重算、汇总、酬金、一键核算
 
 | # | 方法 | 路径 | 功能 | 参数 | 说明 |
@@ -100,7 +100,7 @@
 | 3 | POST | `/system/calc/recalcSummary` | 重算学期汇总 | `userId`, `semester` (Query) | 落库汇总，计算 G7/G10/总工作量/超额/酬金 |
 | 4 | GET | `/system/calc/preview` | 汇总预览 | `userId`, `semester` (Query) | 不落库仿真预览，用于导出前确认 |
 | 5 | POST | `/system/calc/recalcPay` | 重算酬金 | `userId`, `semester` (Query) | 需先重算汇总，计算课时酬金+其他酬金 |
-| 6 | POST | `/system/calc/genG11` | 生成 G11 | `semester` (必填), `userId` (可选) | 从岗位任职自动生成管理服务明细，支持全量或单人 |
+| 6 | POST | `/system/calc/genG11` | 同步岗位减免到 G11（兼容路径名） | `semester` (必填), `userId` (可选) | 读取教务确认的教师本学期岗位减免值，幂等同步管理服务明细；不按职务或任职天数重复计算 |
 | 7 | POST | `/system/calc/recalcAll` | **一键核算（单教师）** | `userId`, `semester` (Query) | 重算明细 → 汇总 → 酬金，Service 层单事务，失败整体回滚 |
 | 8 | POST | `/system/calc/recalcAllBatch` | **批量一键核算** | `semester` (Query) + Body `[userId,...]`（可省略/传空 = 该学期全部有明细的教师） | 逐教师执行「明细→汇总→酬金」，**每人独立事务**：单人失败只记入 `failures`，其余照算。返回 `{successCount, failCount, recalcItemCount, failures:[{userId,userName,reason}]}`。教师角色被 `DataScopeUtil` 强制收敛为只能算自己 |
 
@@ -108,20 +108,20 @@
 
 | 类型 | 公式 |
 |------|------|
-| G1 理论课 | `J1 × C1 × K1 × Q1 × Q2 × Q3 × N` |
-| G2 实践课 | `J2 × K × C2 × Q1 × Q2 × Q3` |
-| G3 实习实训 | `T × D × K × Q1 × Q2 × Q3` |
-| G4 课程设计 | `J4 × min(R4, 20) × 0.4` |
+| G1 理论课 | `J1 × C1 × K1 × Q1 × Q2 × N`（Q3 仅展示） |
+| G2 实践课 | `J2 × K × C2 × Q1 × Q2`（Q3 仅展示） |
+| G3 实习实训 | `T × D × K × Q1 × Q2`（Q3 仅展示） |
+| G4 课程设计 | `J4 × R4 × 0.4`（实际人数不截断，超过 60 仅告警） |
 | G5 毕业论文 | `R5 × K5` |
 | G6 集中实习 | `W × min(R6, 20) × 0.4` |
-| G11 管理服务 | `岗位标准学时 × 任职天数 / 学期天数`（封顶 180） |
+| G11 管理服务 | `教务认定的本学期岗位减免值`（多条相加，计入值封顶 180） |
 | 绩效酬金 | `(min(总工作量, 540) - 180) × 职称单位酬金` |
 
 ---
 
 ### 3.2 审批流 `/system/audit/*`
 
-> **Controller**: `BizAuditController`  
+> **Controller**: `BizAuditController`
 > **职责**: 学期工作量汇总的三级审批流程管理
 
 **状态机**：
@@ -146,7 +146,7 @@
 
 ### 3.3 报表导出 `/system/export/*`
 
-> **Controller**: `BizExportController`  
+> **Controller**: `BizExportController`
 > **职责**: 导出学校规定格式的 Excel 报表
 
 | # | 方法 | 路径 | 功能 | 参数 | 说明 |
@@ -187,7 +187,7 @@
 
 ### 3.4 仪表盘 `/system/dashboard/*`
 
-> **Controller**: `BizDashboardController`  
+> **Controller**: `BizDashboardController`
 > **职责**: 首页统计数据
 
 | # | 方法 | 路径 | 功能 | 参数 | 返回数据 |
@@ -200,7 +200,7 @@
 
 ### 3.5 教学任务导入 `/system/teachingTask/*`
 
-> **Controller**: `BizTeachingTaskController`  
+> **Controller**: `BizTeachingTaskController`
 > **职责**: 教学任务管理 + Excel 导入
 
 | # | 方法 | 路径 | 功能 | 参数 | 说明 |
@@ -246,18 +246,18 @@
 
 ---
 
-### 4.2 岗位任职 `/system/roleAssignment/*`
+### 4.2 学期岗位减免 `/system/roleAssignment/*`
 
 **主键**: `id`
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| userId | Long | 教师ID |
-| roleName | String | 岗位名称（班主任/教研室主任/系主任等） |
-| standardHours | BigDecimal | 岗位标准学时 |
-| startDate | Date | 任职开始日期 |
-| endDate | Date | 任职结束日期 |
-| academicYear | String | 学年 |
+| userId | Long | 教师 ID |
+| semester | String | 学年学期 |
+| roleName | String | 职务名称（可空，仅展示） |
+| standardHours | BigDecimal | 兼容字段：教务认定的本学期岗位减免值 |
+| sourceBatchId | String | 导入来源批次（目标字段） |
+| status | Integer | 1 有效 / 0 停用 |
 
 ---
 
@@ -345,10 +345,10 @@
 
 | 字段 | 说明 |
 |------|------|
-| roleAssignmentId | 关联岗位任职ID |
-| roleName | 岗位名称 |
-| standardHours | 岗位标准学时 |
-| proratedAmount | 折算学时（按任职天数/学期天数） |
+| roleAssignmentId | 关联学期岗位减免来源记录 ID |
+| roleName | 职务名称（可选展示，不参与计算） |
+| standardHours | 教务认定的本学期岗位减免原始值 |
+| proratedAmount | 计入 G11 的值；不再按任职天数二次折算 |
 
 ---
 
@@ -463,7 +463,7 @@
 |---|------|------|------|----------|
 | 1 | 教师档案 | `views/system/teacherProfile/` | 教师业务档案管理 | 增删改查导出 |
 | 2 | 教学任务 | `views/system/teachingTask/` | 教学任务管理 | 增删改查、**Excel导入**、导出模板 |
-| 3 | 岗位任职 | `views/system/roleAssignment/` | 岗位任职管理 | 增删改查导出 |
+| 3 | 学期岗位减免 | `views/system/roleAssignment/` | 教师学期岗位减免管理 | 预检、导入、查询、停用 |
 | 4 | 数据导入 | `views/system/importBatch/` | 导入批次记录 | 查看、删除批次 |
 | 5 | 工作量明细 | `views/system/workloadItem/` | 工作量明细主表 | 增删改查导出、**重算学期明细** |
 | 6 | G1 理论课 | `views/system/wlTheory/` | G1 理论课明细 | 增删改查导出 |
@@ -519,7 +519,7 @@ user、role、menu、dept、dict、config、notice、post 等系统管理页面�
 |------|----------|------|
 | teacherProfile.js | `/system/teacherProfile` | 教师档案 |
 | teachingTask.js | `/system/teachingTask` | 教学任务（+importExcel/importTemplate） |
-| roleAssignment.js | `/system/roleAssignment` | 岗位任职 |
+| roleAssignment.js | `/system/roleAssignment` | 学期岗位减免（兼容文件名） |
 | workloadItem.js | `/system/workloadItem` | 工作量明细主表 |
 | workloadSummary.js | `/system/workloadSummary` | 学期汇总 |
 | workloadCategoryDict.js | `/system/workloadCategoryDict` | 类别字典 |

@@ -4,7 +4,7 @@
 
 **Goal:** 完成需求 4、6、10、11、12、13，使导入、G11 生成、明细/汇总/酬金核算与其他酬金写入遵守同一冻结边界，并让每个核算结果可追溯到源数据、因子来源和规则快照。
 
-**Architecture:** 先建立数据库条件写与汇总行锁两层并发边界：源数据新增类事务锁定同一教师学期的汇总行，已有记录更新类操作使用 `WHERE` 冻结条件并检查影响行数。随后以不可变计算快照承载 G1/G2/G3/G11 的公式、因子、来源和版本；系数申请、分类模板、详情抽屉及阶段化一键核算均只调用同一核算服务，不复制公式。
+**Architecture:** 先建立数据库条件写与汇总行锁两层并发边界：源数据新增类事务锁定同一教师学期的汇总行，已有记录更新类操作使用 `WHERE` 冻结条件并检查影响行数。随后以不可变计算快照承载 G1/G2/G3 的公式、因子、来源和版本；G11 则直接同步教务给出的本学期岗位减免值，不再按岗位名称、学年标准或任职天数推导。系数申请、分类模板、教师友好的详情抽屉及阶段化一键核算均调用同一核算服务。
 
 **Tech Stack:** Java 17、Spring Boot 4.0.7、MyBatis、MySQL 8、JUnit 5、Mockito、AssertJ、Vue 3.5、Element Plus 2.13、Vite 6、EasyExcel 4.0.3。
 
@@ -14,14 +14,14 @@
 
 本计划覆盖《教务工作量管理系统 16 项需求实施方案》的需求 4、6、10、11、12、13。执行顺序固定为：冻结与条件写（Tasks 1-5）→ 快照与 G11（Tasks 6-7）→ 系数申请（Tasks 8-9）→ 分类导入和详情（Tasks 10-11）→ 一键核算流程（Task 12）→ 全量验证（Task 13）。前五项是安全门，未全部合并前不得开发会增加写入口的后续功能。
 
-冻结规则只有一套：`biz_workload_summary.status=0` 可写，`1` 待审和 `2` 已完结均禁止改变源数据、明细、G11、其他酬金、汇总及酬金。`biz_workload_item.status=1` 额外冻结该明细；状态 `2/3` 不等同汇总审批状态。预览只读，不受冻结阻断。
+冻结规则只有一套：`biz_workload_summary.status=0` 可写，`1` 待审禁止改数，`2` 已完结永久锁定。已完结记录不得通过 unlock 复活；差额只追加独立线下补差说明，不更新源数据、明细、G11、其他酬金、汇总、酬金或审核快照。`biz_workload_item.status=1` 额外冻结该明细；预览只读，不受冻结阻断。
 
 并发规则分两类：
 
 1. 导入/G11 新建尚无目标行可条件更新，事务开头调用 `WorkloadWriteGuard.lockDraftOrAbsent(userId, semester)`，对已存在的汇总执行 `SELECT ... FOR UPDATE`；审批更新同一汇总行时必须等待该事务完成。
 2. 明细、汇总、酬金、其他酬金已有行更新/删除必须使用专用 Mapper 条件 SQL，并检查影响行数恰为 1；禁止以“先查状态、后通用 UPDATE”作为最终保护。
 
-历史 `source_type='IMPORT'` 且关联 `assignment_id` 的自动 G11 迁移为 `AUTO`；无 `assignment_id` 的历史 SELF G11 保持只读兼容，不再允许新建。G11 仍与岗位任职分表，通过 `assignment_id` 一对多跨学期生成快照，不把计算结果回写到任职事实表。
+G11 来源固定为教务导入/维护的教师学期岗位减免记录：`userId + semester + positionWorkload + sourceBatchId`。生成器只做幂等同步和 180 封顶前明细落账，不读取岗位目录、不除以 2、不按任职区间折算。历史 `source_type='IMPORT'` 可直接保留为来源标识；当前环境无真实数据，fresh DB 重建后不需要兼容历史 SELF G11。
 
 ## 文件结构与职责
 
@@ -232,7 +232,20 @@ git add rear/workload-system/src/main/java/com/workload/system/mapper/BizWorkloa
 git commit -m "fix: 原子保护明细重算写入"
 ```
 
-### Task 4: 修复 G11 先写后查和已核对子表漂移（需求 10，已确认缺口）
+### Task 4: 原子同步本学期岗位减免值到 G11（需求 10，替代原岗位折算模型）
+
+**Files:**
+- Modify: `ManagementItemGeneratorImpl.java`、`BizRoleAssignmentMapper.xml`、`BizWlManagementMapper.xml`
+- Test: `ManagementItemGeneratorImplTest.java`
+
+- [ ] **Step 1: 写失败测试**：来源 `positionWorkload=90` 时 G11 为 90，不除以 2、不读取任职日期；冻结/已核对时主子表零写入；重复同步保持同一 item。
+- [ ] **Step 2: 运行 RED**：现有生成器仍按 `allowance_rate ÷ 2 × overlapDays/semesterDays`，断言应失败。
+- [ ] **Step 3: 实现简化同步**：查询教师+学期有效减免记录，直接使用学期值；职务名只写说明；生成前调用 Guard，子表更新采用草稿条件 SQL 并检查影响行数。
+- [ ] **Step 4: 更新教师详情文案**：返回“岗位减免工作量（本学期）”“来源批次”“计入 G11”，移除折算日数和 YEAR/SEMESTER 展示。
+- [ ] **Step 5: 运行 GREEN**：冻结、幂等、直接值和 180 汇总封顶测试全部通过。
+- [ ] **Step 6: 提交**：`git commit -m "feat: 按学期岗位减免同步G11"`。
+
+### [已废弃] 原 Task 4: 修复 G11 先写后查和已核对子表漂移（需求 10，已确认缺口）
 
 **Files:**
 - Modify: `rear/workload-system/src/main/java/com/workload/system/calc/ManagementItemGeneratorImpl.java:60-190`
@@ -466,7 +479,7 @@ git commit -m "feat: 保存不可变工作量计算快照"
 }
 ```
 
-另断言条件 UPDATE=0 时整个事务回滚快照；G11 `FactorFormulaVo` 包含 `assignmentId,roleType,standardRate,rateUnit,overlapDays,semesterDays,proratedAmount,prorationBasis`。
+另断言条件 UPDATE=0 时整个事务回滚快照；G11 `FactorFormulaVo` 不再伪造岗位计算公式，只包含 `assignmentId,positionWorkload,sourceBatchId,capBefore,capApplied`，并标记来源为 `IMPORTED_APPROVED_VALUE`。
 
 - [ ] **Step 2: 运行 RED**
 
@@ -486,7 +499,7 @@ calculation_version=#{item.calculationVersion},
 last_calculated_at=#{item.lastCalculatedAt}
 ```
 
-G11 `source_type=AUTO`，SELF 新建入口在 Controller/Service 拒绝，历史 SELF 仅可查看既有 `calculated_workload`。
+G11 来源为导入的学期岗位减免值，成功同步时固化来源批次和原始值；教师端只展示业务解释。当前环境无真实数据，不保留 SELF 新建兼容分支。
 
 - [ ] **Step 5: 运行 GREEN**
 
@@ -673,7 +686,7 @@ git commit -m "feat: 提供G1G2G3分类导入入口"
 }
 ```
 
-并覆盖 `courseLevel/courseRole/courseNature/teachingEval/className/repeatOrder` 源字段、G11 任职区间与折算依据。
+并覆盖 `courseLevel/courseRole/courseNature/teachingEval/className/repeatOrder` 源字段；G11 详情只返回本学期岗位减免原始值、计入值、来源批次和封顶说明。
 
 - [ ] **Step 2: 运行 RED**
 
@@ -742,7 +755,7 @@ Map<String,Object> runBatch(List<Long> userIds, String semester, boolean include
 
 - [ ] **Step 4: 实现 API 与前端向导**
 
-新增 `POST /system/calc/run` body `{userId,semester,includeG11}` 与 `/runBatch?semester=` body `{userIds,includeG11}`；现有端点保持兼容。汇总页按钮改为“开始核算”，确认框明确勾选“先由岗位任职生成 G11”，结果按五阶段展示；“生成 G11”仍保留独立按钮。提交按钮只有最近一次 run 成功、`unconfirmedCount=0`、无 PENDING 调整时可用，后端 `BizAuditServiceImpl.submit` 同样重查这些前置条件，不能只依赖禁用按钮。
+新增 `POST /system/calc/run` body `{userId,semester,includeG11}` 与 `/runBatch?semester=` body `{userIds,includeG11}`；现有端点保持兼容。汇总页按钮改为“开始核算”，确认框明确勾选“同步教务岗位减免到 G11”，结果按五阶段展示；独立按钮文案改为“同步岗位减免”。提交按钮只有最近一次 run 成功、`unconfirmedCount=0`、无 PENDING 调整时可用，后端同样重查前置条件。
 
 - [ ] **Step 5: 运行 GREEN 与前端验证**
 
