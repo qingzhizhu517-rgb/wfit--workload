@@ -95,6 +95,9 @@ public class BizTeachingTaskServiceImpl implements IBizTeachingTaskService
     {
         BizTeachingTask existing = requireExistingTask(bizTeachingTask.getId());
         workloadWriteGuard.lockDraftOrAbsent(existing.getUserId(), existing.getSemester());
+        // 教师与学期决定冻结边界，手工修改不得借请求体迁移到另一冻结域。
+        bizTeachingTask.setUserId(existing.getUserId());
+        bizTeachingTask.setSemester(existing.getSemester());
         bizTeachingTask.setUpdateTime(DateUtils.getNowDate());
         return bizTeachingTaskMapper.updateBizTeachingTask(bizTeachingTask);
     }

@@ -126,14 +126,8 @@ public class BizAuditServiceImpl implements BizAuditService
     @Transactional(rollbackFor = Exception.class)
     public void unlock(Long id)
     {
-        BizWorkloadSummary summary = requireSummary(id);
-        assertStatus(summary, WorkloadSummaryStatus.FINISHED, "只有已完结状态才能解锁");
-
-        String username = SecurityUtils.getUsername();
-        int rows = bizWorkloadSummaryMapper.unlockById(id, username);
-        assertUpdated(rows, id, WorkloadSummaryStatus.FINISHED, WorkloadSummaryStatus.DRAFT);
-        writeAuditLog(id, ACTION_UNLOCK, WorkloadSummaryStatus.FINISHED, WorkloadSummaryStatus.DRAFT, null);
-        log.info("管理员 {} 解锁了汇总 id={}", username, id);
+        requireSummary(id);
+        throw new ServiceException("已完结汇总永久锁定，不允许解锁", CODE_STATUS_CONFLICT);
     }
 
     @Override

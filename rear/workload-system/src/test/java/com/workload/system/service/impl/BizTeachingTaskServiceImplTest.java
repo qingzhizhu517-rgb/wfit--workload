@@ -1,10 +1,13 @@
 package com.workload.system.service.impl;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import org.mockito.ArgumentCaptor;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -51,6 +54,22 @@ class BizTeachingTaskServiceImplTest
         assertThatThrownBy(() -> service.updateBizTeachingTask(request)).hasMessageContaining("冻结");
         verify(writeGuard).lockDraftOrAbsent(USER, SEMESTER);
         verify(taskMapper, never()).updateBizTeachingTask(any());
+    }
+
+    @Test
+    void updateKeepsPersistedOwnershipWhenRequestAttemptsMigration()
+    {
+        BizTeachingTask persisted = task(ID, USER, SEMESTER);
+        when(taskMapper.selectBizTeachingTaskById(ID)).thenReturn(persisted);
+        when(taskMapper.updateBizTeachingTask(any())).thenReturn(1);
+        BizTeachingTask request = task(ID, 999L, "2099-2100-1");
+
+        service.updateBizTeachingTask(request);
+
+        ArgumentCaptor<BizTeachingTask> captor = ArgumentCaptor.forClass(BizTeachingTask.class);
+        verify(taskMapper).updateBizTeachingTask(captor.capture());
+        assertThat(captor.getValue().getUserId()).isEqualTo(USER);
+        assertThat(captor.getValue().getSemester()).isEqualTo(SEMESTER);
     }
 
     @Test
