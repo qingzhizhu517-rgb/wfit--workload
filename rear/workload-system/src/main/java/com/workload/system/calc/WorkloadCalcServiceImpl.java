@@ -33,9 +33,6 @@ import com.workload.common.core.domain.entity.SysUser;
 @Service
 public class WorkloadCalcServiceImpl implements WorkloadCalcService
 {
-    /** 明细状态：草稿（可写） */
-    private static final int ITEM_STATUS_DRAFT = 0;
-
     /** 明细状态：已核对（冻结） */
     private static final int ITEM_STATUS_CONFIRMED = 1;
 
@@ -79,7 +76,8 @@ public class WorkloadCalcServiceImpl implements WorkloadCalcService
         item.setCalculatedWorkload(value);
         strategy.afterCalculated(item, value);
         item.setUpdateTime(DateUtils.getNowDate());
-        int affected = bizWorkloadItemMapper.updateCalculationIfEditable(item, ITEM_STATUS_DRAFT);
+        int affected = bizWorkloadItemMapper.updateCalculationIfEditable(item,
+                ITEM_STATUS_CONFIRMED, WorkloadSummaryStatus.DRAFT);
         if (affected != 1)
         {
             throw new ServiceException("明细或汇总状态已变化，请刷新后重试");

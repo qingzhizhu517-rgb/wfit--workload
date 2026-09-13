@@ -80,7 +80,7 @@ class WorkloadCalcServiceImplTest
         item.setItemType("G1");
         when(calcStrategyFactory.get("G1")).thenReturn(strategy);
         when(strategy.calculate(item)).thenReturn(new BigDecimal("52.80"));
-        when(itemMapper.updateCalculationIfEditable(any(), eq(0))).thenReturn(0);
+        when(itemMapper.updateCalculationIfEditable(any(), eq(1), eq(0))).thenReturn(0);
 
         assertThatThrownBy(() -> service.recalcItem(ITEM_ID))
                 .isInstanceOf(ServiceException.class)
@@ -95,10 +95,10 @@ class WorkloadCalcServiceImplTest
         item.setItemType("G1");
         when(calcStrategyFactory.get("G1")).thenReturn(strategy);
         when(strategy.calculate(item)).thenReturn(new BigDecimal("52.80"));
-        when(itemMapper.updateCalculationIfEditable(any(), eq(0))).thenReturn(1);
+        when(itemMapper.updateCalculationIfEditable(any(), eq(1), eq(0))).thenReturn(1);
 
         assertThatCode(() -> service.recalcItem(ITEM_ID)).doesNotThrowAnyException();
-        verify(itemMapper).updateCalculationIfEditable(item, 0);
+        verify(itemMapper).updateCalculationIfEditable(item, 1, 0);
         verify(itemMapper, never()).updateBizWorkloadItem(any());
     }
 

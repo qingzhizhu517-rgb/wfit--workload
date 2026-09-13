@@ -169,11 +169,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             i.is_over_limit = #{item.isOverLimit},
             i.update_time = #{item.updateTime}
         where i.id = #{item.id}
-          and ifnull(i.status, 0) = #{draftStatus}
+          and ifnull(i.status, 0) &lt;&gt; #{confirmedStatus}
           and not exists (
               select 1 from biz_workload_summary s
               where s.user_id = i.user_id and s.semester = i.semester
-                and ifnull(s.status, 0) &lt;&gt; #{draftStatus}
+                and ifnull(s.status, 0) &lt;&gt; #{draftSummaryStatus}
           )
     </update>
 

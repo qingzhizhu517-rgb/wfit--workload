@@ -48,7 +48,8 @@ public interface BizWorkloadItemMapper
      * 仅当明细和关联汇总仍可编辑时原子更新计算结果。
      */
     public int updateCalculationIfEditable(@Param("item") BizWorkloadItem item,
-            @Param("draftStatus") Integer draftStatus);
+            @Param("confirmedStatus") Integer confirmedStatus,
+            @Param("draftSummaryStatus") Integer draftSummaryStatus);
 
     /**
      * 删除工作量明细主表
