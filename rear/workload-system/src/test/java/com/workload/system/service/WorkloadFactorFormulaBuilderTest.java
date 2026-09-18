@@ -16,6 +16,7 @@ import com.workload.system.calc.rule.RuleParamService;
 import com.workload.system.domain.BizWlConcentratedInternship;
 import com.workload.system.domain.BizWlCourseDesign;
 import com.workload.system.domain.BizWlInternshipTraining;
+import com.workload.system.domain.BizWlManagement;
 import com.workload.system.domain.BizWlPractice;
 import com.workload.system.domain.BizWlTheory;
 import com.workload.system.domain.BizWlThesis;
@@ -24,6 +25,7 @@ import com.workload.system.domain.vo.FactorFormulaVo;
 import com.workload.system.service.IBizWlConcentratedInternshipService;
 import com.workload.system.service.IBizWlCourseDesignService;
 import com.workload.system.service.IBizWlInternshipTrainingService;
+import com.workload.system.service.IBizWlManagementService;
 import com.workload.system.service.IBizWlPracticeService;
 import com.workload.system.service.IBizWlTheoryService;
 import com.workload.system.service.IBizWlThesisService;
@@ -38,7 +40,27 @@ class WorkloadFactorFormulaBuilderTest
     @Mock private IBizWlCourseDesignService courseDesignService;
     @Mock private IBizWlThesisService thesisService;
     @Mock private IBizWlConcentratedInternshipService concentratedInternshipService;
+    @Mock private IBizWlManagementService managementService;
     @Mock private RuleParamService ruleParamService;
+
+    @Test
+    void shouldExplainDirectSemesterG11WithItsSourceBatch()
+    {
+        BizWlManagement detail = new BizWlManagement();
+        detail.setProratedAmount(n("90"));
+        detail.setSourceBatchId("POSITION-2025-1");
+        when(managementService.selectBizWlManagementByItemId(7L)).thenReturn(detail);
+
+        FactorFormulaVo result = builder.build(item("G11", "IMPORT", "90"));
+
+        assertThat(result).isNotNull();
+        assertThat(result.getExpression()).isEqualTo("岗位减免工作量（本学期）");
+        assertThat(result.getResult()).isEqualByComparingTo("90");
+        assertThat(result.getDescription()).contains("来源批次 POSITION-2025-1", "计入 G11", "180");
+        assertThat(result.getFactors()).hasSize(1);
+        assertThat(result.getFactors().get(0).getValue()).isEqualTo(n("90"));
+        verifyNoInteractions(ruleParamService);
+    }
 
     @Test
     void shouldBuildG1AndKeepQ3DisplayOnly()

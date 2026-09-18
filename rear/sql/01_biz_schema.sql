@@ -145,7 +145,8 @@ CREATE TABLE biz_role_assignment (
   end_date             DATE          DEFAULT NULL                COMMENT '任职止(NULL=至今)',
   semester             VARCHAR(20)   DEFAULT NULL,
   academic_year        VARCHAR(20)   DEFAULT NULL,
-  allowance_rate       DECIMAL(10,2) NOT NULL                    COMMENT '该岗位标准学时/学年',
+  allowance_rate       DECIMAL(10,2) NOT NULL                    COMMENT '岗位减免工作量（本学期）',
+  source_batch_id      VARCHAR(64)   DEFAULT NULL                COMMENT '来源批次',
   status               TINYINT(1)    DEFAULT 1,
   create_by            VARCHAR(64)   DEFAULT '',
   create_time          DATETIME      DEFAULT NULL,
@@ -192,7 +193,8 @@ CREATE TABLE biz_workload_item (
   PRIMARY KEY (id),
   KEY idx_user_sem_type (user_id, semester, item_type),
   KEY idx_task (task_id),
-  KEY idx_assignment (assignment_id)
+  KEY idx_assignment (assignment_id),
+  UNIQUE KEY uk_assignment_sem (assignment_id, semester)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='工作量明细主表';
 
 -- G1 理论课
@@ -285,8 +287,9 @@ CREATE TABLE biz_wl_management (
   item_id         BIGINT(20) NOT NULL,
   assignment_id   BIGINT(20) NOT NULL               COMMENT 'FK biz_role_assignment',
   role_type       VARCHAR(50) DEFAULT NULL,
-  prorated_amount DECIMAL(10,2) NOT NULL            COMMENT '按任职区间折算学时',
-  proration_basis VARCHAR(200) DEFAULT NULL         COMMENT '折算说明',
+  prorated_amount DECIMAL(10,2) NOT NULL            COMMENT '岗位减免工作量（本学期）',
+  proration_basis VARCHAR(200) DEFAULT NULL         COMMENT '计入G11说明',
+  source_batch_id VARCHAR(64) DEFAULT NULL          COMMENT '来源批次',
   create_by VARCHAR(64) DEFAULT '', create_time DATETIME DEFAULT NULL,
   update_by VARCHAR(64) DEFAULT '', update_time DATETIME DEFAULT NULL,
   remark VARCHAR(500) DEFAULT NULL,

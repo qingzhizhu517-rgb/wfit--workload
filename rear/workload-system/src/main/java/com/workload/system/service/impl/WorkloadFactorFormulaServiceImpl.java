@@ -9,6 +9,7 @@ import com.workload.system.calc.rule.RuleParamService;
 import com.workload.system.domain.BizWlConcentratedInternship;
 import com.workload.system.domain.BizWlCourseDesign;
 import com.workload.system.domain.BizWlInternshipTraining;
+import com.workload.system.domain.BizWlManagement;
 import com.workload.system.domain.BizWlPractice;
 import com.workload.system.domain.BizWlTheory;
 import com.workload.system.domain.BizWlThesis;
@@ -18,12 +19,13 @@ import com.workload.system.domain.vo.FactorFormulaVo.FactorVo;
 import com.workload.system.service.IBizWlConcentratedInternshipService;
 import com.workload.system.service.IBizWlCourseDesignService;
 import com.workload.system.service.IBizWlInternshipTrainingService;
+import com.workload.system.service.IBizWlManagementService;
 import com.workload.system.service.IBizWlPracticeService;
 import com.workload.system.service.IBizWlTheoryService;
 import com.workload.system.service.IBizWlThesisService;
 import com.workload.system.service.IWorkloadFactorFormulaService;
 
-/** 查询 G1-G6 明细并构造可追溯的公式说明。 */
+/** 查询 G1-G6、G11 明细并构造可追溯的公式说明。 */
 @Service
 public class WorkloadFactorFormulaServiceImpl implements IWorkloadFactorFormulaService
 {
@@ -39,6 +41,7 @@ public class WorkloadFactorFormulaServiceImpl implements IWorkloadFactorFormulaS
     @Autowired private IBizWlCourseDesignService courseDesignService;
     @Autowired private IBizWlThesisService thesisService;
     @Autowired private IBizWlConcentratedInternshipService concentratedInternshipService;
+    @Autowired private IBizWlManagementService managementService;
     @Autowired private RuleParamService ruleParamService;
 
     @Override
@@ -53,8 +56,24 @@ public class WorkloadFactorFormulaServiceImpl implements IWorkloadFactorFormulaS
             case "G4" -> buildG4(item, courseDesignService.selectBizWlCourseDesignByItemId(item.getId()));
             case "G5" -> buildG5(item, thesisService.selectBizWlThesisByItemId(item.getId()));
             case "G6" -> buildG6(item, concentratedInternshipService.selectBizWlConcentratedInternshipByItemId(item.getId()));
+            case "G11" -> buildG11(item, managementService.selectBizWlManagementByItemId(item.getId()));
             default -> null;
         };
+    }
+
+    private FactorFormulaVo buildG11(BizWorkloadItem item, BizWlManagement detail)
+    {
+        if (detail == null) return null;
+        List<FactorVo> factors = new ArrayList<>();
+        add(factors, "岗位减免", detail.getProratedAmount(), source(item),
+                "教务确认的本学期岗位减免原值，直接计入 G11", NORMAL);
+        String batch = detail.getSourceBatchId();
+        String description = "岗位减免工作量（本学期）直接计入 G11；学期累计在汇总时按 180 封顶";
+        if (batch != null && !batch.isBlank())
+        {
+            description += "；来源批次 " + batch;
+        }
+        return formula(item, "G11", "岗位减免工作量（本学期）", description, true, factors);
     }
 
     private FactorFormulaVo buildG1(BizWorkloadItem item, BizWlTheory d)

@@ -9,8 +9,13 @@ import com.workload.system.domain.BizRoleAssignment;
  * @author wflg
  * @date 2026-07-20
  */
-public interface BizRoleAssignmentMapper 
+public interface BizRoleAssignmentMapper
 {
+    /** 冻结锁后使用当前读，避免批量同步沿用锁前的一致性快照。 */
+    List<BizRoleAssignment> selectActiveByUserSemesterForUpdate(
+            @org.apache.ibatis.annotations.Param("userId") Long userId,
+            @org.apache.ibatis.annotations.Param("semester") String semester);
+
     /**
      * 查询岗位任职
      * 

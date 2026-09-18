@@ -10,6 +10,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="roleType"    column="role_type"    />
         <result property="proratedAmount"    column="prorated_amount"    />
         <result property="prorationBasis"    column="proration_basis"    />
+        <result property="sourceBatchId"    column="source_batch_id"    />
         <result property="createBy"    column="create_by"    />
         <result property="createTime"    column="create_time"    />
         <result property="updateBy"    column="update_by"    />
@@ -18,7 +19,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectBizWlManagementVo">
-        select item_id, assignment_id, role_type, prorated_amount, proration_basis, create_by, create_time, update_by, update_time, remark from biz_wl_management
+        select item_id, assignment_id, role_type, prorated_amount, proration_basis, source_batch_id, create_by, create_time, update_by, update_time, remark from biz_wl_management
     </sql>
 
     <select id="selectBizWlManagementList" parameterType="BizWlManagement" resultMap="BizWlManagementResult">
@@ -28,6 +29,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="roleType != null  and roleType != ''"> and role_type = #{roleType}</if>
             <if test="proratedAmount != null "> and prorated_amount = #{proratedAmount}</if>
             <if test="prorationBasis != null  and prorationBasis != ''"> and proration_basis = #{prorationBasis}</if>
+            <if test="sourceBatchId != null and sourceBatchId != ''"> and source_batch_id = #{sourceBatchId}</if>
         </where>
     </select>
     
@@ -44,6 +46,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="roleType != null">role_type,</if>
             <if test="proratedAmount != null">prorated_amount,</if>
             <if test="prorationBasis != null">proration_basis,</if>
+            <if test="sourceBatchId != null">source_batch_id,</if>
             <if test="createBy != null">create_by,</if>
             <if test="createTime != null">create_time,</if>
             <if test="updateBy != null">update_by,</if>
@@ -56,6 +59,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="roleType != null">#{roleType},</if>
             <if test="proratedAmount != null">#{proratedAmount},</if>
             <if test="prorationBasis != null">#{prorationBasis},</if>
+            <if test="sourceBatchId != null">#{sourceBatchId},</if>
             <if test="createBy != null">#{createBy},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
@@ -71,6 +75,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="roleType != null">role_type = #{roleType},</if>
             <if test="proratedAmount != null">prorated_amount = #{proratedAmount},</if>
             <if test="prorationBasis != null">proration_basis = #{prorationBasis},</if>
+            <if test="sourceBatchId != null">source_batch_id = #{sourceBatchId},</if>
             <if test="createBy != null">create_by = #{createBy},</if>
             <if test="createTime != null">create_time = #{createTime},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
@@ -78,6 +83,23 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="remark != null">remark = #{remark},</if>
         </trim>
         where item_id = #{itemId}
+    </update>
+
+    <update id="updateProrationIfEditable">
+        update biz_wl_management d
+        join biz_workload_item i on i.id = d.item_id
+        set d.role_type = #{roleType},
+            d.prorated_amount = #{amount},
+            d.proration_basis = #{basis},
+            d.source_batch_id = #{sourceBatchId},
+            d.update_time = now()
+        where d.item_id = #{itemId}
+          and ifnull(i.status, 0) != 1
+          and not exists (
+              select 1 from biz_workload_summary s
+              where s.user_id = i.user_id and s.semester = i.semester
+                and ifnull(s.status, 0) != 0
+          )
     </update>
 
     <delete id="deleteBizWlManagementByItemId" parameterType="Long">

@@ -1,17 +1,15 @@
 package com.workload.system.calc;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.time.LocalDate;
-import java.time.ZoneId;
-import java.time.temporal.ChronoUnit;
-import java.util.Date;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import org.springframework.beans.factory.annotation.Autowired;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+
+import com.workload.common.exception.ServiceException;
 import com.workload.common.utils.DateUtils;
 import com.workload.system.domain.BizRoleAssignment;
 import com.workload.system.domain.BizWlManagement;
@@ -21,55 +19,75 @@ import com.workload.system.mapper.BizWlManagementMapper;
 import com.workload.system.mapper.BizWorkloadItemMapper;
 
 /**
- * G11 管理服务工作量生成器实现
- *
- * 折算：prorated = 学期标准学时 × (任职区间 ∩ 学期区间 天数 / 学期总天数)。
- * <p>
- * <b>口径（2026-09-10 依《办法》第十六条/十七条统一）</b>：
- * {@code allowance_rate} 一律存<b>学年值</b>（与列注释「该岗位标准学时/学年」一致），
- * 引擎折半得学期标准。唯一例外是「督导」——第十七条明写 15 学时/学期，
- * 本身就是学期值，不折半。
- * <p>
- * 历史注记：早期版本曾把 rate 当学年标准多除一个 2（A3 删除），当时种子按学期值
- * 供给才自洽；本次改回 ÷2 的前提是<b>存储约定同步改为学年值</b>（04 种子已更新），
- * 与 A3 时点不是同一数据前提，勿再据 A3 结论改回。
- * <p>
- * end_date 为 NULL 视为任职至学期末；多岗叠加与 180/学期封顶在汇总层处理
- *
- * @author wflg
- * @date 2026-07-21
+ * 将教务确认的教师本学期岗位减免值幂等同步为 G11 明细。
+ * 职务名称只用于说明；不按学年折半、不读取任职日期、不按岗位名称推导。
+ * 多条 G11 的 180 学时封顶仍由汇总层处理。
  */
 @Service
 public class ManagementItemGeneratorImpl implements ManagementItemGenerator
 {
-    @Autowired
-    private BizRoleAssignmentMapper bizRoleAssignmentMapper;
+    private final BizRoleAssignmentMapper assignmentMapper;
+    private final BizWorkloadItemMapper itemMapper;
+    private final BizWlManagementMapper managementMapper;
+    private final WorkloadCalcService workloadCalcService;
+    private final WorkloadWriteGuard writeGuard;
 
-    @Autowired
-    private BizWorkloadItemMapper bizWorkloadItemMapper;
-
-    @Autowired
-    private BizWlManagementMapper bizWlManagementMapper;
-
-    @Autowired
-    private WorkloadCalcService workloadCalcService;
-
-    @Autowired
-    private SemesterCalendar semesterCalendar;
+    public ManagementItemGeneratorImpl(BizRoleAssignmentMapper assignmentMapper,
+            BizWorkloadItemMapper itemMapper, BizWlManagementMapper managementMapper,
+            WorkloadCalcService workloadCalcService, WorkloadWriteGuard writeGuard)
+    {
+        this.assignmentMapper = assignmentMapper;
+        this.itemMapper = itemMapper;
+        this.managementMapper = managementMapper;
+        this.workloadCalcService = workloadCalcService;
+        this.writeGuard = writeGuard;
+    }
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public int generate(Long userId, String semester)
+    {
+        writeGuard.lockDraftOrAbsent(userId, semester);
+        return syncAssignments(assignmentMapper.selectActiveByUserSemesterForUpdate(userId, semester), semester);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int generateForSemester(String semester)
+    {
+        if (!StringUtils.hasText(semester))
+        {
+            throw new ServiceException("请选择学期后同步岗位减免");
+        }
+        Set<Long> userIds = new LinkedHashSet<>();
+        for (BizRoleAssignment assignment : selectAssignments(null, semester))
+        {
+            userIds.add(assignment.getUserId());
+        }
+        int count = 0;
+        for (Long userId : userIds)
+        {
+            writeGuard.lockDraftOrAbsent(userId, semester);
+            count += syncAssignments(assignmentMapper.selectActiveByUserSemesterForUpdate(userId, semester), semester);
+        }
+        return count;
+    }
+
+    private List<BizRoleAssignment> selectAssignments(Long userId, String semester)
     {
         BizRoleAssignment query = new BizRoleAssignment();
         query.setUserId(userId);
         query.setSemester(semester);
         query.setStatus(1);
-        List<BizRoleAssignment> assignments = bizRoleAssignmentMapper.selectBizRoleAssignmentList(query);
+        return assignmentMapper.selectBizRoleAssignmentList(query);
+    }
+
+    private int syncAssignments(List<BizRoleAssignment> assignments, String semester)
+    {
         int count = 0;
         for (BizRoleAssignment assignment : assignments)
         {
-            if (generateOne(assignment, semester))
+            if (syncOne(assignment, semester))
             {
                 count++;
             }
@@ -77,106 +95,79 @@ public class ManagementItemGeneratorImpl implements ManagementItemGenerator
         return count;
     }
 
-    @Override
-    @Transactional
-    public int generateForSemester(String semester)
+    private boolean syncOne(BizRoleAssignment assignment, String semester)
     {
-        BizRoleAssignment query = new BizRoleAssignment();
-        query.setSemester(semester);
-        query.setStatus(1);
-        List<BizRoleAssignment> assignments = bizRoleAssignmentMapper.selectBizRoleAssignmentList(query);
-        Set<Long> userIds = new LinkedHashSet<>();
-        for (BizRoleAssignment assignment : assignments)
+        BigDecimal amount = assignment.getAllowanceRate();
+        if (amount == null || amount.signum() < 0)
         {
-            userIds.add(assignment.getUserId());
+            throw new ServiceException("岗位减免工作量（本学期）必须为非负数, id=" + assignment.getId());
         }
-        int count = 0;
-        for (Long userId : userIds)
-        {
-            count += generate(userId, semester);
-        }
-        return count;
-    }
-
-    /**
-     * 单条任职 -> G11 明细；任职区间与学期无交集返回 false
-     */
-    private boolean generateOne(BizRoleAssignment assignment, String semester)
-    {
-        LocalDate[] range = semesterCalendar.rangeOf(semester);
-        LocalDate semStart = range[0];
-        LocalDate semEnd = range[1];
-        LocalDate assignStart = toLocalDate(assignment.getStartDate());
-        LocalDate assignEnd = assignment.getEndDate() == null ? semEnd : toLocalDate(assignment.getEndDate());
-        if (assignStart == null)
-        {
-            assignStart = semStart;
-        }
-        LocalDate overlapStart = assignStart.isAfter(semStart) ? assignStart : semStart;
-        LocalDate overlapEnd = assignEnd.isBefore(semEnd) ? assignEnd : semEnd;
-        if (overlapStart.isAfter(overlapEnd))
+        String basis = buildBasis(assignment);
+        BizWorkloadItem item = findG11Item(assignment.getUserId(), semester, assignment.getId());
+        if (item != null && Integer.valueOf(1).equals(item.getStatus()))
         {
             return false;
         }
-        long overlapDays = ChronoUnit.DAYS.between(overlapStart, overlapEnd) + 1;
-        long semesterDays = ChronoUnit.DAYS.between(semStart, semEnd) + 1;
-
-        // G11 = 学期标准学时 × 任职天数占比；学期封顶见 CAP_G11_SEMESTER
-        BigDecimal rate = assignment.getAllowanceRate() == null ? BigDecimal.ZERO : assignment.getAllowanceRate();
-        BigDecimal semesterRate = toSemesterRate(assignment.getRoleType(), rate);
-        BigDecimal prorated = semesterRate.multiply(new BigDecimal(overlapDays))
-                .divide(new BigDecimal(semesterDays), 2, RoundingMode.HALF_UP);
-        String basis = String.format("任职 %s 至 %s，学期 %s 至 %s，折算 %d/%d 天",
-                assignStart, assignEnd, semStart, semEnd, overlapDays, semesterDays);
-
-        BizWorkloadItem item = findG11Item(assignment.getUserId(), semester, assignment.getId());
         if (item == null)
         {
-            item = new BizWorkloadItem();
-            item.setUserId(assignment.getUserId());
-            item.setSemester(semester);
-            item.setAcademicYear(assignment.getAcademicYear());
-            item.setItemType("G11");
-            item.setSourceType("IMPORT");
-            item.setAssignmentId(assignment.getId());
-            // G11 明细同步写入岗位类型（与 biz_role_assignment.role_type 同枚举口径，P3-05）
-            item.setRoleType(assignment.getRoleType());
-            item.setCalculatedWorkload(BigDecimal.ZERO);
-            item.setStatus(0);
-            item.setCreateTime(DateUtils.getNowDate());
-            bizWorkloadItemMapper.insertBizWorkloadItem(item);
-
-            BizWlManagement detail = new BizWlManagement();
-            detail.setItemId(item.getId());
-            detail.setAssignmentId(assignment.getId());
-            // role_type 优先取明细自带值（含教师自报申报），为空回退岗位任职解析
-            detail.setRoleType(item.getRoleType() != null && !item.getRoleType().isEmpty()
-                    ? item.getRoleType() : assignment.getRoleType());
-            detail.setProratedAmount(prorated);
-            detail.setProrationBasis(basis);
-            detail.setCreateTime(DateUtils.getNowDate());
-            bizWlManagementMapper.insertBizWlManagement(detail);
+            item = newItem(assignment, semester);
+            itemMapper.insertBizWorkloadItem(item);
+            insertDetail(item, assignment, amount, basis);
         }
         else
         {
-            BizWlManagement detail = bizWlManagementMapper.selectBizWlManagementByItemId(item.getId());
-            if (detail != null)
+            BizWlManagement detail = managementMapper.selectBizWlManagementByItemId(item.getId());
+            if (detail == null)
             {
-                // role_type 优先取明细自带值（含教师自报申报），为空回退岗位任职解析
-                detail.setRoleType(item.getRoleType() != null && !item.getRoleType().isEmpty()
-                        ? item.getRoleType() : assignment.getRoleType());
-                detail.setProratedAmount(prorated);
-                detail.setProrationBasis(basis);
-                detail.setUpdateTime(DateUtils.getNowDate());
-                bizWlManagementMapper.updateBizWlManagement(detail);
+                throw new ServiceException("G11管理服务明细缺失, itemId=" + item.getId());
+            }
+            int rows = managementMapper.updateProrationIfEditable(item.getId(), assignment.getRoleType(),
+                    amount, basis, assignment.getSourceBatchId());
+            if (rows != 1)
+            {
+                throw new ServiceException("G11明细或汇总状态已变化，请刷新后重试");
             }
         }
-        // 已核对明细保持冻结值；未核对的回写最新折算
-        if (item.getStatus() == null || item.getStatus() != 1)
-        {
-            workloadCalcService.recalcItem(item.getId());
-        }
+        workloadCalcService.recalcItem(item.getId());
         return true;
+    }
+
+    private BizWorkloadItem newItem(BizRoleAssignment assignment, String semester)
+    {
+        BizWorkloadItem item = new BizWorkloadItem();
+        item.setUserId(assignment.getUserId());
+        item.setSemester(semester);
+        item.setAcademicYear(assignment.getAcademicYear());
+        item.setItemType("G11");
+        item.setSourceType("IMPORT");
+        item.setAssignmentId(assignment.getId());
+        item.setRoleType(assignment.getRoleType());
+        item.setCalculatedWorkload(BigDecimal.ZERO);
+        item.setStatus(0);
+        item.setCreateTime(DateUtils.getNowDate());
+        return item;
+    }
+
+    private void insertDetail(BizWorkloadItem item, BizRoleAssignment assignment,
+            BigDecimal amount, String basis)
+    {
+        BizWlManagement detail = new BizWlManagement();
+        detail.setItemId(item.getId());
+        detail.setAssignmentId(assignment.getId());
+        detail.setRoleType(assignment.getRoleType());
+        detail.setProratedAmount(amount);
+        detail.setProrationBasis(basis);
+        detail.setSourceBatchId(assignment.getSourceBatchId());
+        detail.setCreateTime(DateUtils.getNowDate());
+        managementMapper.insertBizWlManagement(detail);
+    }
+
+    private String buildBasis(BizRoleAssignment assignment)
+    {
+        String batch = assignment.getSourceBatchId();
+        return batch == null || batch.isBlank()
+                ? "岗位减免工作量（本学期），计入 G11"
+                : "岗位减免工作量（本学期），来源批次 " + batch + "，计入 G11";
     }
 
     private BizWorkloadItem findG11Item(Long userId, String semester, Long assignmentId)
@@ -186,39 +177,7 @@ public class ManagementItemGeneratorImpl implements ManagementItemGenerator
         query.setSemester(semester);
         query.setItemType("G11");
         query.setAssignmentId(assignmentId);
-        List<BizWorkloadItem> items = bizWorkloadItemMapper.selectBizWorkloadItemList(query);
+        List<BizWorkloadItem> items = itemMapper.selectBizWorkloadItemList(query);
         return items.isEmpty() ? null : items.get(0);
-    }
-
-    /**
-     * 学年标准 -> 学期标准：第十六条各岗位为学时/学年，÷2；
-     * 「督导」例外——第十七条 15 学时/学期本身即学期值，不折半
-     */
-    private BigDecimal toSemesterRate(String roleType, BigDecimal yearRate)
-    {
-        if (yearRate == null)
-        {
-            return BigDecimal.ZERO;
-        }
-        if ("督导".equals(roleType))
-        {
-            return yearRate;
-        }
-        return yearRate.divide(new BigDecimal("2"), 2, RoundingMode.HALF_UP);
-    }
-
-    private LocalDate toLocalDate(Date date)
-    {
-        // MyBatis 把 DATE/DATETIME 列映射为 java.sql.Date/Timestamp，
-        // 而 java.sql.Date.toInstant() 会抛 UnsupportedOperationException，须分流处理
-        if (date == null)
-        {
-            return null;
-        }
-        if (date instanceof java.sql.Date sqlDate)
-        {
-            return sqlDate.toLocalDate();
-        }
-        return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
     }
 }

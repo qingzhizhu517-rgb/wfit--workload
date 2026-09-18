@@ -27,13 +27,17 @@ public class BizWlManagement extends BaseEntity
     @Excel(name = "${comment}", readConverterExp = "$column.readConverterExp()")
     private String roleType;
 
-    /** 按任职区间折算学时 */
-    @Excel(name = "按任职区间折算学时")
+    /** 计入 G11 的本学期岗位减免工作量（沿用 prorated_amount 列） */
+    @Excel(name = "岗位减免工作量（本学期）")
     private BigDecimal proratedAmount;
 
-    /** 折算说明 */
-    @Excel(name = "折算说明")
+    /** 计入 G11 说明（沿用 proration_basis 列） */
+    @Excel(name = "计入 G11")
     private String prorationBasis;
+
+    /** 来源批次 */
+    @Excel(name = "来源批次")
+    private String sourceBatchId;
 
     public void setItemId(Long itemId) 
     {
@@ -80,9 +84,19 @@ public class BizWlManagement extends BaseEntity
         this.prorationBasis = prorationBasis;
     }
 
-    public String getProrationBasis() 
+    public String getProrationBasis()
     {
         return prorationBasis;
+    }
+
+    public void setSourceBatchId(String sourceBatchId)
+    {
+        this.sourceBatchId = sourceBatchId;
+    }
+
+    public String getSourceBatchId()
+    {
+        return sourceBatchId;
     }
 
     @Override
@@ -93,6 +107,7 @@ public class BizWlManagement extends BaseEntity
             .append("roleType", getRoleType())
             .append("proratedAmount", getProratedAmount())
             .append("prorationBasis", getProrationBasis())
+            .append("sourceBatchId", getSourceBatchId())
             .append("createBy", getCreateBy())
             .append("createTime", getCreateTime())
             .append("updateBy", getUpdateBy())

@@ -51,9 +51,13 @@ public class BizRoleAssignment extends BaseEntity
     @Excel(name = "${comment}", readConverterExp = "$column.readConverterExp()")
     private String academicYear;
 
-    /** 该岗位标准学时/学年 */
-    @Excel(name = "该岗位标准学时/学年")
+    /** 本学期岗位减免工作量（沿用 allowance_rate 列） */
+    @Excel(name = "岗位减免工作量（本学期）")
     private BigDecimal allowanceRate;
+
+    /** 来源批次 */
+    @Excel(name = "来源批次")
+    private String sourceBatchId;
 
     /** $column.columnComment */
     @Excel(name = "${comment}", readConverterExp = "$column.readConverterExp()")
@@ -144,12 +148,22 @@ public class BizRoleAssignment extends BaseEntity
         this.allowanceRate = allowanceRate;
     }
 
-    public BigDecimal getAllowanceRate() 
+    public BigDecimal getAllowanceRate()
     {
         return allowanceRate;
     }
 
-    public void setStatus(Integer status) 
+    public void setSourceBatchId(String sourceBatchId)
+    {
+        this.sourceBatchId = sourceBatchId;
+    }
+
+    public String getSourceBatchId()
+    {
+        return sourceBatchId;
+    }
+
+    public void setStatus(Integer status)
     {
         this.status = status;
     }
@@ -171,6 +185,7 @@ public class BizRoleAssignment extends BaseEntity
             .append("semester", getSemester())
             .append("academicYear", getAcademicYear())
             .append("allowanceRate", getAllowanceRate())
+            .append("sourceBatchId", getSourceBatchId())
             .append("status", getStatus())
             .append("createBy", getCreateBy())
             .append("createTime", getCreateTime())

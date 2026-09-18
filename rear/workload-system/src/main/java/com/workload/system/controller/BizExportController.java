@@ -444,7 +444,7 @@ public class BizExportController extends BaseController
         if (StringUtils.isNotEmpty(dto.getRoleType()))
         {
             String basis = StringUtils.isNotEmpty(dto.getProrationBasis())
-                    ? "，折算依据 " + dto.getProrationBasis() : "";
+                    ? "，计入 G11 说明 " + dto.getProrationBasis() : "";
             parts.add("岗位 " + dto.getRoleType() + basis);
         }
         return parts.isEmpty() ? "-" : String.join("；", parts);

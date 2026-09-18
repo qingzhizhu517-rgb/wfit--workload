@@ -1,6 +1,7 @@
 package com.workload.system.mapper;
 
 import java.util.List;
+import org.apache.ibatis.annotations.Param;
 import com.workload.system.domain.BizWlManagement;
 
 /**
@@ -42,6 +43,11 @@ public interface BizWlManagementMapper
      * @return 结果
      */
     public int updateBizWlManagement(BizWlManagement bizWlManagement);
+
+    /** 仅当主明细与学期汇总仍可写时更新 G11 来源快照。 */
+    public int updateProrationIfEditable(@Param("itemId") Long itemId,
+            @Param("roleType") String roleType, @Param("amount") java.math.BigDecimal amount,
+            @Param("basis") String basis, @Param("sourceBatchId") String sourceBatchId);
 
     /**
      * 删除G11管理服务明细

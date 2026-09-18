@@ -1,173 +1,205 @@
 package com.workload.system.calc;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.Collections;
 import java.util.List;
 
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.workload.common.exception.ServiceException;
 import com.workload.system.domain.BizRoleAssignment;
 import com.workload.system.domain.BizWlManagement;
+import com.workload.system.domain.BizWorkloadItem;
 import com.workload.system.mapper.BizRoleAssignmentMapper;
 import com.workload.system.mapper.BizWlManagementMapper;
 import com.workload.system.mapper.BizWorkloadItemMapper;
 
-/**
- * G11 管理服务生成器单元测试。
- * <p>
- * 依据《办法》第十六条/十七条（2026-09-10 统一口径）：
- * {@code allowance_rate} 存<b>学年值</b>，引擎 ÷2 折学期标准；
- * 「督导」例外——第十七条 15 学时/学期本身即学期值，不折半。
- * <p>
- * 学期区间取 2025-09-01 ~ 2026-01-15（共 137 天）。
- *
- * @author wflg
- * @date 2026-09-10
- */
 @ExtendWith(MockitoExtension.class)
-@DisplayName("G11 管理服务生成器（办法第十六/十七条）")
 class ManagementItemGeneratorImplTest
 {
+    private static final Long USER = 1L;
+    private static final Long ASSIGNMENT = 100L;
+    private static final Long ITEM = 200L;
     private static final String SEMESTER = "2025-2026-1";
 
-    private static final LocalDate SEM_START = LocalDate.of(2025, 9, 1);
-
-    private static final LocalDate SEM_END = LocalDate.of(2026, 1, 15);
-
-    @InjectMocks
-    private ManagementItemGeneratorImpl generator;
-
-    @Mock
-    private BizRoleAssignmentMapper bizRoleAssignmentMapper;
-
-    @Mock
-    private BizWorkloadItemMapper bizWorkloadItemMapper;
-
-    @Mock
-    private BizWlManagementMapper bizWlManagementMapper;
-
-    @Mock
-    private SemesterCalendar semesterCalendar;
-
-    @Mock
-    private WorkloadCalcService workloadCalcService;
+    @InjectMocks private ManagementItemGeneratorImpl generator;
+    @Mock private BizRoleAssignmentMapper assignmentMapper;
+    @Mock private BizWorkloadItemMapper itemMapper;
+    @Mock private BizWlManagementMapper managementMapper;
+    @Mock private WorkloadCalcService workloadCalcService;
+    @Mock private WorkloadWriteGuard writeGuard;
 
     @Test
-    @DisplayName("班主任 180 学时/学年，全学期任职 → 学期 90.00")
-    void yearRateHalvedForFullSemester()
+    void semesterBatchReadsCurrentSourceAfterAcquiringTeacherLock()
     {
-        stubCalendar();
-        stubAssignments(assignment("班主任", "180", null));
-        stubNoExistingItem();
+        when(assignmentMapper.selectBizRoleAssignmentList(any())).thenReturn(List.of(assignment("90", "OLD")));
+        when(assignmentMapper.selectActiveByUserSemesterForUpdate(USER, SEMESTER))
+                .thenReturn(List.of(assignment("120", "NEW")));
+        when(itemMapper.insertBizWorkloadItem(any())).thenAnswer(invocation -> {
+            ((BizWorkloadItem) invocation.getArgument(0)).setId(ITEM);
+            return 1;
+        });
 
-        generator.generate(1L, SEMESTER);
+        generator.generateForSemester(SEMESTER);
 
-        assertThat(capturedDetail().getProratedAmount()).isEqualByComparingTo("90.00");
+        assertThat(captureInsertedDetail().getProratedAmount()).isEqualByComparingTo("120");
+        assertThat(captureInsertedDetail().getSourceBatchId()).isEqualTo("NEW");
+        InOrder order = inOrder(writeGuard, assignmentMapper);
+        order.verify(writeGuard).lockDraftOrAbsent(USER, SEMESTER);
+        order.verify(assignmentMapper).selectActiveByUserSemesterForUpdate(USER, SEMESTER);
     }
 
     @Test
-    @DisplayName("督导 15 学时/学期（第十七条），全学期任职 → 15.00，不折半")
-    void supervisorRateNotHalved()
+    void missingPositionWorkloadCannotSilentlyBecomeZero()
     {
-        stubCalendar();
-        stubAssignments(assignment("督导", "15", null));
-        stubNoExistingItem();
+        BizRoleAssignment source = assignment("90", null);
+        source.setAllowanceRate(null);
+        stubAssignments(source);
 
-        generator.generate(1L, SEMESTER);
+        assertThatThrownBy(() -> generator.generate(USER, SEMESTER))
+                .isInstanceOf(ServiceException.class).hasMessageContaining("岗位减免");
+        verifyNoInteractions(itemMapper, managementMapper, workloadCalcService);
+    }
 
-        assertThat(capturedDetail().getProratedAmount()).isEqualByComparingTo("15.00");
+    @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings = {" "})
+    void semesterBatchRequiresExplicitSemester(String semester)
+    {
+        assertThatThrownBy(() -> generator.generateForSemester(semester))
+                .isInstanceOf(ServiceException.class);
+        verifyNoInteractions(assignmentMapper, itemMapper, managementMapper, workloadCalcService);
     }
 
     @Test
-    @DisplayName("班主任 180/学年，2025-10-01 起任职 → 90 × 107/137 = 70.29")
-    void yearRateProratedByOverlapDays()
+    void positionWorkloadIsCopiedDirectlyWithoutDateProration()
     {
-        stubCalendar();
-        // 2025-10-01 ~ 2026-01-15 与学期重叠 107 天（学期共 137 天）
-        stubAssignments(assignment("班主任", "180", LocalDate.of(2025, 10, 1)));
-        stubNoExistingItem();
+        BizRoleAssignment assignment = assignment("90", "BATCH-7");
+        assignment.setStartDate(java.sql.Date.valueOf(LocalDate.of(2025, 12, 1)));
+        stubAssignments(assignment);
+        when(itemMapper.selectBizWorkloadItemList(any())).thenReturn(List.of());
+        when(itemMapper.insertBizWorkloadItem(any())).thenAnswer(invocation -> {
+            ((BizWorkloadItem) invocation.getArgument(0)).setId(ITEM);
+            return 1;
+        });
 
-        generator.generate(1L, SEMESTER);
+        generator.generate(USER, SEMESTER);
 
-        assertThat(capturedDetail().getProratedAmount()).isEqualByComparingTo("70.29");
+        BizWlManagement detail = captureInsertedDetail();
+        assertThat(detail.getProratedAmount()).isEqualByComparingTo("90");
+        assertThat(detail.getSourceBatchId()).isEqualTo("BATCH-7");
+        assertThat(detail.getProrationBasis()).contains("岗位减免工作量（本学期）", "计入 G11")
+                .doesNotContain("折算", "天");
+        InOrder order = inOrder(writeGuard, assignmentMapper, itemMapper);
+        order.verify(writeGuard).lockDraftOrAbsent(USER, SEMESTER);
+        order.verify(assignmentMapper).selectActiveByUserSemesterForUpdate(USER, SEMESTER);
+        order.verify(itemMapper).insertBizWorkloadItem(any());
     }
 
     @Test
-    @DisplayName("任职区间与学期无交集 → 不生成明细")
-    void noOverlapNoGeneration()
+    void frozenSummaryCausesZeroWrites()
     {
-        stubCalendar();
-        // 任职 2024-02-01 ~ 2024-07-01，与学期 2025-09-01 起无交集
-        BizRoleAssignment past = assignment("班主任", "180", LocalDate.of(2024, 2, 1));
-        past.setEndDate(java.sql.Date.valueOf(LocalDate.of(2024, 7, 1)));
-        stubAssignments(past);
+        doThrow(new ServiceException("数据已冻结")).when(writeGuard).lockDraftOrAbsent(USER, SEMESTER);
 
-        int count = generator.generate(1L, SEMESTER);
+        assertThatThrownBy(() -> generator.generate(USER, SEMESTER)).hasMessageContaining("冻结");
 
-        assertThat(count).isZero();
-        verify(bizWlManagementMapper, org.mockito.Mockito.never()).insertBizWlManagement(any());
+        verifyNoInteractions(assignmentMapper, itemMapper, managementMapper, workloadCalcService);
     }
 
     @Test
-    @DisplayName("allowance_rate 为空按 0 处理 → 0.00")
-    void nullRateTreatedAsZero()
+    void confirmedItemIsNotModified()
     {
-        stubCalendar();
-        stubAssignments(assignment("系主任", null, null));
-        stubNoExistingItem();
+        stubExistingItem(1);
 
-        generator.generate(1L, SEMESTER);
+        generator.generate(USER, SEMESTER);
 
-        assertThat(capturedDetail().getProratedAmount()).isEqualByComparingTo("0.00");
+        verify(managementMapper, never()).updateProrationIfEditable(any(), any(), any(), any(), any());
+        verify(itemMapper, never()).insertBizWorkloadItem(any());
+        verify(workloadCalcService, never()).recalcItem(any());
     }
 
-    private void stubCalendar()
+    @Test
+    void disputedItemKeepsIdentityAndIsResynchronized()
     {
-        when(semesterCalendar.rangeOf(SEMESTER)).thenReturn(new LocalDate[] { SEM_START, SEM_END });
+        stubExistingItem(2);
+        when(managementMapper.selectBizWlManagementByItemId(ITEM)).thenReturn(new BizWlManagement());
+        when(managementMapper.updateProrationIfEditable(eq(ITEM), any(), any(), any(), any())).thenReturn(1);
+
+        generator.generate(USER, SEMESTER);
+
+        verify(itemMapper, never()).insertBizWorkloadItem(any());
+        verify(managementMapper).updateProrationIfEditable(eq(ITEM), eq("班主任"),
+                eq(new BigDecimal("90")), any(), eq("BATCH-7"));
+        verify(workloadCalcService).recalcItem(ITEM);
+    }
+
+    @Test
+    void concurrentFreezeDuringDetailUpdateRollsBack()
+    {
+        stubExistingItem(0);
+        when(managementMapper.selectBizWlManagementByItemId(ITEM)).thenReturn(new BizWlManagement());
+        when(managementMapper.updateProrationIfEditable(eq(ITEM), any(), any(), any(), any())).thenReturn(0);
+
+        assertThatThrownBy(() -> generator.generate(USER, SEMESTER))
+                .isInstanceOf(ServiceException.class).hasMessageContaining("状态已变化");
+        verify(workloadCalcService, never()).recalcItem(any());
+    }
+
+    private void stubExistingItem(int status)
+    {
+        stubAssignments(assignment("90", "BATCH-7"));
+        BizWorkloadItem item = new BizWorkloadItem();
+        item.setId(ITEM);
+        item.setUserId(USER);
+        item.setSemester(SEMESTER);
+        item.setAssignmentId(ASSIGNMENT);
+        item.setRoleType("班主任");
+        item.setStatus(status);
+        when(itemMapper.selectBizWorkloadItemList(any())).thenReturn(List.of(item));
     }
 
     private void stubAssignments(BizRoleAssignment assignment)
     {
-        when(bizRoleAssignmentMapper.selectBizRoleAssignmentList(any()))
-                .thenReturn(Collections.singletonList(assignment));
+        when(assignmentMapper.selectActiveByUserSemesterForUpdate(USER, SEMESTER)).thenReturn(List.of(assignment));
     }
 
-    private void stubNoExistingItem()
-    {
-        when(bizWorkloadItemMapper.selectBizWorkloadItemList(any())).thenReturn(Collections.emptyList());
-    }
-
-    private BizWlManagement capturedDetail()
-    {
-        ArgumentCaptor<BizWlManagement> captor = ArgumentCaptor.forClass(BizWlManagement.class);
-        verify(bizWlManagementMapper).insertBizWlManagement(captor.capture());
-        return captor.getValue();
-    }
-
-    /** 起始日为 null 时按学期首日起算；结束日为 null 视为任职至学期末 */
-    private BizRoleAssignment assignment(String roleType, String rate, LocalDate start)
+    private BizRoleAssignment assignment(String workload, String sourceBatchId)
     {
         BizRoleAssignment assignment = new BizRoleAssignment();
-        assignment.setId(100L);
-        assignment.setUserId(1L);
-        assignment.setRoleType(roleType);
-        assignment.setAllowanceRate(rate == null ? null : new BigDecimal(rate));
+        assignment.setId(ASSIGNMENT);
+        assignment.setUserId(USER);
+        assignment.setRoleType("班主任");
+        assignment.setAllowanceRate(new BigDecimal(workload));
+        assignment.setSourceBatchId(sourceBatchId);
         assignment.setSemester(SEMESTER);
         assignment.setStatus(1);
-        assignment.setAcademicYear("2025-2026");
-        assignment.setStartDate(start == null ? null : java.sql.Date.valueOf(start));
         return assignment;
+    }
+
+    private BizWlManagement captureInsertedDetail()
+    {
+        ArgumentCaptor<BizWlManagement> captor = ArgumentCaptor.forClass(BizWlManagement.class);
+        verify(managementMapper).insertBizWlManagement(captor.capture());
+        return captor.getValue();
     }
 }

@@ -176,14 +176,11 @@
         </template>
       </el-table-column>
       <el-table-column
-        label="任职区间"
+        label="学期"
         align="center"
-        width="200"
-      >
-        <template #default="scope">
-          <span>{{ scope.row.startDate ? parseTime(scope.row.startDate, '{y}-{m}-{d}') : '-' }} ~ {{ scope.row.endDate ? parseTime(scope.row.endDate, '{y}-{m}-{d}') : '至今' }}</span>
-        </template>
-      </el-table-column>
+        prop="semester"
+        width="120"
+      />
       <el-table-column
         label="学年"
         align="center"
@@ -195,7 +192,7 @@
         </template>
       </el-table-column>
       <el-table-column
-        label="标准学时/学年(学时)"
+        label="岗位减免工作量（本学期）"
         align="right"
         prop="allowanceRate"
         width="150"
@@ -277,6 +274,18 @@
               <user-select v-model="form.userId" />
             </el-form-item>
           </el-col>
+          <el-col :span="24">
+            <el-form-item
+              label="学年学期"
+              prop="semester"
+            >
+              <semester-select
+                v-model="form.semester"
+                :disabled="form.id !== null && form.id !== undefined"
+                style="width: 100%"
+              />
+            </el-form-item>
+          </el-col>
           <el-col :span="12">
             <el-form-item
               label="岗位"
@@ -351,7 +360,7 @@
           </el-col>
           <el-col :span="12">
             <el-form-item
-              label="标准学时/学年"
+              label="岗位减免工作量（本学期）"
               prop="allowanceRate"
             >
               <el-input-number
@@ -362,7 +371,7 @@
                 style="width: 100%"
               />
               <div class="form-tip">
-                按学年值填写（办法第十六条，引擎自动折半）；督导为例外，按学期值 15 填写（第十七条）
+                本字段是教务认定的学期值，系统直接计入 G11，不折半、不按任职日期折算
               </div>
             </el-form-item>
           </el-col>
@@ -383,7 +392,7 @@
           </el-col>
         </el-row>
         <div class="form-tip">
-          标准学时：该岗位每学年折算的管理服务工作量（G11），按任职区间自动折算到学期
+          岗位减免工作量按本学期教务核定值直接计入 G11；职务名称仅用于说明
         </div>
       </el-form>
       <template #footer>
@@ -407,6 +416,7 @@
 <script setup name="RoleAssignment">
 import { listRoleAssignment, getRoleAssignment, delRoleAssignment, addRoleAssignment, updateRoleAssignment } from '@/api/system/roleAssignment'
 import UserSelect from '@/components/UserSelect/index.vue'
+import SemesterSelect from '@/components/SemesterSelect/index.vue'
 import { useUserMap } from '@/utils/userCache'
 import { roleTypeOptions, normalStatusMap, roleTypeMap, formatNumber } from '@/utils/bizDict'
 
@@ -435,9 +445,10 @@ const data = reactive({
   },
   rules: {
     userId: [{ required: true, message: '请选择教师', trigger: 'change' }],
+    semester: [{ required: true, message: '请选择学年学期', trigger: 'change' }],
     roleType: [{ required: true, message: '请选择岗位', trigger: 'change' }],
     startDate: [{ required: true, message: '任职起日期不能为空', trigger: 'change' }],
-    allowanceRate: [{ required: true, message: '标准学时不能为空', trigger: 'blur' }],
+    allowanceRate: [{ required: true, message: '本学期岗位减免工作量不能为空', trigger: 'blur' }],
     academicYear: [{ pattern: /^\d{4}-\d{4}$/, message: '格式如 2025-2026', trigger: 'blur' }]
   }
 })
@@ -493,7 +504,7 @@ function resetQuery() {
 // 多选框选中数据
 function handleSelectionChange(selection) {
   ids.value = selection.map(item => item.id)
-  single.value = selection.length != 1
+  single.value = selection.length !== 1
   multiple.value = !selection.length
 }
 
@@ -520,9 +531,9 @@ function submitForm() {
   proxy.$refs['roleAssignmentRef'].validate(valid => {
     if (valid) {
       submitLoading.value = true
-      const req = form.value.id != null ? updateRoleAssignment(form.value) : addRoleAssignment(form.value)
+      const req = (form.value.id !== null && form.value.id !== undefined) ? updateRoleAssignment(form.value) : addRoleAssignment(form.value)
       req.then(() => {
-        proxy.$modal.msgSuccess(form.value.id != null ? '修改成功' : '新增成功')
+        proxy.$modal.msgSuccess((form.value.id !== null && form.value.id !== undefined) ? '修改成功' : '新增成功')
         open.value = false
         getList()
       }).finally(() => {

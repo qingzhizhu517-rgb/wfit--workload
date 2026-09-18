@@ -126,7 +126,7 @@
       type="info"
       :closable="false"
       class="mb8"
-      :title="`本明细由 G11 生成器按岗位任职区间自动折算写入，工作量 = 折算学时；多岗叠加与学期封顶 ${G11_SEMESTER_CAP} 在汇总层处理`"
+      :title="`本明细直接同步教务认定的岗位减免工作量（本学期）并计入 G11；多条相加与学期封顶 ${G11_SEMESTER_CAP} 在汇总层处理`"
     />
 
     <el-table
@@ -167,7 +167,7 @@
         </template>
       </el-table-column>
       <el-table-column
-        label="折算学时(学时)"
+        label="岗位减免工作量（本学期）"
         align="right"
         prop="proratedAmount"
         width="110"
@@ -177,7 +177,7 @@
         </template>
       </el-table-column>
       <el-table-column
-        label="折算说明"
+        label="计入 G11"
         align="center"
         prop="prorationBasis"
         min-width="180"
@@ -300,7 +300,7 @@
           </el-select>
         </el-form-item>
         <el-form-item
-          label="折算学时"
+          label="岗位减免工作量（本学期）"
           prop="proratedAmount"
         >
           <el-input-number
@@ -311,11 +311,11 @@
             style="width: 100%"
           />
           <div class="form-tip">
-            按任职区间折算后的管理服务工作量
+            教务认定的本学期原始值，单条不封顶
           </div>
         </el-form-item>
         <el-form-item
-          label="折算说明"
+          label="计入 G11"
           prop="prorationBasis"
         >
           <el-input
@@ -324,7 +324,7 @@
             :rows="2"
             maxlength="200"
             show-word-limit
-            placeholder="如：标准60学时 × 9个月/12个月"
+            placeholder="岗位减免工作量（本学期），计入 G11"
           />
         </el-form-item>
         <el-form-item
@@ -378,13 +378,14 @@ const multiple = ref(true)
 const total = ref(0)
 const title = ref('')
 
-/** 详情抽屉字段（承载原备注列 + 折算参数） */
+/** 详情抽屉字段 */
 const detailFields = [
   { label: '明细ID', prop: 'itemId', type: 'text' },
   { label: '任职ID', prop: 'assignmentId', type: 'text' },
   { label: '岗位', prop: 'roleType', map: roleTypeMap },
-  { label: '折算学时', prop: 'proratedAmount', suffix: '学时' },
-  { label: '折算说明', prop: 'prorationBasis', type: 'text' }
+  { label: '岗位减免工作量（本学期）', prop: 'proratedAmount', suffix: '学时' },
+  { label: '来源批次', prop: 'sourceBatchId', type: 'text' },
+  { label: '计入 G11', prop: 'prorationBasis', type: 'text' }
 ]
 
 const data = reactive({
@@ -399,7 +400,7 @@ const data = reactive({
   rules: {
     itemId: [{ required: true, message: '明细ID不能为空', trigger: 'blur' }],
     assignmentId: [{ required: true, message: '任职ID不能为空', trigger: 'blur' }],
-    proratedAmount: [{ required: true, message: '折算学时不能为空', trigger: 'blur' }]
+    proratedAmount: [{ required: true, message: '岗位减免工作量（本学期）不能为空', trigger: 'blur' }]
   }
 })
 
@@ -449,7 +450,7 @@ function resetQuery() {
 // 多选框选中数据
 function handleSelectionChange(selection) {
   ids.value = selection.map(item => item.itemId)
-  single.value = selection.length != 1
+  single.value = selection.length !== 1
   multiple.value = !selection.length
 }
 
