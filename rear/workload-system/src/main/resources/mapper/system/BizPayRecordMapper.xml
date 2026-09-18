@@ -103,4 +103,19 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             #{id}
         </foreach>
     </delete>
+    <update id="updateIfSummaryDraft">
+        update biz_pay_record p
+        set p.summary_id = #{record.summaryId},
+            p.course_hour_pay = #{record.courseHourPay},
+            p.other_pay_total = #{record.otherPayTotal},
+            p.total_pay = #{record.totalPay},
+            p.update_time = #{record.updateTime}
+        where p.id = #{record.id}
+          and p.user_id = #{record.userId} and p.semester = #{record.semester}
+          and exists (
+              select 1 from biz_workload_summary s
+              where s.id = #{record.summaryId} and s.user_id = p.user_id
+                and s.semester = p.semester and s.status = 0
+          )
+    </update>
 </mapper>

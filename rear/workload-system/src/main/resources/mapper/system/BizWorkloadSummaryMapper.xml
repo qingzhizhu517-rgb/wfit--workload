@@ -284,4 +284,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             teacher_sign_time = NOW()
         where id = #{id} and user_id = #{userId} and status in (1)
     </update>
+    <update id="updateCalculatedFieldsIfStatus">
+        update biz_workload_summary
+        set academic_year = #{summary.academicYear},
+            G7 = #{summary.G7}, G8 = #{summary.G8}, G9 = #{summary.G9},
+            G10 = #{summary.G10}, G11 = #{summary.G11},
+            total_workload = #{summary.totalWorkload}, rated_workload = #{summary.ratedWorkload},
+            excess_workload = #{summary.excessWorkload}, title = #{summary.title},
+            pay_rate = #{summary.payRate}, performance_pay = #{summary.performancePay},
+            is_capped = #{summary.isCapped}, basic_teaching_standard = #{summary.basicTeachingStandard},
+            basic_teaching_met = #{summary.basicTeachingMet}, remark = #{summary.remark},
+            update_time = #{summary.updateTime}
+        where id = #{summary.id} and status = #{expectedStatus}
+    </update>
 </mapper>

@@ -9,8 +9,12 @@ import com.workload.system.domain.BizAllowanceItem;
  * @author wflg
  * @date 2026-07-20
  */
-public interface BizAllowanceItemMapper 
+public interface BizAllowanceItemMapper
 {
+    int updateIfSummaryDraft(BizAllowanceItem item);
+
+    int deleteByIdIfSummaryDraft(Long id);
+
     /**
      * 查询其他酬金明细
      * 

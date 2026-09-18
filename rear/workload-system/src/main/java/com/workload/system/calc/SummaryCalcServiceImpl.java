@@ -63,10 +63,17 @@ public class SummaryCalcServiceImpl implements SummaryCalcService
     @Autowired
     private ComplianceChecker complianceChecker;
 
+    @Autowired
+    private WorkloadWriteGuard writeGuard;
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public BizWorkloadSummary recalcSummary(Long userId, String semester, boolean persist)
     {
+        if (persist)
+        {
+            writeGuard.lockDraftOrAbsent(userId, semester);
+        }
         // userId 合法性校验：教师档案不存在则快速失败，避免任意 userId 生成零值脏数据
         if (bizTeacherProfileMapper.selectBizTeacherProfileByUserId(userId) == null)
         {
@@ -168,19 +175,30 @@ public class SummaryCalcServiceImpl implements SummaryCalcService
                     {
                         throw new ServiceException("学期汇总保存失败，请重试");
                     }
+                    if (!Integer.valueOf(WorkloadSummaryStatus.DRAFT).equals(existed.getStatus()))
+                    {
+                        throw new ServiceException("学期汇总状态已变化，请刷新后重试");
+                    }
                     summary.setId(existed.getId());
                     summary.setCreateTime(existed.getCreateTime());
-                    summary.setUpdateTime(DateUtils.getNowDate());
-                    bizWorkloadSummaryMapper.updateBizWorkloadSummary(summary);
+                    updateDraftSummary(summary);
                 }
             }
             else
             {
-                summary.setUpdateTime(DateUtils.getNowDate());
-                bizWorkloadSummaryMapper.updateBizWorkloadSummary(summary);
+                updateDraftSummary(summary);
             }
         }
         return summary;
+    }
+
+    private void updateDraftSummary(BizWorkloadSummary summary)
+    {
+        summary.setUpdateTime(DateUtils.getNowDate());
+        if (bizWorkloadSummaryMapper.updateCalculatedFieldsIfStatus(summary, WorkloadSummaryStatus.DRAFT) != 1)
+        {
+            throw new ServiceException("学期汇总状态已变化，请刷新后重试");
+        }
     }
 
     @Override

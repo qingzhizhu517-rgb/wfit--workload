@@ -41,10 +41,14 @@ public class PayCalcServiceImpl implements PayCalcService
     @Autowired
     private BizTeacherProfileMapper bizTeacherProfileMapper;
 
+    @Autowired
+    private WorkloadWriteGuard writeGuard;
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public BizPayRecord recalcPay(Long userId, String semester)
     {
+        writeGuard.lockDraftOrAbsent(userId, semester);
         // userId 合法性校验：教师档案不存在则快速失败，避免任意 userId 生成零值脏数据
         if (bizTeacherProfileMapper.selectBizTeacherProfileByUserId(userId) == null)
         {
@@ -103,16 +107,24 @@ public class PayCalcServiceImpl implements PayCalcService
                 }
                 record.setId(existed.getId());
                 record.setCreateTime(existed.getCreateTime());
-                record.setUpdateTime(DateUtils.getNowDate());
-                bizPayRecordMapper.updateBizPayRecord(record);
+                record.setStatus(existed.getStatus());
+                updateDraftRecord(record);
             }
         }
         else
         {
-            record.setUpdateTime(DateUtils.getNowDate());
-            bizPayRecordMapper.updateBizPayRecord(record);
+            updateDraftRecord(record);
         }
         return record;
+    }
+
+    private void updateDraftRecord(BizPayRecord record)
+    {
+        record.setUpdateTime(DateUtils.getNowDate());
+        if (bizPayRecordMapper.updateIfSummaryDraft(record) != 1)
+        {
+            throw new ServiceException("学期汇总或酬金状态已变化，酬金未保存，请刷新后重试");
+        }
     }
 
     @Override

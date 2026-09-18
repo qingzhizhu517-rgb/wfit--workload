@@ -1,12 +1,14 @@
 package com.workload.system.service.impl;
 
 import java.util.List;
+import java.util.Arrays;
 import com.workload.common.utils.DateUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.workload.common.exception.ServiceException;
 import com.workload.system.calc.PayCalcService;
+import com.workload.system.calc.WorkloadWriteGuard;
 import com.workload.system.calc.allowance.AllowanceCalcStrategy;
 import com.workload.system.calc.allowance.AllowanceStrategyFactory;
 import com.workload.system.mapper.BizAllowanceItemMapper;
@@ -32,6 +34,9 @@ public class BizAllowanceItemServiceImpl implements IBizAllowanceItemService
 
     @Autowired
     private PayCalcService payCalcService;
+
+    @Autowired
+    private WorkloadWriteGuard writeGuard;
 
     /**
      * 查询其他酬金明细
@@ -67,6 +72,7 @@ public class BizAllowanceItemServiceImpl implements IBizAllowanceItemService
     @Transactional
     public int insertBizAllowanceItem(BizAllowanceItem bizAllowanceItem)
     {
+        writeGuard.lockDraftOrAbsent(bizAllowanceItem.getUserId(), bizAllowanceItem.getSemester());
         payCalcService.assertAllowanceEditable(bizAllowanceItem.getUserId(), bizAllowanceItem.getSemester());
         recalcAmount(bizAllowanceItem);
         bizAllowanceItem.setCreateTime(DateUtils.getNowDate());
@@ -88,12 +94,13 @@ public class BizAllowanceItemServiceImpl implements IBizAllowanceItemService
         {
             throw new ServiceException("其他酬金明细不存在, id=" + bizAllowanceItem.getId());
         }
+        writeGuard.lockDraftOrAbsent(old.getUserId(), old.getSemester());
         payCalcService.assertAllowanceEditable(old.getUserId(), old.getSemester());
         bizAllowanceItem.setUserId(old.getUserId());
         bizAllowanceItem.setSemester(old.getSemester());
         recalcAmount(bizAllowanceItem);
         bizAllowanceItem.setUpdateTime(DateUtils.getNowDate());
-        return bizAllowanceItemMapper.updateBizAllowanceItem(bizAllowanceItem);
+        return requireWritten(bizAllowanceItemMapper.updateIfSummaryDraft(bizAllowanceItem));
     }
 
     /**
@@ -106,15 +113,16 @@ public class BizAllowanceItemServiceImpl implements IBizAllowanceItemService
     @Transactional
     public int deleteBizAllowanceItemByIds(Long[] ids)
     {
-        for (Long id : ids)
+        if (ids == null || ids.length == 0)
         {
-            BizAllowanceItem old = bizAllowanceItemMapper.selectBizAllowanceItemById(id);
-            if (old != null)
-            {
-                payCalcService.assertAllowanceEditable(old.getUserId(), old.getSemester());
-            }
+            throw new ServiceException("请选择要删除的其他酬金明细");
         }
-        return bizAllowanceItemMapper.deleteBizAllowanceItemByIds(ids);
+        int rows = 0;
+        for (Long id : Arrays.stream(ids).distinct().toList())
+        {
+            rows += deleteBizAllowanceItemById(id);
+        }
+        return rows;
     }
 
     /**
@@ -128,11 +136,22 @@ public class BizAllowanceItemServiceImpl implements IBizAllowanceItemService
     public int deleteBizAllowanceItemById(Long id)
     {
         BizAllowanceItem old = bizAllowanceItemMapper.selectBizAllowanceItemById(id);
-        if (old != null)
+        if (old == null)
         {
-            payCalcService.assertAllowanceEditable(old.getUserId(), old.getSemester());
+            throw new ServiceException("其他酬金明细不存在, id=" + id);
         }
-        return bizAllowanceItemMapper.deleteBizAllowanceItemById(id);
+        writeGuard.lockDraftOrAbsent(old.getUserId(), old.getSemester());
+        payCalcService.assertAllowanceEditable(old.getUserId(), old.getSemester());
+        return requireWritten(bizAllowanceItemMapper.deleteByIdIfSummaryDraft(id));
+    }
+
+    private int requireWritten(int rows)
+    {
+        if (rows != 1)
+        {
+            throw new ServiceException("其他酬金明细或汇总状态已变化，请刷新后重试");
+        }
+        return rows;
     }
 
     /**

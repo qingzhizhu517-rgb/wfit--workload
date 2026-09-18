@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -20,6 +21,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DuplicateKeyException;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import com.workload.system.calc.rule.ComplianceChecker;
 import com.workload.system.calc.rule.RuleParamService;
@@ -66,6 +70,61 @@ class SummaryCalcServiceImplTest
 
     @Mock
     private ComplianceChecker complianceChecker;
+
+    @Mock private WorkloadWriteGuard writeGuard;
+
+    @Test
+    void concurrentFreezeRejectsConditionalUpdateMiss()
+    {
+        when(complianceChecker.check(any(), anyString(), any())).thenReturn(result(false));
+        when(bizWorkloadSummaryMapper.selectBizWorkloadSummaryList(any()))
+                .thenReturn(Collections.singletonList(summaryWithStatus(0)));
+
+        assertThatThrownBy(() -> service.recalcSummary(USER, SEMESTER, true))
+                .hasMessageContaining("状态已变化");
+        verify(bizWorkloadSummaryMapper, never()).updateBizWorkloadSummary(any());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {0, 1})
+    void duplicateInsertUsesConditionalUpdateForDraftSummary(int affectedRows)
+    {
+        when(complianceChecker.check(any(), anyString(), any())).thenReturn(result(false));
+        BizWorkloadSummary existing = summaryWithStatus(0);
+        existing.setId(42L);
+        when(bizWorkloadSummaryMapper.selectBizWorkloadSummaryList(any()))
+                .thenReturn(Collections.emptyList(), Collections.singletonList(existing));
+        when(bizWorkloadSummaryMapper.insertBizWorkloadSummary(any()))
+                .thenThrow(new DuplicateKeyException("concurrent summary"));
+        when(bizWorkloadSummaryMapper.updateCalculatedFieldsIfStatus(any(), eq(0))).thenReturn(affectedRows);
+
+        if (affectedRows == 0)
+        {
+            assertThatThrownBy(() -> service.recalcSummary(USER, SEMESTER, true)).hasMessageContaining("状态已变化");
+        }
+        else
+        {
+            BizWorkloadSummary saved = service.recalcSummary(USER, SEMESTER, true);
+            assertThat(saved.getId()).isEqualTo(42L);
+            assertThat(saved.getTotalWorkload()).isEqualByComparingTo("30");
+        }
+        verify(bizWorkloadSummaryMapper, never()).updateBizWorkloadSummary(any());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {1, 2})
+    void duplicateInsertCannotOverwriteFrozenSummary(int status)
+    {
+        when(complianceChecker.check(any(), anyString(), any())).thenReturn(result(false));
+        when(bizWorkloadSummaryMapper.selectBizWorkloadSummaryList(any()))
+                .thenReturn(Collections.emptyList(), Collections.singletonList(summaryWithStatus(status)));
+        when(bizWorkloadSummaryMapper.insertBizWorkloadSummary(any()))
+                .thenThrow(new DuplicateKeyException("concurrent summary"));
+
+        assertThatThrownBy(() -> service.recalcSummary(USER, SEMESTER, true))
+                .hasMessageContaining("状态已变化");
+        verify(bizWorkloadSummaryMapper, never()).updateBizWorkloadSummary(any());
+    }
 
     @BeforeEach
     void setUp()
@@ -159,10 +218,12 @@ class SummaryCalcServiceImplTest
         BizWorkloadSummary draft = summaryWithStatus(WorkloadSummaryStatus.DRAFT);
         when(bizWorkloadSummaryMapper.selectBizWorkloadSummaryList(any()))
                 .thenReturn(Collections.singletonList(draft));
+        when(bizWorkloadSummaryMapper.updateCalculatedFieldsIfStatus(any(), eq(0))).thenReturn(1);
 
         service.recalcSummary(USER, SEMESTER, true);
 
-        verify(bizWorkloadSummaryMapper).updateBizWorkloadSummary(draft);
+        verify(bizWorkloadSummaryMapper).updateCalculatedFieldsIfStatus(draft, 0);
+        verify(bizWorkloadSummaryMapper, never()).updateBizWorkloadSummary(any());
     }
 
     @Test
@@ -196,6 +257,8 @@ class SummaryCalcServiceImplTest
 
         verify(bizWorkloadSummaryMapper, never()).insertBizWorkloadSummary(any());
         verify(bizWorkloadSummaryMapper, never()).updateBizWorkloadSummary(any());
+        verify(bizWorkloadSummaryMapper, never()).updateCalculatedFieldsIfStatus(any(), any());
+        verify(writeGuard, never()).lockDraftOrAbsent(any(), any());
     }
 
     @Test

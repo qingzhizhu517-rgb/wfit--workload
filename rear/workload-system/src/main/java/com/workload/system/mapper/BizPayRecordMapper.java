@@ -9,8 +9,11 @@ import com.workload.system.domain.BizPayRecord;
  * @author wflg
  * @date 2026-07-20
  */
-public interface BizPayRecordMapper 
+public interface BizPayRecordMapper
 {
+    /** 仅保存匹配的草稿汇总对应酬金，不回写流程状态。 */
+    int updateIfSummaryDraft(@org.apache.ibatis.annotations.Param("record") BizPayRecord record);
+
     /**
      * 查询酬金汇总
      * 

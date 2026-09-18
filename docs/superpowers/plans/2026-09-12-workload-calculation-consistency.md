@@ -10,6 +10,16 @@
 
 ---
 
+## 2026-09-18 实施记录
+
+- Tasks 1–3 已在前批提交完成；本轮完成 Task 4 和 Task 5，五项写入安全门已落地。
+- G11 直接同步教务确认的本学期减免原值，保留来源批次，180 封顶由汇总层执行。岗位源记录增改删接入冻结锁，编辑保留数据库教师/学期归属；表单补齐必填学期，教师详情与导出改用学期口径。
+- 并发补强：教师学期锁后对岗位来源执行 `FOR UPDATE` 当前读；`uk_assignment_sem` 防止尚无汇总时重复生成 G11；主明细已核对时跳过，异议/驳回明细仍按既有语义同步。
+- Summary/Pay/Allowance 使用专用条件 SQL，更新/删除必须影响一行；唯一键冲突后的更新也受保护。计算保存不覆盖签字/完结状态，预览保持只读；其他酬金批删任一失败则事务回滚。
+- 数据库脚本 `22_semester_position_workload.sql` 已提供并在隔离 MySQL 验证：补来源批次列与 G11 唯一键，可重复执行。仅升级结构，不转换历史学年值；本轮未修改业务数据库。
+- 验证：后端完整 `clean test` 175/175 通过；前端生产构建、变更文件 ESLint、`git diff --check` 通过；隔离 MySQL 8.0.46 经真实 MyBatis SQL 完成 29 项断言，独立复审无未处理问题。
+- 后续从 Task 6 的不可变计算快照继续；尚未实施系数申请、分类导入或阶段化一键核算。
+
 ## 范围、顺序与不可变约束
 
 本计划覆盖《教务工作量管理系统 16 项需求实施方案》的需求 4、6、10、11、12、13。执行顺序固定为：冻结与条件写（Tasks 1-5）→ 快照与 G11（Tasks 6-7）→ 系数申请（Tasks 8-9）→ 分类导入和详情（Tasks 10-11）→ 一键核算流程（Task 12）→ 全量验证（Task 13）。前五项是安全门，未全部合并前不得开发会增加写入口的后续功能。
@@ -238,12 +248,12 @@ git commit -m "fix: 原子保护明细重算写入"
 - Modify: `ManagementItemGeneratorImpl.java`、`BizRoleAssignmentMapper.xml`、`BizWlManagementMapper.xml`
 - Test: `ManagementItemGeneratorImplTest.java`
 
-- [ ] **Step 1: 写失败测试**：来源 `positionWorkload=90` 时 G11 为 90，不除以 2、不读取任职日期；冻结/已核对时主子表零写入；重复同步保持同一 item。
-- [ ] **Step 2: 运行 RED**：现有生成器仍按 `allowance_rate ÷ 2 × overlapDays/semesterDays`，断言应失败。
-- [ ] **Step 3: 实现简化同步**：查询教师+学期有效减免记录，直接使用学期值；职务名只写说明；生成前调用 Guard，子表更新采用草稿条件 SQL 并检查影响行数。
-- [ ] **Step 4: 更新教师详情文案**：返回“岗位减免工作量（本学期）”“来源批次”“计入 G11”，移除折算日数和 YEAR/SEMESTER 展示。
-- [ ] **Step 5: 运行 GREEN**：冻结、幂等、直接值和 180 汇总封顶测试全部通过。
-- [ ] **Step 6: 提交**：`git commit -m "feat: 按学期岗位减免同步G11"`。
+- [x] **Step 1: 写失败测试**：来源 `positionWorkload=90` 时 G11 为 90，不除以 2、不读取任职日期；冻结/已核对时主子表零写入；重复同步保持同一 item。
+- [x] **Step 2: 运行 RED**：现有生成器仍按 `allowance_rate ÷ 2 × overlapDays/semesterDays`，断言应失败。
+- [x] **Step 3: 实现简化同步**：查询教师+学期有效减免记录，直接使用学期值；职务名只写说明；生成前调用 Guard，子表更新采用草稿条件 SQL 并检查影响行数。
+- [x] **Step 4: 更新教师详情文案**：返回“岗位减免工作量（本学期）”“来源批次”“计入 G11”，移除折算日数和 YEAR/SEMESTER 展示。
+- [x] **Step 5: 运行 GREEN**：冻结、幂等、直接值和 180 汇总封顶测试全部通过。
+- [x] **Step 6: 提交**：`git commit -m "feat: 按学期岗位减免同步G11"`。
 
 ### [已废弃] 原 Task 4: 修复 G11 先写后查和已核对子表漂移（需求 10，已确认缺口）
 
@@ -331,7 +341,7 @@ git commit -m "fix: 冻结并原子更新G11生成快照"
 - Modify: `rear/workload-system/src/main/java/com/workload/system/service/impl/BizAllowanceItemServiceImpl.java:66-135`
 - Test: corresponding three existing test classes
 
-- [ ] **Step 1: 写三组失败测试**
+- [x] **Step 1: 写三组失败测试**
 
 ```java
 when(summaryMapper.updateCalculatedFieldsIfStatus(any(), eq(0))).thenReturn(0);
@@ -349,12 +359,12 @@ assertThatThrownBy(() -> allowanceService.updateBizAllowanceItem(change))
 
 另写删除测试，断言 `deleteByIdIfSummaryDraft(id)==0` 不得返回成功。
 
-- [ ] **Step 2: 运行 RED**
+- [x] **Step 2: 运行 RED**
 
 Run: `mvn -f rear/pom.xml test -pl workload-system -am -Dtest=SummaryCalcServiceImplTest,PayCalcServiceImplTest,BizAllowanceItemServiceImplTest -Dsurefire.failIfNoSpecifiedTests=false`
 Expected: testCompile FAIL 或断言 FAIL；三处当前均为通用 `WHERE id=?` 写入。
 
-- [ ] **Step 3: 实现 Summary 草稿条件写**
+- [x] **Step 3: 实现 Summary 草稿条件写**
 
 签名保持与现有计划一致：
 
@@ -371,7 +381,7 @@ where id=#{summary.id} and status=#{expectedStatus}
 
 不得更新 `status`、签字、`lock_time`、`create_time`。DuplicateKey 分支重新查询后必须校验 `status=0` 再调用此方法，影响行数不是 1 抛冲突。
 
-- [ ] **Step 4: 实现 Pay / Allowance 条件写**
+- [x] **Step 4: 实现 Pay / Allowance 条件写**
 
 `BizPayRecordMapper`：
 
@@ -383,12 +393,12 @@ SQL 使用 `where id=#{record.id} and exists(select 1 from biz_workload_summary 
 
 `BizAllowanceItemMapper` 增加 `updateIfSummaryDraft(BizAllowanceItem item)`、`deleteByIdIfSummaryDraft(Long id)`；条件为不存在汇总或汇总 `status=0`。新增 allowance 在事务开头调用 Guard，更新/删除除前置校验外必须检查条件 SQL 影响行数。
 
-- [ ] **Step 5: 运行 GREEN 和完整安全门测试**
+- [x] **Step 5: 运行 GREEN 和完整安全门测试**
 
 Run: `mvn -f rear/pom.xml test -pl workload-system -am -Dtest=WorkloadWriteGuardTest,TeachingTaskImportServiceImplTest,BizTeachingTaskServiceImplTest,WorkloadCalcServiceImplTest,ManagementItemGeneratorImplTest,SummaryCalcServiceImplTest,PayCalcServiceImplTest,BizAllowanceItemServiceImplTest -Dsurefire.failIfNoSpecifiedTests=false`
 Expected: PASS；任何并发审批均无法晚写覆盖。
 
-- [ ] **Step 6: 提交**
+- [x] **Step 6: 提交**
 
 ```bash
 git add rear/workload-system/src/main/java/com/workload/system/mapper rear/workload-system/src/main/resources/mapper/system rear/workload-system/src/main/java/com/workload/system/calc/SummaryCalcServiceImpl.java rear/workload-system/src/main/java/com/workload/system/calc/PayCalcServiceImpl.java rear/workload-system/src/main/java/com/workload/system/service/impl/BizAllowanceItemServiceImpl.java rear/workload-system/src/test/java/com/workload/system/calc rear/workload-system/src/test/java/com/workload/system/service/impl/BizAllowanceItemServiceImplTest.java

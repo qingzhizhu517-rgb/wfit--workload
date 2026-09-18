@@ -7,6 +7,8 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import java.math.BigDecimal;
 
@@ -19,6 +21,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.workload.common.exception.ServiceException;
 import com.workload.system.calc.PayCalcService;
+import com.workload.system.calc.WorkloadWriteGuard;
 import com.workload.system.calc.allowance.AllowanceCalcStrategy;
 import com.workload.system.calc.allowance.AllowanceStrategyFactory;
 import com.workload.system.domain.BizAllowanceItem;
@@ -46,6 +49,57 @@ class BizAllowanceItemServiceImplTest
 
     @Mock
     private PayCalcService payCalcService;
+
+    @Mock private WorkloadWriteGuard writeGuard;
+
+    @Test
+    void insertAcquiresFreezeLockBeforeCalculation()
+    {
+        doThrow(new ServiceException("数据已冻结")).when(writeGuard).lockDraftOrAbsent(1L, "2025-2026-1");
+        assertThatThrownBy(() -> service.insertBizAllowanceItem(selfItem(15L))).hasMessageContaining("冻结");
+        verifyNoInteractions(allowanceStrategyFactory, bizAllowanceItemMapper);
+    }
+
+    @Test
+    void concurrentFreezeRejectsUpdateMiss()
+    {
+        BizAllowanceItem old = selfItem(15L);old.setId(7L);
+        when(bizAllowanceItemMapper.selectBizAllowanceItemById(7L)).thenReturn(old);
+        AllowanceCalcStrategy strategy = mock(AllowanceCalcStrategy.class);
+        when(allowanceStrategyFactory.get("A")).thenReturn(strategy);
+        when(strategy.calculate(any())).thenReturn(new BigDecimal("260"));
+        assertThatThrownBy(() -> service.updateBizAllowanceItem(old)).hasMessageContaining("状态已变化");
+        verify(bizAllowanceItemMapper, never()).updateBizAllowanceItem(any());
+    }
+
+    @Test
+    void concurrentFreezeRejectsDeleteMiss()
+    {
+        when(bizAllowanceItemMapper.selectBizAllowanceItemById(7L)).thenReturn(selfItem(15L));
+        assertThatThrownBy(() -> service.deleteBizAllowanceItemById(7L)).hasMessageContaining("状态已变化");
+        verify(bizAllowanceItemMapper, never()).deleteBizAllowanceItemById(any());
+    }
+
+    @Test
+    void batchDeletePropagatesLaterConditionalConflict()
+    {
+        when(bizAllowanceItemMapper.selectBizAllowanceItemById(7L)).thenReturn(selfItem(15L));
+        when(bizAllowanceItemMapper.selectBizAllowanceItemById(8L)).thenReturn(selfItem(15L));
+        when(bizAllowanceItemMapper.deleteByIdIfSummaryDraft(7L)).thenReturn(1);
+        when(bizAllowanceItemMapper.deleteByIdIfSummaryDraft(8L)).thenReturn(0);
+
+        assertThatThrownBy(() -> service.deleteBizAllowanceItemByIds(new Long[] {7L, 8L}))
+                .hasMessageContaining("状态已变化");
+        verify(bizAllowanceItemMapper, never()).deleteBizAllowanceItemByIds(any());
+    }
+
+    @Test
+    void batchDeleteMissingRecordCannotReturnSuccess()
+    {
+        assertThatThrownBy(() -> service.deleteBizAllowanceItemByIds(new Long[] {99L}))
+                .hasMessageContaining("不存在");
+        verify(bizAllowanceItemMapper, never()).deleteBizAllowanceItemByIds(any());
+    }
 
     @Test
     @DisplayName("A 自学辅导 25 人 → 金额归零且 remark 写入单独开班告警")
@@ -93,6 +147,7 @@ class BizAllowanceItemServiceImplTest
         item.setId(7L);
         item.setRemark("人数≥20 已达单独开班标准（第十五条1(2)），本项不计酬金，工作量按理论课路线核算");
         when(bizAllowanceItemMapper.selectBizAllowanceItemById(7L)).thenReturn(item);
+        when(bizAllowanceItemMapper.updateIfSummaryDraft(any())).thenReturn(1);
 
         service.updateBizAllowanceItem(item);
 
@@ -139,6 +194,7 @@ class BizAllowanceItemServiceImplTest
     @DisplayName("修改时保留存量 userId 和 semester，禁止迁移归属")
     void updatePreservesPersistedOwnership()
     {
+        when(bizAllowanceItemMapper.updateIfSummaryDraft(any())).thenReturn(1);
         AllowanceCalcStrategy strategy = mock(AllowanceCalcStrategy.class);
         when(strategy.calculate(any())).thenReturn(new BigDecimal("260"));
         when(allowanceStrategyFactory.get("A")).thenReturn(strategy);
@@ -162,6 +218,7 @@ class BizAllowanceItemServiceImplTest
     @DisplayName("删除路径继续按存量归属校验冻结")
     void deleteChecksPersistedOwnership()
     {
+        when(bizAllowanceItemMapper.deleteByIdIfSummaryDraft(7L)).thenReturn(1);
         BizAllowanceItem old = selfItem(15L);
         old.setId(7L);
         old.setUserId(9L);

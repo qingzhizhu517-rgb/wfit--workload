@@ -138,4 +138,37 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             #{id}
         </foreach>
     </delete>
+    <update id="updateIfSummaryDraft" parameterType="BizAllowanceItem">
+        update biz_allowance_item a
+        <set>
+            <if test="feeType != null and feeType != ''">a.fee_type = #{feeType},</if>
+            <if test="feeSubtype != null">a.fee_subtype = #{feeSubtype},</if>
+            <if test="studentCount != null">a.student_count = #{studentCount},</if>
+            <if test="durationHours != null">a.duration_hours = #{durationHours},</if>
+            <if test="days != null">a.days = #{days},</if>
+            <if test="classCount != null">a.class_count = #{classCount},</if>
+            <if test="workloadUnits != null">a.workload_units = #{workloadUnits},</if>
+            <if test="lectureName != null">a.lecture_name = #{lectureName},</if>
+            <if test="ext != null">a.ext = #{ext},</if>
+            a.amount = #{amount},
+            <if test="status != null">a.status = #{status},</if>
+            <if test="updateBy != null">a.update_by = #{updateBy},</if>
+            a.update_time = #{updateTime}, a.remark = #{remark}
+        </set>
+        where a.id = #{id} and a.user_id = #{userId} and a.semester = #{semester}
+          and not exists (
+              select 1 from biz_workload_summary s
+              where s.user_id = a.user_id and s.semester = a.semester
+                and ifnull(s.status, 0) != 0
+          )
+    </update>
+    <delete id="deleteByIdIfSummaryDraft" parameterType="Long">
+        delete a from biz_allowance_item a
+        where a.id = #{id}
+          and not exists (
+              select 1 from biz_workload_summary s
+              where s.user_id = a.user_id and s.semester = a.semester
+                and ifnull(s.status, 0) != 0
+          )
+    </delete>
 </mapper>
