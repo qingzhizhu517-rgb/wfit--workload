@@ -30,6 +30,16 @@ public interface WorkloadCalcService
     public int recalcItems(Long userId, String semester);
 
     /**
+     * 批量重算某教师某学期未冻结明细，但跳过 G11（供 run 编排使用：
+     * G11 由 GENERATE_G11 阶段单独同步重算，避免一次 run 内重算两次）。
+     *
+     * @param userId 教师
+     * @param semester 学期
+     * @return 重算条数（不含 G11）
+     */
+    public int recalcNonG11Items(Long userId, String semester);
+
+    /**
      * 可编辑护栏：明细已核对（status=1）或学期汇总已锁定（status=2）时抛 ServiceException
      *
      * @param itemId 明细主表 id

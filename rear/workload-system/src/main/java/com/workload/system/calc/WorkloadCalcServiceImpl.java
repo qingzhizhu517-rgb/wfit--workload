@@ -105,9 +105,10 @@ public class WorkloadCalcServiceImpl implements WorkloadCalcService
         item.setCalculatedWorkload(value);
         strategy.afterCalculated(item, value);
 
-        // 计算 → 构建公式因子 → 固化不可变快照 → 原子条件更新主表（同事务）。
-        // 条件更新影响行数不为 1 时抛错回滚，快照 INSERT 随之回滚，不留孤立快照。
-        FactorFormulaVo formula = factorFormulaService.build(item);
+        // 计算 → 构建新鲜公式因子 → 固化不可变快照 → 原子条件更新主表（同事务）。
+        // 必须用 buildFresh（按当前子表构造，不做快照 overlay），否则会把上一版快照因子
+        // 冻进新快照，污染可追溯性。条件更新影响行数不为 1 时抛错回滚，快照 INSERT 随之回滚。
+        FactorFormulaVo formula = factorFormulaService.buildFresh(item);
         if (formula == null)
         {
             throw new ServiceException("无法构建计算公式，明细子表可能缺失, id=" + itemId);
@@ -136,6 +137,21 @@ public class WorkloadCalcServiceImpl implements WorkloadCalcService
     @Transactional(rollbackFor = Exception.class)
     public int recalcItems(Long userId, String semester)
     {
+        return recalcItemsInternal(userId, semester, true);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int recalcNonG11Items(Long userId, String semester)
+    {
+        // run() 编排专用：G11 已由 GENERATE_G11 阶段（generate→recalcItem）单独处理，
+        // 此处只算 G1~G6/G8/G9，避免同一 G11 明细在一次 run 内被重算两次（重复快照 + 版本虚增）。
+        return recalcItemsInternal(userId, semester, false);
+    }
+
+    /** @param includeG11 false 时跳过 G11 明细（由 run 的 GENERATE_G11 阶段负责）。 */
+    private int recalcItemsInternal(Long userId, String semester, boolean includeG11)
+    {
         BizWorkloadItem query = new BizWorkloadItem();
         query.setUserId(userId);
         query.setSemester(semester);
@@ -144,6 +160,10 @@ public class WorkloadCalcServiceImpl implements WorkloadCalcService
         for (BizWorkloadItem item : items)
         {
             if (item.getStatus() != null && item.getStatus() == ITEM_STATUS_CONFIRMED)
+            {
+                continue;
+            }
+            if (!includeG11 && "G11".equals(item.getItemType()))
             {
                 continue;
             }
@@ -268,8 +288,12 @@ public class WorkloadCalcServiceImpl implements WorkloadCalcService
             result.addStage(CalculationRunResult.STAGE_GENERATE_G11, true, 0, "未勾选同步 G11，已跳过");
         }
 
-        // 阶段 3：重算明细
-        int itemCount = recalcItems(userId, semester);
+        // 阶段 3：重算明细。includeG11=true 时 G11 已在阶段 2 由生成器重算过，此处跳过
+        // 避免同一 G11 被重算两次（重复快照 + 版本虚增）；includeG11=false 时未同步 G11，
+        // 仍需算上存量 G11 以保持与 recalcAll 一致。
+        int itemCount = includeG11
+                ? recalcNonG11Items(userId, semester)
+                : recalcItems(userId, semester);
         result.setRecalcItemCount(itemCount);
         result.addStage(CalculationRunResult.STAGE_RECALC_ITEMS, true, itemCount, "已重算明细");
 
@@ -362,7 +386,9 @@ public class WorkloadCalcServiceImpl implements WorkloadCalcService
             {
                 continue; // G8/G9 等无策略类别：金额直录，无子表
             }
-            if (factorFormulaService.build(item) == null)
+            // 用 buildFresh 当子表探针：只按当前子表构造，不触发快照查询/解析，
+            // 避免某条损坏快照 JSON 拖垮整教师核算（探针只关心子表是否齐全）。
+            if (factorFormulaService.buildFresh(item) == null)
             {
                 throw new ServiceException("明细子表缺失，无法核算, itemId=" + item.getId());
             }

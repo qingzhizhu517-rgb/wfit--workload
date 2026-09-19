@@ -69,6 +69,16 @@ public class WorkloadFactorFormulaServiceImpl implements IWorkloadFactorFormulaS
     @Override
     public FactorFormulaVo build(BizWorkloadItem item)
     {
+        FactorFormulaVo vo = buildFresh(item);
+        if (vo == null) return null;
+        // 详情读取：用最新已固化快照覆盖因子取值/来源（历史保真），无快照则 legacy。
+        applySnapshotOrLegacy(vo, item);
+        return vo;
+    }
+
+    @Override
+    public FactorFormulaVo buildFresh(BizWorkloadItem item)
+    {
         if (item == null || item.getItemType() == null) return null;
         FactorFormulaVo vo = switch (item.getItemType())
         {
@@ -82,7 +92,7 @@ public class WorkloadFactorFormulaServiceImpl implements IWorkloadFactorFormulaS
             default -> null;
         };
         if (vo == null) return null;
-        applySnapshotOrLegacy(vo, item);
+        // 源数据（教学任务）只读快照始终按当前任务表构造，与是否 overlay 无关。
         vo.setSourceTask(buildSourceTask(item));
         return vo;
     }

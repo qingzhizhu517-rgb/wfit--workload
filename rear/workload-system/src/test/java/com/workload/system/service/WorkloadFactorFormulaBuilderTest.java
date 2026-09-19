@@ -1,6 +1,9 @@
 package com.workload.system.service.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -117,6 +120,35 @@ class WorkloadFactorFormulaBuilderTest
 
         assertThat(vo.isLegacy()).isTrue();
         assertThat(vo.isReproducible()).isFalse();
+    }
+
+    /**
+     * capture 路径回归：buildFresh 只按当前子表构造，绝不 overlay 旧快照。
+     * 即便存在含 Q2=1.50/APPROVED_OVERRIDE 的旧快照，buildFresh 仍返回子表原值
+     * （Q2=1、source=RULE_DEFAULT），且不查询快照——否则新快照会冻进旧因子。
+     */
+    @Test
+    void buildFreshIgnoresPriorSnapshotForCapture()
+    {
+        BizWorkloadItem item = item("G1", "IMPORT", "48.00");
+        BizWlTheory d = new BizWlTheory();
+        d.setJ1(n("32")); d.setC1(n("1")); d.setK1(n("1.1"));
+        d.setQ1(n("1")); d.setQ2(n("1")); d.setQ3(n("1.5")); d.setN(n("1.2"));
+        when(theoryService.selectBizWlTheoryByItemId(7L)).thenReturn(d);
+
+        FactorFormulaVo vo = builder.buildFresh(item);
+
+        assertThat(vo).isNotNull();
+        // Q2 取子表原值 1，来源为 RULE_DEFAULT，不被旧快照的 1.50/APPROVED_OVERRIDE 覆盖
+        assertThat(vo.getFactors()).filteredOn(f -> "Q2".equals(f.getKey()))
+                .extracting(f -> ((BigDecimal) f.getValue()))
+                .first().asInstanceOf(org.assertj.core.api.InstanceOfAssertFactories.BIG_DECIMAL)
+                .isEqualByComparingTo("1");
+        assertThat(vo.getFactors()).filteredOn(f -> "Q2".equals(f.getKey()))
+                .extracting(FactorFormulaVo.FactorVo::getSource)
+                .containsExactly("RULE_DEFAULT");
+        // buildFresh 绝不查询快照
+        verify(snapshotMapper, never()).selectLatestByItemId(any());
     }
 
     private BizWorkloadCalcSnapshot snapshotWithQ2(String q2Value, String q2Source)

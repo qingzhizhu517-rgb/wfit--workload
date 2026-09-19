@@ -187,7 +187,8 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
 
         // 8. 固化不可变计算快照，与回写落在同一行导入事务：导入即产生可追溯的因子/来源/规则版本快照，
         // 而不必等下一次重算。快照 INSERT 与主表 UPDATE 同事务，任一失败整行回滚。
-        FactorFormulaVo formula = factorFormulaService.build(item);
+        // 用 buildFresh：导入首次固化快照必须反映当前子表真值，不做快照 overlay。
+        FactorFormulaVo formula = factorFormulaService.buildFresh(item);
         if (formula == null)
         {
             throw new ServiceException("无法构建计算公式，明细子表可能缺失, itemId=" + item.getId());

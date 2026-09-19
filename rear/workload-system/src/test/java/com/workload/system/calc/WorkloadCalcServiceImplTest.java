@@ -123,7 +123,7 @@ class WorkloadCalcServiceImplTest
         item.setItemType("G1");
         when(calcStrategyFactory.get("G1")).thenReturn(strategy);
         when(strategy.calculate(item)).thenReturn(new BigDecimal("52.80"));
-        when(factorFormulaService.build(item)).thenReturn(aFormula());
+        when(factorFormulaService.buildFresh(item)).thenReturn(aFormula());
         when(snapshotService.capture(eq(item), any(), anyString())).thenReturn(aSnapshot(1L));
         when(itemMapper.updateCalculationIfEditable(any(), eq(1), eq(0))).thenReturn(0);
 
@@ -140,7 +140,7 @@ class WorkloadCalcServiceImplTest
         item.setItemType("G1");
         when(calcStrategyFactory.get("G1")).thenReturn(strategy);
         when(strategy.calculate(item)).thenReturn(new BigDecimal("52.80"));
-        when(factorFormulaService.build(item)).thenReturn(aFormula());
+        when(factorFormulaService.buildFresh(item)).thenReturn(aFormula());
         when(snapshotService.capture(eq(item), any(), anyString())).thenReturn(aSnapshot(1L));
         when(itemMapper.updateCalculationIfEditable(any(), eq(1), eq(0))).thenReturn(1);
 
@@ -156,7 +156,7 @@ class WorkloadCalcServiceImplTest
         item.setItemType("G1");
         when(calcStrategyFactory.get("G1")).thenReturn(strategy);
         when(strategy.calculate(item)).thenReturn(new BigDecimal("52.80"));
-        when(factorFormulaService.build(item)).thenReturn(aFormula());
+        when(factorFormulaService.buildFresh(item)).thenReturn(aFormula());
         when(snapshotService.capture(eq(item), any(), anyString())).thenReturn(aSnapshot(7L));
         when(itemMapper.updateCalculationIfEditable(any(), eq(1), eq(0))).thenReturn(1);
 
@@ -176,7 +176,7 @@ class WorkloadCalcServiceImplTest
         item.setItemType("G1");
         when(calcStrategyFactory.get("G1")).thenReturn(strategy);
         when(strategy.calculate(item)).thenReturn(new BigDecimal("52.80"));
-        when(factorFormulaService.build(item)).thenReturn(null);
+        when(factorFormulaService.buildFresh(item)).thenReturn(null);
 
         assertThatThrownBy(() -> service.recalcItem(ITEM_ID))
                 .isInstanceOf(ServiceException.class)
@@ -192,7 +192,8 @@ class WorkloadCalcServiceImplTest
         when(adjustmentMapper.countPendingByUserSemester(USER, SEMESTER)).thenReturn(0);
         when(itemMapper.selectBizWorkloadItemList(any())).thenReturn(Collections.emptyList());
         when(managementItemGenerator.generate(USER, SEMESTER)).thenReturn(2);
-        doReturn(7).when(service).recalcItems(USER, SEMESTER);
+        // includeG11=true：G11 已在 GENERATE_G11 阶段重算，RECALC_ITEMS 只算非 G11
+        doReturn(7).when(service).recalcNonG11Items(USER, SEMESTER);
         when(summaryCalcService.recalcSummary(USER, SEMESTER, true)).thenReturn(new BizWorkloadSummary());
         when(payCalcService.recalcPay(USER, SEMESTER)).thenReturn(new BizPayRecord());
         when(summaryCalcService.countUnconfirmed(USER, SEMESTER)).thenReturn(0);
@@ -204,6 +205,8 @@ class WorkloadCalcServiceImplTest
         assertThat(result.getStages()).allMatch(StageResult::isOk);
         assertThat(result.getGeneratedG11Count()).isEqualTo(2);
         assertThat(result.getRecalcItemCount()).isEqualTo(7);
+        // G11 不在阶段 3 被二次重算
+        verify(service, never()).recalcItems(USER, SEMESTER);
         verify(managementItemGenerator).generate(USER, SEMESTER);
     }
 
@@ -238,7 +241,7 @@ class WorkloadCalcServiceImplTest
         g1.setStatus(0);
         when(itemMapper.selectBizWorkloadItemList(any())).thenReturn(Collections.singletonList(g1));
         when(calcStrategyFactory.get("G1")).thenReturn(strategy);
-        when(factorFormulaService.build(g1)).thenReturn(null);
+        when(factorFormulaService.buildFresh(g1)).thenReturn(null);
 
         assertThatThrownBy(() -> service.run(new CalculationRunRequest(USER, SEMESTER, true)))
                 .isInstanceOf(ServiceException.class)

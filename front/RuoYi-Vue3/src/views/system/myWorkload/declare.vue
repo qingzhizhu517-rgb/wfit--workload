@@ -5,7 +5,7 @@
         <div style="display: flex; align-items: center; justify-content: space-between;">
           <span style="font-weight: 600;">自主申报工作量</span>
           <el-tag type="info">
-            仅限 G8/G9/G11 类别
+            仅限 G8/G9 类别（G11 由教务同步岗位减免）
           </el-tag>
         </div>
       </template>
@@ -53,10 +53,6 @@
                   label="G9 其他工作量"
                   value="G9"
                 />
-                <el-option
-                  label="G11 管理服务"
-                  value="G11"
-                />
               </el-select>
             </el-form-item>
           </el-col>
@@ -90,29 +86,6 @@
               <div class="form-tip">
                 请根据管理办法填写核定学时，G8/G9 由教务处确认
               </div>
-            </el-form-item>
-          </el-col>
-          <el-col
-            v-if="form.itemType === 'G11'"
-            :xs="24"
-            :sm="12"
-          >
-            <el-form-item
-              label="岗位类型"
-              prop="positionType"
-            >
-              <el-select
-                v-model="form.positionType"
-                placeholder="请选择岗位"
-                style="width: 100%"
-              >
-                <el-option
-                  v-for="item in roleTypeOptions"
-                  :key="item.value"
-                  :label="item.label"
-                  :value="item.value"
-                />
-              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="24">
@@ -384,7 +357,7 @@
 <script setup name="MyWorkloadDeclare">
 import { useWindowSize } from '@vueuse/core'
 import { listWorkloadItem, getWorkloadItem, addWorkloadItem, delWorkloadItem } from '@/api/system/workloadItem'
-import { getCurrentSemester, roleTypeOptions, workloadItemStatusMap, itemTypeMap, sourceTypeMap, formatNumber } from '@/utils/bizDict'
+import { getCurrentSemester, workloadItemStatusMap, itemTypeMap, sourceTypeMap, formatNumber } from '@/utils/bizDict'
 import SemesterSelect from '@/components/SemesterSelect/index.vue'
 import useUserStore from '@/store/modules/user'
 
@@ -414,7 +387,6 @@ const form = ref({
   itemType: 'G8',
   courseName: '',
   calculatedWorkload: null,
-  positionType: '',
   description: '',
   remark: ''
 })
@@ -423,21 +395,18 @@ const rules = {
   semester: [{ required: true, message: '请选择学年学期', trigger: 'change' }],
   itemType: [{ required: true, message: '请选择工作量类别', trigger: 'change' }],
   courseName: [{ required: true, message: '请输入项目名称', trigger: 'blur' }],
-  calculatedWorkload: [{ required: true, message: '请输入核定工作量', trigger: 'blur' }],
-  positionType: [{ required: true, message: '请选择岗位类型', trigger: 'change' }]
+  calculatedWorkload: [{ required: true, message: '请输入核定工作量', trigger: 'blur' }]
 }
 
 const namePlaceholder = computed(() => {
   const map = {
     G8: '如：指导学生社团活动、组织学科竞赛',
-    G9: '如：参与招生宣传、社会服务',
-    G11: '如：担任计科2301班班主任'
+    G9: '如：参与招生宣传、社会服务'
   }
   return map[form.value.itemType] || '请输入项目名称'
 })
 
 function onTypeChange() {
-  form.value.positionType = ''
   form.value.courseName = ''
 }
 
@@ -457,12 +426,7 @@ function getMyList() {
 }
 
 function submitForm() {
-  // G11 时动态校验岗位类型
-  if (form.value.itemType === 'G11') {
-    rules.positionType[0].required = true
-  } else {
-    rules.positionType[0].required = false
-  }
+  // 教师自主申报仅限 G8/G9；G11 由教务导入/维护本学期岗位减免统一同步，不走自报
   proxy.$refs['declareRef'].validate(valid => {
     if (!valid) return
     submitting.value = true
@@ -471,15 +435,6 @@ function submitForm() {
       sourceType: 'SELF',
       status: 0
     }
-    // G11: 岗位类型写入 roleType 字段（对齐 G11 生成器与 biz_role_assignment.role_type 枚举）
-    // description 无条件拼接岗位类型（旧逻辑口径），避免教师不填说明时岗位信息丢失
-    if (data.itemType === 'G11' && data.positionType) {
-      data.roleType = data.positionType
-      data.description = data.description
-        ? data.positionType + ' - ' + data.description
-        : data.positionType
-    }
-    delete data.positionType
     addWorkloadItem(data).then(() => {
       proxy.$modal.msgSuccess('申报成功')
       resetForm()
@@ -498,7 +453,6 @@ function resetForm() {
     itemType: 'G8',
     courseName: '',
     calculatedWorkload: null,
-    positionType: '',
     description: '',
     remark: ''
   }
