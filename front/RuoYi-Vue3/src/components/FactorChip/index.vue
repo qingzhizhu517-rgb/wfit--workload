@@ -37,7 +37,6 @@ const sourceLabels = {
   MANUAL: '手工录入',
   SELF: '教师申报',
   CURRENT_RULE_DERIVED: '派生值',
-  NORMAL: '默认规则',
   UNKNOWN: '来源未说明'
 }
 

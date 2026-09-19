@@ -293,6 +293,24 @@ class WorkloadCalcServiceImplTest
         }
     }
 
+    @Test
+    void batchWithAllNullIdsFallsBackToWholeSemesterNotSilentNoop()
+    {
+        try (MockedStatic<AopContext> aop = mockStatic(AopContext.class))
+        {
+            aop.when(AopContext::currentProxy).thenReturn(service);
+            // 传入 [null]：过滤后为空，应落全学期兜底而非静默空跑
+            when(itemMapper.selectUserIdsBySemester(SEMESTER)).thenReturn(Arrays.asList(USER));
+            doReturn(new CalculationRunResult()).when(service)
+                    .run(argThat(r -> r != null && USER.equals(r.getUserId())));
+
+            Map<String, Object> data = service.runBatch(Collections.singletonList(null), SEMESTER, true);
+
+            assertThat(data.get("total")).isEqualTo(1);
+            verify(itemMapper).selectUserIdsBySemester(SEMESTER);
+        }
+    }
+
     private BizWorkloadItem givenDraftItemWithoutSummary()
     {
         BizWorkloadItem item = new BizWorkloadItem();

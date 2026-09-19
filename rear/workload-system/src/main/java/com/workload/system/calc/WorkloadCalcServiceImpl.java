@@ -314,10 +314,14 @@ public class WorkloadCalcServiceImpl implements WorkloadCalcService
     @Override
     public Map<String, Object> runBatch(List<Long> userIds, String semester, boolean includeG11)
     {
-        // 刻意不加 @Transactional：编排层，事务边界落在每位教师身上，避免一人失败连累全批
-        List<Long> targets = (userIds == null || userIds.isEmpty())
-                ? bizWorkloadItemMapper.selectUserIdsBySemester(semester)
+        // 刻意不加 @Transactional：编排层，事务边界落在每位教师身上，避免一人失败连累全批。
+        // 先过滤出有效 userId；无有效 id（null/空/全为 null）统一落全学期兜底，
+        // 避免传入 [null] 时过滤成空列表却静默空跑、还报成功。
+        List<Long> explicit = userIds == null ? java.util.List.of()
                 : userIds.stream().filter(java.util.Objects::nonNull).distinct().toList();
+        List<Long> targets = explicit.isEmpty()
+                ? bizWorkloadItemMapper.selectUserIdsBySemester(semester)
+                : explicit;
 
         WorkloadCalcService proxy = (WorkloadCalcService) AopContext.currentProxy();
 
