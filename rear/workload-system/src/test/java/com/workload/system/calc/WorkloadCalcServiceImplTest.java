@@ -1,9 +1,12 @@
 package com.workload.system.calc;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -14,19 +17,24 @@ import java.util.Collections;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.workload.common.exception.ServiceException;
 import com.workload.system.calc.strategy.CalcStrategyFactory;
 import com.workload.system.calc.strategy.WorkloadCalcStrategy;
+import com.workload.system.domain.BizWorkloadCalcSnapshot;
 import com.workload.system.domain.BizWorkloadItem;
 import com.workload.system.domain.BizWorkloadSummary;
 import com.workload.system.domain.WorkloadSummaryStatus;
+import com.workload.system.domain.vo.FactorFormulaVo;
 import com.workload.system.mapper.BizTeacherProfileMapper;
 import com.workload.system.mapper.BizWorkloadItemMapper;
 import com.workload.system.mapper.BizWorkloadSummaryMapper;
 import com.workload.system.service.ISysUserService;
+import com.workload.system.service.IWorkloadFactorFormulaService;
+import com.workload.system.service.WorkloadSnapshotService;
 
 @ExtendWith(MockitoExtension.class)
 class WorkloadCalcServiceImplTest
@@ -44,6 +52,22 @@ class WorkloadCalcServiceImplTest
     @Mock private SummaryCalcService summaryCalcService;
     @Mock private PayCalcService payCalcService;
     @Mock private ISysUserService sysUserService;
+    @Mock private IWorkloadFactorFormulaService factorFormulaService;
+    @Mock private WorkloadSnapshotService snapshotService;
+
+    private FactorFormulaVo aFormula()
+    {
+        return new FactorFormulaVo("G1", "J1 × C1 × K1 × Q1 × Q2 × N",
+                new BigDecimal("52.80"), "理论课", Collections.emptyList());
+    }
+
+    private BizWorkloadCalcSnapshot aSnapshot(long version)
+    {
+        BizWorkloadCalcSnapshot snapshot = new BizWorkloadCalcSnapshot();
+        snapshot.setItemId(ITEM_ID);
+        snapshot.setCalculationVersion(version);
+        return snapshot;
+    }
 
     @Test
     void draftSummaryAllowsItemModification()
@@ -80,6 +104,8 @@ class WorkloadCalcServiceImplTest
         item.setItemType("G1");
         when(calcStrategyFactory.get("G1")).thenReturn(strategy);
         when(strategy.calculate(item)).thenReturn(new BigDecimal("52.80"));
+        when(factorFormulaService.build(item)).thenReturn(aFormula());
+        when(snapshotService.capture(eq(item), any(), anyString())).thenReturn(aSnapshot(1L));
         when(itemMapper.updateCalculationIfEditable(any(), eq(1), eq(0))).thenReturn(0);
 
         assertThatThrownBy(() -> service.recalcItem(ITEM_ID))
@@ -95,11 +121,49 @@ class WorkloadCalcServiceImplTest
         item.setItemType("G1");
         when(calcStrategyFactory.get("G1")).thenReturn(strategy);
         when(strategy.calculate(item)).thenReturn(new BigDecimal("52.80"));
+        when(factorFormulaService.build(item)).thenReturn(aFormula());
+        when(snapshotService.capture(eq(item), any(), anyString())).thenReturn(aSnapshot(1L));
         when(itemMapper.updateCalculationIfEditable(any(), eq(1), eq(0))).thenReturn(1);
 
         assertThatCode(() -> service.recalcItem(ITEM_ID)).doesNotThrowAnyException();
         verify(itemMapper).updateCalculationIfEditable(item, 1, 0);
         verify(itemMapper, never()).updateBizWorkloadItem(any());
+    }
+
+    @Test
+    void successfulRecalcPersistsSnapshotBeforeConditionalUpdate()
+    {
+        BizWorkloadItem item = givenDraftItemWithoutSummary();
+        item.setItemType("G1");
+        when(calcStrategyFactory.get("G1")).thenReturn(strategy);
+        when(strategy.calculate(item)).thenReturn(new BigDecimal("52.80"));
+        when(factorFormulaService.build(item)).thenReturn(aFormula());
+        when(snapshotService.capture(eq(item), any(), anyString())).thenReturn(aSnapshot(7L));
+        when(itemMapper.updateCalculationIfEditable(any(), eq(1), eq(0))).thenReturn(1);
+
+        service.recalcItem(ITEM_ID);
+
+        // 先固化快照，再原子条件更新主表；主表版本与快照版本一致
+        InOrder order = inOrder(snapshotService, itemMapper);
+        order.verify(snapshotService).capture(eq(item), any(), anyString());
+        order.verify(itemMapper).updateCalculationIfEditable(item, 1, 0);
+        assertThat(item.getCalculationVersion()).isEqualTo(7L);
+    }
+
+    @Test
+    void recalcItemFailsLoudWhenFormulaMissing()
+    {
+        BizWorkloadItem item = givenDraftItemWithoutSummary();
+        item.setItemType("G1");
+        when(calcStrategyFactory.get("G1")).thenReturn(strategy);
+        when(strategy.calculate(item)).thenReturn(new BigDecimal("52.80"));
+        when(factorFormulaService.build(item)).thenReturn(null);
+
+        assertThatThrownBy(() -> service.recalcItem(ITEM_ID))
+                .isInstanceOf(ServiceException.class)
+                .hasMessageContaining("无法构建计算公式");
+        verify(snapshotService, never()).capture(any(), any(), anyString());
+        verify(itemMapper, never()).updateCalculationIfEditable(any(), eq(1), eq(0));
     }
 
     private BizWorkloadItem givenDraftItemWithoutSummary()

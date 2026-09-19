@@ -123,6 +123,13 @@ public class BizWorkloadItem extends BaseEntity
     @Excel(name = "0草稿/1已核对/2有异议/3已驳回")
     private Integer status;
 
+    /** 明细计算版本：每次成功核算固化一份快照并自增，与 biz_workload_calc_snapshot.calculation_version 对齐 */
+    private Long calculationVersion;
+
+    /** 最近一次成功核算时间 */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date lastCalculatedAt;
+
     /** 详情接口附加的计算公式说明，不参与持久化 */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private FactorFormulaVo factorFormula;
@@ -347,6 +354,26 @@ public class BizWorkloadItem extends BaseEntity
         return status;
     }
 
+    public void setCalculationVersion(Long calculationVersion)
+    {
+        this.calculationVersion = calculationVersion;
+    }
+
+    public Long getCalculationVersion()
+    {
+        return calculationVersion;
+    }
+
+    public void setLastCalculatedAt(Date lastCalculatedAt)
+    {
+        this.lastCalculatedAt = lastCalculatedAt;
+    }
+
+    public Date getLastCalculatedAt()
+    {
+        return lastCalculatedAt;
+    }
+
     public FactorFormulaVo getFactorFormula()
     {
         return factorFormula;
@@ -382,6 +409,8 @@ public class BizWorkloadItem extends BaseEntity
             .append("appealReason", getAppealReason())
             .append("appealReply", getAppealReply())
             .append("status", getStatus())
+            .append("calculationVersion", getCalculationVersion())
+            .append("lastCalculatedAt", getLastCalculatedAt())
             .append("createBy", getCreateBy())
             .append("createTime", getCreateTime())
             .append("updateBy", getUpdateBy())

@@ -27,6 +27,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="appealReason"    column="appeal_reason"    />
         <result property="appealReply"    column="appeal_reply"    />
         <result property="status"    column="status"    />
+        <result property="calculationVersion"    column="calculation_version"    />
+        <result property="lastCalculatedAt"    column="last_calculated_at"    />
         <result property="createBy"    column="create_by"    />
         <result property="createTime"    column="create_time"    />
         <result property="updateBy"    column="update_by"    />
@@ -35,7 +37,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectBizWorkloadItemVo">
-        select id, user_id, semester, academic_year, item_type, source_type, task_id, assignment_id, role_type, course_name, education_level, major_category, calculated_workload, description, is_over_limit, dean_approval_status, dean_approval_by, dean_approval_time, appeal_status, appeal_reason, appeal_reply, status, create_by, create_time, update_by, update_time, remark from biz_workload_item
+        select id, user_id, semester, academic_year, item_type, source_type, task_id, assignment_id, role_type, course_name, education_level, major_category, calculated_workload, description, is_over_limit, dean_approval_status, dean_approval_by, dean_approval_time, appeal_status, appeal_reason, appeal_reply, status, calculation_version, last_calculated_at, create_by, create_time, update_by, update_time, remark from biz_workload_item
     </sql>
 
     <select id="selectBizWorkloadItemList" parameterType="BizWorkloadItem" resultMap="BizWorkloadItemResult">
@@ -94,6 +96,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="appealReason != null">appeal_reason,</if>
             <if test="appealReply != null">appeal_reply,</if>
             <if test="status != null">status,</if>
+            <if test="calculationVersion != null">calculation_version,</if>
+            <if test="lastCalculatedAt != null">last_calculated_at,</if>
             <if test="createBy != null">create_by,</if>
             <if test="createTime != null">create_time,</if>
             <if test="updateBy != null">update_by,</if>
@@ -122,6 +126,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="appealReason != null">#{appealReason},</if>
             <if test="appealReply != null">#{appealReply},</if>
             <if test="status != null">#{status},</if>
+            <if test="calculationVersion != null">#{calculationVersion},</if>
+            <if test="lastCalculatedAt != null">#{lastCalculatedAt},</if>
             <if test="createBy != null">#{createBy},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
@@ -154,6 +160,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="appealReason != null">appeal_reason = #{appealReason},</if>
             <if test="appealReply != null">appeal_reply = #{appealReply},</if>
             <if test="status != null">status = #{status},</if>
+            <if test="calculationVersion != null">calculation_version = #{calculationVersion},</if>
+            <if test="lastCalculatedAt != null">last_calculated_at = #{lastCalculatedAt},</if>
             <if test="createBy != null">create_by = #{createBy},</if>
             <if test="createTime != null">create_time = #{createTime},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
@@ -167,6 +175,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         update biz_workload_item i
         set i.calculated_workload = #{item.calculatedWorkload},
             i.is_over_limit = #{item.isOverLimit},
+            i.calculation_version = #{item.calculationVersion},
+            i.last_calculated_at = #{item.lastCalculatedAt},
             i.update_time = #{item.updateTime}
         where i.id = #{item.id}
           and ifnull(i.status, 0) &lt;&gt; #{confirmedStatus}

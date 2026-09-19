@@ -18,10 +18,13 @@ import com.workload.system.domain.BizPayRecord;
 import com.workload.system.domain.BizWorkloadItem;
 import com.workload.system.domain.BizWorkloadSummary;
 import com.workload.system.domain.WorkloadSummaryStatus;
+import com.workload.system.domain.vo.FactorFormulaVo;
 import com.workload.system.mapper.BizTeacherProfileMapper;
 import com.workload.system.mapper.BizWorkloadItemMapper;
 import com.workload.system.mapper.BizWorkloadSummaryMapper;
 import com.workload.system.service.ISysUserService;
+import com.workload.system.service.IWorkloadFactorFormulaService;
+import com.workload.system.service.WorkloadSnapshotService;
 import com.workload.common.core.domain.entity.SysUser;
 
 /**
@@ -57,7 +60,14 @@ public class WorkloadCalcServiceImpl implements WorkloadCalcService
     @Autowired
     private ISysUserService sysUserService;
 
+    @Autowired
+    private IWorkloadFactorFormulaService factorFormulaService;
+
+    @Autowired
+    private WorkloadSnapshotService snapshotService;
+
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public BigDecimal recalcItem(Long itemId)
     {
         BizWorkloadItem item = bizWorkloadItemMapper.selectBizWorkloadItemById(itemId);
@@ -69,13 +79,24 @@ public class WorkloadCalcServiceImpl implements WorkloadCalcService
         WorkloadCalcStrategy strategy = calcStrategyFactory.get(item.getItemType());
         if (strategy == null)
         {
-            // G8/G9 等无策略类别：金额直录，不重算
+            // G8/G9 等无策略类别：金额直录，不重算，也不落快照
             return item.getCalculatedWorkload();
         }
         BigDecimal value = strategy.calculate(item);
         item.setCalculatedWorkload(value);
         strategy.afterCalculated(item, value);
-        item.setUpdateTime(DateUtils.getNowDate());
+
+        // 计算 → 构建公式因子 → 固化不可变快照 → 原子条件更新主表（同事务）。
+        // 条件更新影响行数不为 1 时抛错回滚，快照 INSERT 随之回滚，不留孤立快照。
+        FactorFormulaVo formula = factorFormulaService.build(item);
+        if (formula == null)
+        {
+            throw new ServiceException("无法构建计算公式，明细子表可能缺失, id=" + itemId);
+        }
+        Long version = snapshotService.capture(item, formula, ruleVersionOf(item)).getCalculationVersion();
+        item.setCalculationVersion(version);
+        item.setLastCalculatedAt(DateUtils.getNowDate());
+        item.setUpdateTime(item.getLastCalculatedAt());
         int affected = bizWorkloadItemMapper.updateCalculationIfEditable(item,
                 ITEM_STATUS_CONFIRMED, WorkloadSummaryStatus.DRAFT);
         if (affected != 1)
@@ -83,6 +104,13 @@ public class WorkloadCalcServiceImpl implements WorkloadCalcService
             throw new ServiceException("明细或汇总状态已变化，请刷新后重试");
         }
         return value;
+    }
+
+    /** 规则版本标识：按学期固定，便于历史学期按当时规则复现。 */
+    private String ruleVersionOf(BizWorkloadItem item)
+    {
+        String semester = item.getSemester();
+        return "RULE-" + (semester == null || semester.isBlank() ? "UNKNOWN" : semester);
     }
 
     @Override

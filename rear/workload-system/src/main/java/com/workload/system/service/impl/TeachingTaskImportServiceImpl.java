@@ -29,6 +29,7 @@ import com.workload.system.domain.BizWlTheory;
 import com.workload.system.domain.BizWlThesis;
 import com.workload.system.domain.BizWorkloadItem;
 import com.workload.system.domain.dto.TeachingTaskImportDTO;
+import com.workload.system.domain.vo.FactorFormulaVo;
 import com.workload.system.mapper.BizImportBatchMapper;
 import com.workload.system.mapper.BizTeachingTaskMapper;
 import com.workload.system.mapper.BizWlConcentratedInternshipMapper;
@@ -40,6 +41,8 @@ import com.workload.system.mapper.BizWlThesisMapper;
 import com.workload.system.mapper.BizWorkloadItemMapper;
 import com.workload.system.service.ITeachingTaskImportService;
 import com.workload.system.service.ISysUserService;
+import com.workload.system.service.IWorkloadFactorFormulaService;
+import com.workload.system.service.WorkloadSnapshotService;
 import com.workload.common.core.domain.entity.SysUser;
 
 /**
@@ -90,6 +93,12 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
 
     @Autowired
     private WorkloadWriteGuard workloadWriteGuard;
+
+    @Autowired
+    private IWorkloadFactorFormulaService factorFormulaService;
+
+    @Autowired
+    private WorkloadSnapshotService snapshotService;
 
     @Override
     public ImportResult importTeachingTasksStreaming(InputStream inputStream, String fileName)
@@ -159,9 +168,20 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
         // 7. 触发策略后置回调：G5/G6 据此在 item 上置 is_over_limit 超标标记。
         // 漏调的后果是「是否超限」要等到下一次重算才落库，刚导完看列表和附件1 全显示未超限。
         calcStrategyFactory.get(dto.getWorkloadType().toUpperCase()).afterCalculated(item, calculated);
-
-        // 8. 回写计算结果（连同回调置上的 is_over_limit 一并落库，共用同一条 UPDATE）
         item.setCalculatedWorkload(calculated);
+
+        // 8. 固化不可变计算快照，与回写落在同一行导入事务：导入即产生可追溯的因子/来源/规则版本快照，
+        // 而不必等下一次重算。快照 INSERT 与主表 UPDATE 同事务，任一失败整行回滚。
+        FactorFormulaVo formula = factorFormulaService.build(item);
+        if (formula == null)
+        {
+            throw new ServiceException("无法构建计算公式，明细子表可能缺失, itemId=" + item.getId());
+        }
+        item.setCalculationVersion(snapshotService.capture(item, formula,
+                "RULE-" + dto.getSemester()).getCalculationVersion());
+        item.setLastCalculatedAt(new Date());
+
+        // 9. 回写计算结果（连同回调置上的 is_over_limit、快照版本/时间一并落库，共用同一条 UPDATE）
         workloadItemMapper.updateBizWorkloadItem(item);
 
         return calculated;

@@ -139,7 +139,9 @@ public class ManagementItemGeneratorImpl implements ManagementItemGenerator
         item.setSemester(semester);
         item.setAcademicYear(assignment.getAcademicYear());
         item.setItemType("G11");
-        item.setSourceType("IMPORT");
+        // 生成器新建 G11 统一写 AUTO（与 23_calculation_consistency.sql 的 IMPORT→AUTO 迁移一致）：
+        // 「教务同步/生成」为 AUTO，纯导入明细才是 IMPORT，三态不再混淆（原待办 #18）
+        item.setSourceType("AUTO");
         item.setAssignmentId(assignment.getId());
         item.setRoleType(assignment.getRoleType());
         item.setCalculatedWorkload(BigDecimal.ZERO);
