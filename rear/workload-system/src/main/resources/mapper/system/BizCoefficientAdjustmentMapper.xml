@@ -107,6 +107,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where item_id = #{itemId} and factor_code = #{factorCode} and status = 0
     </select>
 
+    <select id="countPendingByUserSemester" resultType="int">
+        select count(1) from biz_coefficient_adjustment
+        where user_id = #{userId} and semester = #{semester} and status = 0
+    </select>
+
     <!-- 服务端读取当前系数值：白名单固定列名，禁止 ${} 拼列。命中不到返回 NULL。 -->
     <select id="selectCurrentFactorValue" resultType="java.math.BigDecimal">
         <choose>

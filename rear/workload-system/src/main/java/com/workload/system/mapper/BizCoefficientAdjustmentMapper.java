@@ -34,6 +34,12 @@ public interface BizCoefficientAdjustmentMapper
     public int countPendingByItemFactor(@Param("itemId") Long itemId, @Param("factorCode") String factorCode);
 
     /**
+     * 统计某教师某学期处于待审(PENDING/status=0)的系数调整申请数。
+     * <p>一键核算前置校验：仍有待审申请时不允许核算，避免核算结果与在途申请不一致。</p>
+     */
+    public int countPendingByUserSemester(@Param("userId") Long userId, @Param("semester") String semester);
+
+    /**
      * 服务端读取指定明细某系数的当前值，作为申请的 old_value。
      * <p>只读；用 &lt;choose&gt; 白名单映射到固定列名，绝不用 ${} 拼列名。</p>
      */

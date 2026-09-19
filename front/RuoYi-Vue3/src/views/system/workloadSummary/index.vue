@@ -68,7 +68,7 @@
       <template v-if="!isTeacher && !isLeader">
         <el-col :span="1.5">
           <el-tooltip
-            content="重算明细→汇总→酬金，需先在搜索栏选择教师和学期"
+            content="校验→同步G11(可选)→明细→汇总→酬金，需先在搜索栏选择教师和学期"
             placement="top"
           >
             <el-button
@@ -77,9 +77,9 @@
               plain
               icon="Cpu"
               :loading="calcLoading"
-              @click="handleRecalcAll"
+              @click="handleStartRun"
             >
-              一键核算
+              开始核算
             </el-button>
           </el-tooltip>
         </el-col>
@@ -95,7 +95,7 @@
               icon="Files"
               :loading="batchCalcLoading"
               :disabled="multiple"
-              @click="handleRecalcSelected"
+              @click="handleRunSelected"
             >
               核算所选{{ selectedUserIds.length ? `(${selectedUserIds.length})` : '' }}
             </el-button>
@@ -112,7 +112,7 @@
               plain
               icon="Odometer"
               :loading="batchCalcLoading"
-              @click="handleRecalcSemester"
+              @click="handleRunSemester"
             >
               全学期核算
             </el-button>
@@ -120,7 +120,7 @@
         </el-col>
         <el-col :span="1.5">
           <el-tooltip
-            content="按搜索栏学期，由岗位任职批量生成 G11 管理服务明细"
+            content="按搜索栏学期，同步教务确认的本学期岗位减免值到 G11"
             placement="top"
           >
             <el-button
@@ -130,7 +130,7 @@
               icon="MagicStick"
               @click="handleGenG11"
             >
-              生成G11
+              同步岗位减免
             </el-button>
           </el-tooltip>
         </el-col>
@@ -740,13 +740,103 @@
         />
       </template>
     </el-dialog>
+
+    <!-- 一键核算：确认 + 分阶段结果 -->
+    <el-dialog
+      v-model="runOpen"
+      :title="runResult ? '核算结果' : '开始核算'"
+      width="600px"
+      append-to-body
+    >
+      <template v-if="!runResult">
+        <el-alert
+          :title="runConfirmText"
+          type="info"
+          :closable="false"
+          class="mb12"
+        />
+        <el-checkbox v-model="runIncludeG11">
+          同步教务岗位减免到 G11
+        </el-checkbox>
+        <div class="run-hint">
+          勾选后先按教务确认的本学期岗位减免同步 G11，再依次重算明细、汇总与酬金；不勾选则跳过 G11 同步。
+        </div>
+      </template>
+      <template v-else>
+        <el-steps
+          direction="vertical"
+          :active="runResult.stages.length"
+          class="run-steps"
+        >
+          <el-step
+            v-for="stage in runResult.stages"
+            :key="stage.code"
+            :title="stageLabel(stage.code)"
+            :description="stageDesc(stage)"
+            :status="stage.ok ? 'success' : 'error'"
+          />
+        </el-steps>
+        <el-descriptions
+          :column="2"
+          border
+          class="mb12"
+        >
+          <el-descriptions-item label="同步 G11">
+            {{ runResult.generatedG11Count }} 条
+          </el-descriptions-item>
+          <el-descriptions-item label="重算明细">
+            {{ runResult.recalcItemCount }} 条
+          </el-descriptions-item>
+          <el-descriptions-item label="未核对明细">
+            {{ runResult.unconfirmedCount }} 条
+          </el-descriptions-item>
+          <el-descriptions-item label="总工作量">
+            {{ runResult.summary ? runResult.summary.totalWorkload : '-' }}
+          </el-descriptions-item>
+        </el-descriptions>
+        <el-alert
+          v-if="runResult.unconfirmedCount > 0"
+          type="warning"
+          :closable="false"
+          title="仍有明细未核对确认，暂不可提交审核"
+        />
+      </template>
+      <template #footer>
+        <template v-if="!runResult">
+          <el-button @click="runOpen = false">
+            取消
+          </el-button>
+          <el-button
+            type="primary"
+            :loading="calcLoading"
+            @click="doRun"
+          >
+            开始核算
+          </el-button>
+        </template>
+        <template v-else>
+          <el-button @click="runOpen = false">
+            关闭
+          </el-button>
+          <el-button
+            v-if="canSubmitAfterRun"
+            v-hasPermi="['system:audit:submit']"
+            type="success"
+            icon="Promotion"
+            @click="handleSubmitAfterRun"
+          >
+            提交审核
+          </el-button>
+        </template>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup name="WorkloadSummary">
 import TeacherOverview from '@/components/TeacherOverview'
 import { listWorkloadSummary, delWorkloadSummary } from '@/api/system/workloadSummary'
-import { recalcSummary, recalcAll, recalcAllBatch, previewSummary, genG11 } from '@/api/system/calc'
+import { recalcSummary, previewSummary, genG11, runCalc, runCalcBatch } from '@/api/system/calc'
 import { exportPersonalWorkload, exportPaySummary, exportAttachment1 } from '@/api/system/export'
 import { ElMessageBox } from 'element-plus'
 import { saveBlobAsFile } from '@/utils/blobDownload'
@@ -803,6 +893,44 @@ const previewOpen = ref(false)
 const previewLoading = ref(false)
 const previewData = ref(null)
 const previewQuery = reactive({ userId: null, semester: null })
+
+// 一键核算对话框：确认阶段 runResult 为空，核算完成后填入分阶段结果
+const runOpen = ref(false)
+const runResult = ref(null)
+const runIncludeG11 = ref(true)
+const runMode = ref('single') // single / selected / semester
+const runContext = reactive({ userId: null, semester: null })
+
+const STAGE_LABELS = {
+  VALIDATE: '一致性校验',
+  GENERATE_G11: '同步岗位减免到 G11',
+  RECALC_ITEMS: '重算明细',
+  RECALC_SUMMARY: '重算汇总',
+  RECALC_PAY: '重算酬金'
+}
+function stageLabel(code) {
+  return STAGE_LABELS[code] || code
+}
+function stageDesc(stage) {
+  const msg = stage.message || (stage.ok ? '完成' : '失败')
+  return stage.count ? `${msg}（${stage.count} 条）` : msg
+}
+// 仅单教师核算成功、且无未核对明细时，才允许在结果框内直接提交审核
+const canSubmitAfterRun = computed(() =>
+  runMode.value === 'single'
+  && runResult.value
+  && runResult.value.summary
+  && Number(runResult.value.unconfirmedCount) === 0
+)
+const runConfirmText = computed(() => {
+  if (runMode.value === 'single') {
+    return `将对「${userLabel(runContext.userId)}」${runContext.semester} 执行一键核算`
+  }
+  if (runMode.value === 'selected') {
+    return `将对 ${selectedUserIds.value.length} 位所选教师执行 ${runContext.semester} 一键核算，单人失败不影响其他人`
+  }
+  return `将核算 ${runContext.semester} 学期全部有明细的教师，耗时较长，期间请勿重复点击`
+})
 
 const data = reactive({
   queryParams: {
@@ -877,20 +1005,92 @@ function handleRecalcSummary(row) {
   }).catch(() => {})
 }
 
-/** 一键核算：明细→汇总→酬金 */
-function handleRecalcAll() {
+/** 打开单教师一键核算确认框 */
+function handleStartRun() {
   const checked = checkTeacherSemester()
   if (!checked) return
-  proxy.$modal.confirm(`确认对「${userLabel(checked.userId)}」${checked.semester} 执行一键核算吗？将依次重算明细、汇总与酬金。`).then(function() {
+  runMode.value = 'single'
+  runContext.userId = checked.userId
+  runContext.semester = checked.semester
+  runResult.value = null
+  runIncludeG11.value = true
+  runOpen.value = true
+}
+
+/** 打开「核算所选」确认框 */
+function handleRunSelected() {
+  const { semester } = queryParams.value
+  if (!semester) {
+    proxy.$modal.alertWarning('请先在搜索栏填写「学年学期」')
+    return
+  }
+  if (!selectedUserIds.value.length) {
+    proxy.$modal.alertWarning('请先勾选需要核算的教师')
+    return
+  }
+  runMode.value = 'selected'
+  runContext.userId = null
+  runContext.semester = semester
+  runResult.value = null
+  runIncludeG11.value = true
+  runOpen.value = true
+}
+
+/** 打开「全学期核算」确认框 */
+function handleRunSemester() {
+  const { semester } = queryParams.value
+  if (!semester) {
+    proxy.$modal.alertWarning('请先在搜索栏填写「学年学期」')
+    return
+  }
+  runMode.value = 'semester'
+  runContext.userId = null
+  runContext.semester = semester
+  runResult.value = null
+  runIncludeG11.value = true
+  runOpen.value = true
+}
+
+/** 执行核算：按 runMode 分单教师 / 批量 */
+function doRun() {
+  if (runMode.value === 'single') {
     calcLoading.value = true
-    return recalcAll(checked.userId, checked.semester)
-  }).then((res) => {
+    runCalc(runContext.userId, runContext.semester, runIncludeG11.value).then((res) => {
+      runResult.value = res.data
+      getList()
+    }).catch(() => {}).finally(() => {
+      calcLoading.value = false
+    })
+    return
+  }
+  // 批量：核算所选 / 全学期
+  const userIds = runMode.value === 'selected' ? selectedUserIds.value : []
+  calcLoading.value = true
+  batchCalcLoading.value = true
+  runCalcBatch(runContext.semester, userIds, runIncludeG11.value).then((res) => {
+    runOpen.value = false
     getList()
-    const count = res.data?.recalcItemCount ?? 0
-    proxy.$modal.msgSuccess(`核算完成，共重算 ${count} 条明细`)
+    notifyBatchResult(res.data)
   }).catch(() => {}).finally(() => {
     calcLoading.value = false
+    batchCalcLoading.value = false
   })
+}
+
+/** 结果框内提交审核（仅单教师、无未核对明细时可用） */
+function handleSubmitAfterRun() {
+  const summaryId = runResult.value?.summary?.id
+  if (!summaryId) {
+    proxy.$modal.alertWarning('未获取到汇总记录，请刷新列表后在行内提交')
+    return
+  }
+  proxy.$modal.confirm(`确认提交「${userLabel(runContext.userId)}」${runContext.semester} 的工作量汇总审核？`).then(() => {
+    return auditSubmit(summaryId)
+  }).then(() => {
+    runOpen.value = false
+    getList()
+    proxy.$modal.msgSuccess('已提交审核')
+  }).catch(() => {})
 }
 
 /**
@@ -916,48 +1116,6 @@ function notifyBatchResult(data) {
     '批量核算结果',
     { type: 'warning', dangerouslyUseHTMLString: true }
   ).catch(() => {})
-}
-
-/** 批量核算所选教师 */
-function handleRecalcSelected() {
-  const { semester } = queryParams.value
-  if (!semester) {
-    proxy.$modal.alertWarning('请先在搜索栏填写「学年学期」')
-    return
-  }
-  if (!selectedUserIds.value.length) {
-    proxy.$modal.alertWarning('请先勾选需要核算的教师')
-    return
-  }
-  const names = selectedUserIds.value.map(id => userLabel(id)).join('、')
-  proxy.$modal.confirm(`确认对 ${selectedUserIds.value.length} 位教师（${names}）执行 ${semester} 一键核算吗？`).then(function() {
-    batchCalcLoading.value = true
-    return recalcAllBatch(semester, selectedUserIds.value)
-  }).then((res) => {
-    getList()
-    notifyBatchResult(res.data)
-  }).catch(() => {}).finally(() => {
-    batchCalcLoading.value = false
-  })
-}
-
-/** 全学期核算：该学期所有有明细的教师 */
-function handleRecalcSemester() {
-  const { semester } = queryParams.value
-  if (!semester) {
-    proxy.$modal.alertWarning('请先在搜索栏填写「学年学期」')
-    return
-  }
-  proxy.$modal.confirm(`确认核算 ${semester} 学期全部有工作量明细的教师吗？人数多时耗时较长，期间请勿重复点击。`).then(function() {
-    batchCalcLoading.value = true
-    // 不传 userIds = 全学期语义（后端对教师角色仍强制收敛为本人）
-    return recalcAllBatch(semester, [])
-  }).then((res) => {
-    getList()
-    notifyBatchResult(res.data)
-  }).catch(() => {}).finally(() => {
-    batchCalcLoading.value = false
-  })
 }
 
 /** 导出表一（标准格式）：对齐教务处「-新」模板，一行一开课任务 39 列 */
@@ -1210,5 +1368,14 @@ watch(
 }
 .preview-form {
   margin-bottom: 8px;
+}
+.run-hint {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+  line-height: 1.5;
+}
+.run-steps {
+  margin-bottom: 12px;
 }
 </style>

@@ -8,8 +8,10 @@ import java.util.List;
 import java.util.Map;
 import org.springframework.aop.framework.AopContext;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import com.workload.common.exception.ServiceException;
 import com.workload.common.utils.DateUtils;
 import com.workload.system.calc.strategy.CalcStrategyFactory;
@@ -18,7 +20,10 @@ import com.workload.system.domain.BizPayRecord;
 import com.workload.system.domain.BizWorkloadItem;
 import com.workload.system.domain.BizWorkloadSummary;
 import com.workload.system.domain.WorkloadSummaryStatus;
+import com.workload.system.domain.dto.CalculationRunRequest;
+import com.workload.system.domain.vo.CalculationRunResult;
 import com.workload.system.domain.vo.FactorFormulaVo;
+import com.workload.system.mapper.BizCoefficientAdjustmentMapper;
 import com.workload.system.mapper.BizTeacherProfileMapper;
 import com.workload.system.mapper.BizWorkloadItemMapper;
 import com.workload.system.mapper.BizWorkloadSummaryMapper;
@@ -65,6 +70,20 @@ public class WorkloadCalcServiceImpl implements WorkloadCalcService
 
     @Autowired
     private WorkloadSnapshotService snapshotService;
+
+    @Autowired
+    private WorkloadWriteGuard writeGuard;
+
+    @Autowired
+    private BizCoefficientAdjustmentMapper coefficientAdjustmentMapper;
+
+    /**
+     * G11 生成器与本服务互为依赖（生成器 recalcItem，本服务 run 时同步 G11），
+     * 用 {@code @Lazy} 打破构造期循环（Spring 默认已禁用循环引用自动解析）。
+     */
+    @Lazy
+    @Autowired
+    private ManagementItemGenerator managementItemGenerator;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -208,6 +227,155 @@ public class WorkloadCalcServiceImpl implements WorkloadCalcService
         data.put("failCount", failures.size());
         data.put("failures", failures);
         return data;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public CalculationRunResult run(CalculationRunRequest request)
+    {
+        if (request == null || request.getUserId() == null || !StringUtils.hasText(request.getSemester()))
+        {
+            throw new ServiceException("缺少教师或学期，无法核算");
+        }
+        Long userId = request.getUserId();
+        String semester = request.getSemester();
+        boolean includeG11 = request.isIncludeG11();
+
+        CalculationRunResult result = new CalculationRunResult(userId, semester, includeG11);
+
+        // 阶段 1：Guard（冻结锁）+ 一致性校验。任一失败抛错，整体事务回滚，零写入。
+        // 失败阶段标识写入 ServiceException.detailMessage，供 runBatch 归因（ServiceException 为 final，不能子类化）。
+        try
+        {
+            writeGuard.lockDraftOrAbsent(userId, semester);
+            validateConsistency(userId, semester);
+            result.addStage(CalculationRunResult.STAGE_VALIDATE, true, 0, "校验通过");
+        }
+        catch (ServiceException e)
+        {
+            throw stageFailure(CalculationRunResult.STAGE_VALIDATE, e);
+        }
+
+        // 阶段 2：同步教务岗位减免到 G11（includeG11=false 时占位跳过，绝不调用生成器）
+        if (includeG11)
+        {
+            int g11 = managementItemGenerator.generate(userId, semester);
+            result.setGeneratedG11Count(g11);
+            result.addStage(CalculationRunResult.STAGE_GENERATE_G11, true, g11, "已同步岗位减免");
+        }
+        else
+        {
+            result.addStage(CalculationRunResult.STAGE_GENERATE_G11, true, 0, "未勾选同步 G11，已跳过");
+        }
+
+        // 阶段 3：重算明细
+        int itemCount = recalcItems(userId, semester);
+        result.setRecalcItemCount(itemCount);
+        result.addStage(CalculationRunResult.STAGE_RECALC_ITEMS, true, itemCount, "已重算明细");
+
+        // 阶段 4：重算汇总（落库）
+        BizWorkloadSummary summary = summaryCalcService.recalcSummary(userId, semester, true);
+        result.setSummary(summary);
+        result.addStage(CalculationRunResult.STAGE_RECALC_SUMMARY, true, 1, "已重算汇总");
+
+        // 阶段 5：重算酬金（落库）
+        BizPayRecord payRecord = payCalcService.recalcPay(userId, semester);
+        result.setPayRecord(payRecord);
+        result.addStage(CalculationRunResult.STAGE_RECALC_PAY, true, 1, "已重算酬金");
+
+        result.setUnconfirmedCount(summaryCalcService.countUnconfirmed(userId, semester));
+        return result;
+    }
+
+    @Override
+    public Map<String, Object> runBatch(List<Long> userIds, String semester, boolean includeG11)
+    {
+        // 刻意不加 @Transactional：编排层，事务边界落在每位教师身上，避免一人失败连累全批
+        List<Long> targets = (userIds == null || userIds.isEmpty())
+                ? bizWorkloadItemMapper.selectUserIdsBySemester(semester)
+                : userIds.stream().filter(java.util.Objects::nonNull).distinct().toList();
+
+        WorkloadCalcService proxy = (WorkloadCalcService) AopContext.currentProxy();
+
+        List<Map<String, Object>> failures = new ArrayList<>();
+        int successCount = 0;
+        int generatedG11Count = 0;
+        int recalcItemCount = 0;
+        for (Long uid : targets)
+        {
+            try
+            {
+                CalculationRunResult one = proxy.run(new CalculationRunRequest(uid, semester, includeG11));
+                successCount++;
+                generatedG11Count += one.getGeneratedG11Count();
+                recalcItemCount += one.getRecalcItemCount();
+            }
+            catch (Exception e)
+            {
+                Map<String, Object> fail = new LinkedHashMap<>();
+                fail.put("userId", uid);
+                fail.put("userName", resolveUserLabel(uid));
+                fail.put("stage", e instanceof ServiceException se && se.getDetailMessage() != null
+                        ? se.getDetailMessage() : "UNKNOWN");
+                fail.put("reason", e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName());
+                failures.add(fail);
+            }
+        }
+
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("semester", semester);
+        data.put("includeG11", includeG11);
+        data.put("total", targets.size());
+        data.put("successCount", successCount);
+        data.put("failCount", failures.size());
+        data.put("generatedG11Count", generatedG11Count);
+        data.put("recalcItemCount", recalcItemCount);
+        data.put("failures", failures);
+        return data;
+    }
+
+    /**
+     * 一致性校验：教师档案存在、子表齐全（可构建计算公式）、无待审系数调整申请。
+     * 已核对(status=1)明细由 recalcItems 天然跳过，不会被覆盖。
+     */
+    private void validateConsistency(Long userId, String semester)
+    {
+        if (bizTeacherProfileMapper.selectBizTeacherProfileByUserId(userId) == null)
+        {
+            throw new ServiceException("教师档案不存在，无法核算");
+        }
+        if (coefficientAdjustmentMapper.countPendingByUserSemester(userId, semester) > 0)
+        {
+            throw new ServiceException("存在待审的系数调整申请，请先处理后再核算");
+        }
+        // 子表齐全性：对有策略的明细逐条尝试构建公式，构建不出即子表缺失，fail-loud
+        BizWorkloadItem query = new BizWorkloadItem();
+        query.setUserId(userId);
+        query.setSemester(semester);
+        for (BizWorkloadItem item : bizWorkloadItemMapper.selectBizWorkloadItemList(query))
+        {
+            if (item.getStatus() != null && (item.getStatus() == 3 || item.getStatus() == ITEM_STATUS_CONFIRMED))
+            {
+                continue; // 已驳回不参与；已核对已冻结、不会被重算覆盖
+            }
+            if (calcStrategyFactory.get(item.getItemType()) == null)
+            {
+                continue; // G8/G9 等无策略类别：金额直录，无子表
+            }
+            if (factorFormulaService.build(item) == null)
+            {
+                throw new ServiceException("明细子表缺失，无法核算, itemId=" + item.getId());
+            }
+        }
+    }
+
+    /**
+     * 把阶段标识挂到 ServiceException.detailMessage，保留原始业务提示为 message。
+     * ServiceException 为 final 不能子类化，故复用其 detailMessage 承载阶段。
+     */
+    private ServiceException stageFailure(String stage, ServiceException cause)
+    {
+        return new ServiceException(cause.getMessage(), cause.getCode()).setDetailMessage(stage);
     }
 
     /**

@@ -5,30 +5,46 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.InOrder;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.aop.framework.AopContext;
 
 import com.workload.common.exception.ServiceException;
 import com.workload.system.calc.strategy.CalcStrategyFactory;
 import com.workload.system.calc.strategy.WorkloadCalcStrategy;
+import com.workload.system.domain.BizPayRecord;
+import com.workload.system.domain.BizTeacherProfile;
 import com.workload.system.domain.BizWorkloadCalcSnapshot;
 import com.workload.system.domain.BizWorkloadItem;
 import com.workload.system.domain.BizWorkloadSummary;
 import com.workload.system.domain.WorkloadSummaryStatus;
+import com.workload.system.domain.dto.CalculationRunRequest;
+import com.workload.system.domain.vo.CalculationRunResult;
+import com.workload.system.domain.vo.CalculationRunResult.StageResult;
 import com.workload.system.domain.vo.FactorFormulaVo;
+import com.workload.system.mapper.BizCoefficientAdjustmentMapper;
 import com.workload.system.mapper.BizTeacherProfileMapper;
 import com.workload.system.mapper.BizWorkloadItemMapper;
 import com.workload.system.mapper.BizWorkloadSummaryMapper;
@@ -43,7 +59,7 @@ class WorkloadCalcServiceImplTest
     private static final Long USER = 1L;
     private static final String SEMESTER = "2025-2026-1";
 
-    @InjectMocks private WorkloadCalcServiceImpl service;
+    @Spy @InjectMocks private WorkloadCalcServiceImpl service;
     @Mock private BizWorkloadItemMapper itemMapper;
     @Mock private BizTeacherProfileMapper teacherProfileMapper;
     @Mock private BizWorkloadSummaryMapper summaryMapper;
@@ -54,6 +70,9 @@ class WorkloadCalcServiceImplTest
     @Mock private ISysUserService sysUserService;
     @Mock private IWorkloadFactorFormulaService factorFormulaService;
     @Mock private WorkloadSnapshotService snapshotService;
+    @Mock private ManagementItemGenerator managementItemGenerator;
+    @Mock private WorkloadWriteGuard writeGuard;
+    @Mock private BizCoefficientAdjustmentMapper adjustmentMapper;
 
     private FactorFormulaVo aFormula()
     {
@@ -164,6 +183,111 @@ class WorkloadCalcServiceImplTest
                 .hasMessageContaining("无法构建计算公式");
         verify(snapshotService, never()).capture(any(), any(), anyString());
         verify(itemMapper, never()).updateCalculationIfEditable(any(), eq(1), eq(0));
+    }
+
+    @Test
+    void fullRunReportsEveryStage()
+    {
+        when(teacherProfileMapper.selectBizTeacherProfileByUserId(USER)).thenReturn(new BizTeacherProfile());
+        when(adjustmentMapper.countPendingByUserSemester(USER, SEMESTER)).thenReturn(0);
+        when(itemMapper.selectBizWorkloadItemList(any())).thenReturn(Collections.emptyList());
+        when(managementItemGenerator.generate(USER, SEMESTER)).thenReturn(2);
+        doReturn(7).when(service).recalcItems(USER, SEMESTER);
+        when(summaryCalcService.recalcSummary(USER, SEMESTER, true)).thenReturn(new BizWorkloadSummary());
+        when(payCalcService.recalcPay(USER, SEMESTER)).thenReturn(new BizPayRecord());
+        when(summaryCalcService.countUnconfirmed(USER, SEMESTER)).thenReturn(0);
+
+        CalculationRunResult result = service.run(new CalculationRunRequest(USER, SEMESTER, true));
+
+        assertThat(result.getStages()).extracting(StageResult::getCode)
+                .containsExactly("VALIDATE", "GENERATE_G11", "RECALC_ITEMS", "RECALC_SUMMARY", "RECALC_PAY");
+        assertThat(result.getStages()).allMatch(StageResult::isOk);
+        assertThat(result.getGeneratedG11Count()).isEqualTo(2);
+        assertThat(result.getRecalcItemCount()).isEqualTo(7);
+        verify(managementItemGenerator).generate(USER, SEMESTER);
+    }
+
+    @Test
+    void runWithoutG11DoesNotInvokeGenerator()
+    {
+        when(teacherProfileMapper.selectBizTeacherProfileByUserId(USER)).thenReturn(new BizTeacherProfile());
+        when(adjustmentMapper.countPendingByUserSemester(USER, SEMESTER)).thenReturn(0);
+        when(itemMapper.selectBizWorkloadItemList(any())).thenReturn(Collections.emptyList());
+        doReturn(3).when(service).recalcItems(USER, SEMESTER);
+        when(summaryCalcService.recalcSummary(USER, SEMESTER, true)).thenReturn(new BizWorkloadSummary());
+        when(payCalcService.recalcPay(USER, SEMESTER)).thenReturn(new BizPayRecord());
+        when(summaryCalcService.countUnconfirmed(USER, SEMESTER)).thenReturn(0);
+
+        CalculationRunResult result = service.run(new CalculationRunRequest(USER, SEMESTER, false));
+
+        // GENERATE_G11 阶段仍在列表中占位，但生成器绝不被调用、计数为 0
+        assertThat(result.getStages()).extracting(StageResult::getCode)
+                .containsExactly("VALIDATE", "GENERATE_G11", "RECALC_ITEMS", "RECALC_SUMMARY", "RECALC_PAY");
+        assertThat(result.getGeneratedG11Count()).isEqualTo(0);
+        verify(managementItemGenerator, never()).generate(any(), anyString());
+    }
+
+    @Test
+    void runFailsValidateAndWritesNothingWhenSubTableMissing()
+    {
+        when(teacherProfileMapper.selectBizTeacherProfileByUserId(USER)).thenReturn(new BizTeacherProfile());
+        when(adjustmentMapper.countPendingByUserSemester(USER, SEMESTER)).thenReturn(0);
+        BizWorkloadItem g1 = new BizWorkloadItem();
+        g1.setId(ITEM_ID);
+        g1.setItemType("G1");
+        g1.setStatus(0);
+        when(itemMapper.selectBizWorkloadItemList(any())).thenReturn(Collections.singletonList(g1));
+        when(calcStrategyFactory.get("G1")).thenReturn(strategy);
+        when(factorFormulaService.build(g1)).thenReturn(null);
+
+        assertThatThrownBy(() -> service.run(new CalculationRunRequest(USER, SEMESTER, true)))
+                .isInstanceOf(ServiceException.class)
+                .hasMessageContaining("子表");
+        // 校验失败即零写入：既不生成 G11、也不重算明细/汇总/酬金
+        verify(managementItemGenerator, never()).generate(any(), anyString());
+        verify(service, never()).recalcItems(any(), anyString());
+        verify(summaryCalcService, never()).recalcSummary(any(), anyString(), eq(true));
+    }
+
+    @Test
+    void runFailsValidateWhenPendingAdjustmentExists()
+    {
+        when(teacherProfileMapper.selectBizTeacherProfileByUserId(USER)).thenReturn(new BizTeacherProfile());
+        when(adjustmentMapper.countPendingByUserSemester(USER, SEMESTER)).thenReturn(1);
+
+        assertThatThrownBy(() -> service.run(new CalculationRunRequest(USER, SEMESTER, true)))
+                .isInstanceOf(ServiceException.class)
+                .hasMessageContaining("系数调整申请");
+        verify(managementItemGenerator, never()).generate(any(), anyString());
+        verify(service, never()).recalcItems(any(), anyString());
+    }
+
+    @Test
+    void batchAccumulatesOnlySuccessfulTeacherCounts()
+    {
+        BizWorkloadItem summaryItem = new BizWorkloadItem();
+        CalculationRunResult ok = new CalculationRunResult();
+        ok.setRecalcItemCount(5);
+        ok.setGeneratedG11Count(2);
+
+        try (MockedStatic<AopContext> aop = mockStatic(AopContext.class))
+        {
+            aop.when(AopContext::currentProxy).thenReturn(service);
+            doReturn(ok).when(service).run(argThat(r -> r != null && USER.equals(r.getUserId())));
+            doThrow(new ServiceException("教师档案不存在，无法重算"))
+                    .when(service).run(argThat(r -> r != null && Long.valueOf(2L).equals(r.getUserId())));
+
+            Map<String, Object> data = service.runBatch(Arrays.asList(USER, 2L), SEMESTER, true);
+
+            assertThat(data.get("successCount")).isEqualTo(1);
+            assertThat(data.get("failCount")).isEqualTo(1);
+            assertThat(data.get("recalcItemCount")).isEqualTo(5);
+            assertThat(data.get("generatedG11Count")).isEqualTo(2);
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> failures = (List<Map<String, Object>>) data.get("failures");
+            assertThat(failures).hasSize(1);
+            assertThat(failures.get(0).get("reason")).isEqualTo("教师档案不存在，无法重算");
+        }
     }
 
     private BizWorkloadItem givenDraftItemWithoutSummary()

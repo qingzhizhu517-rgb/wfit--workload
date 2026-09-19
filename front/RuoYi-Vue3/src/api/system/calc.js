@@ -73,3 +73,24 @@ export function recalcAllBatch(semester, userIds) {
     timeout: 5 * 60 * 1000
   })
 }
+
+// 阶段化一键核算（单教师）：校验→同步G11(可选)→明细→汇总→酬金，逐阶段返回
+export function runCalc(userId, semester, includeG11) {
+  return request({
+    url: '/system/calc/run',
+    method: 'post',
+    data: { userId, semester, includeG11: !!includeG11 },
+    timeout: 5 * 60 * 1000
+  })
+}
+
+// 批量阶段化一键核算：userIds 传空数组/不传 = 该学期全部有明细的教师，逐教师独立事务
+export function runCalcBatch(semester, userIds, includeG11) {
+  return request({
+    url: '/system/calc/runBatch',
+    method: 'post',
+    params: { semester },
+    data: { userIds: userIds && userIds.length ? userIds : [], includeG11: !!includeG11 },
+    timeout: 5 * 60 * 1000
+  })
+}

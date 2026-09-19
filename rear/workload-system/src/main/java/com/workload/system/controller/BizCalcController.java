@@ -23,6 +23,7 @@ import com.workload.system.calc.PayCalcService;
 import com.workload.system.calc.SummaryCalcService;
 import com.workload.system.calc.WorkloadCalcService;
 import com.workload.system.domain.BizWorkloadSummary;
+import com.workload.system.domain.dto.CalculationRunRequest;
 
 /**
  * 工作量计算引擎Controller（单条重算/学期汇总/预览）
@@ -155,5 +156,69 @@ public class BizCalcController extends BaseController
         Long scoped = DataScopeUtil.resolveUserId(null);
         List<Long> targets = scoped != null ? Collections.singletonList(scoped) : userIds;
         return success(workloadCalcService.recalcAllBatch(targets, semester));
+    }
+
+    /**
+     * 阶段化一键核算（单教师）：校验 → 同步G11(可选) → 明细 → 汇总 → 酬金，逐阶段返回。
+     * <p>
+     * 教师角色被 {@link DataScopeUtil#resolveUserId} 强制收敛为「只能算自己」。
+     */
+    @PreAuthorize("@ss.hasPermi('system:workloadSummary:edit')")
+    @Log(title = "计算引擎", businessType = BusinessType.UPDATE)
+    @PostMapping("/run")
+    public AjaxResult run(@RequestBody CalculationRunRequest request)
+    {
+        if (request == null)
+        {
+            request = new CalculationRunRequest();
+        }
+        request.setUserId(DataScopeUtil.resolveUserId(request.getUserId()));
+        return success(workloadCalcService.run(request));
+    }
+
+    /**
+     * 批量阶段化一键核算：逐教师独立事务执行 {@link #run}，单人失败只记入 failures。
+     * <p>
+     * userIds 传空（或整个 body 省略）表示该学期全部有明细的教师；教师角色一律收敛为本人。
+     */
+    @PreAuthorize("@ss.hasPermi('system:workloadSummary:edit')")
+    @Log(title = "计算引擎", businessType = BusinessType.UPDATE)
+    @PostMapping("/runBatch")
+    public AjaxResult runBatch(@RequestParam String semester,
+                               @RequestBody(required = false) RunBatchBody body)
+    {
+        boolean includeG11 = body != null && body.isIncludeG11();
+        List<Long> requested = body != null ? body.getUserIds() : null;
+        // 教师角色：无论传了谁，一律收敛成本人；管理角色下 resolveUserId(null) 返回 null，保持全量语义
+        Long scoped = DataScopeUtil.resolveUserId(null);
+        List<Long> targets = scoped != null ? Collections.singletonList(scoped) : requested;
+        return success(workloadCalcService.runBatch(targets, semester, includeG11));
+    }
+
+    /** 批量核算请求体：勾选的教师列表 + 是否同步 G11。 */
+    public static class RunBatchBody
+    {
+        private List<Long> userIds;
+        private boolean includeG11;
+
+        public List<Long> getUserIds()
+        {
+            return userIds;
+        }
+
+        public void setUserIds(List<Long> userIds)
+        {
+            this.userIds = userIds;
+        }
+
+        public boolean isIncludeG11()
+        {
+            return includeG11;
+        }
+
+        public void setIncludeG11(boolean includeG11)
+        {
+            this.includeG11 = includeG11;
+        }
     }
 }

@@ -64,4 +64,29 @@ public interface WorkloadCalcService
      * @return 汇总结果：total / successCount / failCount / failures（每项含 userId、userName、reason）
      */
     public Map<String, Object> recalcAllBatch(List<Long> userIds, String semester);
+
+    /**
+     * 阶段化一键核算（单教师单事务）：先 Guard + 一致性校验（教师档案、子表齐全、
+     * 无待审系数调整申请），再按 {@code includeG11} 显式执行
+     * 「同步 G11 → 重算明细 → 重算汇总 → 重算酬金」四步，逐阶段返回结果与计数。
+     * <p>
+     * 校验失败该阶段 ok=false 并抛异常，整体零写入；成功阶段依次为
+     * VALIDATE / GENERATE_G11 / RECALC_ITEMS / RECALC_SUMMARY / RECALC_PAY。
+     *
+     * @param request 含 userId / semester / includeG11
+     * @return 阶段化结果（含 generatedG11Count / recalcItemCount / summary / payRecord / unconfirmedCount）
+     */
+    public com.workload.system.domain.vo.CalculationRunResult run(
+            com.workload.system.domain.dto.CalculationRunRequest request);
+
+    /**
+     * 批量阶段化一键核算：对每位教师独立事务执行 {@link #run}，
+     * 单人失败只记入 failures（含 stage、reason），不影响其余教师。
+     *
+     * @param userIds    教师ID列表；为 null 或空表示该学期全部有明细的教师
+     * @param semester   学年学期
+     * @param includeG11 是否同步教务岗位减免到 G11
+     * @return 汇总结果：total / successCount / failCount / generatedG11Count / recalcItemCount / failures
+     */
+    public Map<String, Object> runBatch(List<Long> userIds, String semester, boolean includeG11);
 }
