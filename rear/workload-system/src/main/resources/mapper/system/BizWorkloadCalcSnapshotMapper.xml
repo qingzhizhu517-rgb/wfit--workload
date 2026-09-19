@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.workload.system.mapper.BizWorkloadCalcSnapshotMapper">
+
+    <resultMap type="BizWorkloadCalcSnapshot" id="BizWorkloadCalcSnapshotResult">
+        <id     property="id"                 column="id"                  />
+        <result property="itemId"             column="item_id"             />
+        <result property="calculationVersion" column="calculation_version" />
+        <result property="formulaExpression"  column="formula_expression"  />
+        <result property="factorJson"         column="factor_json"         />
+        <result property="sourceJson"         column="source_json"         />
+        <result property="ruleVersion"        column="rule_version"        />
+        <result property="result"             column="result"              />
+        <result property="snapshotHash"       column="snapshot_hash"       />
+        <result property="createdBy"          column="created_by"          />
+        <result property="createdAt"          column="created_at"          />
+    </resultMap>
+
+    <sql id="selectBizWorkloadCalcSnapshotVo">
+        select id, item_id, calculation_version, formula_expression, factor_json, source_json,
+               rule_version, result, snapshot_hash, created_by, created_at
+        from biz_workload_calc_snapshot
+    </sql>
+
+    <insert id="insertBizWorkloadCalcSnapshot" parameterType="BizWorkloadCalcSnapshot" useGeneratedKeys="true" keyProperty="id">
+        insert into biz_workload_calc_snapshot
+        (item_id, calculation_version, formula_expression, factor_json, source_json,
+         rule_version, result, snapshot_hash, created_by, created_at)
+        values
+        (#{itemId}, #{calculationVersion}, #{formulaExpression}, #{factorJson}, #{sourceJson},
+         #{ruleVersion}, #{result}, #{snapshotHash}, #{createdBy}, #{createdAt})
+    </insert>
+
+    <select id="selectMaxVersionByItemId" parameterType="Long" resultType="java.lang.Long">
+        select max(calculation_version)
+        from biz_workload_calc_snapshot
+        where item_id = #{itemId}
+    </select>
+
+    <select id="selectLatestByItemId" parameterType="Long" resultMap="BizWorkloadCalcSnapshotResult">
+        <include refid="selectBizWorkloadCalcSnapshotVo"/>
+        where item_id = #{itemId}
+        order by calculation_version desc
+        limit 1
+    </select>
+
+    <select id="selectByItemId" parameterType="Long" resultMap="BizWorkloadCalcSnapshotResult">
+        <include refid="selectBizWorkloadCalcSnapshotVo"/>
+        where item_id = #{itemId}
+        order by calculation_version asc
+    </select>
+</mapper>
