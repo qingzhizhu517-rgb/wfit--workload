@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.workload.system.mapper.BizCoefficientAdjustmentMapper">
+
+    <resultMap type="BizCoefficientAdjustment" id="BizCoefficientAdjustmentResult">
+        <result property="id"                     column="id"                      />
+        <result property="userId"                 column="user_id"                 />
+        <result property="semester"               column="semester"                />
+        <result property="taskId"                 column="task_id"                 />
+        <result property="itemId"                 column="item_id"                 />
+        <result property="category"               column="category"                />
+        <result property="factorCode"             column="factor_code"             />
+        <result property="oldValue"               column="old_value"               />
+        <result property="requestedValue"         column="requested_value"         />
+        <result property="reason"                 column="reason"                  />
+        <result property="attachmentUrl"          column="attachment_url"          />
+        <result property="status"                 column="status"                  />
+        <result property="reviewerId"             column="reviewer_id"             />
+        <result property="reviewReason"           column="review_reason"           />
+        <result property="reviewedAt"             column="reviewed_at"             />
+        <result property="baseCalculationVersion" column="base_calculation_version"/>
+        <result property="createBy"               column="create_by"               />
+        <result property="createTime"             column="create_time"             />
+        <result property="updateBy"               column="update_by"               />
+        <result property="updateTime"             column="update_time"             />
+        <result property="remark"                 column="remark"                  />
+    </resultMap>
+
+    <sql id="selectCoefficientAdjustmentVo">
+        select id, user_id, semester, task_id, item_id, category, factor_code, old_value,
+               requested_value, reason, attachment_url, status, reviewer_id, review_reason,
+               reviewed_at, base_calculation_version, create_by, create_time, update_by,
+               update_time, remark
+        from biz_coefficient_adjustment
+    </sql>
+
+    <select id="selectCoefficientAdjustmentById" parameterType="Long" resultMap="BizCoefficientAdjustmentResult">
+        <include refid="selectCoefficientAdjustmentVo"/>
+        where id = #{id}
+    </select>
+
+    <select id="selectCoefficientAdjustmentList" parameterType="BizCoefficientAdjustment" resultMap="BizCoefficientAdjustmentResult">
+        <include refid="selectCoefficientAdjustmentVo"/>
+        <where>
+            <if test="userId != null">and user_id = #{userId}</if>
+            <if test="semester != null and semester != ''">and semester = #{semester}</if>
+            <if test="itemId != null">and item_id = #{itemId}</if>
+            <if test="category != null and category != ''">and category = #{category}</if>
+            <if test="factorCode != null and factorCode != ''">and factor_code = #{factorCode}</if>
+            <if test="status != null">and status = #{status}</if>
+        </where>
+        order by id desc
+    </select>
+
+    <insert id="insertCoefficientAdjustment" parameterType="BizCoefficientAdjustment" useGeneratedKeys="true" keyProperty="id">
+        insert into biz_coefficient_adjustment
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="userId != null">user_id,</if>
+            <if test="semester != null">semester,</if>
+            <if test="taskId != null">task_id,</if>
+            <if test="itemId != null">item_id,</if>
+            <if test="category != null">category,</if>
+            <if test="factorCode != null">factor_code,</if>
+            <if test="oldValue != null">old_value,</if>
+            <if test="requestedValue != null">requested_value,</if>
+            <if test="reason != null">reason,</if>
+            <if test="attachmentUrl != null">attachment_url,</if>
+            <if test="status != null">status,</if>
+            <if test="reviewerId != null">reviewer_id,</if>
+            <if test="reviewReason != null">review_reason,</if>
+            <if test="reviewedAt != null">reviewed_at,</if>
+            <if test="baseCalculationVersion != null">base_calculation_version,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="remark != null">remark,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="userId != null">#{userId},</if>
+            <if test="semester != null">#{semester},</if>
+            <if test="taskId != null">#{taskId},</if>
+            <if test="itemId != null">#{itemId},</if>
+            <if test="category != null">#{category},</if>
+            <if test="factorCode != null">#{factorCode},</if>
+            <if test="oldValue != null">#{oldValue},</if>
+            <if test="requestedValue != null">#{requestedValue},</if>
+            <if test="reason != null">#{reason},</if>
+            <if test="attachmentUrl != null">#{attachmentUrl},</if>
+            <if test="status != null">#{status},</if>
+            <if test="reviewerId != null">#{reviewerId},</if>
+            <if test="reviewReason != null">#{reviewReason},</if>
+            <if test="reviewedAt != null">#{reviewedAt},</if>
+            <if test="baseCalculationVersion != null">#{baseCalculationVersion},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="remark != null">#{remark},</if>
+        </trim>
+    </insert>
+
+    <select id="countPendingByItemFactor" resultType="int">
+        select count(1) from biz_coefficient_adjustment
+        where item_id = #{itemId} and factor_code = #{factorCode} and status = 0
+    </select>
+
+    <!-- 服务端读取当前系数值：白名单固定列名，禁止 ${} 拼列。命中不到返回 NULL。 -->
+    <select id="selectCurrentFactorValue" resultType="java.math.BigDecimal">
+        <choose>
+            <when test="category == 'G1' and factorCode == 'C1'">select C1 from biz_wl_theory where item_id = #{itemId}</when>
+            <when test="category == 'G1' and factorCode == 'K1'">select K1 from biz_wl_theory where item_id = #{itemId}</when>
+            <when test="category == 'G1' and factorCode == 'Q1'">select Q1 from biz_wl_theory where item_id = #{itemId}</when>
+            <when test="category == 'G1' and factorCode == 'Q2'">select Q2 from biz_wl_theory where item_id = #{itemId}</when>
+            <when test="category == 'G1' and factorCode == 'N'">select N from biz_wl_theory where item_id = #{itemId}</when>
+            <when test="category == 'G2' and factorCode == 'K'">select K from biz_wl_practice where item_id = #{itemId}</when>
+            <when test="category == 'G2' and factorCode == 'C2'">select C2 from biz_wl_practice where item_id = #{itemId}</when>
+            <when test="category == 'G2' and factorCode == 'Q1'">select Q1 from biz_wl_practice where item_id = #{itemId}</when>
+            <when test="category == 'G2' and factorCode == 'Q2'">select Q2 from biz_wl_practice where item_id = #{itemId}</when>
+            <otherwise>select null</otherwise>
+        </choose>
+    </select>
+
+    <update id="markApprovedIfPending">
+        update biz_coefficient_adjustment
+        set status = 1,
+            reviewer_id = #{reviewerId},
+            review_reason = #{reviewReason},
+            reviewed_at = now(),
+            update_time = now()
+        where id = #{id} and status = 0 and base_calculation_version = #{baseVersion}
+    </update>
+
+    <update id="markRejectedIfPending">
+        update biz_coefficient_adjustment
+        set status = 2,
+            reviewer_id = #{reviewerId},
+            review_reason = #{reviewReason},
+            reviewed_at = now(),
+            update_time = now()
+        where id = #{id} and status = 0 and base_calculation_version = #{baseVersion}
+    </update>
+</mapper>
