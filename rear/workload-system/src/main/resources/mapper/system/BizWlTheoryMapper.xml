@@ -100,9 +100,57 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </delete>
 
     <delete id="deleteBizWlTheoryByItemIds" parameterType="String">
-        delete from biz_wl_theory where item_id in 
+        delete from biz_wl_theory where item_id in
         <foreach item="itemId" collection="array" open="(" separator="," close=")">
             #{itemId}
         </foreach>
     </delete>
+
+    <!--
+      Task 9：审批通过后原子应用单个系数。
+      MySQL 多表 UPDATE：update t join i on ... set d.col=... where ...；
+      JOIN 主表校验 calculation_version=baseVersion（乐观并发）、明细未核对、汇总非草稿则拒绝；
+      任一不满足则影响 0 行，Service 据此抛并发冲突并回滚整个事务。
+      列名由 update id 固定（白名单），绝不接受 ${} 拼列名。
+    -->
+    <sql id="theoryFactorWhere">
+        where d.item_id = #{itemId}
+          and i.calculation_version = #{baseVersion}
+          and ifnull(i.status, 0) = 0
+          and not exists (
+              select 1 from biz_workload_summary s
+              where s.user_id = i.user_id and s.semester = i.semester
+                and ifnull(s.status, 0) &lt;&gt; 0
+          )
+    </sql>
+
+    <update id="updateC1IfVersion">
+        update biz_wl_theory d join biz_workload_item i on i.id = d.item_id
+        set d.C1 = #{value}, d.update_time = now()
+        <include refid="theoryFactorWhere"/>
+    </update>
+
+    <update id="updateK1IfVersion">
+        update biz_wl_theory d join biz_workload_item i on i.id = d.item_id
+        set d.K1 = #{value}, d.update_time = now()
+        <include refid="theoryFactorWhere"/>
+    </update>
+
+    <update id="updateQ1IfVersion">
+        update biz_wl_theory d join biz_workload_item i on i.id = d.item_id
+        set d.Q1 = #{value}, d.update_time = now()
+        <include refid="theoryFactorWhere"/>
+    </update>
+
+    <update id="updateQ2IfVersion">
+        update biz_wl_theory d join biz_workload_item i on i.id = d.item_id
+        set d.Q2 = #{value}, d.update_time = now()
+        <include refid="theoryFactorWhere"/>
+    </update>
+
+    <update id="updateNIfVersion">
+        update biz_wl_theory d join biz_workload_item i on i.id = d.item_id
+        set d.N = #{value}, d.update_time = now()
+        <include refid="theoryFactorWhere"/>
+    </update>
 </mapper>

@@ -23,7 +23,8 @@ public interface ICoefficientAdjustmentService
     Long submit(CoefficientAdjustmentRequest request);
 
     /**
-     * 通过申请（乐观并发；仅置 APPROVED，不改 G 子表、不重算）。
+     * 通过申请（同一事务）：按白名单原子应用被申请因子到 G 子表 → recalcItem 重算并落
+     * APPROVED_OVERRIDE 快照、版本 +1 → 条件置 APPROVED。任一步失败整体回滚（乐观并发）。
      */
     void approve(Long id, String reviewReason);
 

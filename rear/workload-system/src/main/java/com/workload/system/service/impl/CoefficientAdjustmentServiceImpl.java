@@ -12,10 +12,13 @@ import org.springframework.util.StringUtils;
 import com.workload.common.exception.ServiceException;
 import com.workload.common.utils.DateUtils;
 import com.workload.common.utils.SecurityUtils;
+import com.workload.system.calc.WorkloadCalcService;
 import com.workload.system.calc.WorkloadWriteGuard;
 import com.workload.system.domain.BizCoefficientAdjustment;
 import com.workload.system.domain.BizWorkloadItem;
 import com.workload.system.mapper.BizCoefficientAdjustmentMapper;
+import com.workload.system.mapper.BizWlPracticeMapper;
+import com.workload.system.mapper.BizWlTheoryMapper;
 import com.workload.system.mapper.BizWorkloadItemMapper;
 import com.workload.system.service.ICoefficientAdjustmentService;
 
@@ -44,6 +47,15 @@ public class CoefficientAdjustmentServiceImpl implements ICoefficientAdjustmentS
 
     @Autowired
     private WorkloadWriteGuard workloadWriteGuard;
+
+    @Autowired
+    private BizWlTheoryMapper theoryMapper;
+
+    @Autowired
+    private BizWlPracticeMapper practiceMapper;
+
+    @Autowired
+    private WorkloadCalcService workloadCalcService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -116,12 +128,56 @@ public class CoefficientAdjustmentServiceImpl implements ICoefficientAdjustmentS
     @Transactional(rollbackFor = Exception.class)
     public void approve(Long id, String reviewReason)
     {
+        // 顺序（同一事务，任一步失败整体回滚）：
+        //   a. 读申请并确认仍为待审；
+        //   b. 按白名单原子应用被申请因子到 G 子表（JOIN 主表校验 baseVersion/明细未核对/汇总非草稿）；
+        //      —— 只更新因子，不动主表 calculation_version；
+        //   c. recalcItem：用新因子重算，产出 APPROVED_OVERRIDE 新快照并把主表版本 +1（原子条件更新）；
+        //   d. 条件置 APPROVED（仍待审且 base_calculation_version 未变才成功）。
         BizCoefficientAdjustment adjustment = requirePending(id);
+        Long baseVersion = adjustment.getBaseCalculationVersion();
+        // b. 原子应用因子；先更新因子（不改版本），再 recalcItem（版本 +1），保证版本序一致。
+        applyRequestedFactor(adjustment, baseVersion);
+        // c. 重算：recalcItem 内部读回被改写的 G 子表新值，落新快照并原子更新主表版本。
+        workloadCalcService.recalcItem(adjustment.getItemId());
+        // d. 条件置 APPROVED。
         int affected = adjustmentMapper.markApprovedIfPending(
-                id, SecurityUtils.getUserId(), reviewReason, adjustment.getBaseCalculationVersion());
+                id, SecurityUtils.getUserId(), reviewReason, baseVersion);
         if (affected == 0)
         {
             throw new ServiceException("申请状态已变更或计算版本已更新，通过失败（并发冲突）");
+        }
+    }
+
+    /**
+     * 按 category+factorCode 走 Java switch 白名单，分发到明确的 G 子表条件更新方法。
+     * <p>严禁用 {@code ${}} 拼列名；未命中白名单（即便库中记录被绕过 submit 写入）一律拒绝。
+     * 条件更新影响行数不为 1（版本变化/明细已核对/汇总已进入审批）时抛并发冲突并回滚。</p>
+     */
+    private void applyRequestedFactor(BizCoefficientAdjustment adjustment, Long baseVersion)
+    {
+        Long itemId = adjustment.getItemId();
+        BigDecimal value = adjustment.getRequestedValue();
+        String category = adjustment.getCategory();
+        String factor = adjustment.getFactorCode();
+        String key = category + ":" + factor;
+        int affected = switch (key)
+        {
+            case "G1:C1" -> theoryMapper.updateC1IfVersion(itemId, value, baseVersion);
+            case "G1:K1" -> theoryMapper.updateK1IfVersion(itemId, value, baseVersion);
+            case "G1:Q1" -> theoryMapper.updateQ1IfVersion(itemId, value, baseVersion);
+            case "G1:Q2" -> theoryMapper.updateQ2IfVersion(itemId, value, baseVersion);
+            case "G1:N" -> theoryMapper.updateNIfVersion(itemId, value, baseVersion);
+            case "G2:K" -> practiceMapper.updateKIfVersion(itemId, value, baseVersion);
+            case "G2:C2" -> practiceMapper.updateC2IfVersion(itemId, value, baseVersion);
+            case "G2:Q1" -> practiceMapper.updateQ1IfVersion(itemId, value, baseVersion);
+            case "G2:Q2" -> practiceMapper.updateQ2IfVersion(itemId, value, baseVersion);
+            default -> throw new ServiceException(
+                    "不允许调整的系数: category=" + category + ", factor=" + factor);
+        };
+        if (affected != 1)
+        {
+            throw new ServiceException("明细或汇总状态已变化（或计算版本已更新），系数应用失败（并发冲突）");
         }
     }
 
@@ -152,6 +208,11 @@ public class CoefficientAdjustmentServiceImpl implements ICoefficientAdjustmentS
         if (adjustment == null)
         {
             throw new ServiceException("系数调整申请不存在, id=" + id);
+        }
+        // 非待审直接拒绝，避免在最终条件更新前产生任何副作用（因子应用/重算）
+        if (adjustment.getStatus() == null || adjustment.getStatus() != BizCoefficientAdjustment.STATUS_PENDING)
+        {
+            throw new ServiceException("申请不是待审状态，无法处理, id=" + id);
         }
         return adjustment;
     }

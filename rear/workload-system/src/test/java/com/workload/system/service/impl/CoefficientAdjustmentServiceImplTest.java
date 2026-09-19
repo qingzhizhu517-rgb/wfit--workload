@@ -6,10 +6,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
@@ -19,6 +21,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
@@ -27,11 +30,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.workload.common.exception.ServiceException;
 import com.workload.common.utils.SecurityUtils;
+import com.workload.system.calc.WorkloadCalcService;
 import com.workload.system.calc.WorkloadWriteGuard;
 import com.workload.system.domain.BizCoefficientAdjustment;
 import com.workload.system.domain.BizWorkloadItem;
 import com.workload.system.domain.BizWorkloadSummary;
 import com.workload.system.mapper.BizCoefficientAdjustmentMapper;
+import com.workload.system.mapper.BizWlPracticeMapper;
+import com.workload.system.mapper.BizWlTheoryMapper;
 import com.workload.system.mapper.BizWorkloadItemMapper;
 import com.workload.system.mapper.BizWorkloadSummaryMapper;
 import com.workload.system.service.ICoefficientAdjustmentService.CoefficientAdjustmentRequest;
@@ -41,6 +47,9 @@ class CoefficientAdjustmentServiceImplTest
 {
     @Mock private BizCoefficientAdjustmentMapper adjustmentMapper;
     @Mock private BizWorkloadItemMapper itemMapper;
+    @Mock private BizWlTheoryMapper theoryMapper;
+    @Mock private BizWlPracticeMapper practiceMapper;
+    @Mock private WorkloadCalcService workloadCalcService;
     private final BizWorkloadSummaryMapper summaryMapper = mock(BizWorkloadSummaryMapper.class);
     @Spy private WorkloadWriteGuard workloadWriteGuard = new WorkloadWriteGuard(summaryMapper);
     @InjectMocks private CoefficientAdjustmentServiceImpl service;
@@ -136,14 +145,78 @@ class CoefficientAdjustmentServiceImplTest
         assertThat(captor.getValue().getRequestedValue()).isEqualByComparingTo("1.20");
     }
 
+    // ---- Task 9：审批通过后原子应用系数并重算 ----
+
+    @Test
+    void approveAppliesOnlyRequestedFactorThenRecalculates()
+    {
+        BizCoefficientAdjustment adj = pendingAdj("G1", "Q2", "1.50");
+        when(adjustmentMapper.selectCoefficientAdjustmentById(5L)).thenReturn(adj);
+        when(theoryMapper.updateQ2IfVersion(9L, new BigDecimal("1.50"), 3L)).thenReturn(1);
+        when(adjustmentMapper.markApprovedIfPending(anyLong(), anyLong(), anyString(), anyLong())).thenReturn(1);
+
+        try (MockedStatic<SecurityUtils> security = mockStatic(SecurityUtils.class))
+        {
+            security.when(SecurityUtils::getUserId).thenReturn(1004L);
+            service.approve(5L, "材料有效");
+        }
+
+        // 顺序：先更新因子（不改版本）→ recalcItem（版本+1并落快照）→ 条件通过申请
+        InOrder order = inOrder(theoryMapper, workloadCalcService, adjustmentMapper);
+        order.verify(theoryMapper).updateQ2IfVersion(9L, new BigDecimal("1.50"), 3L);
+        order.verify(workloadCalcService).recalcItem(9L);
+        order.verify(adjustmentMapper).markApprovedIfPending(5L, 1004L, "材料有效", 3L);
+        // 只改被申请因子，其它 theory 列与 practice 子表一律不动
+        verify(theoryMapper, never()).updateC1IfVersion(anyLong(), any(), anyLong());
+        verify(theoryMapper, never()).updateK1IfVersion(anyLong(), any(), anyLong());
+        verify(theoryMapper, never()).updateQ1IfVersion(anyLong(), any(), anyLong());
+        verify(theoryMapper, never()).updateNIfVersion(anyLong(), any(), anyLong());
+        verifyNoInteractions(practiceMapper);
+    }
+
+    @Test
+    void approveDispatchesG2FactorToPracticeMapper()
+    {
+        BizCoefficientAdjustment adj = pendingAdj("G2", "K", "0.90");
+        when(adjustmentMapper.selectCoefficientAdjustmentById(5L)).thenReturn(adj);
+        when(practiceMapper.updateKIfVersion(9L, new BigDecimal("0.90"), 3L)).thenReturn(1);
+        when(adjustmentMapper.markApprovedIfPending(anyLong(), anyLong(), anyString(), anyLong())).thenReturn(1);
+
+        try (MockedStatic<SecurityUtils> security = mockStatic(SecurityUtils.class))
+        {
+            security.when(SecurityUtils::getUserId).thenReturn(1004L);
+            service.approve(5L, "复核通过");
+        }
+
+        InOrder order = inOrder(practiceMapper, workloadCalcService, adjustmentMapper);
+        order.verify(practiceMapper).updateKIfVersion(9L, new BigDecimal("0.90"), 3L);
+        order.verify(workloadCalcService).recalcItem(9L);
+        order.verify(adjustmentMapper).markApprovedIfPending(5L, 1004L, "复核通过", 3L);
+        verifyNoInteractions(theoryMapper);
+    }
+
+    @Test
+    void approveThrowsConflictWhenFactorUpdateAffectsZeroAndSkipsRecalc()
+    {
+        BizCoefficientAdjustment adj = pendingAdj("G1", "Q2", "1.50");
+        when(adjustmentMapper.selectCoefficientAdjustmentById(5L)).thenReturn(adj);
+        // 版本/状态/冻结门任一变化 -> 因子条件更新影响 0 行
+        when(theoryMapper.updateQ2IfVersion(9L, new BigDecimal("1.50"), 3L)).thenReturn(0);
+
+        assertThatThrownBy(() -> service.approve(5L, "材料有效"))
+                .isInstanceOf(ServiceException.class);
+
+        // 因子未应用成功，不得继续重算与置 APPROVED
+        verify(workloadCalcService, never()).recalcItem(anyLong());
+        verify(adjustmentMapper, never()).markApprovedIfPending(anyLong(), anyLong(), anyString(), anyLong());
+    }
+
     @Test
     void approveThrowsConflictWhenNoPendingRowUpdated()
     {
-        BizCoefficientAdjustment adj = new BizCoefficientAdjustment();
-        adj.setId(5L);
-        adj.setStatus(BizCoefficientAdjustment.STATUS_PENDING);
-        adj.setBaseCalculationVersion(3L);
+        BizCoefficientAdjustment adj = pendingAdj("G1", "Q2", "1.50");
         when(adjustmentMapper.selectCoefficientAdjustmentById(5L)).thenReturn(adj);
+        when(theoryMapper.updateQ2IfVersion(9L, new BigDecimal("1.50"), 3L)).thenReturn(1);
         when(adjustmentMapper.markApprovedIfPending(anyLong(), anyLong(), anyString(), anyLong())).thenReturn(0);
 
         try (MockedStatic<SecurityUtils> security = mockStatic(SecurityUtils.class))
@@ -156,11 +229,55 @@ class CoefficientAdjustmentServiceImplTest
     }
 
     @Test
+    void approveRejectsNonWhitelistFactorFromPersistedRecord()
+    {
+        // 即便库中记录被绕过 submit 写入非白名单组合，approve 路径也必须安全拒绝
+        BizCoefficientAdjustment adj = pendingAdj("G3", "Q1", "1.00");
+        when(adjustmentMapper.selectCoefficientAdjustmentById(5L)).thenReturn(adj);
+
+        assertThatThrownBy(() -> service.approve(5L, "材料有效"))
+                .isInstanceOf(ServiceException.class);
+        verifyNoInteractions(theoryMapper, practiceMapper, workloadCalcService);
+        verify(adjustmentMapper, never()).markApprovedIfPending(anyLong(), anyLong(), anyString(), anyLong());
+    }
+
+    @Test
+    void rejectDoesNotApplyFactorOrRecalc()
+    {
+        BizCoefficientAdjustment adj = pendingAdj("G1", "Q2", "1.50");
+        when(adjustmentMapper.selectCoefficientAdjustmentById(5L)).thenReturn(adj);
+        when(adjustmentMapper.markRejectedIfPending(anyLong(), anyLong(), anyString(), anyLong())).thenReturn(1);
+
+        try (MockedStatic<SecurityUtils> security = mockStatic(SecurityUtils.class))
+        {
+            security.when(SecurityUtils::getUserId).thenReturn(1004L);
+            service.reject(5L, "材料不足");
+        }
+        // 驳回只改申请状态，绝不触碰 G 子表或触发重算
+        verifyNoInteractions(theoryMapper, practiceMapper, workloadCalcService);
+    }
+
+    @Test
     void rejectRequiresReviewReason()
     {
         assertThatThrownBy(() -> service.reject(5L, "  "))
                 .isInstanceOf(ServiceException.class);
         verify(adjustmentMapper, never()).markRejectedIfPending(anyLong(), anyLong(), anyString(), anyLong());
+    }
+
+    private BizCoefficientAdjustment pendingAdj(String category, String factorCode, String requestedValue)
+    {
+        BizCoefficientAdjustment adj = new BizCoefficientAdjustment();
+        adj.setId(5L);
+        adj.setItemId(9L);
+        adj.setUserId(2002L);
+        adj.setSemester("2026-2027-1");
+        adj.setCategory(category);
+        adj.setFactorCode(factorCode);
+        adj.setRequestedValue(new BigDecimal(requestedValue));
+        adj.setStatus(BizCoefficientAdjustment.STATUS_PENDING);
+        adj.setBaseCalculationVersion(3L);
+        return adj;
     }
 
     private BizWorkloadItem item(String category)

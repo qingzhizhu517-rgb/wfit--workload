@@ -95,9 +95,48 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </delete>
 
     <delete id="deleteBizWlPracticeByItemIds" parameterType="String">
-        delete from biz_wl_practice where item_id in 
+        delete from biz_wl_practice where item_id in
         <foreach item="itemId" collection="array" open="(" separator="," close=")">
             #{itemId}
         </foreach>
     </delete>
+
+    <!--
+      Task 9：审批通过后原子应用单个系数（同 theory：JOIN 主表校验版本/状态/汇总冻结门）。
+      列名由 update id 固定（白名单），绝不接受 ${} 拼列名。
+    -->
+    <sql id="practiceFactorWhere">
+        where d.item_id = #{itemId}
+          and i.calculation_version = #{baseVersion}
+          and ifnull(i.status, 0) = 0
+          and not exists (
+              select 1 from biz_workload_summary s
+              where s.user_id = i.user_id and s.semester = i.semester
+                and ifnull(s.status, 0) &lt;&gt; 0
+          )
+    </sql>
+
+    <update id="updateKIfVersion">
+        update biz_wl_practice d join biz_workload_item i on i.id = d.item_id
+        set d.K = #{value}, d.update_time = now()
+        <include refid="practiceFactorWhere"/>
+    </update>
+
+    <update id="updateC2IfVersion">
+        update biz_wl_practice d join biz_workload_item i on i.id = d.item_id
+        set d.C2 = #{value}, d.update_time = now()
+        <include refid="practiceFactorWhere"/>
+    </update>
+
+    <update id="updateQ1IfVersion">
+        update biz_wl_practice d join biz_workload_item i on i.id = d.item_id
+        set d.Q1 = #{value}, d.update_time = now()
+        <include refid="practiceFactorWhere"/>
+    </update>
+
+    <update id="updateQ2IfVersion">
+        update biz_wl_practice d join biz_workload_item i on i.id = d.item_id
+        set d.Q2 = #{value}, d.update_time = now()
+        <include refid="practiceFactorWhere"/>
+    </update>
 </mapper>
