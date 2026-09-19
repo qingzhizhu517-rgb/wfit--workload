@@ -59,6 +59,76 @@
     >
       {{ formula.description }}
     </div>
+
+    <!-- 课程信息：解释因子取值依据的原始课程属性 -->
+    <div
+      v-if="sourceTask"
+      class="ff-course"
+    >
+      <div class="ff-course-title">
+        课程信息
+      </div>
+      <div class="ff-course-grid">
+        <span>课程级别：{{ sourceTask.courseLevel || '-' }}</span>
+        <span>课程角色：{{ sourceTask.courseRole || '-' }}</span>
+        <span>课程性质：{{ sourceTask.courseNature || '-' }}</span>
+        <span>班级：{{ sourceTask.className || '-' }}</span>
+        <span>重复次序：{{ sourceTask.repeatOrder != null ? sourceTask.repeatOrder : '-' }}</span>
+      </div>
+      <div
+        v-if="q2Reason"
+        class="ff-course-reason"
+      >
+        {{ q2Reason }}
+      </div>
+    </div>
+
+    <!-- 系数申请入口：G1/G2 的可申请因子 -->
+    <div
+      v-if="adjustableFactors.length"
+      class="ff-adjust"
+    >
+      <span class="ff-adjust-label">可申请调整：</span>
+      <el-button
+        v-for="factor in adjustableFactors"
+        :key="factor.key"
+        size="small"
+        type="primary"
+        plain
+        @click="emitAdjust(factor)"
+      >
+        {{ factor.key }} 申请调整
+      </el-button>
+    </div>
+
+    <!-- 数据溯源：内部 ID 与快照信息，默认折叠 -->
+    <el-collapse
+      v-if="hasTrace"
+      class="ff-trace"
+    >
+      <el-collapse-item
+        title="数据溯源"
+        name="trace"
+      >
+        <div class="ff-trace-grid">
+          <span>明细ID：{{ item?.id || '-' }}</span>
+          <span>教学任务ID：{{ item?.taskId || '-' }}</span>
+          <span>岗位任职ID：{{ item?.assignmentId || '-' }}</span>
+          <span v-if="formula.snapshotVersion != null">快照版本：v{{ formula.snapshotVersion }}</span>
+          <span v-if="formula.calculatedAt">固化时间：{{ formula.calculatedAt }}</span>
+          <span
+            v-if="formula.snapshotHash"
+            class="ff-trace-hash"
+          >快照哈希：{{ formula.snapshotHash }}</span>
+        </div>
+        <div
+          v-if="formula.legacy"
+          class="ff-trace-legacy"
+        >
+          该明细无计算快照，展示口径读回当前子表，可信但无法逐因子复现历史核算。
+        </div>
+      </el-collapse-item>
+    </el-collapse>
   </section>
 
   <div
@@ -97,8 +167,52 @@ const props = defineProps({
   itemType: { type: String, default: '' },
   formula: { type: Object, default: null },
   loading: { type: Boolean, default: false },
-  error: { type: String, default: '' }
+  error: { type: String, default: '' },
+  // 明细主记录：提供 id/taskId/assignmentId 供「数据溯源」区展示
+  item: { type: Object, default: null }
 })
+
+const emit = defineEmits(['adjust'])
+
+// G1/G2 允许教师申请调整的因子（与后端 CoefficientAdjustment 白名单一致）
+const ADJUSTABLE = {
+  G1: ['C1', 'K1', 'Q1', 'Q2', 'N'],
+  G2: ['K', 'C2', 'Q1', 'Q2']
+}
+
+const sourceTask = computed(() => props.formula?.sourceTask || null)
+
+const q2Reason = computed(() => {
+  const level = sourceTask.value?.courseLevel
+  if (!level) return ''
+  return `Q2（课程质量系数）依据课程级别「${level}」取值`
+})
+
+const adjustableFactors = computed(() => {
+  const allowed = ADJUSTABLE[props.itemType]
+  if (!allowed) return []
+  return (props.formula?.factors || []).filter(
+    factor => factor.status !== 'DISPLAY_ONLY' && allowed.includes(factor.key)
+  )
+})
+
+const hasSnapshotVersion = computed(() => {
+  const v = props.formula?.snapshotVersion
+  return v !== null && v !== undefined
+})
+const hasTrace = computed(() => Boolean(
+  props.item?.id || props.item?.taskId || props.item?.assignmentId ||
+  hasSnapshotVersion.value || props.formula?.snapshotHash || props.formula?.legacy
+))
+
+function emitAdjust(factor) {
+  emit('adjust', {
+    category: props.itemType,
+    factorCode: factor.key,
+    oldValue: factor.value,
+    factorLabel: factor.description || factor.key
+  })
+}
 
 const calculationFactors = computed(() => {
   if (props.formula?.reproducible === false) return []
@@ -171,6 +285,38 @@ const emptyText = computed(() => {
   line-height: 1.6;
 }
 .ff-state { color: var(--el-text-color-secondary); font-size: 13px; }
+.ff-course {
+  margin-top: var(--wfit-space-sm);
+  padding-top: var(--wfit-space-sm);
+  border-top: 1px dashed var(--el-border-color);
+}
+.ff-course-title { font-size: var(--wfit-font-xs); color: var(--el-text-color-secondary); margin-bottom: 4px; }
+.ff-course-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  font-size: var(--wfit-font-xs);
+  color: var(--el-text-color-regular);
+}
+.ff-course-reason { margin-top: 4px; font-size: var(--wfit-font-xs); color: var(--el-text-color-secondary); }
+.ff-adjust {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: var(--wfit-space-sm);
+}
+.ff-adjust-label { font-size: var(--wfit-font-xs); color: var(--el-text-color-secondary); }
+.ff-trace { margin-top: var(--wfit-space-sm); }
+.ff-trace-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  font-size: var(--wfit-font-xs);
+  color: var(--el-text-color-secondary);
+}
+.ff-trace-hash { overflow-wrap: anywhere; }
+.ff-trace-legacy { margin-top: 6px; font-size: var(--wfit-font-xs); color: var(--el-color-warning); }
 @media (max-width: 600px) {
   .ff-head { flex-direction: column; }
   .ff-result { align-self: flex-end; }

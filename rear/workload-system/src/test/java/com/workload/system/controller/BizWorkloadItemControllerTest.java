@@ -19,6 +19,7 @@ import com.workload.common.core.domain.AjaxResult;
 import com.workload.common.exception.ServiceException;
 import com.workload.common.utils.DataScopeUtil;
 import com.workload.system.domain.BizWorkloadItem;
+import com.workload.system.domain.vo.FactorFormulaVo;
 import com.workload.system.service.IBizWorkloadItemService;
 import com.workload.system.service.IBizWorkloadSummaryService;
 import com.workload.system.service.IWorkloadFactorFormulaService;
@@ -46,6 +47,41 @@ class BizWorkloadItemControllerTest
             AjaxResult response = controller.getInfo(9L);
             assertThat(response.get(AjaxResult.DATA_TAG)).isSameAs(item);
             dataScope.verify(() -> DataScopeUtil.assertOwnOrAdmin(2002L));
+        }
+    }
+
+    @Test
+    void shouldExposeSnapshotMetadataAndSourceTaskOnDetail()
+    {
+        BizWorkloadItem item = new BizWorkloadItem();
+        item.setId(9L);
+        item.setUserId(2002L);
+        item.setItemType("G1");
+        FactorFormulaVo vo = new FactorFormulaVo("G1", "J1 × C1 × K1 × Q1 × Q2 × N",
+                new BigDecimal("42.24"), "口径说明", true, java.util.Collections.emptyList());
+        vo.setSnapshotVersion(3L);
+        vo.setSnapshotHash("hash-abc");
+        vo.setCalculatedAt(new java.util.Date());
+        vo.setLegacy(false);
+        FactorFormulaVo.SourceTaskVo sourceTask = new FactorFormulaVo.SourceTaskVo();
+        sourceTask.setCourseLevel("省级一流");
+        sourceTask.setClassName("计算机2401");
+        vo.setSourceTask(sourceTask);
+        when(workloadItemService.selectBizWorkloadItemById(9L)).thenReturn(item);
+        when(factorFormulaService.build(item)).thenReturn(vo);
+
+        try (MockedStatic<DataScopeUtil> dataScope = mockStatic(DataScopeUtil.class))
+        {
+            AjaxResult response = controller.getInfo(9L);
+            BizWorkloadItem data = (BizWorkloadItem) response.get(AjaxResult.DATA_TAG);
+            FactorFormulaVo formula = data.getFactorFormula();
+            assertThat(formula.getSnapshotVersion()).isEqualTo(3L);
+            assertThat(formula.getSnapshotHash()).isEqualTo("hash-abc");
+            assertThat(formula.getCalculatedAt()).isNotNull();
+            assertThat(formula.isLegacy()).isFalse();
+            assertThat(formula.getSourceTask()).isNotNull();
+            assertThat(formula.getSourceTask().getCourseLevel()).isEqualTo("省级一流");
+            assertThat(formula.getSourceTask().getClassName()).isEqualTo("计算机2401");
         }
     }
 

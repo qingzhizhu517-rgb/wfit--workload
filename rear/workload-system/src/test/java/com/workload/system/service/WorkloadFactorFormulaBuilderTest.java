@@ -5,6 +5,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
+import java.util.Date;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -13,6 +14,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.workload.system.calc.rule.RuleParamService;
+import com.workload.system.domain.BizTeachingTask;
 import com.workload.system.domain.BizWlConcentratedInternship;
 import com.workload.system.domain.BizWlCourseDesign;
 import com.workload.system.domain.BizWlInternshipTraining;
@@ -20,8 +22,11 @@ import com.workload.system.domain.BizWlManagement;
 import com.workload.system.domain.BizWlPractice;
 import com.workload.system.domain.BizWlTheory;
 import com.workload.system.domain.BizWlThesis;
+import com.workload.system.domain.BizWorkloadCalcSnapshot;
 import com.workload.system.domain.BizWorkloadItem;
 import com.workload.system.domain.vo.FactorFormulaVo;
+import com.workload.system.mapper.BizWorkloadCalcSnapshotMapper;
+import com.workload.system.service.IBizTeachingTaskService;
 import com.workload.system.service.IBizWlConcentratedInternshipService;
 import com.workload.system.service.IBizWlCourseDesignService;
 import com.workload.system.service.IBizWlInternshipTrainingService;
@@ -42,6 +47,94 @@ class WorkloadFactorFormulaBuilderTest
     @Mock private IBizWlConcentratedInternshipService concentratedInternshipService;
     @Mock private IBizWlManagementService managementService;
     @Mock private RuleParamService ruleParamService;
+    @Mock private BizWorkloadCalcSnapshotMapper snapshotMapper;
+    @Mock private IBizTeachingTaskService teachingTaskService;
+
+    @Test
+    void detailUsesPersistedSnapshotSources()
+    {
+        BizWorkloadItem item = item("G1", "IMPORT", "57.60");
+        BizWlTheory d = new BizWlTheory();
+        d.setJ1(n("32")); d.setC1(n("1")); d.setK1(n("1.1"));
+        d.setQ1(n("1")); d.setQ2(n("1")); d.setQ3(n("1.5")); d.setN(n("1.2"));
+        when(theoryService.selectBizWlTheoryByItemId(7L)).thenReturn(d);
+        when(snapshotMapper.selectLatestByItemId(7L)).thenReturn(snapshotWithQ2("1.50", "APPROVED_OVERRIDE"));
+
+        FactorFormulaVo vo = builder.build(item);
+
+        assertThat(vo).isNotNull();
+        assertThat(vo.isLegacy()).isFalse();
+        assertThat(vo.getSnapshotVersion()).isEqualTo(3L);
+        assertThat(vo.getSnapshotHash()).isEqualTo("hash-abc");
+        assertThat(vo.getCalculatedAt()).isNotNull();
+        assertThat(vo.getFactors()).filteredOn(f -> "Q2".equals(f.getKey()))
+                .extracting(FactorFormulaVo.FactorVo::getSource)
+                .containsExactly("APPROVED_OVERRIDE");
+        // 取值也来自快照，不用现场规则重算
+        assertThat(vo.getFactors()).filteredOn(f -> "Q2".equals(f.getKey()))
+                .extracting(f -> ((BigDecimal) f.getValue()))
+                .first().asInstanceOf(org.assertj.core.api.InstanceOfAssertFactories.BIG_DECIMAL)
+                .isEqualByComparingTo("1.50");
+    }
+
+    @Test
+    void detailExposesSourceTaskFields()
+    {
+        BizWorkloadItem item = item("G1", "IMPORT", "42.24");
+        item.setTaskId(555L);
+        BizWlTheory d = new BizWlTheory();
+        d.setJ1(n("32")); d.setC1(n("1")); d.setK1(n("1.1"));
+        d.setQ1(n("1")); d.setQ2(n("1")); d.setQ3(n("1.5")); d.setN(n("1.2"));
+        when(theoryService.selectBizWlTheoryByItemId(7L)).thenReturn(d);
+        BizTeachingTask task = new BizTeachingTask();
+        task.setCourseLevel("省级一流");
+        task.setCourseRole("主持人");
+        task.setCourseNature("必修");
+        task.setClassName("计算机2401");
+        task.setRepeatOrder(2L);
+        when(teachingTaskService.selectBizTeachingTaskById(555L)).thenReturn(task);
+
+        FactorFormulaVo vo = builder.build(item);
+
+        assertThat(vo.getSourceTask()).isNotNull();
+        assertThat(vo.getSourceTask().getCourseLevel()).isEqualTo("省级一流");
+        assertThat(vo.getSourceTask().getCourseRole()).isEqualTo("主持人");
+        assertThat(vo.getSourceTask().getCourseNature()).isEqualTo("必修");
+        assertThat(vo.getSourceTask().getClassName()).isEqualTo("计算机2401");
+        assertThat(vo.getSourceTask().getRepeatOrder()).isEqualTo(2L);
+    }
+
+    @Test
+    void legacyWhenNoSnapshotMarksNotReproducible()
+    {
+        BizWorkloadItem item = item("G1", "IMPORT", "42.24");
+        BizWlTheory d = new BizWlTheory();
+        d.setJ1(n("32")); d.setC1(n("1")); d.setK1(n("1.1"));
+        d.setQ1(n("1")); d.setQ2(n("1")); d.setQ3(n("1.5")); d.setN(n("1.2"));
+        when(theoryService.selectBizWlTheoryByItemId(7L)).thenReturn(d);
+
+        FactorFormulaVo vo = builder.build(item);
+
+        assertThat(vo.isLegacy()).isTrue();
+        assertThat(vo.isReproducible()).isFalse();
+    }
+
+    private BizWorkloadCalcSnapshot snapshotWithQ2(String q2Value, String q2Source)
+    {
+        BizWorkloadCalcSnapshot s = new BizWorkloadCalcSnapshot();
+        s.setItemId(7L);
+        s.setCalculationVersion(3L);
+        s.setSnapshotHash("hash-abc");
+        s.setCreatedAt(new Date());
+        s.setFormulaExpression("J1 × C1 × K1 × Q1 × Q2 × N");
+        s.setResult(n("57.60"));
+        s.setFactorJson("{\"J1\":\"32\",\"C1\":\"1\",\"K1\":\"1.1\",\"Q1\":\"1\",\"Q2\":\""
+                + q2Value + "\",\"N\":\"1.2\",\"Q3\":\"1.5\"}");
+        s.setSourceJson("{\"J1\":\"IMPORT_VALUE\",\"C1\":\"RULE_DEFAULT\",\"K1\":\"RULE_DEFAULT\","
+                + "\"Q1\":\"RULE_DEFAULT\",\"Q2\":\"" + q2Source
+                + "\",\"N\":\"RULE_DEFAULT\",\"Q3\":\"DISPLAY_ONLY\"}");
+        return s;
+    }
 
     @Test
     void shouldExplainDirectSemesterG11WithItsSourceBatch()
@@ -136,7 +229,7 @@ class WorkloadFactorFormulaBuilderTest
         assertThat(result.getFactors().get(1).getStatus()).isEqualTo("CAPPED");
         assertThat(result.getFactors().get(1).getValue()).isEqualTo(n("25"));
         assertThat((BigDecimal) result.getFactors().get(2).getValue()).isEqualByComparingTo("24");
-        assertThat(result.getFactors().get(2).getSource()).isEqualTo("CURRENT_RULE_DERIVED");
+        assertThat(result.getFactors().get(2).getSource()).isEqualTo("DERIVED");
         assertThat(result.getFactors().get(2).getDescription()).contains("min(R6, 24)");
         assertThat(result.getFactors().get(3).getValue()).isEqualTo(n("0.5"));
     }

@@ -378,15 +378,14 @@
         :formula="detailData.factorFormula"
         :loading="detailLoading"
         :error="detailError"
+        :item="detailData"
+        @adjust="handleAdjust"
       />
       <el-descriptions
         v-if="!detailLoading"
         :column="detailColumns"
         border
       >
-        <el-descriptions-item label="明细ID">
-          {{ detailData.id }}
-        </el-descriptions-item>
         <el-descriptions-item label="教师">
           {{ userName(detailData.userId) }}
         </el-descriptions-item>
@@ -449,12 +448,6 @@
             :map="appealStatusMap"
           />
         </el-descriptions-item>
-        <el-descriptions-item label="教学任务ID">
-          {{ detailData.taskId || '-' }}
-        </el-descriptions-item>
-        <el-descriptions-item label="岗位任职ID">
-          {{ detailData.assignmentId || '-' }}
-        </el-descriptions-item>
         <el-descriptions-item
           label="申诉原因"
           :span="2"
@@ -484,6 +477,75 @@
         <div class="dialog-footer">
           <el-button @click="detailOpen = false">
             关 闭
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
+
+    <!-- 系数调整申请对话框 -->
+    <el-dialog
+      v-model="adjustOpen"
+      title="申请调整系数"
+      width="min(520px, 94vw)"
+      append-to-body
+    >
+      <el-form
+        ref="adjustRef"
+        :model="adjustForm"
+        :rules="adjustRules"
+        label-width="96px"
+      >
+        <el-form-item label="因子">
+          <span>{{ adjustForm.category }} · {{ adjustForm.factorCode }}（{{ adjustForm.factorLabel }}）</span>
+        </el-form-item>
+        <el-form-item label="当前值">
+          <span>{{ formatNumber(adjustForm.oldValue) }}</span>
+        </el-form-item>
+        <el-form-item
+          label="申请值"
+          prop="requestedValue"
+        >
+          <el-input-number
+            v-model="adjustForm.requestedValue"
+            :min="0"
+            :precision="2"
+            :step="0.1"
+            controls-position="right"
+            style="width: 100%"
+          />
+        </el-form-item>
+        <el-form-item
+          label="申请理由"
+          prop="reason"
+        >
+          <el-input
+            v-model="adjustForm.reason"
+            type="textarea"
+            :rows="3"
+            maxlength="500"
+            show-word-limit
+            placeholder="请说明申请调整的依据"
+          />
+        </el-form-item>
+        <el-form-item label="佐证材料">
+          <el-input
+            v-model="adjustForm.attachmentUrl"
+            maxlength="255"
+            placeholder="佐证材料链接（可选）"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button
+            type="primary"
+            :loading="adjustSubmitting"
+            @click="submitAdjust"
+          >
+            提 交
+          </el-button>
+          <el-button @click="adjustOpen = false">
+            取 消
           </el-button>
         </div>
       </template>
@@ -675,6 +737,7 @@
 import FactorFormula from '@/components/FactorFormula'
 import { listWorkloadItem, getWorkloadItem, delWorkloadItem, addWorkloadItem, updateWorkloadItem } from '@/api/system/workloadItem'
 import { recalcItem, recalcItems } from '@/api/system/calc'
+import { submitCoefficientAdjustment } from '@/api/system/coefficientAdjustment'
 import UserSelect from '@/components/UserSelect/index.vue'
 import SemesterSelect from '@/components/SemesterSelect/index.vue'
 import { useUserMap } from '@/utils/userCache'
@@ -697,6 +760,22 @@ const detailOpen = ref(false)
 const detailData = ref({})
 const detailLoading = ref(false)
 const detailError = ref('')
+const adjustOpen = ref(false)
+const adjustSubmitting = ref(false)
+const adjustForm = ref({
+  itemId: null,
+  category: '',
+  factorCode: '',
+  factorLabel: '',
+  oldValue: null,
+  requestedValue: null,
+  reason: '',
+  attachmentUrl: ''
+})
+const adjustRules = {
+  requestedValue: [{ required: true, message: '请输入申请值', trigger: 'blur' }],
+  reason: [{ required: true, message: '请填写申请理由', trigger: 'blur' }]
+}
 const { width: windowWidth } = useWindowSize()
 const detailColumns = computed(() => windowWidth.value < 640 ? 1 : 2)
 let detailRequestId = 0
@@ -852,6 +931,42 @@ async function handleDetail(row) {
 function handleDetailClosed() {
   detailRequestId++
   detailLoading.value = false
+}
+
+/** 从详情因子发起系数调整申请：填 requestedValue/reason/attachmentUrl，itemId 取当前详情。 */
+function handleAdjust(payload) {
+  adjustForm.value = {
+    itemId: detailData.value.id,
+    category: payload.category,
+    factorCode: payload.factorCode,
+    factorLabel: payload.factorLabel,
+    oldValue: payload.oldValue,
+    requestedValue: null,
+    reason: '',
+    attachmentUrl: ''
+  }
+  adjustOpen.value = true
+}
+
+/** 提交系数调整申请。 */
+function submitAdjust() {
+  proxy.$refs['adjustRef'].validate(valid => {
+    if (!valid) return
+    adjustSubmitting.value = true
+    submitCoefficientAdjustment({
+      itemId: adjustForm.value.itemId,
+      category: adjustForm.value.category,
+      factorCode: adjustForm.value.factorCode,
+      requestedValue: adjustForm.value.requestedValue,
+      reason: adjustForm.value.reason,
+      attachmentUrl: adjustForm.value.attachmentUrl || null
+    }).then(() => {
+      proxy.$modal.msgSuccess('申请已提交，待教务审核')
+      adjustOpen.value = false
+    }).finally(() => {
+      adjustSubmitting.value = false
+    })
+  })
 }
 
 /** 提交按钮 */

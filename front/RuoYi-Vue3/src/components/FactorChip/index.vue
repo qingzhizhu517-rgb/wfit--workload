@@ -24,12 +24,20 @@ const props = defineProps({
 })
 
 const sourceLabels = {
+  // 归一后的来源枚举
+  IMPORT_VALUE: '导入值',
+  RULE_DEFAULT: '默认规则',
+  APPROVED_OVERRIDE: '审批调整',
+  FORMULA_CONSTANT: '制度常量',
+  DERIVED: '派生值',
+  DISPLAY_ONLY: '仅展示',
+  // 旧枚举兜底（存量数据/兼容）
   IMPORT: '任务导入',
   AUTO: '系统自动',
   MANUAL: '手工录入',
   SELF: '教师申报',
-  FORMULA_CONSTANT: '制度常量',
-  CURRENT_RULE_DERIVED: '当前规则派生',
+  CURRENT_RULE_DERIVED: '派生值',
+  NORMAL: '默认规则',
   UNKNOWN: '来源未说明'
 }
 
@@ -38,7 +46,8 @@ const hasNotice = computed(() => ['WARNING', 'CAPPED', 'APPROVAL_REQUIRED', 'PEN
 const tone = computed(() => {
   if (['PENDING', 'ERROR'].includes(props.factor.status)) return 'danger'
   if (['WARNING', 'CAPPED', 'APPROVAL_REQUIRED'].includes(props.factor.status)) return 'warning'
-  if (props.factor.source === 'IMPORT') return 'primary'
+  if (props.factor.source === 'APPROVED_OVERRIDE') return 'primary'
+  if (['IMPORT', 'IMPORT_VALUE'].includes(props.factor.source)) return 'primary'
   if (props.factor.source === 'SELF') return 'warning'
   return 'neutral'
 })
