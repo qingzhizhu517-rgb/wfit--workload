@@ -72,6 +72,17 @@ wfit--workload/                         # 仓库根（GitHub: qingzhizhu517-rgb/
 │       ├── 14_fix_calc_rules.sql      # G4 人数上限 CAP_R4_MAX 20→60（幂等 UPDATE）
 │       ├── 15_fix_menu_buttons.sql    # 补 63 个明细/配置页按钮权限 + 清理死权限（幂等，已并入 05/06）
 │       ├── 16_remove_unused_modules.sql # 随 quartz/generator 模块下线清理菜单（幂等）
+│       ├── 17_simplify_approval.sql   # 审批流两级化（状态 3→2 迁移，幂等）
+│       ├── 18_fix_r5_approval.sql     # G5 本科毕业论文不封顶，专科阈值 APPROVAL_R5_JUNIOR（幂等）
+│       ├── 19_enable_allowance_d.sql  # 启用代阅卷酬金 D 五档费率（幂等）
+│       ├── 20_service_rate_semantics.sql # G11 岗位减免值语义固化（rate 为学期标准，幂等）
+│       ├── 21_export_columns.sql      # 附件1/2 导出列补充（幂等）
+│       ├── 22_semester_position_workload.sql # G11 直接同步本学期岗位减免值（幂等）
+│       ├── 23_calculation_consistency.sql    # 不可变计算快照表 + 明细 calculation_version/last_calculated_at（幂等）
+│       ├── 24_coefficient_adjustment.sql     # G1/G2 系数调整申请表 + 待审唯一键（幂等）
+│       ├── 25_calculation_menu.sql           # G1/G2/G3 分类导入菜单 + 系数申请权限登记（幂等）
+│       ├── 26_coefficient_teacher_perm.sql   # 授教师 role4 系数申请 add/list 权限（幂等）
+│       ├── 27_calc_flow_menu.sql             # 系数申请列表页菜单入口（幂等）
 │       ├── ry_20260321.sql            # RuoYi 基础系统表
 │       └── quartz.sql                 # Quartz 调度器表
 ├── front/RuoYi-Vue3/                  # 前端 Vue 3 项目
