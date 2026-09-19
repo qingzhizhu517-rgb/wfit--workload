@@ -1,6 +1,7 @@
 package com.workload.system.controller;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
@@ -18,7 +19,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.util.StringUtils;
 import com.alibaba.excel.EasyExcel;
+import com.alibaba.excel.write.builder.ExcelWriterBuilder;
 import com.workload.common.annotation.Log;
 import com.workload.common.core.controller.BaseController;
 import com.workload.common.core.domain.AjaxResult;
@@ -75,7 +78,8 @@ public class BizTeachingTaskController extends BaseController
     @PreAuthorize("@ss.hasPermi('system:teachingTask:import')")
     @Log(title = "导入教学任务Excel", businessType = BusinessType.IMPORT)
     @PostMapping("/importExcel")
-    public AjaxResult importExcel(@RequestParam("file") MultipartFile file)
+    public AjaxResult importExcel(@RequestParam("file") MultipartFile file,
+            @RequestParam(value = "templateType", required = false) String templateType)
     {
         // 上传安全校验：空文件/扩展名白名单/文件大小上限
         String invalidMsg = ImportFileValidator.validateExcelFile(file, importMaxSizeMb);
@@ -83,12 +87,15 @@ public class BizTeachingTaskController extends BaseController
         {
             return error(invalidMsg);
         }
+        // templateType 省略即通用（ALL），向后兼容既有不带该参的调用
+        String template = StringUtils.hasText(templateType) ? templateType : "ALL";
         try
         {
             // 流式导入：EasyExcel 分批回调，边读边逐行入库（每行独立事务），
             // 不再把整份文件累积进内存，规避大文件 OOM 与超长事务。
+            // 分类模板（G1/G2/G3）在写库前拒绝非同类行；ALL 放行 G1~G6。
             ImportResult result = teachingTaskImportService.importTeachingTasksStreaming(
-                    file.getInputStream(), file.getOriginalFilename());
+                    file.getInputStream(), file.getOriginalFilename(), template);
 
             if (result.getTotalCount() == 0)
             {
@@ -112,13 +119,36 @@ public class BizTeachingTaskController extends BaseController
      */
     @PreAuthorize("@ss.hasPermi('system:teachingTask:import')")
     @PostMapping("/importTemplate")
-    public void importTemplate(HttpServletResponse response) throws Exception
+    public void importTemplate(HttpServletResponse response,
+            @RequestParam(value = "templateType", required = false) String templateType) throws Exception
     {
+        String template = StringUtils.hasText(templateType) ? templateType.trim().toUpperCase() : "ALL";
         response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-        response.setHeader("Content-Disposition", "attachment;filename=teachingTaskTemplate.xlsx");
-        EasyExcel.write(response.getOutputStream(), TeachingTaskImportDTO.class)
-                .sheet("教学任务导入模板")
-                .doWrite(new ArrayList<>());
+        response.setHeader("Content-Disposition",
+                "attachment;filename=teachingTaskTemplate" + ("ALL".equals(template) ? "" : "_" + template) + ".xlsx");
+
+        ExcelWriterBuilder builder = EasyExcel.write(response.getOutputStream(), TeachingTaskImportDTO.class);
+        // 分类模板（G1/G2/G3）用 includeColumnFieldNames 精简列，保留教师/学期/课程/层次/专业/
+        // 性质/级别/角色/评价/人数/班级/重复次序及数量/系数列；ALL 模板输出全部列，行为不变。
+        if (!"ALL".equals(template))
+        {
+            builder.includeColumnFieldNames(typedTemplateFields());
+        }
+        String sheetName = "ALL".equals(template) ? "教学任务导入模板" : (template + " 分类导入模板");
+        builder.sheet(sheetName).doWrite(new ArrayList<>());
+    }
+
+    /**
+     * G1/G2/G3 分类模板保留的列（DTO 字段名）：教师工号/姓名、学期、课程名/代码、
+     * 工作量类别、层次、专业、性质、级别、角色、评价、人数、数量(计划学时/天数/周数)、
+     * 系数、班级、重复次序。三类模板列集一致，差异体现在文件名与 sheet 名，导入时按类别锁定。
+     */
+    private static List<String> typedTemplateFields()
+    {
+        return Arrays.asList(
+                "semester", "userCode", "userName", "courseName", "courseCode", "workloadType",
+                "educationLevel", "majorCategory", "courseNature", "courseLevel", "courseRole",
+                "teachingEval", "studentCount", "baseValue", "courseCoefficient", "className", "repeatOrder");
     }
 
     /**

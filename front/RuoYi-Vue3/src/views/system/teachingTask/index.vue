@@ -364,6 +364,28 @@
       width="500px"
       append-to-body
     >
+      <div class="import-type-picker">
+        <div class="import-type-label">
+          导入类型
+        </div>
+        <el-radio-group
+          v-model="importTemplateType"
+          :disabled="importPending"
+        >
+          <el-radio-button
+            v-for="o in importTemplateOptions"
+            :key="o.value"
+            :value="o.value"
+          >
+            {{ o.label }}
+          </el-radio-button>
+        </el-radio-group>
+        <div class="form-tip">
+          {{ importTemplateType === 'ALL'
+            ? '通用模板：可导入 G1~G6 各类工作量'
+            : '分类模板：仅接受 ' + importTemplateType + ' 类行，其余行导入时报错' }}
+        </div>
+      </div>
       <el-upload
         ref="uploadRef"
         :auto-upload="false"
@@ -722,7 +744,10 @@ import {
   optionsToMap, formatNumber
 } from '@/utils/bizDict'
 
+import { useRoute } from 'vue-router'
+
 const { proxy } = getCurrentInstance()
+const route = useRoute()
 const { userName, userCode } = useUserMap()
 
 /** 层次/类别/性质列 biz-tag 映射（由 bizDict Options 转换） */
@@ -749,6 +774,14 @@ const importLoading = ref(false)
 const importFileList = ref([])
 const importResult = ref(null)
 const importFile = ref(null)
+// 导入类型：ALL 通用（G1~G6），G1/G2/G3 分类导入（下载模板与上传共用同一类别）
+const importTemplateType = ref('ALL')
+const importTemplateOptions = [
+  { value: 'ALL', label: '通用' },
+  { value: 'G1', label: 'G1 理论' },
+  { value: 'G2', label: 'G2 实践' },
+  { value: 'G3', label: 'G3 实习实训' }
+]
 
 const data = reactive({
   form: {},
@@ -920,10 +953,13 @@ function handleExport() {
 }
 
 /** Excel 导入按钮操作 */
-function handleImport() {
+function handleImport(templateType) {
   importFileList.value = []
   importResult.value = null
   importFile.value = null
+  // 支持从 G1/G2/G3 分类入口菜单带类别打开；其余情况默认通用
+  const preset = typeof templateType === 'string' ? templateType.toUpperCase() : ''
+  importTemplateType.value = ['G1', 'G2', 'G3'].includes(preset) ? preset : 'ALL'
   importOpen.value = true
 }
 
@@ -942,9 +978,12 @@ function handleExceed() {
   proxy.$modal.msgWarning('只能上传 1 个文件，请先移除已选文件')
 }
 
-/** 下载导入模板 */
+/** 下载导入模板（与上传共用当前选中的类别） */
 function handleDownloadTemplate() {
-  proxy.download('system/teachingTask/importTemplate', {}, '教学任务导入模板.xlsx')
+  const type = importTemplateType.value
+  const params = type && type !== 'ALL' ? { templateType: type } : {}
+  const suffix = type && type !== 'ALL' ? `_${type}` : ''
+  proxy.download('system/teachingTask/importTemplate', params, `教学任务导入模板${suffix}.xlsx`)
 }
 
 /** 提交导入 */
@@ -961,7 +1000,7 @@ async function submitImport() {
     await proxy.$modal.confirm('确认导入所选 Excel 文件中的教学任务？')
     importLoading.value = true
     importResult.value = null
-    const response = await importTeachingTask(importFile.value)
+    const response = await importTeachingTask(importFile.value, importTemplateType.value)
     importResult.value = response.data
     if (response.data.failCount === 0) {
       proxy.$modal.msgSuccess(`导入成功，共 ${response.data.successCount} 条`)
@@ -980,6 +1019,11 @@ async function submitImport() {
 }
 
 getList()
+
+// 从 G1/G2/G3 分类导入菜单进入时（query.templateType）自动打开对应类别的导入弹窗
+if (['G1', 'G2', 'G3'].includes(String(route.query.templateType || '').toUpperCase())) {
+  handleImport(route.query.templateType)
+}
 </script>
 
 <style scoped>
@@ -988,5 +1032,19 @@ getList()
   font-size: 12px;
   color: var(--el-text-color-secondary);
   line-height: 1.4;
+}
+
+.import-type-picker {
+  margin-bottom: 16px;
+}
+
+.import-type-label {
+  margin-bottom: 8px;
+  font-size: 13px;
+  color: var(--el-text-color-regular);
+}
+
+.import-type-picker .form-tip {
+  margin: 8px 0 0 0;
 }
 </style>

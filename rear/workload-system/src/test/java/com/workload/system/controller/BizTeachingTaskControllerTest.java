@@ -24,7 +24,14 @@ import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockHttpServletResponse;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.test.util.ReflectionTestUtils;
+
 import com.workload.common.utils.DataScopeUtil;
+import com.workload.common.utils.excel.ImportResult;
 import com.workload.system.domain.BizTeachingTask;
 import com.workload.system.domain.dto.TeachingTaskExportDTO;
 import com.workload.system.service.IBizTeachingTaskService;
@@ -127,6 +134,38 @@ class BizTeachingTaskControllerTest
         {
             assertThat(cellValues(workbook.getSheetAt(0).getRow(1)).get(16)).isEqualTo("种子数据");
         }
+    }
+
+    @Test
+    void importExcelPassesTemplateTypeToService() throws Exception
+    {
+        ReflectionTestUtils.setField(controller, "importMaxSizeMb", 10L);
+        MockMultipartFile file = new MockMultipartFile("file", "tasks.xlsx",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", new byte[]{1, 2, 3});
+        ImportResult result = new ImportResult();
+        result.addSuccess();
+        when(teachingTaskImportService.importTeachingTasksStreaming(any(), eq("tasks.xlsx"), eq("G1")))
+                .thenReturn(result);
+
+        controller.importExcel(file, "G1");
+
+        verify(teachingTaskImportService).importTeachingTasksStreaming(any(), eq("tasks.xlsx"), eq("G1"));
+    }
+
+    @Test
+    void importExcelDefaultsTemplateTypeToAll() throws Exception
+    {
+        ReflectionTestUtils.setField(controller, "importMaxSizeMb", 10L);
+        MockMultipartFile file = new MockMultipartFile("file", "tasks.xlsx",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", new byte[]{1, 2, 3});
+        ImportResult result = new ImportResult();
+        result.addSuccess();
+        when(teachingTaskImportService.importTeachingTasksStreaming(any(), eq("tasks.xlsx"), eq("ALL")))
+                .thenReturn(result);
+
+        controller.importExcel(file, null);
+
+        verify(teachingTaskImportService).importTeachingTasksStreaming(any(), eq("tasks.xlsx"), eq("ALL"));
     }
 
     private TeachingTaskExportDTO exportRow(Date importedAt)

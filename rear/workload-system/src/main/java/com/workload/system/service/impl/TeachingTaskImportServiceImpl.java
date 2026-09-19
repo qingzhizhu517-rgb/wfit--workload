@@ -101,8 +101,11 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
     private WorkloadSnapshotService snapshotService;
 
     @Override
-    public ImportResult importTeachingTasksStreaming(InputStream inputStream, String fileName)
+    public ImportResult importTeachingTasksStreaming(InputStream inputStream, String fileName, String templateType)
     {
+        // 归一化并校验模板类别（ALL/G1/G2/G3）；null/空按 ALL 兼容
+        String template = normalizeTemplateType(templateType);
+
         String batchNo = "IMP-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
 
         // 创建导入批次记录
@@ -119,7 +122,7 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
 
         // EasyExcel 逐行回调：physicalRow 为 0 基含表头的物理行号，展示时 +1 转 1 基
         ImportResult result = ExcelReadUtil.readEachRow(inputStream, TeachingTaskImportDTO.class,
-                (dto, physicalRow) -> proxy.processSingleRow(dto, batchNo));
+                (dto, physicalRow) -> proxy.processSingleRow(dto, batchNo, template));
         result.setBatchId(batch.getId());
 
         // 更新批次记录（对齐表定义 status 语义：2=已导入 4=失败/部分失败）
@@ -142,10 +145,22 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
     @Transactional(rollbackFor = Exception.class)
     public BigDecimal processSingleRow(TeachingTaskImportDTO dto, String batchNo)
     {
+        // 通用模板：等价 templateType=ALL，放行 G1~G6
+        return processSingleRow(dto, batchNo, "ALL");
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public BigDecimal processSingleRow(TeachingTaskImportDTO dto, String batchNo, String templateType)
+    {
         // 1. 校验必填字段
         validateRow(dto);
 
-        // 2. 查找教师
+        // 2. 分类模板闸门：必须在任何触库（查教师/锁汇总/插入）之前比较行类别与模板类别，
+        //    不匹配立即拒绝，保证 G1 模板不会误收 G2/G3 行并落库
+        assertTemplateType(dto, templateType);
+
+        // 3. 查找教师
         SysUser user = findUser(dto.getUserCode());
 
         // 3. 锁定汇总并校验冻结状态，必须先于重复计数及任何业务写入
@@ -185,6 +200,43 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
         workloadItemMapper.updateBizWorkloadItem(item);
 
         return calculated;
+    }
+
+    /**
+     * 归一化模板类别：null/空 → ALL；其余转大写后必须为 ALL/G1/G2/G3，否则拒绝。
+     */
+    private String normalizeTemplateType(String templateType)
+    {
+        if (!StringUtils.hasText(templateType))
+        {
+            return "ALL";
+        }
+        String normalized = templateType.trim().toUpperCase();
+        if (!normalized.equals("ALL") && !normalized.equals("G1")
+                && !normalized.equals("G2") && !normalized.equals("G3"))
+        {
+            throw new ServiceException("不支持的导入模板类别: " + templateType + "（仅允许 ALL/G1/G2/G3）");
+        }
+        return normalized;
+    }
+
+    /**
+     * 分类模板闸门：ALL 放行任意合法类别（G1~G6）；G1/G2/G3 模板仅接受同类行，
+     * 行类别不符即抛错（消息含「模板类别 Gx」），调用点保证其先于任何写库执行。
+     */
+    private void assertTemplateType(TeachingTaskImportDTO dto, String templateType)
+    {
+        String template = normalizeTemplateType(templateType);
+        if ("ALL".equals(template))
+        {
+            return;
+        }
+        String rowType = dto.getWorkloadType() == null ? "" : dto.getWorkloadType().trim().toUpperCase();
+        if (!template.equals(rowType))
+        {
+            throw new ServiceException("模板类别 " + template + " 只接受 " + template
+                    + " 类工作量，当前行类别为 " + dto.getWorkloadType());
+        }
     }
 
     /**

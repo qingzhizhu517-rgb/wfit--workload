@@ -44,7 +44,8 @@ export function delTeachingTask(id) {
 }
 
 // Excel 导入教学任务
-export function importTeachingTask(file) {
+// templateType 省略或 'ALL' 走通用导入（放行 G1~G6）；G1/G2/G3 为分类导入（后端写库前锁定类别）
+export function importTeachingTask(file, templateType) {
   const formData = new FormData()
   formData.append('file', file)
   return request({
@@ -53,6 +54,8 @@ export function importTeachingTask(file) {
     // 必须显式指定 multipart，否则会命中 axios 全局默认的 application/json 头，
     // 浏览器不生成 boundary，后端 @RequestParam("file") 解析失败（MultipartException）
     headers: { 'Content-Type': 'multipart/form-data' },
+    // templateType 作为查询参数透传；省略/ALL 时不带，保持向后兼容
+    params: templateType && templateType !== 'ALL' ? { templateType } : {},
     data: formData
   })
 }
