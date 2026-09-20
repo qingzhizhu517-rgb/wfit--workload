@@ -1,8 +1,14 @@
 package com.workload.system.service.impl;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -13,7 +19,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.workload.common.exception.ServiceException;
+import com.workload.common.utils.SecurityUtils;
 import com.workload.common.utils.excel.ExcelReadUtil;
 import com.workload.common.utils.excel.ImportResult;
 import com.workload.system.calc.WorkloadWriteGuard;
@@ -28,9 +36,15 @@ import com.workload.system.domain.BizWlPractice;
 import com.workload.system.domain.BizWlTheory;
 import com.workload.system.domain.BizWlThesis;
 import com.workload.system.domain.BizWorkloadItem;
+import com.workload.system.domain.BizImportRow;
 import com.workload.system.domain.dto.TeachingTaskImportDTO;
+import com.workload.system.domain.dto.TeachingTaskImportV1DTO;
+import com.workload.system.domain.dto.importing.ImportConfirmRequest;
+import com.workload.system.domain.dto.importing.ImportPreviewResponse;
+import com.workload.system.domain.dto.importing.ImportRowView;
 import com.workload.system.domain.vo.FactorFormulaVo;
 import com.workload.system.mapper.BizImportBatchMapper;
+import com.workload.system.mapper.BizImportRowMapper;
 import com.workload.system.mapper.BizTeachingTaskMapper;
 import com.workload.system.mapper.BizWlConcentratedInternshipMapper;
 import com.workload.system.mapper.BizWlCourseDesignMapper;
@@ -40,6 +54,8 @@ import com.workload.system.mapper.BizWlTheoryMapper;
 import com.workload.system.mapper.BizWlThesisMapper;
 import com.workload.system.mapper.BizWorkloadItemMapper;
 import com.workload.system.service.ITeachingTaskImportService;
+import com.workload.system.service.ImportPreviewStore;
+import com.workload.system.service.ImportTokenHasher;
 import com.workload.system.service.ISysUserService;
 import com.workload.system.service.IWorkloadFactorFormulaService;
 import com.workload.system.service.WorkloadSnapshotService;
@@ -84,6 +100,18 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
 
     @Autowired
     private BizImportBatchMapper importBatchMapper;
+
+    @Autowired
+    private BizImportRowMapper importRowMapper;
+
+    @Autowired
+    private ImportPreviewStore importPreviewStore;
+
+    @Autowired
+    private ImportTokenHasher importTokenHasher;
+
+    /** normalized_json / raw_json 白名单序列化：DTO 只含业务字段，无敏感列 */
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Autowired
     private CalcStrategyFactory calcStrategyFactory;
@@ -201,6 +229,384 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
         workloadItemMapper.updateBizWorkloadItem(item);
 
         return calculated;
+    }
+
+    // ==================== 两阶段导入：预检 / 确认 ====================
+
+    /** 目标 Sheet 名：v2 模板的数据页，预检只解析此页，说明页示例绝不入库 */
+    private static final String DATA_SHEET_NAME = "导入数据";
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public ImportPreviewResponse preview(InputStream input, String fileName, String templateVersion)
+    {
+        String version = normalizeTemplateVersion(templateVersion);
+
+        // 读全字节：一份算 SHA-256 源哈希，一份喂 EasyExcel（流不可重复消费）
+        byte[] bytes = readAllBytes(input);
+        String sourceHash = sha256Hex(bytes);
+
+        // 去重按「是否已成功导入」判定，而非「是否预检过」：同一文件已导入(2) 则拒绝重复导入；
+        // 阻断/放弃的历史预检不阻止修数据后重传。整方法 @Transactional，解析中途失败连批次一起回滚，
+        // 不留 status=0 孤儿占用源哈希。
+        if (importBatchMapper.countConfirmedBySource("TEACHING_TASK", sourceHash) > 0)
+        {
+            throw new ServiceException("该文件已成功导入过（源文件哈希一致），请勿重复导入");
+        }
+
+        // 1) 建批次（解析中 0），落模板版本/源哈希/操作者/一次性确认令牌哈希
+        String batchNo = "IMP-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        String confirmToken = UUID.randomUUID().toString().replace("-", "");
+        BizImportBatch batch = new BizImportBatch();
+        batch.setBatchNo(batchNo);
+        batch.setImportType("TEACHING_TASK");
+        batch.setFileName(fileName);
+        batch.setStatus(0);
+        batch.setTemplateVersion(version);
+        batch.setSourceHash(sourceHash);
+        batch.setConfirmTokenHash(importTokenHasher.hash(confirmToken));
+        fillOperator(batch);
+        importBatchMapper.insertBizImportBatch(batch);
+
+        // 2) 逐行解析→校验→落 biz_import_row（预检零业务写入）
+        List<ImportRowView> views = new ArrayList<>();
+        int[] counts = new int[2]; // [0]=ready [1]=blocked
+
+        if ("V1".equals(version))
+        {
+            // V1 旧文件：读旧表头后转 v2 规范行，避免旧「基数」列被当作缺列全行拒绝
+            ExcelReadUtil.readEachRowOfSheet(new ByteArrayInputStream(bytes), TeachingTaskImportV1DTO.class,
+                    null, (v1, physicalRow) ->
+                            handlePreviewRow(batch.getId(), physicalRow, convertV1(v1), v1, views, counts));
+        }
+        else
+        {
+            // V2：优先读「导入数据」页（说明页示例不入库）；旧单 Sheet 文件无该页时回退第一个 Sheet，
+            // 避免 /importExcel 默认 V2 却收到旧单 Sheet 文件时整批读空/报错。
+            ExcelReadUtil.readEachRowOfSheetOrFirst(bytes, TeachingTaskImportDTO.class,
+                    DATA_SHEET_NAME, (dto, physicalRow) ->
+                            handlePreviewRow(batch.getId(), physicalRow, dto, dto, views, counts));
+        }
+
+        int total = counts[0] + counts[1];
+
+        // 3) 回写批次计数并推进到待确认(1)
+        batch.setTotalCount((long) total);
+        batch.setSuccessCount((long) counts[0]);
+        batch.setFailCount((long) counts[1]);
+        importBatchMapper.updateBizImportBatch(batch);
+        importPreviewStore.markPrechecked(batch.getId());
+
+        List<String> warnings = new ArrayList<>();
+        if ("V1".equals(version))
+        {
+            warnings.add("V1 旧模板导入已弃用：请尽快改用 V2 双 Sheet 模板（本次已按类别转换旧基数列）");
+        }
+        if (counts[1] > 0)
+        {
+            warnings.add("有 " + counts[1] + " 行被阻断，修正后方可确认导入");
+        }
+
+        return new ImportPreviewResponse(batch.getId(), "TEACHING_TASK", version,
+                total, counts[0], counts[1], views, warnings, confirmToken);
+    }
+
+    /**
+     * 预检单行：校验通过落 READY + normalized/raw JSON；失败落 BLOCKED + 错误信息。
+     * 绝不触碰教学任务/工作量主表，只写 biz_import_row。
+     */
+    private void handlePreviewRow(Long batchId, int physicalRow, TeachingTaskImportDTO normalized,
+                                  Object rawDto, List<ImportRowView> views, int[] counts)
+    {
+        String status;
+        String errorMessage = null;
+        try
+        {
+            validateRow(normalized);
+            status = "READY";
+            counts[0]++;
+        }
+        catch (Exception e)
+        {
+            status = "BLOCKED";
+            errorMessage = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+            counts[1]++;
+        }
+
+        BizImportRow row = new BizImportRow();
+        row.setBatchId(batchId);
+        row.setRowNo(physicalRow);
+        row.setRawJson(toJson(rawDto));
+        row.setNormalizedJson(toJson(normalized));
+        row.setStatus(status);
+        if (errorMessage != null)
+        {
+            row.setErrorCode("VALIDATION");
+            row.setErrorMessage(truncate(errorMessage, 500));
+        }
+        row.setCreateTime(new Date());
+        importRowMapper.insertBizImportRow(row);
+
+        views.add(new ImportRowView(physicalRow, normalized.getUserCode(), normalized.getUserName(),
+                status, row.getErrorCode(), row.getErrorMessage()));
+    }
+
+    @Override
+    public ImportResult confirm(ImportConfirmRequest request)
+    {
+        // 1) 校验可确认：待确认(1) + 令牌匹配 + 0 阻断
+        importPreviewStore.assertConfirmable(request);
+
+        // updateSupport（更新既有目标）尚未实现：processSingleRow 只 INSERT，
+        // 若放行会静默造重复。显式拒绝，避免数据翻倍；重复行统一走 SKIPPED。
+        if (request.updateSupport())
+        {
+            throw new ServiceException("暂不支持更新既有导入记录（updateSupport）；重复行将按跳过处理，请去掉该选项");
+        }
+
+        BizImportBatch batch = importBatchMapper.selectBizImportBatchById(request.batchId());
+        if (batch == null)
+        {
+            throw new ServiceException("导入批次不存在：" + request.batchId());
+        }
+        String batchNo = batch.getBatchNo();
+
+        // 2) 按 row_no 顺序回放 READY 行；每行独立事务经 AOP 代理，失败只记该行
+        List<BizImportRow> rows = importRowMapper.selectByBatchIdAndStatus(request.batchId(), "READY");
+        ImportResult result = new ImportResult();
+        result.setBatchId(request.batchId());
+        ITeachingTaskImportService proxy = self();
+
+        for (BizImportRow row : rows)
+        {
+            TeachingTaskImportDTO dto = fromJson(row.getNormalizedJson());
+            try
+            {
+                if (dto != null && isDuplicate(dto))
+                {
+                    row.setStatus("SKIPPED");
+                    row.setErrorCode("DUPLICATE");
+                    row.setErrorMessage("幂等键命中（工号+学期+课程代码+班级+类别），已跳过");
+                    row.setUpdateTime(new Date());
+                    importRowMapper.updateBizImportRow(row);
+                    result.addSkip();
+                    continue;
+                }
+                // ALL 模板：确认阶段不再做分类闸门，保留 guard/快照/afterCalculated
+                proxy.processSingleRow(dto, batchNo, "ALL");
+                row.setStatus("IMPORTED");
+                row.setUpdateTime(new Date());
+                importRowMapper.updateBizImportRow(row);
+                result.addSuccess();
+            }
+            catch (Exception e)
+            {
+                String msg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+                row.setStatus("FAILED");
+                row.setErrorCode("IMPORT");
+                row.setErrorMessage(truncate(msg, 500));
+                row.setUpdateTime(new Date());
+                importRowMapper.updateBizImportRow(row);
+                result.addError(row.getRowNo() == null ? 0 : row.getRowNo(), msg);
+            }
+        }
+
+        // 3) 回写批次真实计数（confirm 阶段的 SKIPPED/FAILED 覆盖 preview 的 ready/blocked 值，
+        //    否则 biz_import_batch 计数停留在预检口径，审计时与实际结果不符）。
+        batch.setSuccessCount((long) result.getSuccessCount());
+        batch.setFailCount((long) result.getFailCount());
+        batch.setTotalCount((long) result.getTotalCount());
+        if (result.hasErrors())
+        {
+            StringBuilder sb = new StringBuilder();
+            result.getErrors().forEach(err -> sb.append(err.toString()).append("; "));
+            batch.setErrorSummary(sb.substring(0, Math.min(sb.length(), 500)));
+        }
+        importBatchMapper.updateBizImportBatch(batch);
+
+        // 4) 固化批次终态：有失败行 → 失败(4)；全部成功/跳过 → 已导入(2)。
+        //    避免部分失败仍标「已导入」误导审计；markFailed 的 1→4 转移由此启用。
+        if (result.hasErrors())
+        {
+            importPreviewStore.markFailed(request.batchId());
+        }
+        else
+        {
+            importPreviewStore.markConfirmed(request.batchId());
+        }
+        return result;
+    }
+
+    /**
+     * 幂等判定：解析教师后按（工号→userId,学期,课程代码,班级,类别）查已入库条数，命中即视为重复（SKIPPED）。
+     * 更新既有目标（updateSupport）尚未实现，confirm 已在入口拒绝该选项，故此处一律按跳过口径。
+     * 教师查不到不在此拦截——留给 processSingleRow fail-loud。
+     */
+    private boolean isDuplicate(TeachingTaskImportDTO dto)
+    {
+        SysUser user = sysUserService.selectUserByUserName(dto.getUserCode());
+        if (user == null)
+        {
+            return false;
+        }
+        String type = dto.getWorkloadType() == null ? "" : dto.getWorkloadType().trim().toUpperCase();
+        return teachingTaskMapper.countImportedTask(user.getUserId(), dto.getSemester(),
+                dto.getCourseCode(), dto.getClassName(), type) > 0;
+    }
+
+    /**
+     * 解析当前 bean 的 AOP 代理（以接口类型），供确认阶段逐行独立事务调用 processSingleRow。
+     * 抽成方法以便单测 spy 覆盖，绕过真实代理。
+     */
+    protected ITeachingTaskImportService self()
+    {
+        return (ITeachingTaskImportService) AopContext.currentProxy();
+    }
+
+    /**
+     * V1 旧行转 v2 规范行：单一「基数」列 baseValue 按类别落到语义字段。
+     * G1/G2→计划学时，G3→天数，G6→周数，G4→课程设计学分，G5 用选课人数（baseValue 忽略）。
+     */
+    private TeachingTaskImportDTO convertV1(TeachingTaskImportV1DTO v1)
+    {
+        TeachingTaskImportDTO dto = new TeachingTaskImportDTO();
+        dto.setSemester(v1.getSemester());
+        dto.setUserCode(v1.getUserCode());
+        dto.setUserName(v1.getUserName());
+        dto.setCourseName(v1.getCourseName());
+        dto.setCourseCode(v1.getCourseCode());
+        dto.setWorkloadType(v1.getWorkloadType());
+        dto.setEducationLevel(v1.getEducationLevel());
+        dto.setMajorCategory(v1.getMajorCategory());
+        dto.setCourseNature(v1.getCourseNature());
+        dto.setCourseLevel(v1.getCourseLevel());
+        dto.setCourseRole(v1.getCourseRole());
+        dto.setTeachingEval(v1.getTeachingEval());
+        dto.setStudentCount(v1.getStudentCount());
+        dto.setCourseCoefficient(v1.getCourseCoefficient());
+        dto.setClassName(v1.getClassName());
+        dto.setRepeatOrder(v1.getRepeatOrder());
+
+        String type = v1.getWorkloadType() == null ? "" : v1.getWorkloadType().trim().toUpperCase();
+        BigDecimal base = v1.getBaseValue();
+        switch (type)
+        {
+            case "G1":
+            case "G2":
+                dto.setPlannedHours(base);
+                break;
+            case "G3":
+                dto.setDays(base);
+                break;
+            case "G6":
+                dto.setWeeks(base);
+                break;
+            case "G4":
+                dto.setCredits(base);
+                break;
+            default:
+                // G5 只用选课人数，基数列无语义；其余非法类别留待 validateRow 拒绝
+                break;
+        }
+        return dto;
+    }
+
+    /** 归一化模板版本：null/空 → V2；其余转大写后必须为 V1/V2。 */
+    private String normalizeTemplateVersion(String templateVersion)
+    {
+        if (!StringUtils.hasText(templateVersion))
+        {
+            return "V2";
+        }
+        String v = templateVersion.trim().toUpperCase();
+        if (!"V1".equals(v) && !"V2".equals(v))
+        {
+            throw new ServiceException("不支持的模板版本: " + templateVersion + "（仅允许 V1/V2）");
+        }
+        return v;
+    }
+
+    /** 落操作者：优先当前登录用户（无安全上下文时留空，如系统任务/单测）。 */
+    private void fillOperator(BizImportBatch batch)
+    {
+        try
+        {
+            batch.setOperatorId(SecurityUtils.getUserId());
+            batch.setOperatorName(SecurityUtils.getUsername());
+        }
+        catch (Exception ignored)
+        {
+            // 无安全上下文：操作者留空，不阻断预检
+        }
+    }
+
+    private byte[] readAllBytes(InputStream input)
+    {
+        try
+        {
+            return input.readAllBytes();
+        }
+        catch (IOException e)
+        {
+            throw new ServiceException("读取导入文件失败：" + e.getMessage());
+        }
+    }
+
+    private String sha256Hex(byte[] bytes)
+    {
+        try
+        {
+            byte[] digest = MessageDigest.getInstance("SHA-256").digest(bytes);
+            StringBuilder hex = new StringBuilder(digest.length * 2);
+            for (byte b : digest)
+            {
+                hex.append(Character.forDigit((b >> 4) & 0xF, 16));
+                hex.append(Character.forDigit(b & 0xF, 16));
+            }
+            return hex.toString();
+        }
+        catch (Exception e)
+        {
+            throw new ServiceException("计算源文件哈希失败：" + e.getMessage());
+        }
+    }
+
+    private String toJson(Object dto)
+    {
+        try
+        {
+            return objectMapper.writeValueAsString(dto);
+        }
+        catch (Exception e)
+        {
+            log.warn("序列化导入行失败: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    private TeachingTaskImportDTO fromJson(String json)
+    {
+        if (!StringUtils.hasText(json))
+        {
+            return null;
+        }
+        try
+        {
+            return objectMapper.readValue(json, TeachingTaskImportDTO.class);
+        }
+        catch (Exception e)
+        {
+            throw new ServiceException("解析暂存行失败：" + e.getMessage());
+        }
+    }
+
+    private String truncate(String s, int max)
+    {
+        if (s == null)
+        {
+            return null;
+        }
+        return s.length() > max ? s.substring(0, max) : s;
     }
 
     /**

@@ -5,6 +5,8 @@ import java.math.BigDecimal;
 
 import com.workload.common.utils.excel.ImportResult;
 import com.workload.system.domain.dto.TeachingTaskImportDTO;
+import com.workload.system.domain.dto.importing.ImportConfirmRequest;
+import com.workload.system.domain.dto.importing.ImportPreviewResponse;
 
 /**
  * 教学任务 Excel 导入服务
@@ -45,4 +47,32 @@ public interface ITeachingTaskImportService
      * @return 计算后的工作量值
      */
     BigDecimal processSingleRow(TeachingTaskImportDTO dto, String batchNo, String templateType);
+
+    /**
+     * 两阶段导入 · 预检：只解析「导入数据」Sheet（V2）或旧单 Sheet（V1 转换），逐行校验后
+     * 落 {@code biz_import_row} 暂存，创建 {@code biz_import_batch} 并推进到待确认(1)。
+     * <p>
+     * 预检阶段<b>绝不写</b>教学任务/工作量主表/子表；说明页示例绝不入库、不计入 readyCount。
+     * V1 文件用 {@link com.workload.system.domain.dto.TeachingTaskImportV1DTO} 读旧表头，
+     * 把 {@code baseValue} 按类别转成 v2 语义字段（G1/G2→计划学时，G3→天数，G6→周数，G4→学分，
+     * G5 用选课人数）后走同一校验，避免旧文件全行被拒。
+     *
+     * @param input           源文件输入流
+     * @param fileName        原始文件名
+     * @param templateVersion 模板版本 V1/V2（空按 V2）
+     * @return 预检结果（含 batchId、readyCount/blockedCount、逐行视图与一次性确认令牌）
+     */
+    ImportPreviewResponse preview(InputStream input, String fileName, String templateVersion);
+
+    /**
+     * 两阶段导入 · 确认：校验批次可确认（待确认+令牌匹配+0 阻断）后，按 {@code row_no} 顺序
+     * 回放 {@link #processSingleRow}（templateType=ALL，保留冻结 guard/快照/afterCalculated）。
+     * <p>
+     * 幂等键为（工号,学期,课程代码,班级,类别）：命中则该行 SKIPPED（不静默覆盖），
+     * 成功 IMPORTED、异常 FAILED；最后把批次固化到已导入(2)。
+     *
+     * @param request 确认请求（批次ID + 确认令牌 + 是否允许更新）
+     * @return 导入结果（成功/跳过/失败计数与错误明细）
+     */
+    ImportResult confirm(ImportConfirmRequest request);
 }

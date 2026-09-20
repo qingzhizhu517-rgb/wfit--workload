@@ -34,6 +34,8 @@ import com.workload.common.utils.DataScopeUtil;
 import com.workload.common.utils.excel.ImportResult;
 import com.workload.system.domain.BizTeachingTask;
 import com.workload.system.domain.dto.TeachingTaskExportDTO;
+import com.workload.system.domain.dto.importing.ImportConfirmRequest;
+import com.workload.system.domain.dto.importing.ImportPreviewResponse;
 import com.workload.system.service.IBizTeachingTaskService;
 import com.workload.system.service.ITeachingTaskImportService;
 
@@ -136,36 +138,102 @@ class BizTeachingTaskControllerTest
         }
     }
 
+    /**
+     * V2 模板必须分离「示例与说明」和「导入数据」两个 Sheet：数据页仅有表头零数据行，
+     * 说明页含 G1/G3/G4/G5/G6 五类示例（虚构「示例教师」标签），数据页表头含拆分后的
+     * 计划学时/天数/周数/课程设计学分四个数量列。
+     */
     @Test
-    void importExcelPassesTemplateTypeToService() throws Exception
+    void v2TemplateSeparatesInstructionsFromImportRows() throws Exception
+    {
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        controller.importTemplate("V2", response);
+        try (Workbook wb = WorkbookFactory.create(new ByteArrayInputStream(response.getContentAsByteArray())))
+        {
+            Sheet dataSheet = wb.getSheet("导入数据");
+            Sheet instructionSheet = wb.getSheet("示例与说明");
+            assertThat(dataSheet).isNotNull();
+            assertThat(instructionSheet).isNotNull();
+            // 数据页只有表头（第 0 行），无数据行
+            assertThat(dataSheet.getLastRowNum()).isZero();
+            // 数据页表头含 v2 拆分数量列
+            assertThat(cellValues(dataSheet.getRow(0)))
+                    .contains("计划学时", "天数", "周数", "课程设计学分");
+            // 说明页含 5 类示例行（G1/G3/G4/G5/G6）
+            assertThat(instructionSheet.getLastRowNum()).isEqualTo(5);
+            // 第一条示例：学期 2025-2026-2、虚构教师标签
+            assertThat(instructionSheet.getRow(1).getCell(0).getStringCellValue()).isEqualTo("2025-2026-2");
+            assertThat(cellValues(instructionSheet.getRow(1))).contains("示例教师");
+        }
+    }
+
+    /**
+     * /importExcel 内部改走两阶段 preview：0 阻断 + legacyAutoConfirm=true 才自动确认，
+     * 返回确认结果；否则只返回预检结果并带弃用提示，不再静默单阶段写库。
+     */
+    @Test
+    void importExcelLegacyAutoConfirmsWhenNoBlockedRows() throws Exception
     {
         ReflectionTestUtils.setField(controller, "importMaxSizeMb", 10L);
         MockMultipartFile file = new MockMultipartFile("file", "tasks.xlsx",
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", new byte[]{1, 2, 3});
+        ImportPreviewResponse preview = new ImportPreviewResponse(9L, "TEACHING_TASK", "V1",
+                2, 2, 0, java.util.List.of(), java.util.List.of(), "tok");
+        when(teachingTaskImportService.preview(any(), eq("tasks.xlsx"), eq("V1"))).thenReturn(preview);
         ImportResult result = new ImportResult();
         result.addSuccess();
-        when(teachingTaskImportService.importTeachingTasksStreaming(any(), eq("tasks.xlsx"), eq("G1")))
-                .thenReturn(result);
+        when(teachingTaskImportService.confirm(any())).thenReturn(result);
 
-        controller.importExcel(file, "G1");
+        controller.importExcel(file, "V1", true);
 
-        verify(teachingTaskImportService).importTeachingTasksStreaming(any(), eq("tasks.xlsx"), eq("G1"));
+        verify(teachingTaskImportService).preview(any(), eq("tasks.xlsx"), eq("V1"));
+        verify(teachingTaskImportService).confirm(any(ImportConfirmRequest.class));
     }
 
     @Test
-    void importExcelDefaultsTemplateTypeToAll() throws Exception
+    void importExcelWithoutAutoConfirmReturnsPreviewOnly() throws Exception
     {
         ReflectionTestUtils.setField(controller, "importMaxSizeMb", 10L);
         MockMultipartFile file = new MockMultipartFile("file", "tasks.xlsx",
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", new byte[]{1, 2, 3});
+        ImportPreviewResponse preview = new ImportPreviewResponse(9L, "TEACHING_TASK", "V2",
+                2, 1, 1, java.util.List.of(), java.util.List.of("有 1 行被阻断"), "tok");
+        when(teachingTaskImportService.preview(any(), eq("tasks.xlsx"), eq("V2"))).thenReturn(preview);
+
+        controller.importExcel(file, null, false);
+
+        verify(teachingTaskImportService).preview(any(), eq("tasks.xlsx"), eq("V2"));
+        verify(teachingTaskImportService, never()).confirm(any());
+    }
+
+    /** /importPreview 端点把上传文件与模板版本透传给服务预检。 */
+    @Test
+    void importPreviewDelegatesToService() throws Exception
+    {
+        ReflectionTestUtils.setField(controller, "importMaxSizeMb", 10L);
+        MockMultipartFile file = new MockMultipartFile("file", "tasks.xlsx",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", new byte[]{1, 2, 3});
+        ImportPreviewResponse preview = new ImportPreviewResponse(9L, "TEACHING_TASK", "V2",
+                2, 2, 0, java.util.List.of(), java.util.List.of(), "tok");
+        when(teachingTaskImportService.preview(any(), eq("tasks.xlsx"), eq("V2"))).thenReturn(preview);
+
+        controller.importPreview(file, "V2");
+
+        verify(teachingTaskImportService).preview(any(), eq("tasks.xlsx"), eq("V2"));
+    }
+
+    /** /importConfirm 端点把确认请求透传给服务确认。 */
+    @Test
+    void importConfirmDelegatesToService()
+    {
+        ImportConfirmRequest request = new ImportConfirmRequest(9L, "tok", false);
         ImportResult result = new ImportResult();
         result.addSuccess();
-        when(teachingTaskImportService.importTeachingTasksStreaming(any(), eq("tasks.xlsx"), eq("ALL")))
-                .thenReturn(result);
+        when(teachingTaskImportService.confirm(request)).thenReturn(result);
 
-        controller.importExcel(file, null);
+        controller.importConfirm(request);
 
-        verify(teachingTaskImportService).importTeachingTasksStreaming(any(), eq("tasks.xlsx"), eq("ALL"));
+        verify(teachingTaskImportService).confirm(request);
     }
 
     private TeachingTaskExportDTO exportRow(Date importedAt)

@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.util.StringUtils;
 import com.alibaba.excel.EasyExcel;
-import com.alibaba.excel.write.builder.ExcelWriterBuilder;
+import com.alibaba.excel.write.metadata.WriteSheet;
 import com.workload.common.annotation.Log;
 import com.workload.common.core.controller.BaseController;
 import com.workload.common.core.domain.AjaxResult;
@@ -31,6 +31,9 @@ import com.workload.common.utils.excel.ImportResult;
 import com.workload.system.domain.BizTeachingTask;
 import com.workload.system.domain.dto.TeachingTaskExportDTO;
 import com.workload.system.domain.dto.TeachingTaskImportDTO;
+import com.workload.system.domain.dto.TeachingTaskImportV1DTO;
+import com.workload.system.domain.dto.importing.ImportConfirmRequest;
+import com.workload.system.domain.dto.importing.ImportPreviewResponse;
 import com.workload.system.service.IBizTeachingTaskService;
 import com.workload.system.service.ITeachingTaskImportService;
 import com.workload.common.utils.poi.ExcelUtil;
@@ -71,15 +74,18 @@ public class BizTeachingTaskController extends BaseController
     }
 
     /**
-     * Excel 导入教学任务
+     * Excel 导入教学任务（兼容入口，保留一个发布周期）。
      * <p>
-     * 上传 Excel 文件，自动解析并创建工作量明细
+     * 内部改走两阶段 {@code preview}：仅当 0 阻断且显式 {@code legacyAutoConfirm=true} 时自动确认，
+     * 否则只返回预检结果 + 弃用提示，不再静默单阶段写库。{@code templateVersion} 省略即 V2；
+     * 传 V1 时用旧模板 DTO 把基数列转 v2 语义字段，避免旧文件全行被拒。
      */
     @PreAuthorize("@ss.hasPermi('system:teachingTask:import')")
     @Log(title = "导入教学任务Excel", businessType = BusinessType.IMPORT)
     @PostMapping("/importExcel")
     public AjaxResult importExcel(@RequestParam("file") MultipartFile file,
-            @RequestParam(value = "templateType", required = false) String templateType)
+            @RequestParam(value = "templateVersion", required = false) String templateVersion,
+            @RequestParam(value = "legacyAutoConfirm", required = false, defaultValue = "false") boolean legacyAutoConfirm)
     {
         // 上传安全校验：空文件/扩展名白名单/文件大小上限
         String invalidMsg = ImportFileValidator.validateExcelFile(file, importMaxSizeMb);
@@ -87,25 +93,27 @@ public class BizTeachingTaskController extends BaseController
         {
             return error(invalidMsg);
         }
-        // templateType 省略即通用（ALL），向后兼容既有不带该参的调用
-        String template = StringUtils.hasText(templateType) ? templateType : "ALL";
+        String version = StringUtils.hasText(templateVersion) ? templateVersion : "V2";
         try
         {
-            // 流式导入：EasyExcel 分批回调，边读边逐行入库（每行独立事务），
-            // 不再把整份文件累积进内存，规避大文件 OOM 与超长事务。
-            // 分类模板（G1/G2/G3）在写库前拒绝非同类行；ALL 放行 G1~G6。
-            ImportResult result = teachingTaskImportService.importTeachingTasksStreaming(
-                    file.getInputStream(), file.getOriginalFilename(), template);
+            ImportPreviewResponse preview = teachingTaskImportService.preview(
+                    file.getInputStream(), file.getOriginalFilename(), version);
 
-            if (result.getTotalCount() == 0)
+            if (preview.totalCount() == 0)
             {
-                return error("Excel 文件为空或无有效数据行");
+                return error("Excel 文件为空或无有效数据行").put("data", preview);
             }
-            if (result.getSuccessCount() == 0 && result.hasErrors())
+            // 0 阻断 + 显式自动确认：走确认写库（兼容旧「上传即导入」的调用）
+            if (legacyAutoConfirm && preview.blockedCount() == 0)
             {
-                return error("导入失败，共 " + result.getFailCount() + " 行错误").put("data", result);
+                ImportResult result = teachingTaskImportService.confirm(
+                        new ImportConfirmRequest(preview.batchId(), preview.confirmToken(), false));
+                return success("导入完成（/importExcel 已弃用，请改用两阶段 importPreview/importConfirm）")
+                        .put("data", result).put("preview", preview);
             }
-            return success("导入完成").put("data", result);
+            // 否则只返回预检结果，交由前端确认；不再静默写库
+            return success("预检完成，请确认后导入（/importExcel 已弃用，请改用 importPreview/importConfirm）")
+                    .put("data", preview);
         }
         catch (Exception e)
         {
@@ -115,40 +123,123 @@ public class BizTeachingTaskController extends BaseController
     }
 
     /**
-     * 下载导入模板
+     * 两阶段导入 · 预检：上传文件只解析「导入数据」页，逐行落 biz_import_row 暂存，
+     * 绝不写业务表；返回可导入/被阻断行数与一次性确认令牌。
      */
     @PreAuthorize("@ss.hasPermi('system:teachingTask:import')")
-    @PostMapping("/importTemplate")
-    public void importTemplate(HttpServletResponse response,
-            @RequestParam(value = "templateType", required = false) String templateType) throws Exception
+    @Log(title = "教学任务导入预检", businessType = BusinessType.IMPORT)
+    @PostMapping("/importPreview")
+    public AjaxResult importPreview(@RequestParam("file") MultipartFile file,
+            @RequestParam(value = "templateVersion", required = false, defaultValue = "V2") String templateVersion)
     {
-        String template = StringUtils.hasText(templateType) ? templateType.trim().toUpperCase() : "ALL";
-        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-        response.setHeader("Content-Disposition",
-                "attachment;filename=teachingTaskTemplate" + ("ALL".equals(template) ? "" : "_" + template) + ".xlsx");
-
-        ExcelWriterBuilder builder = EasyExcel.write(response.getOutputStream(), TeachingTaskImportDTO.class);
-        // 分类模板（G1/G2/G3）用 includeColumnFieldNames 精简列，保留教师/学期/课程/层次/专业/
-        // 性质/级别/角色/评价/人数/班级/重复次序及数量/系数列；ALL 模板输出全部列，行为不变。
-        if (!"ALL".equals(template))
+        String invalidMsg = ImportFileValidator.validateExcelFile(file, importMaxSizeMb);
+        if (invalidMsg != null)
         {
-            builder.includeColumnFieldNames(typedTemplateFields());
+            return error(invalidMsg);
         }
-        String sheetName = "ALL".equals(template) ? "教学任务导入模板" : (template + " 分类导入模板");
-        builder.sheet(sheetName).doWrite(new ArrayList<>());
+        try
+        {
+            ImportPreviewResponse preview = teachingTaskImportService.preview(
+                    file.getInputStream(), file.getOriginalFilename(), templateVersion);
+            return success("预检完成").put("data", preview);
+        }
+        catch (Exception e)
+        {
+            log.error("教学任务导入预检异常", e);
+            return error("预检失败: " + (e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName()));
+        }
     }
 
     /**
-     * G1/G2/G3 分类模板保留的列（DTO 字段名）：教师工号/姓名、学期、课程名/代码、
-     * 工作量类别、层次、专业、性质、级别、角色、评价、人数、数量(计划学时/天数/周数)、
-     * 系数、班级、重复次序。三类模板列集一致，差异体现在文件名与 sheet 名，导入时按类别锁定。
+     * 两阶段导入 · 确认：校验令牌与 0 阻断后，按 row_no 顺序回放写库，幂等键命中默认跳过。
      */
-    private static List<String> typedTemplateFields()
+    @PreAuthorize("@ss.hasPermi('system:teachingTask:import')")
+    @Log(title = "教学任务导入确认", businessType = BusinessType.IMPORT)
+    @PostMapping("/importConfirm")
+    public AjaxResult importConfirm(@RequestBody ImportConfirmRequest request)
     {
-        return Arrays.asList(
-                "semester", "userCode", "userName", "courseName", "courseCode", "workloadType",
-                "educationLevel", "majorCategory", "courseNature", "courseLevel", "courseRole",
-                "teachingEval", "studentCount", "baseValue", "courseCoefficient", "className", "repeatOrder");
+        ImportResult result = teachingTaskImportService.confirm(request);
+        return success("导入完成").put("data", result);
+    }
+
+    /**
+     * 下载导入模板。
+     * <p>
+     * V2（默认）返回双 Sheet 工作簿：「示例与说明」含 G1/G3/G4/G5/G6 五类示例（虚构「示例教师」标签），
+     * 「导入数据」仅表头零数据行——导入器只解析数据页，模板示例绝不入库。
+     * V1 返回旧单 Sheet 兼容模板（17 列，含单一基数列）。
+     */
+    @PreAuthorize("@ss.hasPermi('system:teachingTask:import')")
+    @PostMapping("/importTemplate")
+    public void importTemplate(@RequestParam(value = "version", required = false) String version,
+            HttpServletResponse response) throws Exception
+    {
+        String v = StringUtils.hasText(version) ? version.trim().toUpperCase() : "V2";
+        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+
+        if ("V1".equals(v))
+        {
+            response.setHeader("Content-Disposition", "attachment;filename=teachingTaskTemplate_V1.xlsx");
+            EasyExcel.write(response.getOutputStream(), TeachingTaskImportV1DTO.class)
+                    .sheet("教学任务导入模板").doWrite(new ArrayList<>());
+            return;
+        }
+
+        response.setHeader("Content-Disposition", "attachment;filename=teachingTaskTemplate.xlsx");
+        // 双 Sheet：说明页（含五类示例）+ 数据页（仅表头）。用同一 ExcelWriter 写两个 Sheet。
+        try (com.alibaba.excel.ExcelWriter writer = EasyExcel.write(response.getOutputStream(),
+                TeachingTaskImportDTO.class).build())
+        {
+            WriteSheet instruction = EasyExcel.writerSheet(0, "示例与说明").build();
+            writer.write(instructionExamples(), instruction);
+            WriteSheet data = EasyExcel.writerSheet(1, "导入数据").build();
+            writer.write(new ArrayList<>(), data);
+        }
+    }
+
+    /**
+     * 说明页五类示例（G1/G3/G4/G5/G6），学期统一 2025-2026-2，教师用虚构「示例教师」标签。
+     * 数量列按类别语义填写：G1 计划学时、G3 天数、G4 学分+人数、G5 人数、G6 周数+人数。
+     */
+    private static List<TeachingTaskImportDTO> instructionExamples()
+    {
+        List<TeachingTaskImportDTO> examples = new ArrayList<>();
+        examples.add(example("G1", "高等数学", ex -> {
+            ex.setPlannedHours(new java.math.BigDecimal("48"));
+            ex.setStudentCount(80);
+        }));
+        examples.add(example("G3", "金工实习", ex -> {
+            ex.setDays(new java.math.BigDecimal("15"));
+            ex.setStudentCount(35);
+        }));
+        examples.add(example("G4", "课程设计", ex -> {
+            ex.setCredits(new java.math.BigDecimal("2"));
+            ex.setStudentCount(60);
+        }));
+        examples.add(example("G5", "毕业论文", ex -> ex.setStudentCount(8)));
+        examples.add(example("G6", "集中实习", ex -> {
+            ex.setWeeks(new java.math.BigDecimal("4"));
+            ex.setStudentCount(25);
+        }));
+        return examples;
+    }
+
+    private static TeachingTaskImportDTO example(String type, String courseName,
+            java.util.function.Consumer<TeachingTaskImportDTO> quantity)
+    {
+        TeachingTaskImportDTO dto = new TeachingTaskImportDTO();
+        dto.setSemester("2025-2026-2");
+        dto.setUserCode("SHILI001");
+        dto.setUserName("示例教师");
+        dto.setCourseName(courseName);
+        dto.setCourseCode("EXAMPLE-" + type);
+        dto.setWorkloadType(type);
+        dto.setEducationLevel("本科");
+        dto.setMajorCategory("理工类");
+        dto.setCourseNature("必修");
+        dto.setClassName("示例班级");
+        quantity.accept(dto);
+        return dto;
     }
 
     /**

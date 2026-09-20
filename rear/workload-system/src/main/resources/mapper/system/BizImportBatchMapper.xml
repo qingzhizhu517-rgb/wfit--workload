@@ -151,4 +151,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         set status = #{targetStatus}, update_by = #{operator}, update_time = now()
         where id = #{id} and status = #{expectedStatus}
     </update>
+
+    <!-- 文件去重：同类型 + 源哈希、且已导入(2) 的批次数（阻断/放弃的历史批次不计） -->
+    <select id="countConfirmedBySource" resultType="int">
+        select count(1) from biz_import_batch
+        where import_type = #{importType}
+          and source_hash = #{sourceHash}
+          and status = 2
+    </select>
 </mapper>

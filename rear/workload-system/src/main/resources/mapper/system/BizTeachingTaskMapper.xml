@@ -247,4 +247,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
           and t.course_name = #{courseName}
           and ifnull(t.education_level, '') = ifnull(#{educationLevel}, '')
     </select>
+
+    <!-- 两阶段导入确认阶段幂等键：教师+学期+课程代码+班级+工作量类别。
+         类别在 biz_workload_item.item_type，关联比对；course_code/class_name 用 ifnull 归一。 -->
+    <select id="countImportedTask" resultType="int">
+        select count(1)
+        from biz_teaching_task t
+        join biz_workload_item i on i.task_id = t.id
+        where t.user_id = #{userId}
+          and t.semester = #{semester}
+          and ifnull(t.course_code, '') = ifnull(#{courseCode}, '')
+          and ifnull(t.class_name, '') = ifnull(#{className}, '')
+          and i.item_type = #{itemType}
+    </select>
 </mapper>

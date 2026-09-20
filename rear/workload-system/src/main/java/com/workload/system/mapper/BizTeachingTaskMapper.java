@@ -90,4 +90,22 @@ public interface BizTeachingTaskMapper
     public int countSameCourseTask(@Param("userId") Long userId, @Param("semester") String semester,
                                    @Param("courseName") String courseName,
                                    @Param("educationLevel") String educationLevel);
+
+    /**
+     * 两阶段导入确认阶段的幂等键计数：判断某教师+学期+课程代码+班级+工作量类别的
+     * 教学任务是否已入库。命中(>0)则该行为重复，确认时默认 SKIPPED，不静默覆盖。
+     * <p>
+     * 工作量类别落在 biz_workload_item.item_type，故与 biz_teaching_task 关联比对；
+     * class_name / course_code 用 ifnull 归一，避免 NULL 与 '' 判为不同键。
+     *
+     * @param userId       教师ID
+     * @param semester     学年学期
+     * @param courseCode   课程代码
+     * @param className    班级
+     * @param itemType     工作量类别（G1~G6，大写）
+     * @return 已入库条数
+     */
+    public int countImportedTask(@Param("userId") Long userId, @Param("semester") String semester,
+                                 @Param("courseCode") String courseCode, @Param("className") String className,
+                                 @Param("itemType") String itemType);
 }

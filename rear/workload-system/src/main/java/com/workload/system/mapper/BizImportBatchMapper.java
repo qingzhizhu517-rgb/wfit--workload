@@ -85,4 +85,16 @@ public interface BizImportBatchMapper
      */
     public int markStatus(@Param("id") Long id, @Param("expectedStatus") int expectedStatus,
             @Param("targetStatus") int targetStatus, @Param("operator") String operator);
+
+    /**
+     * 统计同一类型 + 源文件哈希、且已进入终态「已导入(2)」的批次数。
+     * 用于预检时的文件去重：同一文件已成功导入过则拒绝再次导入；
+     * 而阻断/放弃(status 0/1/4)的历史批次不算数，允许修数据后重传（不再靠唯一索引在预检期锁死文件）。
+     *
+     * @param importType 导入类型
+     * @param sourceHash 源文件 SHA-256
+     * @return 已导入批次数
+     */
+    public int countConfirmedBySource(@Param("importType") String importType,
+            @Param("sourceHash") String sourceHash);
 }
