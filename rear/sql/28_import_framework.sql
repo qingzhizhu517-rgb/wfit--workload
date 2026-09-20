@@ -118,3 +118,49 @@ SET @wfit_import_idx = IF(
 PREPARE wfit_import_idx_stmt FROM @wfit_import_idx;
 EXECUTE wfit_import_idx_stmt;
 DEALLOCATE PREPARE wfit_import_idx_stmt;
+
+-- ============================================================
+-- 4) 教学任务 v2 源数量快照列（需求 2：拆分计划学时/天数/周数/学分）
+--    theory_hours/practice_hours 落库口径不变；这里按类别原样保留导入文件填的
+--    数量列，供事后审计「导入时到底填了什么」。quantity_type 记录数量语义。
+--    幂等：逐列查 information_schema.columns，存在则跳过。
+-- ============================================================
+SET @wfit_tt_ddl = IF(
+  (SELECT COUNT(*) FROM information_schema.columns
+   WHERE table_schema = DATABASE() AND table_name = 'biz_teaching_task'
+     AND column_name = 'input_planned_hours') = 0,
+  'ALTER TABLE biz_teaching_task ADD COLUMN input_planned_hours DECIMAL(10,2) DEFAULT NULL COMMENT ''源数量快照:计划学时(G1/G2)''',
+  'SELECT 1');
+PREPARE wfit_tt_stmt FROM @wfit_tt_ddl; EXECUTE wfit_tt_stmt; DEALLOCATE PREPARE wfit_tt_stmt;
+
+SET @wfit_tt_ddl = IF(
+  (SELECT COUNT(*) FROM information_schema.columns
+   WHERE table_schema = DATABASE() AND table_name = 'biz_teaching_task'
+     AND column_name = 'input_days') = 0,
+  'ALTER TABLE biz_teaching_task ADD COLUMN input_days DECIMAL(10,2) DEFAULT NULL COMMENT ''源数量快照:天数(G3)''',
+  'SELECT 1');
+PREPARE wfit_tt_stmt FROM @wfit_tt_ddl; EXECUTE wfit_tt_stmt; DEALLOCATE PREPARE wfit_tt_stmt;
+
+SET @wfit_tt_ddl = IF(
+  (SELECT COUNT(*) FROM information_schema.columns
+   WHERE table_schema = DATABASE() AND table_name = 'biz_teaching_task'
+     AND column_name = 'input_weeks') = 0,
+  'ALTER TABLE biz_teaching_task ADD COLUMN input_weeks DECIMAL(10,2) DEFAULT NULL COMMENT ''源数量快照:周数(G6)''',
+  'SELECT 1');
+PREPARE wfit_tt_stmt FROM @wfit_tt_ddl; EXECUTE wfit_tt_stmt; DEALLOCATE PREPARE wfit_tt_stmt;
+
+SET @wfit_tt_ddl = IF(
+  (SELECT COUNT(*) FROM information_schema.columns
+   WHERE table_schema = DATABASE() AND table_name = 'biz_teaching_task'
+     AND column_name = 'input_credits') = 0,
+  'ALTER TABLE biz_teaching_task ADD COLUMN input_credits DECIMAL(10,2) DEFAULT NULL COMMENT ''源数量快照:课程设计学分(G4)''',
+  'SELECT 1');
+PREPARE wfit_tt_stmt FROM @wfit_tt_ddl; EXECUTE wfit_tt_stmt; DEALLOCATE PREPARE wfit_tt_stmt;
+
+SET @wfit_tt_ddl = IF(
+  (SELECT COUNT(*) FROM information_schema.columns
+   WHERE table_schema = DATABASE() AND table_name = 'biz_teaching_task'
+     AND column_name = 'quantity_type') = 0,
+  'ALTER TABLE biz_teaching_task ADD COLUMN quantity_type VARCHAR(16) DEFAULT NULL COMMENT ''源数量类型:PLANNED_HOURS/DAYS/WEEKS/CREDITS/STUDENT_COUNT''',
+  'SELECT 1');
+PREPARE wfit_tt_stmt FROM @wfit_tt_ddl; EXECUTE wfit_tt_stmt; DEALLOCATE PREPARE wfit_tt_stmt;

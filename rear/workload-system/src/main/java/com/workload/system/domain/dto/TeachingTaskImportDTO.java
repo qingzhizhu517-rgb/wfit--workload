@@ -62,13 +62,29 @@ public class TeachingTaskImportDTO
     @ColumnWidth(10)
     private String teachingEval;
 
-    @ExcelProperty("选课人数")
-    @ColumnWidth(10)
+    @ExcelProperty("选课/指导人数")
+    @ColumnWidth(12)
     private Integer studentCount;
 
-    @ExcelProperty("计划学时/天数/周数")
-    @ColumnWidth(18)
-    private BigDecimal baseValue;
+    /** G1/G2 计划学时（理论/实践学时）。v2 数量列按类别语义拆分，不再共用单一「基数」列。 */
+    @ExcelProperty("计划学时")
+    @ColumnWidth(12)
+    private BigDecimal plannedHours;
+
+    /** G3 实习实训天数。 */
+    @ExcelProperty("天数")
+    @ColumnWidth(10)
+    private BigDecimal days;
+
+    /** G6 集中实习周数。 */
+    @ExcelProperty("周数")
+    @ColumnWidth(10)
+    private BigDecimal weeks;
+
+    /** G4 课程设计学分。 */
+    @ExcelProperty("课程设计学分")
+    @ColumnWidth(12)
+    private BigDecimal credits;
 
     @ExcelProperty("课程系数")
     @ColumnWidth(10)
@@ -218,14 +234,44 @@ public class TeachingTaskImportDTO
         this.studentCount = studentCount;
     }
 
-    public BigDecimal getBaseValue()
+    public BigDecimal getPlannedHours()
     {
-        return baseValue;
+        return plannedHours;
     }
 
-    public void setBaseValue(BigDecimal baseValue)
+    public void setPlannedHours(BigDecimal plannedHours)
     {
-        this.baseValue = baseValue;
+        this.plannedHours = plannedHours;
+    }
+
+    public BigDecimal getDays()
+    {
+        return days;
+    }
+
+    public void setDays(BigDecimal days)
+    {
+        this.days = days;
+    }
+
+    public BigDecimal getWeeks()
+    {
+        return weeks;
+    }
+
+    public void setWeeks(BigDecimal weeks)
+    {
+        this.weeks = weeks;
+    }
+
+    public BigDecimal getCredits()
+    {
+        return credits;
+    }
+
+    public void setCredits(BigDecimal credits)
+    {
+        this.credits = credits;
     }
 
     public BigDecimal getCourseCoefficient()

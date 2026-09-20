@@ -63,7 +63,7 @@ class TeachingTaskImportFreezeTest
         dto.setUserCode("T008");
         dto.setCourseName("高等数学");
         dto.setWorkloadType("G1");
-        dto.setBaseValue(java.math.BigDecimal.valueOf(32));
+        dto.setPlannedHours(java.math.BigDecimal.valueOf(32));
         return dto;
     }
 }

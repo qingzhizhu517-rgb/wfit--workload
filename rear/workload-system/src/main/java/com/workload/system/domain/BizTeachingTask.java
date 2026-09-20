@@ -81,6 +81,21 @@ public class BizTeachingTask extends BaseEntity
     @Excel(name = "同名课第几次(1/2/3+ -&gt; C1 1.0/0.9/0.8)")
     private Long repeatOrder;
 
+    /** 源数量快照：导入时填的计划学时（v2 数量拆分，按类别原样留存供审计） */
+    private BigDecimal inputPlannedHours;
+
+    /** 源数量快照：导入时填的天数（G3） */
+    private BigDecimal inputDays;
+
+    /** 源数量快照：导入时填的周数（G6） */
+    private BigDecimal inputWeeks;
+
+    /** 源数量快照：导入时填的课程设计学分（G4） */
+    private BigDecimal inputCredits;
+
+    /** 源数量类型：PLANNED_HOURS/DAYS/WEEKS/CREDITS/STUDENT_COUNT */
+    private String quantityType;
+
     /** 重修标志（不占层次列；课程名含「重修」时置1） */
     private Integer isRetake;
 
@@ -250,12 +265,62 @@ public class BizTeachingTask extends BaseEntity
         return practiceHours;
     }
 
-    public void setRepeatOrder(Long repeatOrder) 
+    public void setRepeatOrder(Long repeatOrder)
     {
         this.repeatOrder = repeatOrder;
     }
 
-    public Integer getIsRetake() 
+    public void setInputPlannedHours(BigDecimal inputPlannedHours)
+    {
+        this.inputPlannedHours = inputPlannedHours;
+    }
+
+    public BigDecimal getInputPlannedHours()
+    {
+        return inputPlannedHours;
+    }
+
+    public void setInputDays(BigDecimal inputDays)
+    {
+        this.inputDays = inputDays;
+    }
+
+    public BigDecimal getInputDays()
+    {
+        return inputDays;
+    }
+
+    public void setInputWeeks(BigDecimal inputWeeks)
+    {
+        this.inputWeeks = inputWeeks;
+    }
+
+    public BigDecimal getInputWeeks()
+    {
+        return inputWeeks;
+    }
+
+    public void setInputCredits(BigDecimal inputCredits)
+    {
+        this.inputCredits = inputCredits;
+    }
+
+    public BigDecimal getInputCredits()
+    {
+        return inputCredits;
+    }
+
+    public void setQuantityType(String quantityType)
+    {
+        this.quantityType = quantityType;
+    }
+
+    public String getQuantityType()
+    {
+        return quantityType;
+    }
+
+    public Integer getIsRetake()
     {
         return isRetake;
     }
@@ -329,6 +394,11 @@ public class BizTeachingTask extends BaseEntity
             .append("theoryHours", getTheoryHours())
             .append("practiceHours", getPracticeHours())
             .append("repeatOrder", getRepeatOrder())
+            .append("inputPlannedHours", getInputPlannedHours())
+            .append("inputDays", getInputDays())
+            .append("inputWeeks", getInputWeeks())
+            .append("inputCredits", getInputCredits())
+            .append("quantityType", getQuantityType())
             .append("importSource", getImportSource())
             .append("importBatch", getImportBatch())
             .append("importTime", getImportTime())

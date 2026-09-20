@@ -266,20 +266,135 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
         {
             throw new ServiceException("工作量类别不能为空");
         }
-        if (dto.getBaseValue() == null || dto.getBaseValue().compareTo(BigDecimal.ZERO) <= 0)
-        {
-            throw new ServiceException("计划学时必须大于 0");
-        }
-        // 校验类别代码
+        // 校验类别代码（数量互斥矩阵前置：后续校验依赖已归一的类别）
         String type = dto.getWorkloadType().toUpperCase();
         if (!type.matches("G[1-6]"))
         {
             throw new ServiceException("工作量类别必须为 G1~G6，当前: " + dto.getWorkloadType());
         }
+        // 课程系数列适用范围：仅 G2/G3/G5 允许非空（教务按个案覆盖 K/D/K5）；
+        // G1/G4/G6 填该列即拒绝，防止产生无法解释的「总系数」
+        validateCourseCoefficientScope(type, dto.getCourseCoefficient());
+        // v2 数量字段按类别校验：先拒不适用字段（互斥），再校必填 + 精度/人数
+        validateQuantityByCategory(type, dto);
         // 重复次序为可选列；填了就必须是正整数，填 0 或负数属笔误，直接拒绝而非静默当 1
         if (dto.getRepeatOrder() != null && dto.getRepeatOrder() < 1)
         {
             throw new ServiceException("重复次序必须为不小于 1 的整数，当前: " + dto.getRepeatOrder());
+        }
+    }
+
+    /**
+     * 课程系数列适用范围校验：仅 G2/G3/G5 允许非空。
+     * G1/G4/G6 的公式没有可由单列覆盖的自由系数，填了即拒绝。
+     */
+    private void validateCourseCoefficientScope(String type, BigDecimal courseCoefficient)
+    {
+        if (courseCoefficient == null)
+        {
+            return;
+        }
+        if (!"G2".equals(type) && !"G3".equals(type) && !"G5".equals(type))
+        {
+            throw new ServiceException(type + "不支持课程系数列（仅 G2/G3/G5 允许按个案覆盖系数）");
+        }
+    }
+
+    /**
+     * v2 数量字段互斥矩阵：每类只接受语义匹配的数量列。
+     * <ul>
+     *   <li>G1/G2 → 计划学时 plannedHours</li>
+     *   <li>G3 → 天数 days</li>
+     *   <li>G4 → 课程设计学分 credits + 指导人数 studentCount</li>
+     *   <li>G5 → 指导人数 studentCount（不再要求无意义的占位基数）</li>
+     *   <li>G6 → 周数 weeks + 指导人数 studentCount</li>
+     * </ul>
+     * 先拒绝填了不适用数量列的行（报「Gx只能填写…」），再校验本类必填项（报「Gx必须填写…」）。
+     * plannedHours/days/weeks/credits 为正数且最多 2 位小数；人数为正整数。
+     * 选课/指导人数列跨类共用（G1/G2 作合堂人数、G3 可留空），故互斥只约束四个数量列，不约束人数。
+     */
+    private void validateQuantityByCategory(String type, TeachingTaskImportDTO dto)
+    {
+        switch (type)
+        {
+            case "G1":
+            case "G2":
+                assertOnlyQuantity(type, "计划学时", dto, QuantityField.PLANNED_HOURS);
+                requirePositiveDecimal(dto.getPlannedHours(), type + "必须填写计划学时");
+                break;
+            case "G3":
+                assertOnlyQuantity(type, "天数", dto, QuantityField.DAYS);
+                requirePositiveDecimal(dto.getDays(), type + "必须填写天数");
+                break;
+            case "G4":
+                assertOnlyQuantity(type, "课程设计学分和指导人数", dto, QuantityField.CREDITS);
+                requirePositiveDecimal(dto.getCredits(), type + "必须填写课程设计学分");
+                requirePositiveStudent(dto.getStudentCount(), type + "必须填写指导人数");
+                break;
+            case "G5":
+                assertOnlyQuantity(type, "指导人数", dto, null);
+                requirePositiveStudent(dto.getStudentCount(), type + "必须填写指导人数");
+                break;
+            case "G6":
+                assertOnlyQuantity(type, "周数和指导人数", dto, QuantityField.WEEKS);
+                requirePositiveDecimal(dto.getWeeks(), type + "必须填写周数");
+                requirePositiveStudent(dto.getStudentCount(), type + "必须填写指导人数");
+                break;
+            default:
+                throw new ServiceException("工作量类别必须为 G1~G6，当前: " + type);
+        }
+    }
+
+    /** 本类允许的唯一数量列枚举（null 表示该类不接受任何数量列，如 G5 只认人数）。 */
+    private enum QuantityField
+    {
+        PLANNED_HOURS, DAYS, WEEKS, CREDITS
+    }
+
+    /**
+     * 校验四个数量列中除 allowed 外均未填；填了不适用列则报「Gx只能填写{allowedLabel}」。
+     * 人数列不在此约束范围内（跨类共用）。
+     */
+    private void assertOnlyQuantity(String type, String allowedLabel, TeachingTaskImportDTO dto,
+                                    QuantityField allowed)
+    {
+        if (allowed != QuantityField.PLANNED_HOURS && dto.getPlannedHours() != null)
+        {
+            throw new ServiceException(type + "只能填写" + allowedLabel);
+        }
+        if (allowed != QuantityField.DAYS && dto.getDays() != null)
+        {
+            throw new ServiceException(type + "只能填写" + allowedLabel);
+        }
+        if (allowed != QuantityField.WEEKS && dto.getWeeks() != null)
+        {
+            throw new ServiceException(type + "只能填写" + allowedLabel);
+        }
+        if (allowed != QuantityField.CREDITS && dto.getCredits() != null)
+        {
+            throw new ServiceException(type + "只能填写" + allowedLabel);
+        }
+    }
+
+    /** 数量列必填校验：非空、大于 0、最多 2 位小数。 */
+    private void requirePositiveDecimal(BigDecimal value, String requiredMessage)
+    {
+        if (value == null || value.compareTo(BigDecimal.ZERO) <= 0)
+        {
+            throw new ServiceException(requiredMessage + "（正数，最多2位小数）");
+        }
+        if (value.stripTrailingZeros().scale() > 2)
+        {
+            throw new ServiceException(requiredMessage.replace("必须填写", "") + "最多保留2位小数，当前: " + value.toPlainString());
+        }
+    }
+
+    /** 指导人数必填校验：非空、正整数。 */
+    private void requirePositiveStudent(Integer studentCount, String requiredMessage)
+    {
+        if (studentCount == null || studentCount <= 0)
+        {
+            throw new ServiceException(requiredMessage + "（正整数）");
         }
     }
 
@@ -340,8 +455,15 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
         // 班级：区分同一门课的不同班次，附件1「系数说明」列据此指名道姓到具体班级
         task.setClassName(dto.getClassName());
         task.setStudentCount(dto.getStudentCount() != null ? dto.getStudentCount().longValue() : 0L);
-        task.setTheoryHours(isG1(dto) ? dto.getBaseValue() : BigDecimal.ZERO);
-        task.setPracticeHours(isG2(dto) ? dto.getBaseValue() : BigDecimal.ZERO);
+        task.setTheoryHours(isG1(dto) ? dto.getPlannedHours() : BigDecimal.ZERO);
+        task.setPracticeHours(isG2(dto) ? dto.getPlannedHours() : BigDecimal.ZERO);
+        // 源数量快照：按类别原样保留导入文件填的数量列（学时/天数/周数/学分），
+        // 与 theory_hours/practice_hours 的口径落库分离，供事后审计「导入时到底填了什么」。
+        task.setInputPlannedHours(dto.getPlannedHours());
+        task.setInputDays(dto.getDays());
+        task.setInputWeeks(dto.getWeeks());
+        task.setInputCredits(dto.getCredits());
+        task.setQuantityType(resolveQuantityType(dto.getWorkloadType()));
         // 重复次序落库：既是 C1/K 的取值依据，也是事后审计「为什么这条只算 0.8」的唯一凭据
         task.setRepeatOrder(repeatOrder);
         // 重修标志不占层次列（用户拍板）：课程名含「重修」即置 1
@@ -353,6 +475,24 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
         // 前端 normalStatusMap 也按 1正常/0停用 渲染，导入置 1 才与手工录入一致，避免全部显示“停用”
         task.setStatus(1);
         return task;
+    }
+
+    /**
+     * 源数量类型标识：记录该行导入时填的是哪种数量列，便于事后审计与前端按类别回显。
+     * G1/G2=PLANNED_HOURS、G3=DAYS、G4=CREDITS、G5=STUDENT_COUNT、G6=WEEKS。
+     */
+    private String resolveQuantityType(String workloadType)
+    {
+        String type = workloadType == null ? "" : workloadType.trim().toUpperCase();
+        return switch (type)
+        {
+            case "G1", "G2" -> "PLANNED_HOURS";
+            case "G3" -> "DAYS";
+            case "G4" -> "CREDITS";
+            case "G5" -> "STUDENT_COUNT";
+            case "G6" -> "WEEKS";
+            default -> null;
+        };
     }
 
     /**
@@ -408,7 +548,7 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
     {
         BizWlTheory detail = new BizWlTheory();
         detail.setItemId(item.getId());
-        detail.setJ1(dto.getBaseValue());
+        detail.setJ1(dto.getPlannedHours());
         detail.setC1(calcC1(repeatOrder)); // 重复系数：按同名课第几次，1.0/0.9/0.8
         detail.setK1(calcK1(dto)); // 课程类型系数
         detail.setQ1(calcQ1(dto)); // 教学质量系数
@@ -428,7 +568,7 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
     {
         BizWlPractice detail = new BizWlPractice();
         detail.setItemId(item.getId());
-        detail.setJ2(dto.getBaseValue());
+        detail.setJ2(dto.getPlannedHours());
         detail.setK(calcG2K(dto)); // 专业大类系数：理工 1.0 / 其他 0.9
         detail.setC2(new BigDecimal("0.9")); // 实践课重复系数固定 0.9
         detail.setQ1(calcQ1(dto));
@@ -446,7 +586,7 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
     {
         BizWlInternshipTraining detail = new BizWlInternshipTraining();
         detail.setItemId(item.getId());
-        detail.setT(dto.getBaseValue()); // 天数
+        detail.setT(dto.getDays()); // 天数
         detail.setD(calcG3D(dto)); // 指导系数：理工 4.0 / 艺术 3.0 / 文史 2.0
         detail.setK(calcG3RepeatK(repeatOrder)); // 重复系数：第一轮 1.0，第二轮起 0.9
         detail.setQ1(calcQ1(dto));
@@ -464,7 +604,7 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
     {
         BizWlCourseDesign detail = new BizWlCourseDesign();
         detail.setItemId(item.getId());
-        detail.setJ4(dto.getBaseValue()); // 学分
+        detail.setJ4(dto.getCredits()); // 学分
         detail.setR4(dto.getStudentCount() != null ? dto.getStudentCount().longValue() : 0L);
         wlCourseDesignMapper.insertBizWlCourseDesign(detail);
 
@@ -494,7 +634,7 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
     {
         BizWlConcentratedInternship detail = new BizWlConcentratedInternship();
         detail.setItemId(item.getId());
-        detail.setW(dto.getBaseValue()); // 周数
+        detail.setW(dto.getWeeks()); // 周数
         detail.setR6(dto.getStudentCount() != null ? dto.getStudentCount().longValue() : 0L);
         wlConcentratedInternshipMapper.insertBizWlConcentratedInternship(detail);
 

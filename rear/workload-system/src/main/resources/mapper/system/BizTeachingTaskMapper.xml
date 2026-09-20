@@ -21,6 +21,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="theoryHours"    column="theory_hours"    />
         <result property="practiceHours"    column="practice_hours"    />
         <result property="repeatOrder"    column="repeat_order"    />
+        <result property="inputPlannedHours"    column="input_planned_hours"    />
+        <result property="inputDays"    column="input_days"    />
+        <result property="inputWeeks"    column="input_weeks"    />
+        <result property="inputCredits"    column="input_credits"    />
+        <result property="quantityType"    column="quantity_type"    />
         <result property="isRetake"    column="is_retake"    />
         <result property="importSource"    column="import_source"    />
         <result property="importBatch"    column="import_batch"    />
@@ -34,7 +39,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectBizTeachingTaskVo">
-        select id, user_id, semester, academic_year, course_name, course_code, education_level, major_category, course_nature, course_level, course_role, class_name, student_count, theory_hours, practice_hours, repeat_order, is_retake, import_source, import_batch, import_time, status, create_by, create_time, update_by, update_time, remark from biz_teaching_task
+        select id, user_id, semester, academic_year, course_name, course_code, education_level, major_category, course_nature, course_level, course_role, class_name, student_count, theory_hours, practice_hours, repeat_order, input_planned_hours, input_days, input_weeks, input_credits, quantity_type, is_retake, import_source, import_batch, import_time, status, create_by, create_time, update_by, update_time, remark from biz_teaching_task
     </sql>
 
     <select id="selectBizTeachingTaskList" parameterType="BizTeachingTask" resultMap="BizTeachingTaskResult">
@@ -132,6 +137,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="theoryHours != null">theory_hours,</if>
             <if test="practiceHours != null">practice_hours,</if>
             <if test="repeatOrder != null">repeat_order,</if>
+            <if test="inputPlannedHours != null">input_planned_hours,</if>
+            <if test="inputDays != null">input_days,</if>
+            <if test="inputWeeks != null">input_weeks,</if>
+            <if test="inputCredits != null">input_credits,</if>
+            <if test="quantityType != null">quantity_type,</if>
             <if test="isRetake != null">is_retake,</if>
             <if test="importSource != null">import_source,</if>
             <if test="importBatch != null">import_batch,</if>
@@ -159,6 +169,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="theoryHours != null">#{theoryHours},</if>
             <if test="practiceHours != null">#{practiceHours},</if>
             <if test="repeatOrder != null">#{repeatOrder},</if>
+            <if test="inputPlannedHours != null">#{inputPlannedHours},</if>
+            <if test="inputDays != null">#{inputDays},</if>
+            <if test="inputWeeks != null">#{inputWeeks},</if>
+            <if test="inputCredits != null">#{inputCredits},</if>
+            <if test="quantityType != null">#{quantityType},</if>
             <if test="isRetake != null">#{isRetake},</if>
             <if test="importSource != null">#{importSource},</if>
             <if test="importBatch != null">#{importBatch},</if>
@@ -190,6 +205,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="theoryHours != null">theory_hours = #{theoryHours},</if>
             <if test="practiceHours != null">practice_hours = #{practiceHours},</if>
             <if test="repeatOrder != null">repeat_order = #{repeatOrder},</if>
+            <if test="inputPlannedHours != null">input_planned_hours = #{inputPlannedHours},</if>
+            <if test="inputDays != null">input_days = #{inputDays},</if>
+            <if test="inputWeeks != null">input_weeks = #{inputWeeks},</if>
+            <if test="inputCredits != null">input_credits = #{inputCredits},</if>
+            <if test="quantityType != null">quantity_type = #{quantityType},</if>
             <if test="isRetake != null">is_retake = #{isRetake},</if>
             <if test="importSource != null">import_source = #{importSource},</if>
             <if test="importBatch != null">import_batch = #{importBatch},</if>
