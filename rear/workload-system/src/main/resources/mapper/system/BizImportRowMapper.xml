@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.workload.system.mapper.BizImportRowMapper">
+
+    <resultMap type="BizImportRow" id="BizImportRowResult">
+        <result property="id"    column="id"    />
+        <result property="batchId"    column="batch_id"    />
+        <result property="rowNo"    column="row_no"    />
+        <result property="rawJson"    column="raw_json"    />
+        <result property="normalizedJson"    column="normalized_json"    />
+        <result property="status"    column="status"    />
+        <result property="errorCode"    column="error_code"    />
+        <result property="errorMessage"    column="error_message"    />
+        <result property="targetId"    column="target_id"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="remark"    column="remark"    />
+    </resultMap>
+
+    <sql id="selectBizImportRowVo">
+        select id, batch_id, row_no, raw_json, normalized_json, status, error_code, error_message, target_id, create_by, create_time, update_by, update_time, remark from biz_import_row
+    </sql>
+
+    <select id="selectBizImportRowById" parameterType="Long" resultMap="BizImportRowResult">
+        <include refid="selectBizImportRowVo"/>
+        where id = #{id}
+    </select>
+
+    <select id="selectBizImportRowByBatchId" parameterType="Long" resultMap="BizImportRowResult">
+        <include refid="selectBizImportRowVo"/>
+        where batch_id = #{batchId}
+        order by row_no asc
+    </select>
+
+    <select id="selectByBatchIdAndStatus" resultMap="BizImportRowResult">
+        <include refid="selectBizImportRowVo"/>
+        where batch_id = #{batchId} and status = #{status}
+        order by row_no asc
+    </select>
+
+    <select id="countByBatchIdAndStatus" resultType="int">
+        select count(1) from biz_import_row where batch_id = #{batchId} and status = #{status}
+    </select>
+
+    <insert id="insertBizImportRow" parameterType="BizImportRow" useGeneratedKeys="true" keyProperty="id">
+        insert into biz_import_row
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="batchId != null">batch_id,</if>
+            <if test="rowNo != null">row_no,</if>
+            <if test="rawJson != null">raw_json,</if>
+            <if test="normalizedJson != null">normalized_json,</if>
+            <if test="status != null and status != ''">status,</if>
+            <if test="errorCode != null">error_code,</if>
+            <if test="errorMessage != null">error_message,</if>
+            <if test="targetId != null">target_id,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="remark != null">remark,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="batchId != null">#{batchId},</if>
+            <if test="rowNo != null">#{rowNo},</if>
+            <if test="rawJson != null">#{rawJson},</if>
+            <if test="normalizedJson != null">#{normalizedJson},</if>
+            <if test="status != null and status != ''">#{status},</if>
+            <if test="errorCode != null">#{errorCode},</if>
+            <if test="errorMessage != null">#{errorMessage},</if>
+            <if test="targetId != null">#{targetId},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="remark != null">#{remark},</if>
+         </trim>
+    </insert>
+
+    <update id="updateBizImportRow" parameterType="BizImportRow">
+        update biz_import_row
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="batchId != null">batch_id = #{batchId},</if>
+            <if test="rowNo != null">row_no = #{rowNo},</if>
+            <if test="rawJson != null">raw_json = #{rawJson},</if>
+            <if test="normalizedJson != null">normalized_json = #{normalizedJson},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="errorCode != null">error_code = #{errorCode},</if>
+            <if test="errorMessage != null">error_message = #{errorMessage},</if>
+            <if test="targetId != null">target_id = #{targetId},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteBizImportRowByBatchId" parameterType="Long">
+        delete from biz_import_row where batch_id = #{batchId}
+    </delete>
+</mapper>

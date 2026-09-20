@@ -54,7 +54,85 @@ public class BizImportBatch extends BaseEntity
     @Excel(name = "${comment}", readConverterExp = "$column.readConverterExp()")
     private String errorSummary;
 
-    public void setId(Long id) 
+    /** 模板版本 V1/V2/ROSTER_V1/ROLE_V1 */
+    private String templateVersion;
+
+    /** 源文件 SHA-256 */
+    private String sourceHash;
+
+    /** 操作者用户ID */
+    private Long operatorId;
+
+    /** 操作者用户名 */
+    private String operatorName;
+
+    /** 一次性确认令牌哈希（SHA-256） */
+    private String confirmTokenHash;
+
+    /** 确认时间 */
+    private java.util.Date confirmedAt;
+
+    public void setTemplateVersion(String templateVersion)
+    {
+        this.templateVersion = templateVersion;
+    }
+
+    public String getTemplateVersion()
+    {
+        return templateVersion;
+    }
+
+    public void setSourceHash(String sourceHash)
+    {
+        this.sourceHash = sourceHash;
+    }
+
+    public String getSourceHash()
+    {
+        return sourceHash;
+    }
+
+    public void setOperatorId(Long operatorId)
+    {
+        this.operatorId = operatorId;
+    }
+
+    public Long getOperatorId()
+    {
+        return operatorId;
+    }
+
+    public void setOperatorName(String operatorName)
+    {
+        this.operatorName = operatorName;
+    }
+
+    public String getOperatorName()
+    {
+        return operatorName;
+    }
+
+    public void setConfirmTokenHash(String confirmTokenHash)
+    {
+        this.confirmTokenHash = confirmTokenHash;
+    }
+
+    public String getConfirmTokenHash()
+    {
+        return confirmTokenHash;
+    }
+
+    public void setConfirmedAt(java.util.Date confirmedAt)
+    {
+        this.confirmedAt = confirmedAt;
+    }
+
+    public java.util.Date getConfirmedAt()
+    {
+        return confirmedAt;
+    }
+
+    public void setId(Long id)
     {
         this.id = id;
     }
@@ -167,6 +245,12 @@ public class BizImportBatch extends BaseEntity
             .append("failCount", getFailCount())
             .append("status", getStatus())
             .append("errorSummary", getErrorSummary())
+            .append("templateVersion", getTemplateVersion())
+            .append("sourceHash", getSourceHash())
+            .append("operatorId", getOperatorId())
+            .append("operatorName", getOperatorName())
+            .append("confirmTokenHash", getConfirmTokenHash())
+            .append("confirmedAt", getConfirmedAt())
             .append("createBy", getCreateBy())
             .append("createTime", getCreateTime())
             .append("updateBy", getUpdateBy())

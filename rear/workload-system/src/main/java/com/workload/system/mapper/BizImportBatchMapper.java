@@ -1,15 +1,16 @@
 package com.workload.system.mapper;
 
 import java.util.List;
+import org.apache.ibatis.annotations.Param;
 import com.workload.system.domain.BizImportBatch;
 
 /**
  * 导入批次记录Mapper接口
- * 
+ *
  * @author wflg
  * @date 2026-07-20
  */
-public interface BizImportBatchMapper 
+public interface BizImportBatchMapper
 {
     /**
      * 查询导入批次记录
@@ -58,4 +59,30 @@ public interface BizImportBatchMapper
      * @return 结果
      */
     public int deleteBizImportBatchByIds(Long[] ids);
+
+    /**
+     * 条件更新：待确认(expectedStatus) → 已导入(targetStatus)，同时落确认时间。
+     * 影响行数≠1 视为并发冲突或批次不处于期望状态。
+     *
+     * @param id             批次主键
+     * @param expectedStatus 期望的当前状态（乐观锁条件）
+     * @param targetStatus   目标状态（应为 2 已导入）
+     * @param operator       操作者
+     * @return 受影响行数
+     */
+    public int markConfirmed(@Param("id") Long id, @Param("expectedStatus") int expectedStatus,
+            @Param("targetStatus") int targetStatus, @Param("operator") String operator);
+
+    /**
+     * 条件更新批次状态（不落确认时间），用于 0→1 预检完成、1→4 确认失败等转移。
+     * 影响行数≠1 视为并发冲突或批次不处于期望状态。
+     *
+     * @param id             批次主键
+     * @param expectedStatus 期望的当前状态（乐观锁条件）
+     * @param targetStatus   目标状态
+     * @param operator       操作者
+     * @return 受影响行数
+     */
+    public int markStatus(@Param("id") Long id, @Param("expectedStatus") int expectedStatus,
+            @Param("targetStatus") int targetStatus, @Param("operator") String operator);
 }

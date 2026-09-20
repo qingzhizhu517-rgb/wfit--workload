@@ -91,13 +91,43 @@ CREATE TABLE biz_import_batch (
   fail_count           INT(11)       DEFAULT 0,
   status               TINYINT(1)    DEFAULT 0                    COMMENT '0解析中/1待确认/2已导入/3已驳回/4失败',
   error_summary        VARCHAR(1000) DEFAULT NULL,
+  template_version     VARCHAR(20)   DEFAULT NULL                 COMMENT '模板版本 V1/V2/ROSTER_V1/ROLE_V1',
+  source_hash          CHAR(64)      DEFAULT NULL                 COMMENT '源文件SHA-256',
+  operator_id          BIGINT(20)    DEFAULT NULL                 COMMENT '操作者用户ID',
+  operator_name        VARCHAR(64)   DEFAULT NULL                 COMMENT '操作者用户名',
+  confirm_token_hash   CHAR(64)      DEFAULT NULL                 COMMENT '一次性确认令牌哈希(SHA-256)',
+  confirmed_at         DATETIME      DEFAULT NULL                 COMMENT '确认时间',
   create_by            VARCHAR(64)   DEFAULT '',
   create_time          DATETIME      DEFAULT NULL,
   update_by            VARCHAR(64)   DEFAULT '',
   update_time          DATETIME      DEFAULT NULL,
   remark               VARCHAR(500)  DEFAULT NULL,
-  PRIMARY KEY (id)
+  PRIMARY KEY (id),
+  -- source_hash 为 NULL 的既有流式导入不受此唯一约束（InnoDB 允许多 NULL 行）
+  UNIQUE KEY uk_import_source (import_type, source_hash, status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='导入批次记录';
+
+-- 导入逐行暂存（两阶段导入：预检落库 → 确认按 row_no 顺序回放）
+DROP TABLE IF EXISTS biz_import_row;
+CREATE TABLE biz_import_row (
+  id                   BIGINT(20)    NOT NULL AUTO_INCREMENT,
+  batch_id             BIGINT(20)    NOT NULL                     COMMENT 'FK biz_import_batch.id',
+  row_no               INT(11)       NOT NULL                     COMMENT '源文件物理行号',
+  raw_json             JSON          DEFAULT NULL                 COMMENT '原始行JSON(DTO白名单序列化,无敏感列)',
+  normalized_json      JSON          DEFAULT NULL                 COMMENT '规范化后行JSON',
+  status               VARCHAR(16)   NOT NULL                     COMMENT 'READY/BLOCKED/IMPORTED/SKIPPED/FAILED',
+  error_code           VARCHAR(50)   DEFAULT NULL                 COMMENT '错误码',
+  error_message        VARCHAR(500)  DEFAULT NULL                 COMMENT '错误信息',
+  target_id            BIGINT(20)    DEFAULT NULL                 COMMENT '写入后的业务目标记录ID',
+  create_by            VARCHAR(64)   DEFAULT '',
+  create_time          DATETIME      DEFAULT NULL,
+  update_by            VARCHAR(64)   DEFAULT '',
+  update_time          DATETIME      DEFAULT NULL,
+  remark               VARCHAR(500)  DEFAULT NULL,
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_batch_row (batch_id, row_no),
+  KEY idx_batch_status (batch_id, status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='导入逐行暂存';
 
 -- ========== 源数据层 ==========
 -- 导入教学任务

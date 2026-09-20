@@ -15,6 +15,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="failCount"    column="fail_count"    />
         <result property="status"    column="status"    />
         <result property="errorSummary"    column="error_summary"    />
+        <result property="templateVersion"    column="template_version"    />
+        <result property="sourceHash"    column="source_hash"    />
+        <result property="operatorId"    column="operator_id"    />
+        <result property="operatorName"    column="operator_name"    />
+        <result property="confirmTokenHash"    column="confirm_token_hash"    />
+        <result property="confirmedAt"    column="confirmed_at"    />
         <result property="createBy"    column="create_by"    />
         <result property="createTime"    column="create_time"    />
         <result property="updateBy"    column="update_by"    />
@@ -23,7 +29,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectBizImportBatchVo">
-        select id, batch_no, import_type, file_name, file_url, total_count, success_count, fail_count, status, error_summary, create_by, create_time, update_by, update_time, remark from biz_import_batch
+        select id, batch_no, import_type, file_name, file_url, total_count, success_count, fail_count, status, error_summary, template_version, source_hash, operator_id, operator_name, confirm_token_hash, confirmed_at, create_by, create_time, update_by, update_time, remark from biz_import_batch
     </sql>
 
     <select id="selectBizImportBatchList" parameterType="BizImportBatch" resultMap="BizImportBatchResult">
@@ -58,6 +64,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="failCount != null">fail_count,</if>
             <if test="status != null">status,</if>
             <if test="errorSummary != null">error_summary,</if>
+            <if test="templateVersion != null">template_version,</if>
+            <if test="sourceHash != null">source_hash,</if>
+            <if test="operatorId != null">operator_id,</if>
+            <if test="operatorName != null">operator_name,</if>
+            <if test="confirmTokenHash != null">confirm_token_hash,</if>
+            <if test="confirmedAt != null">confirmed_at,</if>
             <if test="createBy != null">create_by,</if>
             <if test="createTime != null">create_time,</if>
             <if test="updateBy != null">update_by,</if>
@@ -74,6 +86,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="failCount != null">#{failCount},</if>
             <if test="status != null">#{status},</if>
             <if test="errorSummary != null">#{errorSummary},</if>
+            <if test="templateVersion != null">#{templateVersion},</if>
+            <if test="sourceHash != null">#{sourceHash},</if>
+            <if test="operatorId != null">#{operatorId},</if>
+            <if test="operatorName != null">#{operatorName},</if>
+            <if test="confirmTokenHash != null">#{confirmTokenHash},</if>
+            <if test="confirmedAt != null">#{confirmedAt},</if>
             <if test="createBy != null">#{createBy},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
@@ -94,6 +112,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="failCount != null">fail_count = #{failCount},</if>
             <if test="status != null">status = #{status},</if>
             <if test="errorSummary != null">error_summary = #{errorSummary},</if>
+            <if test="templateVersion != null">template_version = #{templateVersion},</if>
+            <if test="sourceHash != null">source_hash = #{sourceHash},</if>
+            <if test="operatorId != null">operator_id = #{operatorId},</if>
+            <if test="operatorName != null">operator_name = #{operatorName},</if>
+            <if test="confirmTokenHash != null">confirm_token_hash = #{confirmTokenHash},</if>
+            <if test="confirmedAt != null">confirmed_at = #{confirmedAt},</if>
             <if test="createBy != null">create_by = #{createBy},</if>
             <if test="createTime != null">create_time = #{createTime},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
@@ -108,9 +132,23 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </delete>
 
     <delete id="deleteBizImportBatchByIds" parameterType="String">
-        delete from biz_import_batch where id in 
+        delete from biz_import_batch where id in
         <foreach item="id" collection="array" open="(" separator="," close=")">
             #{id}
         </foreach>
     </delete>
+
+    <!-- 条件更新：待确认→已导入，落确认时间。where status=#{expectedStatus} 保证原子性与幂等 -->
+    <update id="markConfirmed">
+        update biz_import_batch
+        set status = #{targetStatus}, confirmed_at = now(), update_by = #{operator}, update_time = now()
+        where id = #{id} and status = #{expectedStatus}
+    </update>
+
+    <!-- 条件更新批次状态（不落确认时间）：0→1 预检完成、1→4 确认失败 -->
+    <update id="markStatus">
+        update biz_import_batch
+        set status = #{targetStatus}, update_by = #{operator}, update_time = now()
+        where id = #{id} and status = #{expectedStatus}
+    </update>
 </mapper>
