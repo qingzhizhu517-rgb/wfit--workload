@@ -10,7 +10,8 @@
 --   1) biz_import_batch 增加 template_version / source_hash / operator_id /
 --      operator_name / confirm_token_hash / confirmed_at 六列（两阶段导入契约）
 --   2) 建 biz_import_row 逐行暂存表（预检落库 → 确认按 row_no 顺序回放）
---   3) biz_import_batch 加唯一索引 uk_import_source(import_type, source_hash, status)
+--   3) biz_import_batch 加普通索引 idx_import_source(import_type, source_hash)
+--      （去重在代码层判定，非唯一约束——见第 3 节说明）
 --
 -- 幂等：可重复执行。
 --   - 加列前查 information_schema.columns，存在则跳过（SELECT 1）
@@ -107,18 +108,25 @@ CREATE TABLE IF NOT EXISTS biz_import_row (
   KEY idx_batch_status (batch_id, status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='导入逐行暂存';
 
--- 3) biz_import_batch 源文件去重唯一索引（幂等加索引：先查 statistics）
---    键为 (import_type, source_hash) —— 不含 status：一旦某文件已建过批次，无论其后续
---    走到待确认/已导入/失败哪个状态，同一文件再次上传都会命中唯一约束被拒，这才是
---    「一个文件只导一次」的去重语义。若含 status，文件从 0 走到 2 后即可再插一条 status=0，
---    去重形同虚设（本轮复审修正）。
---    source_hash 为 NULL 的既有流式导入不受约束（InnoDB 允许多 NULL 行）；
---    非 NULL 去重仅在 Task 4 两阶段导入写入 source_hash 后生效。
+-- 3) biz_import_batch 源文件普通索引 idx_import_source(import_type, source_hash)
+--    去重在代码层按「已导入(2) 才拒重传」判定（countConfirmedBySource），此处只建普通索引供查询。
+--    绝不用唯一约束：否则阻断/放弃的历史预检会在预检插入期就锁死同一文件，修数据后无法重传。
+--    先删可能已由旧版本脚本建的唯一索引 uk_import_source，再幂等建普通索引 idx_import_source。
 SET @wfit_import_idx = IF(
   (SELECT COUNT(*) FROM information_schema.statistics
    WHERE table_schema = DATABASE() AND table_name = 'biz_import_batch'
-     AND index_name = 'uk_import_source') = 0,
-  'CREATE UNIQUE INDEX uk_import_source ON biz_import_batch(import_type, source_hash)',
+     AND index_name = 'uk_import_source') > 0,
+  'DROP INDEX uk_import_source ON biz_import_batch',
+  'SELECT 1');
+PREPARE wfit_import_idx_stmt FROM @wfit_import_idx;
+EXECUTE wfit_import_idx_stmt;
+DEALLOCATE PREPARE wfit_import_idx_stmt;
+
+SET @wfit_import_idx = IF(
+  (SELECT COUNT(*) FROM information_schema.statistics
+   WHERE table_schema = DATABASE() AND table_name = 'biz_import_batch'
+     AND index_name = 'idx_import_source') = 0,
+  'CREATE INDEX idx_import_source ON biz_import_batch(import_type, source_hash)',
   'SELECT 1');
 PREPARE wfit_import_idx_stmt FROM @wfit_import_idx;
 EXECUTE wfit_import_idx_stmt;

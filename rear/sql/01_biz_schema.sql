@@ -103,9 +103,9 @@ CREATE TABLE biz_import_batch (
   update_time          DATETIME      DEFAULT NULL,
   remark               VARCHAR(500)  DEFAULT NULL,
   PRIMARY KEY (id),
-  -- 键不含 status：同一文件无论走到哪个状态，再次上传都命中约束被拒（一个文件只导一次）。
-  -- source_hash 为 NULL 的既有流式导入不受此唯一约束（InnoDB 允许多 NULL 行）。
-  UNIQUE KEY uk_import_source (import_type, source_hash)
+  -- 普通索引（非唯一）：文件去重在代码层按「已导入(2) 才拒重传」判定（countConfirmedBySource），
+  -- 不用唯一约束——否则阻断/放弃的历史预检会在预检插入期就锁死同一文件，修数据后无法重传。
+  KEY idx_import_source (import_type, source_hash)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='导入批次记录';
 
 -- 导入逐行暂存（两阶段导入：预检落库 → 确认按 row_no 顺序回放）
