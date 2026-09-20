@@ -181,10 +181,14 @@ public class BizImportBatchController extends BaseController
                 setCell(row, 5, view.errorMessage());
             }
 
+            // 用 RFC 5987 filename*=UTF-8'' 承载中文名，兼容各浏览器；
+            // 同时保留 ASCII fallback filename=。ImportRowView 是无 @Excel 的 record，
+            // 无法直接用 ExcelUtil，故此处手写 POI，仅统一下载头。
+            String encoded = URLEncoder.encode(
+                    "导入错误行_批次" + batchId + ".xlsx", StandardCharsets.UTF_8).replace("+", "%20");
             response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
             response.setHeader("Content-Disposition",
-                    "attachment;filename=" + URLEncoder.encode(
-                            "导入错误行_批次" + batchId + ".xlsx", StandardCharsets.UTF_8));
+                    "attachment;filename=errors_" + batchId + ".xlsx;filename*=UTF-8''" + encoded);
             wb.write(response.getOutputStream());
         }
     }

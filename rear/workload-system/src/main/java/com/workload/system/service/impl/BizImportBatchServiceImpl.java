@@ -70,7 +70,18 @@ public class BizImportBatchServiceImpl implements IBizImportBatchService
         List<BizImportRow> rows = StringUtils.isNotEmpty(status)
                 ? bizImportRowMapper.selectByBatchIdAndStatus(batchId, status)
                 : bizImportRowMapper.selectBizImportRowByBatchId(batchId);
-        return toViews(rows);
+        List<ImportRowView> views = toViews(rows);
+        // startPage() 后底层查询被 PageHelper 拦成 Page；映射成视图会丢掉分页总数。
+        // 显式把真实 total 复制到一个 Page<ImportRowView>，让 getDataTable 的 PageInfo 读到全量条数，
+        // 否则分页器只会显示当前页大小、翻不到后续页。
+        if (rows instanceof com.github.pagehelper.Page<?> page)
+        {
+            com.github.pagehelper.Page<ImportRowView> viewPage = new com.github.pagehelper.Page<>();
+            viewPage.setTotal(page.getTotal());
+            viewPage.addAll(views);
+            return viewPage;
+        }
+        return views;
     }
 
     /**

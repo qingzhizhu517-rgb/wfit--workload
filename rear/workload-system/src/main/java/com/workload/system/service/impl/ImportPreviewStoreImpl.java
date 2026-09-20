@@ -112,8 +112,25 @@ public class ImportPreviewStoreImpl implements ImportPreviewStore
         return batch;
     }
 
+    /**
+     * 状态流转的审计操作人：优先当前登录用户，回落批次记录的 operator_name。
+     * 批次的 operator_name 在当前写入路径尚未落值，直接用它会写出 update_by=NULL、
+     * 丢失操作人；这里以 SecurityUtils 当前用户兜底，保证审计列有值。
+     */
     private String operatorOf(BizImportBatch batch)
     {
+        try
+        {
+            String current = com.workload.common.utils.SecurityUtils.getUsername();
+            if (current != null && !current.isBlank())
+            {
+                return current;
+            }
+        }
+        catch (Exception ignored)
+        {
+            // 无安全上下文（系统任务/单测）：回落批次操作人
+        }
         return batch.getOperatorName();
     }
 

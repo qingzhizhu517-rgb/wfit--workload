@@ -108,12 +108,17 @@ CREATE TABLE IF NOT EXISTS biz_import_row (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='导入逐行暂存';
 
 -- 3) biz_import_batch 源文件去重唯一索引（幂等加索引：先查 statistics）
---    见文件头说明：source_hash 为 NULL 的既有流式导入不受约束（InnoDB 允许多 NULL 行）。
+--    键为 (import_type, source_hash) —— 不含 status：一旦某文件已建过批次，无论其后续
+--    走到待确认/已导入/失败哪个状态，同一文件再次上传都会命中唯一约束被拒，这才是
+--    「一个文件只导一次」的去重语义。若含 status，文件从 0 走到 2 后即可再插一条 status=0，
+--    去重形同虚设（本轮复审修正）。
+--    source_hash 为 NULL 的既有流式导入不受约束（InnoDB 允许多 NULL 行）；
+--    非 NULL 去重仅在 Task 4 两阶段导入写入 source_hash 后生效。
 SET @wfit_import_idx = IF(
   (SELECT COUNT(*) FROM information_schema.statistics
    WHERE table_schema = DATABASE() AND table_name = 'biz_import_batch'
      AND index_name = 'uk_import_source') = 0,
-  'CREATE UNIQUE INDEX uk_import_source ON biz_import_batch(import_type, source_hash, status)',
+  'CREATE UNIQUE INDEX uk_import_source ON biz_import_batch(import_type, source_hash)',
   'SELECT 1');
 PREPARE wfit_import_idx_stmt FROM @wfit_import_idx;
 EXECUTE wfit_import_idx_stmt;
