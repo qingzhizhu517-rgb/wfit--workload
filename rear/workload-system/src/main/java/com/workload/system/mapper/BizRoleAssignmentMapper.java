@@ -17,6 +17,21 @@ public interface BizRoleAssignmentMapper
             @org.apache.ibatis.annotations.Param("semester") String semester);
 
     /**
+     * 统计某教师某学期、且来自指定来源批次的有效(status=1)岗位减免记录数。
+     * 用于导入确认的幂等判定：仅当同一批次已写过该教师+学期记录时才 SKIPPED（重复确认同一批次），
+     * 不同来源批次的记录允许并存（需求3：多条来源记录相加，汇总层按 180 封顶），
+     * 故键含 source_batch_id，绝不以「教师+学期存在即跳过」误丢第二笔来源。
+     *
+     * @param userId        教师用户ID
+     * @param semester      学年学期
+     * @param sourceBatchId 来源批次号
+     * @return 该批次下有效记录数
+     */
+    int countBySourceBatch(@org.apache.ibatis.annotations.Param("userId") Long userId,
+            @org.apache.ibatis.annotations.Param("semester") String semester,
+            @org.apache.ibatis.annotations.Param("sourceBatchId") String sourceBatchId);
+
+    /**
      * 查询岗位任职
      * 
      * @param id 岗位任职主键

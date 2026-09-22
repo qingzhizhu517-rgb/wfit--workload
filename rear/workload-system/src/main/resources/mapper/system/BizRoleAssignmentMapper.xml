@@ -124,4 +124,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         order by id
         for update
     </select>
+
+    <select id="countBySourceBatch" resultType="int">
+        select count(1) from biz_role_assignment
+        where user_id = #{userId} and semester = #{semester}
+          and source_batch_id = #{sourceBatchId} and status = 1
+    </select>
 </mapper>

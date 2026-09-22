@@ -1,7 +1,11 @@
 package com.workload.system.controller;
 
+import java.util.ArrayList;
 import java.util.List;
 import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -11,13 +15,22 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+import com.alibaba.excel.EasyExcel;
+import com.alibaba.excel.write.metadata.WriteSheet;
 import com.workload.common.annotation.Log;
 import com.workload.common.core.controller.BaseController;
 import com.workload.common.core.domain.AjaxResult;
 import com.workload.common.enums.BusinessType;
+import com.workload.common.utils.excel.ImportResult;
 import com.workload.system.domain.BizRoleAssignment;
+import com.workload.system.domain.dto.PositionWorkloadImportDTO;
+import com.workload.system.domain.dto.importing.ImportConfirmRequest;
+import com.workload.system.domain.dto.importing.ImportPreviewResponse;
 import com.workload.system.service.IBizRoleAssignmentService;
+import com.workload.system.service.IPositionWorkloadImportService;
 import com.workload.common.utils.poi.ExcelUtil;
 import com.workload.common.exception.ServiceException;
 import com.workload.common.utils.StringUtils;
@@ -33,8 +46,104 @@ import com.workload.common.core.page.TableDataInfo;
 @RequestMapping("/system/roleAssignment")
 public class BizRoleAssignmentController extends BaseController
 {
+    private static final Logger log = LoggerFactory.getLogger(BizRoleAssignmentController.class);
+
+    /** Excel 导入文件大小上限（MB） */
+    @Value("${wfit.import.max-size:10}")
+    private long importMaxSizeMb;
+
     @Autowired
     private IBizRoleAssignmentService bizRoleAssignmentService;
+
+    @Autowired
+    private IPositionWorkloadImportService positionWorkloadImportService;
+
+    // ==================== 本学期岗位减免工作量导入（两阶段） ====================
+
+    /**
+     * 下载岗位减免工作量导入模板：双 Sheet（示例与说明 + 导入数据）。
+     * 导入器只解析「导入数据」页，说明页示例（虚构「示例教师」）绝不入库。
+     */
+    @PreAuthorize("@ss.hasPermi('system:roleAssignment:import')")
+    @PostMapping("/importTemplate")
+    public void importTemplate(HttpServletResponse response) throws Exception
+    {
+        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        response.setHeader("Content-Disposition", "attachment;filename=positionWorkloadTemplate.xlsx");
+        try (com.alibaba.excel.ExcelWriter writer = EasyExcel.write(response.getOutputStream(),
+                PositionWorkloadImportDTO.class).build())
+        {
+            WriteSheet instruction = EasyExcel.writerSheet(0, "示例与说明").build();
+            writer.write(instructionExamples(), instruction);
+            WriteSheet data = EasyExcel.writerSheet(1, "导入数据").build();
+            writer.write(new ArrayList<>(), data);
+        }
+    }
+
+    /**
+     * 说明页示例：本学期岗位减免工作量，减免值即教务核定值（不折算），职务名称仅展示可空。
+     */
+    private static List<PositionWorkloadImportDTO> instructionExamples()
+    {
+        List<PositionWorkloadImportDTO> examples = new ArrayList<>();
+        PositionWorkloadImportDTO withPosition = new PositionWorkloadImportDTO();
+        withPosition.setUserCode("SHILI001");
+        withPosition.setUserName("示例教师");
+        withPosition.setSemester("2025-2026-1");
+        withPosition.setPositionWorkload(new java.math.BigDecimal("60"));
+        withPosition.setPositionName("教研室主任");
+        withPosition.setRemark("职务名称仅展示，不参与计算");
+        examples.add(withPosition);
+
+        PositionWorkloadImportDTO noPosition = new PositionWorkloadImportDTO();
+        noPosition.setUserCode("SHILI002");
+        noPosition.setUserName("示例教师二");
+        noPosition.setSemester("2025-2026-1");
+        noPosition.setPositionWorkload(new java.math.BigDecimal("0"));
+        noPosition.setRemark("职务名称可空，减免值可为 0");
+        examples.add(noPosition);
+        return examples;
+    }
+
+    /**
+     * 两阶段导入 · 预检：上传文件只解析「导入数据」页，逐行落 biz_import_row 暂存，
+     * 绝不写 biz_role_assignment；返回可导入/被阻断行数与一次性确认令牌。
+     */
+    @PreAuthorize("@ss.hasPermi('system:roleAssignment:import')")
+    @Log(title = "岗位减免工作量导入预检", businessType = BusinessType.IMPORT)
+    @PostMapping("/importPreview")
+    public AjaxResult importPreview(@RequestParam("file") MultipartFile file)
+    {
+        String invalidMsg = ImportFileValidator.validateExcelFile(file, importMaxSizeMb);
+        if (invalidMsg != null)
+        {
+            return error(invalidMsg);
+        }
+        try
+        {
+            ImportPreviewResponse preview = positionWorkloadImportService.preview(
+                    file.getInputStream(), file.getOriginalFilename(), "V1");
+            return success("预检完成").put("data", preview);
+        }
+        catch (Exception e)
+        {
+            log.error("岗位减免工作量导入预检异常", e);
+            return error("预检失败: " + (e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName()));
+        }
+    }
+
+    /**
+     * 两阶段导入 · 确认：校验令牌与 0 阻断后按 row_no 顺序回放写库，幂等键（工号+学期）命中默认跳过；
+     * 写每条前校验汇总冻结状态，审批中/已完结的教师该行失败。
+     */
+    @PreAuthorize("@ss.hasPermi('system:roleAssignment:import')")
+    @Log(title = "岗位减免工作量导入确认", businessType = BusinessType.IMPORT)
+    @PostMapping("/importConfirm")
+    public AjaxResult importConfirm(@RequestBody ImportConfirmRequest request)
+    {
+        ImportResult result = positionWorkloadImportService.confirm(request);
+        return success("导入完成").put("data", result);
+    }
 
     /**
      * 查询岗位任职列表

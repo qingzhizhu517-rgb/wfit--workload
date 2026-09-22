@@ -83,6 +83,7 @@ wfit--workload/                         # 仓库根（GitHub: qingzhizhu517-rgb/
 │       ├── 25_calculation_menu.sql           # G1/G2/G3 分类导入菜单 + 系数申请权限登记（幂等）
 │       ├── 26_coefficient_teacher_perm.sql   # 授教师 role4 系数申请 add/list 权限（幂等）
 │       ├── 27_calc_flow_menu.sql             # 系数申请列表页菜单入口（幂等）
+│       ├── 28_import_framework.sql           # 两阶段导入契约：biz_import_batch 补 6 列 + biz_import_row 逐行暂存表 + biz_teaching_task 源数量快照列（幂等）
 │       ├── ry_20260321.sql            # RuoYi 基础系统表
 │       └── quartz.sql                 # Quartz 调度器表
 ├── front/RuoYi-Vue3/                  # 前端 Vue 3 项目
@@ -181,7 +182,7 @@ mysql -u root -p wflg_workload < rear/sql/12_fix_dept_mapping.sql
 mysql -u root -p wflg_workload < rear/sql/15_fix_menu_buttons.sql
 ```
 
-> 07/09/10/11/14/15 的修复内容已分别并入 04/05/01/02/05+06 基础脚本，新库无需执行（脚本均幂等，执行亦无害）；08 与 13 为新库必需。详见 README「数据库初始化」。
+> 07/09/10/11/14/15 的修复内容已分别并入 04/05/01/02/05+06 基础脚本，新库无需执行（脚本均幂等，执行亦无害）；08 与 13 为新库必需。**两阶段导入需执行 `28_import_framework.sql`（建 `biz_import_row` + 补 `biz_import_batch` 契约列），否则预检/确认接口报表不存在**。详见 README「数据库初始化」。
 
 ## 测试
 
@@ -282,6 +283,27 @@ A 项 ≥20 人归零（第十五条1(2)，落 `biz_allowance_item.remark`）；
 | `/recalcAll` | POST | 单教师全量重算：明细→汇总→酬金，单事务，失败整体回滚（需 userId） |
 | `/recalcAllBatch` | POST | **批量一键核算**：`?semester=` + body `[userId...]`；body 空/省略 = 该学期全部有明细的教师。每位教师独立事务，单人失败只记入 `failures`，其余照算。教师角色被强制收敛为只能算自己 |
 
+## 统一两阶段导入框架（2026-09，preview → confirm）
+
+> M4 的一次性流式导入（`importTeachingTasksStreaming`）已被**两阶段导入**取代：先**预检**（parse-only，零业务写入），再**确认**（回放写库）。教学任务导入已切换（`58cba93`），岗位减免工作量导入（分支 `feat/workload-imports`）复用同一套框架。
+
+**流程与契约**：
+
+1. **预检** `POST .../importPreview`（`@RequestParam file`）：读全字节 → 算 SHA-256 源哈希 → 建 `biz_import_batch`（status=0，落 `template_version`/`source_hash`/`operator_*`/`confirm_token_hash`）→ 逐行解析校验落 `biz_import_row`（每行 `READY`/`BLOCKED` + raw/normalized JSON）→ 推进批次到**待确认(1)**，返回 `ImportPreviewResponse`（batchId、ready/blocked 计数、逐行 `ImportRowView`、warnings、**一次性明文确认令牌**）。**预检绝不写业务主表**。
+2. **确认** `POST .../importConfirm`（`@RequestBody ImportConfirmRequest` = batchId + 明文令牌 + updateSupport）：`ImportPreviewStore.assertConfirmable` 校验（状态待确认 + 令牌哈希匹配 + 0 阻断）→ 按 `row_no` 顺序回放 `processSingleRow`（每行独立事务，经 AOP 代理）→ 回写真实计数并 `markConfirmed`。幂等键命中 `SKIPPED`、成功 `IMPORTED`、异常 `FAILED`。
+
+**关键组件**（`workload-system`）：
+
+- `com.workload.system.calc.WorkloadWriteGuard` — **冻结锁**。`@Transactional(MANDATORY)` + `selectByUserSemesterForUpdate` 行锁；教师学期汇总处于**审批中/已完结(status 1/2，`WorkloadSummaryStatus.isWriteFrozen`)** 时抛异常，**每行写入前必过**，防止导入改动已进审批的数字（对应待办 #14 的同一防线）。
+- `domain/dto/importing/` — `ImportPreviewResponse` / `ImportRowView` / `ImportConfirmRequest`。
+- `ImportPreviewStore` — 批次状态机推进（`markPrechecked`/`markConfirmed`/`markFailed`/`assertConfirmable`）；`importTokenHasher` 只存令牌 SHA-256，明文仅随预检响应返回一次。
+- `ImportFileValidator.validateExcelFile` + 配置 `wfit.import.max-size`（默认 10MB）。
+- `ExcelReadUtil.readEachRowOfSheetOrFirst` — **双 Sheet 模板**：`importTemplate` 生成「示例与说明」+「导入数据」两页，导入器**只解析「导入数据」页**（说明页虚构示例绝不入库），旧单 Sheet 文件回退第一个 Sheet。
+
+**去重语义**（易踩坑）：按「是否**已成功导入(status=2)**」判定（`countConfirmedBySource`），而非「是否预检过」——同一文件已成功导入才拒重传；被阻断/放弃的历史预检**不**阻止修数据后重传。故 `biz_import_batch(import_type, source_hash)` 是**普通索引** `idx_import_source`，**绝不能建唯一约束**（`28_import_framework.sql` 会先 DROP 掉旧的 `uk_import_source`）。
+
+**兼容旧端点**：`POST /system/teachingTask/importExcel` **已弃用但保留**，内部转调预检（默认 V2；`autoConfirm` 时直接确认），返回消息含弃用提示。V1 旧单 Sheet 模板导入亦弃用，读入后转 V2 规范行。
+
 ## 审批流状态机
 
 > **2026-09-10 简化为两级**：院领导签字环节已移除。旧状态 3（已完结）迁移为 2，
@@ -305,7 +327,7 @@ A 项 ≥20 人归零（第十五条1(2)，落 `biz_allowance_item.remark`）；
 `0草稿/1已核对(冻结)/2有异议/3已驳回`。`SummaryCalcServiceImpl` 跳过 `item.status==3`（已驳回）
 不参与汇总——改审批状态时**不要连带改这里**。
 
-## 数据库分层架构（19 张 biz 表）
+## 数据库分层架构（20 张 biz 表）
 
 | 层级 | 表名 | 说明 |
 |------|------|------|
@@ -313,7 +335,8 @@ A 项 ≥20 人归零（第十五条1(2)，落 `biz_allowance_item.remark`）；
 | 支撑层 | biz_workload_category_dict | 类别字典（G1-G11，绑定策略 Bean） |
 | 支撑层 | biz_workload_rule | 核算规则参数（39 条，Redis 缓存） |
 | 支撑层 | biz_pay_rate | 酬金费率（教授70/副60/讲50/助40） |
-| 支撑层 | biz_import_batch | 导入批次记录 |
+| 支撑层 | biz_import_batch | 导入批次记录（28 号脚本补两阶段导入契约 6 列） |
+| 支撑层 | biz_import_row | 导入逐行暂存（预检落库 → 确认按 `row_no` 回放，`28_import_framework.sql` 创建，不在 01 schema） |
 | 源数据层 | biz_teaching_task | 教学任务（Excel 导入的原始数据） |
 | 源数据层 | biz_role_assignment | 兼容表名：教师学期岗位减免来源记录（同步 G11 的依据） |
 | 计算明细层 | biz_workload_item | 工作量明细主表 |
@@ -434,7 +457,7 @@ G4 触 60 上限 / G5·G6 超限标记 / **K 组显式「重复次序」优先�
 - `performance_pay=0` **不是 bug**：该教师 `teacher_nature=外聘`，按设计不计发绩效
 - 附件1 = 19 列 / 21 条明细，系数说明渲染为「第 1 次（计算机2401），重复系数 1」，G5/G6 超限行追加「人数超上限，已按封顶值核算」；附件2 = 17 列，超额 802.33 与计酬超额 360.0（=`min(982.33,540)−180`）并列，备注同时点出「外聘不计发」与「已触 200% 上限 540」
 - `recalcAllBatch` 三种入参（指定 `userIds` / 空数组 / 省略 body）均 `successCount 1` `failCount 0`
-- 导出端点是 **GET** `/system/export/personalWorkload` 与 **GET** `/system/export/paySummary`（不是 POST，也不是 `/export/personal`）；导入端点是 **POST** `/system/teachingTask/importExcel`（不是 `/importData`）
+- 导出端点是 **GET** `/system/export/personalWorkload` 与 **GET** `/system/export/paySummary`（不是 POST，也不是 `/export/personal`）；导入端点 **2026-09 起改两阶段**：`POST /system/teachingTask/importPreview` → `importConfirm`（旧 `POST .../importExcel` 已弃用但保留，见「统一两阶段导入框架」）
 
 ### 逻辑审计与修复（2026-09-01，代码 × `else/工作量.md` × `biz_workload_rule` 三方对读）
 
