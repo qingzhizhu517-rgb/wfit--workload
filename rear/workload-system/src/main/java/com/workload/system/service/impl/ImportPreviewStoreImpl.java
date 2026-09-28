@@ -92,12 +92,14 @@ public class ImportPreviewStoreImpl implements ImportPreviewStore
     @Override
     public int markFailed(Long batchId)
     {
+        // 确认阶段已在入口原子认领(1→2)，故失败转移从「已导入(2)」→「失败(4)」；
+        // 认领后回放中途有失败行时调用，条件更新保证只有认领者能改。
         BizImportBatch batch = requireBatch(batchId);
-        if (batch.getStatus() == null || batch.getStatus() != STATUS_PENDING)
+        if (batch.getStatus() == null || batch.getStatus() != STATUS_IMPORTED)
         {
-            throw new ServiceException("批次不处于待确认状态，无法置为失败");
+            throw new ServiceException("批次不处于已认领状态，无法置为失败");
         }
-        int affected = batchMapper.markStatus(batchId, STATUS_PENDING, STATUS_FAILED, operatorOf(batch));
+        int affected = batchMapper.markStatus(batchId, STATUS_IMPORTED, STATUS_FAILED, operatorOf(batch));
         assertSingleRow(affected);
         return affected;
     }

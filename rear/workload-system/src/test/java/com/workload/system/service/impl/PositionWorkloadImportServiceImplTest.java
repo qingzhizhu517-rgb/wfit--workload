@@ -198,8 +198,9 @@ class PositionWorkloadImportServiceImplTest
 
         assertThat(result.getFailCount()).isEqualTo(1);
         verify(assignmentMapper, never()).insertBizRoleAssignment(any());
+        // 入口先认领(1→2)，回放有失败行再转失败(2→4)
+        verify(previewStore).markConfirmed(60L);
         verify(previewStore).markFailed(60L);
-        verify(previewStore, never()).markConfirmed(60L);
     }
 
     /** updateSupport=true 未实现更新语义，confirm 入口即拒绝，不回放、不置终态。 */
@@ -218,6 +219,36 @@ class PositionWorkloadImportServiceImplTest
         verify(rowMapper, never()).selectByBatchIdAndStatus(any(), any());
         verify(previewStore, never()).markConfirmed(any());
         verify(previewStore, never()).markFailed(any());
+    }
+
+    /**
+     * #2 并发认领：confirm 入口原子认领批次(1→2)必须先于回放。认领失败（markConfirmed 抛并发冲突）时，
+     * 绝不查询 READY 行、绝不回写批次计数——第二个并发请求因此不会重复 INSERT。
+     */
+    @Test
+    void confirmClaimsBatchAtEntryBeforeReplayingRows() throws Exception
+    {
+        PositionWorkloadImportServiceImpl service = org.mockito.Mockito.spy(new PositionWorkloadImportServiceImpl());
+        BizImportBatchMapper batchMapper = mock(BizImportBatchMapper.class);
+        BizImportRowMapper rowMapper = mock(BizImportRowMapper.class);
+        ImportPreviewStore previewStore = mock(ImportPreviewStore.class);
+        setField(service, "importBatchMapper", batchMapper);
+        setField(service, "importRowMapper", rowMapper);
+        setField(service, "importPreviewStore", previewStore);
+
+        BizImportBatch batch = new BizImportBatch();
+        batch.setId(80L);
+        batch.setBatchNo("IMP-CLAIM");
+        when(batchMapper.selectBizImportBatchById(80L)).thenReturn(batch);
+        when(rowMapper.selectByBatchIdAndStatus(80L, "READY")).thenReturn(java.util.List.of());
+        org.mockito.Mockito.doThrow(new ServiceException("批次状态并发冲突，请刷新后重试"))
+                .when(previewStore).markConfirmed(80L);
+
+        assertThatThrownBy(() -> service.confirm(new ImportConfirmRequest(80L, "tok", false)))
+                .isInstanceOf(ServiceException.class);
+
+        verify(rowMapper, never()).selectByBatchIdAndStatus(any(), any());
+        verify(batchMapper, never()).updateBizImportBatch(any());
     }
 
     // ==================== 辅助 ====================

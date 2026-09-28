@@ -256,7 +256,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         join biz_workload_item i on i.task_id = t.id
         where t.user_id = #{userId}
           and t.semester = #{semester}
-          and ifnull(t.course_code, '') = ifnull(#{courseCode}, '')
+          and t.course_name = #{courseName}
           and ifnull(t.class_name, '') = ifnull(#{className}, '')
           and i.item_type = #{itemType}
     </select>

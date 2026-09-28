@@ -96,16 +96,18 @@ public interface BizTeachingTaskMapper
      * 教学任务是否已入库。命中(>0)则该行为重复，确认时默认 SKIPPED，不静默覆盖。
      * <p>
      * 工作量类别落在 biz_workload_item.item_type，故与 biz_teaching_task 关联比对；
-     * class_name / course_code 用 ifnull 归一，避免 NULL 与 '' 判为不同键。
+     * class_name 用 ifnull 归一，避免 NULL 与 '' 判为不同键。
+     * 「同课」按课程名称判定（与重复次序分组 countSameCourseTask 一致，CLAUDE.md E1：
+     * 教师+学期+课程名称，代码相同但课名不同不算重复），故键用 course_name 而非 course_code。
      *
      * @param userId       教师ID
      * @param semester     学年学期
-     * @param courseCode   课程代码
+     * @param courseName   课程名称
      * @param className    班级
      * @param itemType     工作量类别（G1~G6，大写）
      * @return 已入库条数
      */
     public int countImportedTask(@Param("userId") Long userId, @Param("semester") String semester,
-                                 @Param("courseCode") String courseCode, @Param("className") String className,
+                                 @Param("courseName") String courseName, @Param("className") String className,
                                  @Param("itemType") String itemType);
 }

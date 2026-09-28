@@ -205,6 +205,10 @@ public class PositionWorkloadImportServiceImpl implements IPositionWorkloadImpor
         }
         String batchNo = batch.getBatchNo();
 
+        // 入口原子认领批次(1→2)：并发双击时只有一个请求 markConfirmed 影响 1 行、得以继续；
+        // 其余请求影响 0 行抛冲突并退出，绝不进入回放，杜绝重复 INSERT。
+        importPreviewStore.markConfirmed(request.batchId());
+
         // 2) 按 row_no 顺序回放 READY 行；每行独立事务经 AOP 代理，失败只记该行
         List<BizImportRow> rows = importRowMapper.selectByBatchIdAndStatus(request.batchId(), "READY");
         ImportResult result = new ImportResult();
@@ -256,14 +260,10 @@ public class PositionWorkloadImportServiceImpl implements IPositionWorkloadImpor
         }
         importBatchMapper.updateBizImportBatch(batch);
 
-        // 4) 固化批次终态：有失败行 → 失败(4)；全部成功/跳过 → 已导入(2)
+        // 4) 批次已在入口认领为已导入(2)；若回放有失败行再转失败(4)
         if (result.hasErrors())
         {
             importPreviewStore.markFailed(request.batchId());
-        }
-        else
-        {
-            importPreviewStore.markConfirmed(request.batchId());
         }
         return result;
     }

@@ -403,9 +403,10 @@ class TeachingTaskImportServiceImplTest
         u2.setUserId(1002L);
         when(sysUserService.selectUserByUserName("T001")).thenReturn(u1);
         when(sysUserService.selectUserByUserName("T002")).thenReturn(u2);
-        // 幂等键计数：第 1 行已存在(1) → 重复；第 2 行不存在(0) → 新行
-        when(taskMapper.countImportedTask(eq(1001L), any(), eq("CS101"), eq("计算机2401"), eq("G1"))).thenReturn(1);
-        when(taskMapper.countImportedTask(eq(1002L), any(), eq("CS102"), eq("计算机2402"), eq("G1"))).thenReturn(0);
+        // 幂等键按课程名称：第 1 行已存在(1) → 重复；第 2 行不存在(0) → 新行
+        // （normalizedJson 的 courseName 固定为「测试课」，两行班级不同）
+        when(taskMapper.countImportedTask(eq(1001L), any(), eq("测试课"), eq("计算机2401"), eq("G1"))).thenReturn(1);
+        when(taskMapper.countImportedTask(eq(1002L), any(), eq("测试课"), eq("计算机2402"), eq("G1"))).thenReturn(0);
 
         // self() 返回 spy 自身，绕过 AOP 代理；processSingleRow 桩掉不跑真实写库
         org.mockito.Mockito.doReturn(service).when(service).self();
@@ -484,7 +485,7 @@ class TeachingTaskImportServiceImplTest
         com.workload.common.core.domain.entity.SysUser u1 = new com.workload.common.core.domain.entity.SysUser();
         u1.setUserId(1001L);
         when(sysUserService.selectUserByUserName("T001")).thenReturn(u1);
-        when(taskMapper.countImportedTask(eq(1001L), any(), eq("CS101"), eq("计算机2401"), eq("G1"))).thenReturn(0);
+        when(taskMapper.countImportedTask(eq(1001L), any(), eq("测试课"), eq("计算机2401"), eq("G1"))).thenReturn(0);
 
         org.mockito.Mockito.doReturn(service).when(service).self();
         org.mockito.Mockito.doThrow(new com.workload.common.exception.ServiceException("写库失败"))
@@ -495,9 +496,92 @@ class TeachingTaskImportServiceImplTest
                 service.confirm(new com.workload.system.domain.dto.importing.ImportConfirmRequest(60L, "tok", false));
 
         org.assertj.core.api.Assertions.assertThat(result.getFailCount()).isEqualTo(1);
-        // 有失败 → markFailed，不 markConfirmed
+        // 入口先认领(markConfirmed 1→2)，回放有失败行再转失败(markFailed 2→4)
+        verify(previewStore).markConfirmed(60L);
         verify(previewStore).markFailed(60L);
-        verify(previewStore, never()).markConfirmed(60L);
+    }
+
+    /**
+     * #2 并发认领：confirm 入口原子认领批次(1→2)必须先于回放。认领失败（markConfirmed 抛并发冲突）时，
+     * 绝不查询 READY 行、绝不回写批次计数——第二个并发请求因此不会重复 INSERT。
+     */
+    @Test
+    void confirmClaimsBatchAtEntryBeforeReplayingRows() throws Exception
+    {
+        TeachingTaskImportServiceImpl service = org.mockito.Mockito.spy(new TeachingTaskImportServiceImpl());
+        com.workload.system.mapper.BizImportBatchMapper batchMapper =
+                mock(com.workload.system.mapper.BizImportBatchMapper.class);
+        com.workload.system.mapper.BizImportRowMapper rowMapper =
+                mock(com.workload.system.mapper.BizImportRowMapper.class);
+        com.workload.system.service.ImportPreviewStore previewStore =
+                mock(com.workload.system.service.ImportPreviewStore.class);
+        setField(service, "importBatchMapper", batchMapper);
+        setField(service, "importRowMapper", rowMapper);
+        setField(service, "importPreviewStore", previewStore);
+
+        com.workload.system.domain.BizImportBatch batch = new com.workload.system.domain.BizImportBatch();
+        batch.setId(80L);
+        batch.setBatchNo("IMP-CLAIM");
+        when(batchMapper.selectBizImportBatchById(80L)).thenReturn(batch);
+        when(rowMapper.selectByBatchIdAndStatus(80L, "READY")).thenReturn(java.util.List.of());
+        // 认领失败：批次已被另一个并发请求抢占(1→2)，本请求 markConfirmed 影响 0 行 → 抛冲突
+        org.mockito.Mockito.doThrow(new ServiceException("批次状态并发冲突，请刷新后重试"))
+                .when(previewStore).markConfirmed(80L);
+
+        assertThatThrownBy(() -> service.confirm(
+                new com.workload.system.domain.dto.importing.ImportConfirmRequest(80L, "tok", false)))
+                .isInstanceOf(ServiceException.class);
+
+        // 认领在回放之前：READY 行从未被查询，批次计数从未回写
+        verify(rowMapper, never()).selectByBatchIdAndStatus(any(), any());
+        verify(batchMapper, never()).updateBizImportBatch(any());
+    }
+
+    /**
+     * #1 幂等键按课程名称而非课程代码：isDuplicate 传给 countImportedTask 的去重键是 courseName，
+     * 而非 courseCode（course_code 空/相同但课名不同的两门课不应被误判重复）。
+     */
+    @Test
+    void confirmDeduplicatesByCourseNameNotCourseCode() throws Exception
+    {
+        TeachingTaskImportServiceImpl service = org.mockito.Mockito.spy(new TeachingTaskImportServiceImpl());
+        com.workload.system.mapper.BizImportBatchMapper batchMapper =
+                mock(com.workload.system.mapper.BizImportBatchMapper.class);
+        com.workload.system.mapper.BizImportRowMapper rowMapper =
+                mock(com.workload.system.mapper.BizImportRowMapper.class);
+        com.workload.system.mapper.BizTeachingTaskMapper taskMapper =
+                mock(com.workload.system.mapper.BizTeachingTaskMapper.class);
+        com.workload.system.service.ImportPreviewStore previewStore =
+                mock(com.workload.system.service.ImportPreviewStore.class);
+        ISysUserService sysUserService = mock(ISysUserService.class);
+        setField(service, "importBatchMapper", batchMapper);
+        setField(service, "importRowMapper", rowMapper);
+        setField(service, "teachingTaskMapper", taskMapper);
+        setField(service, "importPreviewStore", previewStore);
+        setField(service, "sysUserService", sysUserService);
+
+        com.workload.system.domain.BizImportBatch batch = new com.workload.system.domain.BizImportBatch();
+        batch.setId(90L);
+        batch.setBatchNo("IMP-NAME");
+        when(batchMapper.selectBizImportBatchById(90L)).thenReturn(batch);
+        // courseCode "CS999" 与 courseName "测试课" 刻意不同，用于区分去重键取的是哪一个
+        com.workload.system.domain.BizImportRow row =
+                importRow(1, normalizedJson("G1", "T001", "CS999", "计算机2401"));
+        when(rowMapper.selectByBatchIdAndStatus(90L, "READY")).thenReturn(java.util.List.of(row));
+        com.workload.common.core.domain.entity.SysUser u1 = new com.workload.common.core.domain.entity.SysUser();
+        u1.setUserId(1001L);
+        when(sysUserService.selectUserByUserName("T001")).thenReturn(u1);
+
+        org.mockito.Mockito.doReturn(service).when(service).self();
+        org.mockito.Mockito.doReturn(java.math.BigDecimal.TEN).when(service)
+                .processSingleRow(any(TeachingTaskImportDTO.class),
+                        org.mockito.ArgumentMatchers.eq("IMP-NAME"), org.mockito.ArgumentMatchers.eq("ALL"));
+
+        service.confirm(new com.workload.system.domain.dto.importing.ImportConfirmRequest(90L, "tok", false));
+
+        ArgumentCaptor<String> keyCaptor = ArgumentCaptor.forClass(String.class);
+        verify(taskMapper).countImportedTask(eq(1001L), any(), keyCaptor.capture(), eq("计算机2401"), eq("G1"));
+        org.assertj.core.api.Assertions.assertThat(keyCaptor.getValue()).isEqualTo("测试课");
     }
 
     private static com.workload.system.domain.BizImportRow importRow(int rowNo, String normalizedJson)

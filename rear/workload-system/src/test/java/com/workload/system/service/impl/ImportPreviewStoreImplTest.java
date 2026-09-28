@@ -120,10 +120,11 @@ class ImportPreviewStoreImplTest
     }
 
     @Test
-    void markFailedFromPendingBatch()
+    void markFailedFromImportedBatch()
     {
-        when(batchMapper.selectBizImportBatchById(17L)).thenReturn(batch(17L, 1, "token-hash"));
-        when(batchMapper.markStatus(17L, 1, 4, "jiaowu_test")).thenReturn(1);
+        // 确认入口已认领(1→2)，失败转移从已导入(2)→失败(4)
+        when(batchMapper.selectBizImportBatchById(17L)).thenReturn(batch(17L, 2, "token-hash"));
+        when(batchMapper.markStatus(17L, 2, 4, "jiaowu_test")).thenReturn(1);
 
         assertThat(store.markFailed(17L)).isEqualTo(1);
     }
