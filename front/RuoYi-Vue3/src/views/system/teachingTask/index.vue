@@ -354,36 +354,26 @@
       @pagination="getList"
     />
 
-    <!-- Excel 导入对话框 -->
+    <!-- Excel 两阶段导入对话框（预检 → 确认） -->
     <el-dialog
       v-model="importOpen"
       title="Excel 导入教学任务"
       :close-on-click-modal="!importPending"
       :close-on-press-escape="!importPending"
       :show-close="!importPending"
-      width="500px"
+      width="760px"
       append-to-body
     >
       <div class="import-type-picker">
-        <div class="import-type-label">
-          导入类型
+        <div class="form-tip import-tip">
+          通用双 Sheet 模板：在「导入数据」页按类别填写对应数量列
+          （G1 计划学时 / G3 天数 / G4 学分+人数 / G5 人数 / G6 周数+人数）。
         </div>
-        <el-radio-group
-          v-model="importTemplateType"
-          :disabled="importPending"
+        <div
+          v-if="entryCategory"
+          class="form-tip import-tip"
         >
-          <el-radio-button
-            v-for="o in importTemplateOptions"
-            :key="o.value"
-            :value="o.value"
-          >
-            {{ o.label }}
-          </el-radio-button>
-        </el-radio-group>
-        <div class="form-tip">
-          {{ importTemplateType === 'ALL'
-            ? '通用模板：可导入 G1~G6 各类工作量'
-            : '分类模板：仅接受 ' + importTemplateType + ' 类行，其余行导入时报错' }}
+          您从 <b>{{ entryCategory }}</b> 分类入口进入：请在「导入数据」页仅填写该类别的行。
         </div>
       </div>
       <el-upload
@@ -412,37 +402,127 @@
             >
               下载导入模板
             </el-button>
-            <span style="margin-left: 8px; color: #999;">仅支持 .xlsx / .xls 文件</span>
+            <span style="margin-left: 8px; color: #999;">仅支持 .xlsx / .xls 文件；上传后先预检，确认无阻断行再导入</span>
           </div>
         </template>
       </el-upload>
+
+      <!-- 预检结果 -->
       <div
-        v-if="importResult"
+        v-if="previewResult"
         style="margin-top: 16px;"
       >
         <el-alert
-          :type="importResult.failCount > 0 ? 'warning' : 'success'"
+          :type="previewResult.blockedCount > 0 ? 'warning' : 'success'"
           :closable="false"
         >
           <template #title>
-            导入完成：成功 <b>{{ importResult.successCount }}</b> 条，
-            失败 <b>{{ importResult.failCount }}</b> 条，
-            跳过 <b>{{ importResult.skipCount }}</b> 条
+            预检完成：共 <b>{{ previewResult.totalCount }}</b> 行，
+            可导入 <b>{{ previewResult.readyCount }}</b> 行，
+            阻断 <b>{{ previewResult.blockedCount }}</b> 行
+            <span v-if="previewResult.blockedCount > 0">（存在阻断行，需先下载错误行、修正后重新上传预检）</span>
           </template>
         </el-alert>
         <div
-          v-if="importResult.errors && importResult.errors.length > 0"
-          style="margin-top: 8px; max-height: 200px; overflow-y: auto;"
+          v-if="previewResult.warnings && previewResult.warnings.length > 0"
+          style="margin-top: 8px;"
         >
           <p
-            v-for="(err, idx) in importResult.errors"
+            v-for="(w, idx) in previewResult.warnings"
             :key="idx"
             style="color: #e6a23c; font-size: 13px; margin: 4px 0;"
           >
-            {{ err }}
+            {{ w }}
+          </p>
+        </div>
+        <el-table
+          :data="previewResult.rows"
+          stripe
+          border
+          max-height="280"
+          style="margin-top: 8px;"
+          empty-text="无逐行明细"
+        >
+          <el-table-column
+            label="行号"
+            prop="rowNo"
+            align="center"
+            width="70"
+          />
+          <el-table-column
+            label="工号"
+            prop="userCode"
+            align="center"
+            width="110"
+          >
+            <template #default="scope">
+              {{ scope.row.userCode || '-' }}
+            </template>
+          </el-table-column>
+          <el-table-column
+            label="姓名"
+            prop="userName"
+            align="center"
+            width="100"
+          >
+            <template #default="scope">
+              {{ scope.row.userName || '-' }}
+            </template>
+          </el-table-column>
+          <el-table-column
+            label="状态"
+            prop="status"
+            align="center"
+            width="90"
+          >
+            <template #default="scope">
+              <el-tag :type="rowStatusType(scope.row.status)">
+                {{ scope.row.status }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column
+            label="错误信息"
+            prop="errorMessage"
+            min-width="220"
+            show-overflow-tooltip
+          >
+            <template #default="scope">
+              {{ scope.row.errorMessage || '-' }}
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+
+      <!-- 确认导入结果 -->
+      <div
+        v-if="confirmResult"
+        style="margin-top: 16px;"
+      >
+        <el-alert
+          :type="confirmResult.failCount > 0 ? 'warning' : 'success'"
+          :closable="false"
+        >
+          <template #title>
+            导入完成：成功 <b>{{ confirmResult.successCount }}</b> 条，
+            跳过 <b>{{ confirmResult.skipCount }}</b> 条，
+            失败 <b>{{ confirmResult.failCount }}</b> 条
+          </template>
+        </el-alert>
+        <div
+          v-if="confirmResult.errors && confirmResult.errors.length > 0"
+          style="margin-top: 8px; max-height: 200px; overflow-y: auto;"
+        >
+          <p
+            v-for="(err, idx) in confirmResult.errors"
+            :key="idx"
+            style="color: #e6a23c; font-size: 13px; margin: 4px 0;"
+          >
+            {{ typeof err === 'string' ? err : (err.message || JSON.stringify(err)) }}
           </p>
         </div>
       </div>
+
       <template #footer>
         <el-button
           :disabled="importPending"
@@ -451,12 +531,30 @@
           关闭
         </el-button>
         <el-button
-          type="primary"
-          :loading="importLoading"
+          v-if="errorBatchId"
+          type="warning"
+          plain
           :disabled="importPending"
-          @click="submitImport"
+          @click="handleDownloadErrors"
         >
-          开始导入
+          下载错误行
+        </el-button>
+        <el-button
+          type="primary"
+          plain
+          :loading="previewLoading"
+          :disabled="importPending || !!confirmResult"
+          @click="submitPreview"
+        >
+          预检
+        </el-button>
+        <el-button
+          type="primary"
+          :loading="confirmLoading"
+          :disabled="importPending || !canConfirm"
+          @click="submitConfirm"
+        >
+          确认导入
         </el-button>
       </template>
     </el-dialog>
@@ -733,10 +831,11 @@
 </template>
 
 <script setup name="TeachingTask">
-import { listTeachingTask, getTeachingTask, delTeachingTask, addTeachingTask, updateTeachingTask, importTeachingTask } from '@/api/system/teachingTask'
+import { listTeachingTask, getTeachingTask, delTeachingTask, addTeachingTask, updateTeachingTask, importPreviewTeachingTask, importConfirmTeachingTask, downloadImportErrors } from '@/api/system/teachingTask'
 import UserSelect from '@/components/UserSelect/index.vue'
 import SemesterSelect from '@/components/SemesterSelect/index.vue'
 import { useUserMap } from '@/utils/userCache'
+import { saveBlobAsFile } from '@/utils/blobDownload'
 import { UploadFilled } from '@element-plus/icons-vue'
 import {
   educationLevelOptions, majorCategoryOptions, courseNatureOptions,
@@ -767,21 +866,32 @@ const title = ref('')
 const submitLoading = ref(false)
 const deletePending = ref(false)
 
-// 导入相关
+// 导入相关（两阶段：预检 → 确认）
 const importOpen = ref(false)
 const importPending = ref(false)
-const importLoading = ref(false)
+const previewLoading = ref(false)
+const confirmLoading = ref(false)
 const importFileList = ref([])
-const importResult = ref(null)
 const importFile = ref(null)
-// 导入类型：ALL 通用（G1~G6），G1/G2/G3 分类导入（下载模板与上传共用同一类别）
-const importTemplateType = ref('ALL')
-const importTemplateOptions = [
-  { value: 'ALL', label: '通用' },
-  { value: 'G1', label: 'G1 理论' },
-  { value: 'G2', label: 'G2 实践' },
-  { value: 'G3', label: 'G3 实习实训' }
-]
+const previewResult = ref(null)
+const confirmResult = ref(null)
+// 从 G1/G2/G3 分类入口菜单进入时记录的类别，仅用于提示，不再下发后端（后端两阶段不按类别锁定）
+const entryCategory = ref('')
+
+// 仅当已预检、0 阻断、且尚未确认过时才允许确认导入
+const canConfirm = computed(() =>
+  !!previewResult.value && previewResult.value.blockedCount === 0 && !confirmResult.value)
+
+// 存在阻断/失败批次时提供「下载错误行」入口
+const errorBatchId = computed(() => {
+  if (previewResult.value && previewResult.value.blockedCount > 0) {
+    return previewResult.value.batchId
+  }
+  if (confirmResult.value && confirmResult.value.failCount > 0) {
+    return confirmResult.value.batchId
+  }
+  return null
+})
 
 const data = reactive({
   form: {},
@@ -954,23 +1064,33 @@ function handleExport() {
 
 /** Excel 导入按钮操作 */
 function handleImport(templateType) {
-  importFileList.value = []
-  importResult.value = null
-  importFile.value = null
-  // 支持从 G1/G2/G3 分类入口菜单带类别打开；其余情况默认通用
+  resetImportState()
+  // 支持从 G1/G2/G3 分类入口菜单带类别打开；仅作提示，不影响后端解析
   const preset = typeof templateType === 'string' ? templateType.toUpperCase() : ''
-  importTemplateType.value = ['G1', 'G2', 'G3'].includes(preset) ? preset : 'ALL'
+  entryCategory.value = ['G1', 'G2', 'G3'].includes(preset) ? preset : ''
   importOpen.value = true
 }
 
-/** 文件选择 */
+/** 重置导入弹窗内的临时状态 */
+function resetImportState() {
+  importFileList.value = []
+  importFile.value = null
+  previewResult.value = null
+  confirmResult.value = null
+}
+
+/** 文件选择：换文件后清空既有预检/确认结果，强制重新预检 */
 function handleFileChange(file) {
   importFile.value = file.raw
+  previewResult.value = null
+  confirmResult.value = null
 }
 
 /** 移除已选文件 */
 function handleFileRemove() {
   importFile.value = null
+  previewResult.value = null
+  confirmResult.value = null
 }
 
 /** 文件数量超出限制 */
@@ -978,16 +1098,47 @@ function handleExceed() {
   proxy.$modal.msgWarning('只能上传 1 个文件，请先移除已选文件')
 }
 
-/** 下载导入模板（与上传共用当前选中的类别） */
-function handleDownloadTemplate() {
-  const type = importTemplateType.value
-  const params = type && type !== 'ALL' ? { templateType: type } : {}
-  const suffix = type && type !== 'ALL' ? `_${type}` : ''
-  proxy.download('system/teachingTask/importTemplate', params, `教学任务导入模板${suffix}.xlsx`)
+/** 行状态标签配色 */
+function rowStatusType(status) {
+  switch (status) {
+  case 'READY':
+  case 'IMPORTED':
+    return 'success'
+  case 'SKIPPED':
+    return 'info'
+  case 'BLOCKED':
+  case 'FAILED':
+    return 'danger'
+  default:
+    return ''
+  }
 }
 
-/** 提交导入 */
-async function submitImport() {
+/** 下载导入模板（统一下载 V2 通用双 Sheet 模板；后端 importTemplate 只认 version） */
+function handleDownloadTemplate() {
+  proxy.download('system/teachingTask/importTemplate', { version: 'V2' }, '教学任务导入模板.xlsx')
+}
+
+/** 下载错误行清单（BLOCKED/FAILED） */
+async function handleDownloadErrors() {
+  const batchId = errorBatchId.value
+  if (!batchId) {
+    return
+  }
+  try {
+    const data = await downloadImportErrors(batchId)
+    await saveBlobAsFile(data, `导入错误行_批次${batchId}.xlsx`)
+  } catch (err) {
+    if (err?.message) {
+      // saveBlobAsFile 已弹出后端错误消息，这里避免重复提示
+      return
+    }
+    proxy.$modal.msgError('下载错误行失败')
+  }
+}
+
+/** 第一步：预检 */
+async function submitPreview() {
   if (importPending.value) {
     return
   }
@@ -996,14 +1147,44 @@ async function submitImport() {
     return
   }
   importPending.value = true
+  previewLoading.value = true
   try {
-    await proxy.$modal.confirm('确认导入所选 Excel 文件中的教学任务？')
-    importLoading.value = true
-    importResult.value = null
-    const response = await importTeachingTask(importFile.value, importTemplateType.value)
-    importResult.value = response.data
+    previewResult.value = null
+    confirmResult.value = null
+    const response = await importPreviewTeachingTask(importFile.value, 'V2')
+    previewResult.value = response.data
+    if (response.data.blockedCount > 0) {
+      proxy.$modal.msgWarning(`预检发现 ${response.data.blockedCount} 行阻断，请下载错误行修正后重新上传`)
+    } else {
+      proxy.$modal.msgSuccess(`预检通过，可导入 ${response.data.readyCount} 行，请点击「确认导入」`)
+    }
+  } catch (err) {
+    proxy.$modal.msgError('预检失败: ' + (err?.message || '未知错误'))
+  } finally {
+    previewLoading.value = false
+    importPending.value = false
+  }
+}
+
+/** 第二步：确认导入 */
+async function submitConfirm() {
+  if (importPending.value || !canConfirm.value) {
+    return
+  }
+  importPending.value = true
+  try {
+    await proxy.$modal.confirm(`确认导入本批次 ${previewResult.value.readyCount} 条教学任务？`)
+    confirmLoading.value = true
+    const response = await importConfirmTeachingTask({
+      batchId: previewResult.value.batchId,
+      confirmToken: previewResult.value.confirmToken,
+      updateSupport: false
+    })
+    confirmResult.value = response.data
     if (response.data.failCount === 0) {
-      proxy.$modal.msgSuccess(`导入成功，共 ${response.data.successCount} 条`)
+      proxy.$modal.msgSuccess(`导入完成：成功 ${response.data.successCount} 条，跳过 ${response.data.skipCount} 条`)
+    } else {
+      proxy.$modal.msgWarning(`导入完成，但有 ${response.data.failCount} 条失败，可下载错误行查看`)
     }
     if (response.data.successCount > 0) {
       getList()
@@ -1013,7 +1194,7 @@ async function submitImport() {
       proxy.$modal.msgError('导入失败: ' + (err?.message || '未知错误'))
     }
   } finally {
-    importLoading.value = false
+    confirmLoading.value = false
     importPending.value = false
   }
 }
@@ -1038,13 +1219,7 @@ if (['G1', 'G2', 'G3'].includes(String(route.query.templateType || '').toUpperCa
   margin-bottom: 16px;
 }
 
-.import-type-label {
-  margin-bottom: 8px;
-  font-size: 13px;
-  color: var(--el-text-color-regular);
-}
-
-.import-type-picker .form-tip {
-  margin: 8px 0 0 0;
+.import-type-picker .import-tip {
+  margin: 0 0 6px 0;
 }
 </style>

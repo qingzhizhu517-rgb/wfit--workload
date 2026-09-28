@@ -43,19 +43,42 @@ export function delTeachingTask(id) {
   })
 }
 
-// Excel 导入教学任务
-// templateType 省略或 'ALL' 走通用导入（放行 G1~G6）；G1/G2/G3 为分类导入（后端写库前锁定类别）
-export function importTeachingTask(file, templateType) {
+// 两阶段导入 · 预检：仅解析「导入数据」页并逐行落暂存表，零业务写入。
+// 返回 AjaxResult.data = ImportPreviewResponse
+// （batchId / importType / templateVersion / totalCount / readyCount / blockedCount /
+//   rows[rowNo,userCode,userName,status,errorCode,errorMessage] / warnings / confirmToken）
+// templateVersion 省略时不带参数，后端默认 V2。
+export function importPreviewTeachingTask(file, templateVersion) {
   const formData = new FormData()
   formData.append('file', file)
   return request({
-    url: '/system/teachingTask/importExcel',
+    url: '/system/teachingTask/importPreview',
     method: 'post',
     // 必须显式指定 multipart，否则会命中 axios 全局默认的 application/json 头，
     // 浏览器不生成 boundary，后端 @RequestParam("file") 解析失败（MultipartException）
     headers: { 'Content-Type': 'multipart/form-data' },
-    // templateType 作为查询参数透传；省略/ALL 时不带，保持向后兼容
-    params: templateType && templateType !== 'ALL' ? { templateType } : {},
+    params: templateVersion ? { templateVersion } : {},
     data: formData
+  })
+}
+
+// 两阶段导入 · 确认：校验令牌与 0 阻断后按 row_no 回放写库。
+// data = { batchId, confirmToken, updateSupport }
+// 返回 AjaxResult.data = ImportResult（successCount / failCount / skipCount / getTotalCount / errors / batchId）
+export function importConfirmTeachingTask(data) {
+  return request({
+    url: '/system/teachingTask/importConfirm',
+    method: 'post',
+    data: data
+  })
+}
+
+// 下载导入批次的错误行清单（BLOCKED/FAILED），仅 6 列白名单字段。
+// 后端为 GET + HttpServletResponse 直接写字节流，需配合 saveBlobAsFile 落盘。
+export function downloadImportErrors(batchId) {
+  return request({
+    url: '/system/importBatch/' + batchId + '/errors',
+    method: 'get',
+    responseType: 'blob'
   })
 }
