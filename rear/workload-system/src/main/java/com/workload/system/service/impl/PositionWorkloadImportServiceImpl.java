@@ -22,6 +22,7 @@ import org.springframework.util.StringUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.workload.common.core.domain.entity.SysUser;
 import com.workload.common.exception.ServiceException;
+import com.workload.common.utils.DateUtils;
 import com.workload.common.utils.SecurityUtils;
 import com.workload.common.utils.excel.ExcelReadUtil;
 import com.workload.common.utils.excel.ImportResult;
@@ -220,7 +221,11 @@ public class PositionWorkloadImportServiceImpl implements IPositionWorkloadImpor
             PositionWorkloadImportDTO dto = fromJson(row.getNormalizedJson());
             try
             {
-                if (dto != null && isDuplicate(dto, batchNo))
+                if (dto == null)
+                {
+                    throw new ServiceException("暂存行解析为空，无法确认导入");
+                }
+                if (isDuplicate(dto, batchNo))
                 {
                     row.setStatus("SKIPPED");
                     row.setErrorCode("DUPLICATE");
@@ -249,6 +254,9 @@ public class PositionWorkloadImportServiceImpl implements IPositionWorkloadImpor
         }
 
         // 3) 回写批次真实计数（confirm 阶段的 SKIPPED/FAILED 覆盖 preview 的 ready/blocked 值）
+        //    同步内存 status=2 已导入：batch 是认领前(status=1)加载的，若不同步，RuoYi 动态 update
+        //    会以旧值 status=1 覆盖回去，撤销 markConfirmed 的 1→2，破坏文件去重(需 status=2)与 markFailed。
+        batch.setStatus(2);
         batch.setSuccessCount((long) result.getSuccessCount());
         batch.setFailCount((long) result.getFailCount());
         batch.setTotalCount((long) result.getTotalCount());
@@ -288,6 +296,9 @@ public class PositionWorkloadImportServiceImpl implements IPositionWorkloadImpor
         assignment.setRoleType(StringUtils.hasText(dto.getPositionName()) ? dto.getPositionName() : "岗位减免");
         assignment.setSourceBatchId(batchNo);
         assignment.setStatus(1);
+        // start_date 列 NOT NULL 无默认值；新学期值模型不按任职日期折算（不除2/不折算），
+        // 日期无业务含义，落导入当日以满足约束，end_date 留空(至今)。
+        assignment.setStartDate(DateUtils.getNowDate());
         assignment.setRemark(dto.getRemark());
         assignment.setCreateTime(new Date());
         roleAssignmentMapper.insertBizRoleAssignment(assignment);

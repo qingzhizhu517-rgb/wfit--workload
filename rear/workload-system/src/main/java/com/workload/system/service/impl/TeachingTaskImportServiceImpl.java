@@ -407,7 +407,11 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
             TeachingTaskImportDTO dto = fromJson(row.getNormalizedJson());
             try
             {
-                if (dto != null && isDuplicate(dto))
+                if (dto == null)
+                {
+                    throw new ServiceException("暂存行解析为空，无法确认导入");
+                }
+                if (isDuplicate(dto))
                 {
                     row.setStatus("SKIPPED");
                     row.setErrorCode("DUPLICATE");
@@ -439,6 +443,9 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
 
         // 3) 回写批次真实计数（confirm 阶段的 SKIPPED/FAILED 覆盖 preview 的 ready/blocked 值，
         //    否则 biz_import_batch 计数停留在预检口径，审计时与实际结果不符）。
+        //    同步内存 status=2 已导入：batch 是认领前(status=1)加载的，若不同步，RuoYi 动态 update
+        //    会以旧值 status=1 覆盖回去，撤销 markConfirmed 的 1→2，破坏文件去重(需 status=2)与 markFailed。
+        batch.setStatus(2);
         batch.setSuccessCount((long) result.getSuccessCount());
         batch.setFailCount((long) result.getFailCount());
         batch.setTotalCount((long) result.getTotalCount());
