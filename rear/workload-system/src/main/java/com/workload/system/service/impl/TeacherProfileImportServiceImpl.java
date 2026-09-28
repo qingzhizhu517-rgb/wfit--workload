@@ -1,8 +1,16 @@
 package com.workload.system.service.impl;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
@@ -14,6 +22,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import com.alibaba.excel.EasyExcel;
+import com.alibaba.excel.context.AnalysisContext;
+import com.alibaba.excel.event.AnalysisEventListener;
 import com.workload.common.exception.ServiceException;
 import com.workload.common.utils.DateUtils;
 import com.workload.common.utils.SecurityUtils;
@@ -21,6 +32,9 @@ import com.workload.common.core.domain.entity.SysDept;
 import com.workload.common.core.domain.entity.SysUser;
 import com.workload.system.domain.BizTeacherProfile;
 import com.workload.system.domain.dto.TeacherProfileImportDTO;
+import com.workload.system.domain.dto.TeacherRosterImportDTO;
+import com.workload.system.domain.dto.importing.ImportRowView;
+import com.workload.system.domain.dto.importing.TeacherRosterPreviewResponse;
 import com.workload.system.mapper.BizTeacherProfileMapper;
 import com.workload.system.service.ITeacherProfileImportService;
 import com.workload.system.service.ISysDeptService;
@@ -260,6 +274,290 @@ public class TeacherProfileImportServiceImpl implements ITeacherProfileImportSer
             profile.setCreateBy(SecurityUtils.getUsername());
             profile.setCreateTime(DateUtils.getNowDate());
             teacherProfileMapper.insertBizTeacherProfile(profile);
+        }
+    }
+
+    // ==================== 花名册字段白名单预检（Task 6，preview-only） ====================
+
+    /** 花名册 Sheet1 表头名 → 白名单字段的显式映射：仅这些列会被读入 DTO，其余列（含敏感列）一律忽略。 */
+    private static final Map<String, java.util.function.BiConsumer<TeacherRosterImportDTO, String>> ROSTER_WHITELIST =
+            buildRosterWhitelist();
+
+    /** 敏感列关键字：表头包含任一关键字即判为敏感列（只提示表头名，绝不读取其值）。 */
+    private static final String[] SENSITIVE_KEYWORDS = {
+            "身份证", "住址", "家庭住址", "现住址", "银行卡", "开户行", "卡号",
+            "籍贯", "户籍", "出生", "民族", "政治面貌"};
+
+    /** 岗位 → 人员性质自动映射（默认口径，可后续配置化）。未命中即进入待确认队列并阻断。 */
+    private static final Map<String, String> NATURE_MAPPING = Map.of(
+            "教师", "专任",
+            "银铃教师", "银龄",
+            "银龄教师", "银龄");
+
+    /** 已知职称集合：命中即可映射；「无」「讲师待遇」等未命中值进入待确认并阻断。 */
+    private static final Set<String> KNOWN_TITLES = Set.of("教授", "副教授", "讲师", "助教", "未定级");
+
+    private static Map<String, java.util.function.BiConsumer<TeacherRosterImportDTO, String>> buildRosterWhitelist()
+    {
+        Map<String, java.util.function.BiConsumer<TeacherRosterImportDTO, String>> map = new HashMap<>();
+        map.put("系", TeacherRosterImportDTO::setDepartmentName);
+        map.put("教研室", TeacherRosterImportDTO::setTeachingOffice);
+        map.put("员工姓名", TeacherRosterImportDTO::setNickName);
+        map.put("职务", TeacherRosterImportDTO::setPositionName);
+        map.put("岗位", TeacherRosterImportDTO::setEmploymentType);
+        map.put("职称", TeacherRosterImportDTO::setTitle);
+        map.put("工号", TeacherRosterImportDTO::setUserCode);
+        map.put("联系方式", TeacherRosterImportDTO::setPhonenumber);
+        map.put("职务匹配工作量", (dto, v) -> dto.setPositionWorkload(parseDecimal(v)));
+        return map;
+    }
+
+    private static BigDecimal parseDecimal(String v)
+    {
+        if (!StringUtils.hasText(v))
+        {
+            return null;
+        }
+        try
+        {
+            return new BigDecimal(v.trim());
+        }
+        catch (NumberFormatException e)
+        {
+            return null;
+        }
+    }
+
+    /** 解析出的一行：物理行号 + 白名单字段。 */
+    private record RosterRow(int rowNo, TeacherRosterImportDTO dto)
+    {
+    }
+
+    @Override
+    public TeacherRosterPreviewResponse previewRoster(InputStream input, String fileName)
+    {
+        byte[] bytes = readAllBytes(input);
+
+        List<RosterRow> parsed = new ArrayList<>();
+        List<String> allHeaders = new ArrayList<>();
+        // 按列名显式挑白名单列读入 DTO；敏感列的值绝不进入任何字段（无论列序如何）。
+        parseRosterWhitelist(bytes, parsed, allHeaders);
+
+        return buildPreview(parsed, allHeaders);
+    }
+
+    /**
+     * 用 Map 读取花名册：invokeHeadMap 拿到全部表头名并只锁定白名单列的列索引；
+     * invoke 时<b>只</b>按白名单列索引取值写入 DTO，敏感列索引一律不读，从根上杜绝敏感值进入内存后续流程。
+     */
+    private void parseRosterWhitelist(byte[] bytes, List<RosterRow> parsed, List<String> allHeaders)
+    {
+        EasyExcel.read(new ByteArrayInputStream(bytes), new AnalysisEventListener<Map<Integer, String>>()
+        {
+            /** 列索引 → 白名单字段 setter（仅白名单列入表，敏感列不入表故永不被读值）。 */
+            private final Map<Integer, java.util.function.BiConsumer<TeacherRosterImportDTO, String>> whitelistCols =
+                    new HashMap<>();
+
+            @Override
+            public void invokeHeadMap(Map<Integer, String> headMap, AnalysisContext context)
+            {
+                headMap.forEach((idx, name) ->
+                {
+                    if (name == null)
+                    {
+                        return;
+                    }
+                    String header = name.trim();
+                    allHeaders.add(header);
+                    java.util.function.BiConsumer<TeacherRosterImportDTO, String> setter = ROSTER_WHITELIST.get(header);
+                    if (setter != null)
+                    {
+                        whitelistCols.put(idx, setter);
+                    }
+                });
+            }
+
+            @Override
+            public void invoke(Map<Integer, String> rowData, AnalysisContext context)
+            {
+                TeacherRosterImportDTO dto = new TeacherRosterImportDTO();
+                // 只遍历白名单列索引取值；敏感列索引不在 whitelistCols 中，其值绝不被读取
+                whitelistCols.forEach((idx, setter) -> setter.accept(dto, rowData.get(idx)));
+                int rowNo = context.readRowHolder().getRowIndex();
+                parsed.add(new RosterRow(rowNo, dto));
+            }
+
+            @Override
+            public void doAfterAllAnalysed(AnalysisContext context)
+            {
+                // 无需收尾
+            }
+        }).sheet().doRead();
+    }
+
+    /** 由解析结果计算统计、异常队列与逐行视图（纯内存，不落任何表）。 */
+    private TeacherRosterPreviewResponse buildPreview(List<RosterRow> parsed, List<String> allHeaders)
+    {
+        // 1) 工号计数（用于重复判定）
+        Map<String, Integer> codeCounts = new LinkedHashMap<>();
+        for (RosterRow r : parsed)
+        {
+            String code = trimToNull(r.dto().getUserCode());
+            if (code != null)
+            {
+                codeCounts.merge(code, 1, Integer::sum);
+            }
+        }
+        List<String> duplicateCodes = new ArrayList<>();
+        codeCounts.forEach((code, cnt) ->
+        {
+            if (cnt > 1)
+            {
+                duplicateCodes.add(code);
+            }
+        });
+        // 重复工号 → 出现的行号，供警告定位
+        Map<String, List<Integer>> dupRowNos = new LinkedHashMap<>();
+
+        // 2) 逐行判定 + 统计
+        Map<String, Integer> deptCounts = new LinkedHashMap<>();
+        Map<String, Integer> employmentTypeCounts = new LinkedHashMap<>();
+        Set<String> unresolvedTitles = new LinkedHashSet<>();
+        Set<String> unresolvedNatures = new LinkedHashSet<>();
+        List<ImportRowView> rows = new ArrayList<>();
+        int ready = 0;
+        int blocked = 0;
+
+        for (RosterRow r : parsed)
+        {
+            TeacherRosterImportDTO dto = r.dto();
+            String code = trimToNull(dto.getUserCode());
+            String title = trimToNull(dto.getTitle());
+            String employment = trimToNull(dto.getEmploymentType());
+
+            deptCounts.merge(defaultLabel(dto.getDepartmentName()), 1, Integer::sum);
+            employmentTypeCounts.merge(defaultLabel(dto.getEmploymentType()), 1, Integer::sum);
+
+            List<String> reasons = new ArrayList<>();
+            if (code == null)
+            {
+                reasons.add("工号不能为空");
+            }
+            else if (codeCounts.getOrDefault(code, 0) > 1)
+            {
+                reasons.add("工号重复：" + code);
+                dupRowNos.computeIfAbsent(code, k -> new ArrayList<>()).add(r.rowNo());
+            }
+            if (!StringUtils.hasText(dto.getNickName()))
+            {
+                reasons.add("员工姓名不能为空");
+            }
+            if (title == null || !KNOWN_TITLES.contains(title))
+            {
+                unresolvedTitles.add(title == null ? "(空)" : title);
+                reasons.add("职称未映射：" + (title == null ? "(空)" : title));
+            }
+            if (employment == null || !NATURE_MAPPING.containsKey(employment))
+            {
+                unresolvedNatures.add(employment == null ? "(空)" : employment);
+                reasons.add("人员性质待确认（岗位=" + (employment == null ? "(空)" : employment) + "）");
+            }
+
+            String status = reasons.isEmpty() ? "READY" : "BLOCKED";
+            if (reasons.isEmpty())
+            {
+                ready++;
+            }
+            else
+            {
+                blocked++;
+            }
+            rows.add(new ImportRowView(r.rowNo(), code, trimToNull(dto.getNickName()), status,
+                    reasons.isEmpty() ? null : "VALIDATION",
+                    reasons.isEmpty() ? null : truncate(String.join("；", reasons), 500)));
+        }
+
+        // 3) 敏感列表头（只名不含值）
+        List<String> sensitiveHeaders = new ArrayList<>();
+        for (String header : allHeaders)
+        {
+            if (isSensitiveHeader(header) && !sensitiveHeaders.contains(header))
+            {
+                sensitiveHeaders.add(header);
+            }
+        }
+
+        // 4) 警告
+        List<String> warnings = new ArrayList<>();
+        warnings.add("本次为教师档案字段参考预检，不会导入任何真实教师，仅用于字段白名单核对与异常报告");
+        dupRowNos.forEach((code, rowNos) ->
+                warnings.add("工号 " + code + " 重复，出现在第 " + rowNos + " 行（物理行号，含表头 0 基），须人工选择保留或合并，系统不自动合并"));
+        if (!sensitiveHeaders.isEmpty())
+        {
+            warnings.add("检测到敏感列（" + String.join("、", sensitiveHeaders) + "），已忽略不予读取或落库，仅提示表头");
+        }
+        if (blocked > 0)
+        {
+            warnings.add("有 " + blocked + " 行被阻断（重复工号/未知职称/待确认人员性质/缺必填）");
+        }
+
+        int uniqueCodes = codeCounts.size();
+        return new TeacherRosterPreviewResponse(parsed.size(), ready, blocked, uniqueCodes,
+                duplicateCodes, deptCounts, employmentTypeCounts,
+                new ArrayList<>(unresolvedTitles), new ArrayList<>(unresolvedNatures),
+                sensitiveHeaders, rows, warnings);
+    }
+
+    private static boolean isSensitiveHeader(String header)
+    {
+        if (!StringUtils.hasText(header))
+        {
+            return false;
+        }
+        for (String kw : SENSITIVE_KEYWORDS)
+        {
+            if (header.contains(kw))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static String trimToNull(String s)
+    {
+        if (s == null)
+        {
+            return null;
+        }
+        String t = s.trim();
+        return t.isEmpty() ? null : t;
+    }
+
+    private static String defaultLabel(String s)
+    {
+        String t = trimToNull(s);
+        return t == null ? "(未填写)" : t;
+    }
+
+    private static String truncate(String s, int max)
+    {
+        if (s == null)
+        {
+            return null;
+        }
+        return s.length() > max ? s.substring(0, max) : s;
+    }
+
+    private byte[] readAllBytes(InputStream input)
+    {
+        try
+        {
+            return input.readAllBytes();
+        }
+        catch (IOException e)
+        {
+            throw new ServiceException("读取花名册文件失败：" + e.getMessage());
         }
     }
 }

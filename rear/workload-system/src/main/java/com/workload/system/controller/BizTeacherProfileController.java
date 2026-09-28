@@ -98,6 +98,25 @@ public class BizTeacherProfileController extends BaseController
     }
 
     /**
+     * 教师花名册字段白名单预检（Task 6，preview-only）。
+     * <p>
+     * 只解析、只统计、只脱敏报告，<b>不写任何业务表、不导入真实教师</b>；本任务不提供 confirm 端点。
+     * 敏感列（身份证/住址等）只提示表头名，其值绝不读取或落库。权限沿用 {@code system:teacherProfile:import}。
+     */
+    @PreAuthorize("@ss.hasPermi('system:teacherProfile:import')")
+    @Log(title = "教师花名册字段预检", businessType = BusinessType.OTHER)
+    @PostMapping("/importPreview")
+    public AjaxResult importPreview(@RequestParam("file") MultipartFile file) throws Exception
+    {
+        String invalidMsg = ImportFileValidator.validateExcelFile(file, importMaxSizeMb);
+        if (invalidMsg != null)
+        {
+            return error(invalidMsg);
+        }
+        return success(teacherProfileImportService.previewRoster(file.getInputStream(), file.getOriginalFilename()));
+    }
+
+    /**
      * 下载导入模板
      */
     @PreAuthorize("@ss.hasPermi('system:teacherProfile:import')")
