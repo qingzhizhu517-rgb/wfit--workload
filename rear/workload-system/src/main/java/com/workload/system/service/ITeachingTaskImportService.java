@@ -65,8 +65,24 @@ public interface ITeachingTaskImportService
     ImportPreviewResponse preview(InputStream input, String fileName, String templateVersion);
 
     /**
+     * 两阶段导入 · 预检（分类模板版）：在通用预检基础上，按 {@code templateType} 锁定类别。
+     * <p>
+     * {@code templateType=ALL} 放行 G1~G6；{@code G1/G2/G3} 时，数据页中类别不符的行判
+     * {@code BLOCKED}（错误信息含「模板类别 Gx」），不计入 readyCount。批次落
+     * {@code template_category}，供确认阶段二次闸门读取。{@code null}/空按 {@code ALL}。
+     *
+     * @param input           源文件输入流
+     * @param fileName        原始文件名
+     * @param templateVersion 模板版本 V1/V2（空按 V2）
+     * @param templateType    模板类别 ALL/G1/G2/G3（空按 ALL）
+     * @return 预检结果
+     */
+    ImportPreviewResponse preview(InputStream input, String fileName, String templateVersion, String templateType);
+
+    /**
      * 两阶段导入 · 确认：校验批次可确认（待确认+令牌匹配+0 阻断）后，按 {@code row_no} 顺序
-     * 回放 {@link #processSingleRow}（templateType=ALL，保留冻结 guard/快照/afterCalculated）。
+     * 回放 {@link #processSingleRow}（templateType 取批次 {@code template_category}，
+     * 保留冻结 guard/快照/afterCalculated；即便预检漏判，确认阶段仍按批次类别拦错类行）。
      * <p>
      * 幂等键为（工号,学期,课程代码,班级,类别）：命中则该行 SKIPPED（不静默覆盖），
      * 成功 IMPORTED、异常 FAILED；最后把批次固化到已导入(2)。

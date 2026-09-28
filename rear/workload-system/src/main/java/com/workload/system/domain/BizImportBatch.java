@@ -57,6 +57,9 @@ public class BizImportBatch extends BaseEntity
     /** 模板版本 V1/V2/ROSTER_V1/ROLE_V1 */
     private String templateVersion;
 
+    /** 模板类别 ALL/G1/G2/G3（分类导入锁定：与 templateVersion 版式无关） */
+    private String templateCategory;
+
     /** 源文件 SHA-256 */
     private String sourceHash;
 
@@ -80,6 +83,16 @@ public class BizImportBatch extends BaseEntity
     public String getTemplateVersion()
     {
         return templateVersion;
+    }
+
+    public void setTemplateCategory(String templateCategory)
+    {
+        this.templateCategory = templateCategory;
+    }
+
+    public String getTemplateCategory()
+    {
+        return templateCategory;
     }
 
     public void setSourceHash(String sourceHash)
@@ -246,6 +259,7 @@ public class BizImportBatch extends BaseEntity
             .append("status", getStatus())
             .append("errorSummary", getErrorSummary())
             .append("templateVersion", getTemplateVersion())
+            .append("templateCategory", getTemplateCategory())
             .append("sourceHash", getSourceHash())
             .append("operatorId", getOperatorId())
             .append("operatorName", getOperatorName())

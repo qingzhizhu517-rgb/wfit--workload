@@ -8,7 +8,8 @@
 --
 -- 内容：
 --   1) biz_import_batch 增加 template_version / source_hash / operator_id /
---      operator_name / confirm_token_hash / confirmed_at 六列（两阶段导入契约）
+--      operator_name / confirm_token_hash / confirmed_at 六列（两阶段导入契约），
+--      并补 template_category 一列（分类导入锁定 ALL/G1/G2/G3，默认 ALL）
 --   2) 建 biz_import_row 逐行暂存表（预检落库 → 确认按 row_no 顺序回放）
 --   3) biz_import_batch 加普通索引 idx_import_source(import_type, source_hash)
 --      （去重在代码层判定，非唯一约束——见第 3 节说明）
@@ -82,6 +83,18 @@ SET @wfit_import_ddl = IF(
    WHERE table_schema = DATABASE() AND table_name = 'biz_import_batch'
      AND column_name = 'confirmed_at') = 0,
   'ALTER TABLE biz_import_batch ADD COLUMN confirmed_at DATETIME DEFAULT NULL COMMENT ''确认时间''',
+  'SELECT 1');
+PREPARE wfit_import_stmt FROM @wfit_import_ddl;
+EXECUTE wfit_import_stmt;
+DEALLOCATE PREPARE wfit_import_stmt;
+
+-- template_category：分类导入锁定类别（ALL/G1/G2/G3），与 template_version 版式严格分开。
+-- 默认 ALL，历史批次加列后即视为通用模板（放行 G1~G6），语义与代码 normalizeTemplateType 一致。
+SET @wfit_import_ddl = IF(
+  (SELECT COUNT(*) FROM information_schema.columns
+   WHERE table_schema = DATABASE() AND table_name = 'biz_import_batch'
+     AND column_name = 'template_category') = 0,
+  'ALTER TABLE biz_import_batch ADD COLUMN template_category VARCHAR(8) DEFAULT ''ALL'' COMMENT ''模板类别 ALL/G1/G2/G3（分类导入锁定，与版式 template_version 不同）''',
   'SELECT 1');
 PREPARE wfit_import_stmt FROM @wfit_import_ddl;
 EXECUTE wfit_import_stmt;

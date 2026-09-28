@@ -16,6 +16,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="status"    column="status"    />
         <result property="errorSummary"    column="error_summary"    />
         <result property="templateVersion"    column="template_version"    />
+        <result property="templateCategory"    column="template_category"    />
         <result property="sourceHash"    column="source_hash"    />
         <result property="operatorId"    column="operator_id"    />
         <result property="operatorName"    column="operator_name"    />
@@ -29,7 +30,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectBizImportBatchVo">
-        select id, batch_no, import_type, file_name, file_url, total_count, success_count, fail_count, status, error_summary, template_version, source_hash, operator_id, operator_name, confirm_token_hash, confirmed_at, create_by, create_time, update_by, update_time, remark from biz_import_batch
+        select id, batch_no, import_type, file_name, file_url, total_count, success_count, fail_count, status, error_summary, template_version, template_category, source_hash, operator_id, operator_name, confirm_token_hash, confirmed_at, create_by, create_time, update_by, update_time, remark from biz_import_batch
     </sql>
 
     <select id="selectBizImportBatchList" parameterType="BizImportBatch" resultMap="BizImportBatchResult">
@@ -65,6 +66,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="status != null">status,</if>
             <if test="errorSummary != null">error_summary,</if>
             <if test="templateVersion != null">template_version,</if>
+            <if test="templateCategory != null">template_category,</if>
             <if test="sourceHash != null">source_hash,</if>
             <if test="operatorId != null">operator_id,</if>
             <if test="operatorName != null">operator_name,</if>
@@ -87,6 +89,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="status != null">#{status},</if>
             <if test="errorSummary != null">#{errorSummary},</if>
             <if test="templateVersion != null">#{templateVersion},</if>
+            <if test="templateCategory != null">#{templateCategory},</if>
             <if test="sourceHash != null">#{sourceHash},</if>
             <if test="operatorId != null">#{operatorId},</if>
             <if test="operatorName != null">#{operatorName},</if>
@@ -113,6 +116,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="status != null">status = #{status},</if>
             <if test="errorSummary != null">error_summary = #{errorSummary},</if>
             <if test="templateVersion != null">template_version = #{templateVersion},</if>
+            <if test="templateCategory != null">template_category = #{templateCategory},</if>
             <if test="sourceHash != null">source_hash = #{sourceHash},</if>
             <if test="operatorId != null">operator_id = #{operatorId},</if>
             <if test="operatorName != null">operator_name = #{operatorName},</if>

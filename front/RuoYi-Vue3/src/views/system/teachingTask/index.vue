@@ -875,7 +875,7 @@ const importFileList = ref([])
 const importFile = ref(null)
 const previewResult = ref(null)
 const confirmResult = ref(null)
-// 从 G1/G2/G3 分类入口菜单进入时记录的类别，仅用于提示，不再下发后端（后端两阶段不按类别锁定）
+// 从 G1/G2/G3 分类入口菜单进入时记录的类别：既用于提示，也作为预检/模板下载的 templateType 下发后端锁定类别
 const entryCategory = ref('')
 
 // 仅当已预检、0 阻断、且尚未确认过时才允许确认导入
@@ -1065,7 +1065,7 @@ function handleExport() {
 /** Excel 导入按钮操作 */
 function handleImport(templateType) {
   resetImportState()
-  // 支持从 G1/G2/G3 分类入口菜单带类别打开；仅作提示，不影响后端解析
+  // 支持从 G1/G2/G3 分类入口菜单带类别打开；作为预检 templateType 下发后端锁定该类别
   const preset = typeof templateType === 'string' ? templateType.toUpperCase() : ''
   entryCategory.value = ['G1', 'G2', 'G3'].includes(preset) ? preset : ''
   importOpen.value = true
@@ -1114,9 +1114,13 @@ function rowStatusType(status) {
   }
 }
 
-/** 下载导入模板（统一下载 V2 通用双 Sheet 模板；后端 importTemplate 只认 version） */
+/** 下载导入模板（V2 通用双 Sheet 模板；分类入口带 templateType 仅用于文件名标注，列集不变） */
 function handleDownloadTemplate() {
-  proxy.download('system/teachingTask/importTemplate', { version: 'V2' }, '教学任务导入模板.xlsx')
+  const params = { version: 'V2' }
+  if (entryCategory.value) {
+    params.templateType = entryCategory.value
+  }
+  proxy.download('system/teachingTask/importTemplate', params, `教学任务导入模板${entryCategory.value ? '_' + entryCategory.value : ''}.xlsx`)
 }
 
 /** 下载错误行清单（BLOCKED/FAILED） */
@@ -1151,7 +1155,8 @@ async function submitPreview() {
   try {
     previewResult.value = null
     confirmResult.value = null
-    const response = await importPreviewTeachingTask(importFile.value, 'V2')
+    // 分类入口带类别锁定：entryCategory 为空则按 ALL（通用模板放行 G1~G6）
+    const response = await importPreviewTeachingTask(importFile.value, 'V2', entryCategory.value || 'ALL')
     previewResult.value = response.data
     if (response.data.blockedCount > 0) {
       proxy.$modal.msgWarning(`预检发现 ${response.data.blockedCount} 行阻断，请下载错误行修正后重新上传`)

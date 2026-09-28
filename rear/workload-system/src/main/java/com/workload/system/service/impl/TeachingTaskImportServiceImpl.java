@@ -240,7 +240,18 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
     @Transactional(rollbackFor = Exception.class)
     public ImportPreviewResponse preview(InputStream input, String fileName, String templateVersion)
     {
+        // 通用模板：等价 templateType=ALL，放行 G1~G6
+        return preview(input, fileName, templateVersion, "ALL");
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public ImportPreviewResponse preview(InputStream input, String fileName, String templateVersion,
+                                         String templateType)
+    {
         String version = normalizeTemplateVersion(templateVersion);
+        // 归一化并校验模板类别（ALL/G1/G2/G3）；null/空按 ALL 兼容
+        String template = normalizeTemplateType(templateType);
 
         // 读全字节：一份算 SHA-256 源哈希，一份喂 EasyExcel（流不可重复消费）
         byte[] bytes = readAllBytes(input);
@@ -254,7 +265,7 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
             throw new ServiceException("该文件已成功导入过（源文件哈希一致），请勿重复导入");
         }
 
-        // 1) 建批次（解析中 0），落模板版本/源哈希/操作者/一次性确认令牌哈希
+        // 1) 建批次（解析中 0），落模板版本/模板类别/源哈希/操作者/一次性确认令牌哈希
         String batchNo = "IMP-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
         String confirmToken = UUID.randomUUID().toString().replace("-", "");
         BizImportBatch batch = new BizImportBatch();
@@ -263,12 +274,14 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
         batch.setFileName(fileName);
         batch.setStatus(0);
         batch.setTemplateVersion(version);
+        // 模板类别落库：确认阶段二次闸门据此拦错类行（与 template_version 版式严格分开）
+        batch.setTemplateCategory(template);
         batch.setSourceHash(sourceHash);
         batch.setConfirmTokenHash(importTokenHasher.hash(confirmToken));
         fillOperator(batch);
         importBatchMapper.insertBizImportBatch(batch);
 
-        // 2) 逐行解析→校验→落 biz_import_row（预检零业务写入）
+        // 2) 逐行解析→校验（含分类闸门）→落 biz_import_row（预检零业务写入）
         List<ImportRowView> views = new ArrayList<>();
         int[] counts = new int[2]; // [0]=ready [1]=blocked
 
@@ -277,7 +290,7 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
             // V1 旧文件：读旧表头后转 v2 规范行，避免旧「基数」列被当作缺列全行拒绝
             ExcelReadUtil.readEachRowOfSheet(new ByteArrayInputStream(bytes), TeachingTaskImportV1DTO.class,
                     null, (v1, physicalRow) ->
-                            handlePreviewRow(batch.getId(), physicalRow, convertV1(v1), v1, views, counts));
+                            handlePreviewRow(batch.getId(), physicalRow, convertV1(v1), v1, template, views, counts));
         }
         else
         {
@@ -285,7 +298,7 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
             // 避免 /importExcel 默认 V2 却收到旧单 Sheet 文件时整批读空/报错。
             ExcelReadUtil.readEachRowOfSheetOrFirst(bytes, TeachingTaskImportDTO.class,
                     DATA_SHEET_NAME, (dto, physicalRow) ->
-                            handlePreviewRow(batch.getId(), physicalRow, dto, dto, views, counts));
+                            handlePreviewRow(batch.getId(), physicalRow, dto, dto, template, views, counts));
         }
 
         int total = counts[0] + counts[1];
@@ -312,17 +325,21 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
     }
 
     /**
-     * 预检单行：校验通过落 READY + normalized/raw JSON；失败落 BLOCKED + 错误信息。
+     * 预检单行：先校验必填字段，再按模板类别闸门校验行类别（templateType!=ALL 且行类别不符即阻断）；
+     * 通过落 READY + normalized/raw JSON，失败落 BLOCKED + 错误信息。
      * 绝不触碰教学任务/工作量主表，只写 biz_import_row。
      */
     private void handlePreviewRow(Long batchId, int physicalRow, TeachingTaskImportDTO normalized,
-                                  Object rawDto, List<ImportRowView> views, int[] counts)
+                                  Object rawDto, String templateType, List<ImportRowView> views, int[] counts)
     {
         String status;
         String errorMessage = null;
+        String errorCode = null;
         try
         {
             validateRow(normalized);
+            // 分类模板闸门：与写库前 processSingleRow 复用同一判定，错误信息含「模板类别 Gx」
+            assertTemplateType(normalized, templateType);
             status = "READY";
             counts[0]++;
         }
@@ -330,6 +347,7 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
         {
             status = "BLOCKED";
             errorMessage = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+            errorCode = "VALIDATION";
             counts[1]++;
         }
 
@@ -341,7 +359,7 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
         row.setStatus(status);
         if (errorMessage != null)
         {
-            row.setErrorCode("VALIDATION");
+            row.setErrorCode(errorCode);
             row.setErrorMessage(truncate(errorMessage, 500));
         }
         row.setCreateTime(new Date());
@@ -370,6 +388,9 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
             throw new ServiceException("导入批次不存在：" + request.batchId());
         }
         String batchNo = batch.getBatchNo();
+        // 确认阶段的分类闸门：读批次落库的 template_category（而非硬编码 ALL）。
+        // 即便预检漏判，确认回放时 processSingleRow 仍按此类别拦错类行；null/旧批次归一化为 ALL。
+        String category = normalizeTemplateType(batch.getTemplateCategory());
 
         // 入口原子认领批次(1→2)：并发双击时只有一个请求 markConfirmed 影响 1 行、得以继续；
         // 其余请求影响 0 行抛冲突并退出，绝不进入回放，从根本上杜绝重复 INSERT。
@@ -396,8 +417,9 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
                     result.addSkip();
                     continue;
                 }
-                // ALL 模板：确认阶段不再做分类闸门，保留 guard/快照/afterCalculated
-                proxy.processSingleRow(dto, batchNo, "ALL");
+                // 分类闸门读批次 template_category：确认阶段仍按批次类别校验行类别，
+                // 保留 guard/快照/afterCalculated
+                proxy.processSingleRow(dto, batchNo, category);
                 row.setStatus("IMPORTED");
                 row.setUpdateTime(new Date());
                 importRowMapper.updateBizImportRow(row);

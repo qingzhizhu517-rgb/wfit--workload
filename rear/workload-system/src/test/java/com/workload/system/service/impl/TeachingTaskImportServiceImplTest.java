@@ -584,6 +584,137 @@ class TeachingTaskImportServiceImplTest
         org.assertj.core.api.Assertions.assertThat(keyCaptor.getValue()).isEqualTo("测试课");
     }
 
+    /**
+     * 分类模板预检闸门：templateType=G1 时，数据页的 G2 行判 BLOCKED（不计入 readyCount），
+     * 错误信息含「模板类别 G1」；批次落 template_category=G1。G1 行仍 READY。
+     */
+    @Test
+    void previewTypedTemplateBlocksMismatchedCategoryRows() throws Exception
+    {
+        TeachingTaskImportServiceImpl service = new TeachingTaskImportServiceImpl();
+        com.workload.system.mapper.BizImportBatchMapper batchMapper =
+                mock(com.workload.system.mapper.BizImportBatchMapper.class);
+        com.workload.system.mapper.BizImportRowMapper rowMapper =
+                mock(com.workload.system.mapper.BizImportRowMapper.class);
+        com.workload.system.service.ImportPreviewStore previewStore =
+                mock(com.workload.system.service.ImportPreviewStore.class);
+        com.workload.system.service.ImportTokenHasher tokenHasher =
+                new com.workload.system.service.ImportTokenHasher();
+
+        setField(service, "importBatchMapper", batchMapper);
+        setField(service, "importRowMapper", rowMapper);
+        setField(service, "importPreviewStore", previewStore);
+        setField(service, "importTokenHasher", tokenHasher);
+
+        byte[] workbook = oneG1OneG2DataRows();
+        com.workload.system.domain.dto.importing.ImportPreviewResponse result =
+                service.preview(new java.io.ByteArrayInputStream(workbook), "typed.xlsx", "V2", "G1");
+
+        org.assertj.core.api.Assertions.assertThat(result.readyCount()).isEqualTo(1);
+        org.assertj.core.api.Assertions.assertThat(result.blockedCount()).isEqualTo(1);
+
+        // 批次落 template_category=G1
+        ArgumentCaptor<com.workload.system.domain.BizImportBatch> batchCaptor =
+                ArgumentCaptor.forClass(com.workload.system.domain.BizImportBatch.class);
+        verify(batchMapper).insertBizImportBatch(batchCaptor.capture());
+        org.assertj.core.api.Assertions.assertThat(batchCaptor.getValue().getTemplateCategory())
+                .isEqualTo("G1");
+
+        // G2 行 BLOCKED，错误信息含「模板类别 G1」
+        ArgumentCaptor<com.workload.system.domain.BizImportRow> rowCaptor =
+                ArgumentCaptor.forClass(com.workload.system.domain.BizImportRow.class);
+        verify(rowMapper, org.mockito.Mockito.times(2)).insertBizImportRow(rowCaptor.capture());
+        org.assertj.core.api.Assertions.assertThat(rowCaptor.getAllValues())
+                .anySatisfy(r -> {
+                    org.assertj.core.api.Assertions.assertThat(r.getStatus()).isEqualTo("BLOCKED");
+                    org.assertj.core.api.Assertions.assertThat(r.getErrorMessage()).contains("模板类别 G1");
+                });
+    }
+
+    /**
+     * 确认阶段的分类闸门读批次 template_category，而非硬编码 ALL：批次类别为 G2 时，
+     * processSingleRow 收到的第三参必须是 G2（即便预检漏判，确认仍按批次类别拦）。
+     */
+    @Test
+    void confirmUsesBatchTemplateCategoryNotHardcodedAll() throws Exception
+    {
+        TeachingTaskImportServiceImpl service = org.mockito.Mockito.spy(new TeachingTaskImportServiceImpl());
+        com.workload.system.mapper.BizImportBatchMapper batchMapper =
+                mock(com.workload.system.mapper.BizImportBatchMapper.class);
+        com.workload.system.mapper.BizImportRowMapper rowMapper =
+                mock(com.workload.system.mapper.BizImportRowMapper.class);
+        com.workload.system.mapper.BizTeachingTaskMapper taskMapper =
+                mock(com.workload.system.mapper.BizTeachingTaskMapper.class);
+        com.workload.system.service.ImportPreviewStore previewStore =
+                mock(com.workload.system.service.ImportPreviewStore.class);
+        ISysUserService sysUserService = mock(ISysUserService.class);
+        setField(service, "importBatchMapper", batchMapper);
+        setField(service, "importRowMapper", rowMapper);
+        setField(service, "teachingTaskMapper", taskMapper);
+        setField(service, "importPreviewStore", previewStore);
+        setField(service, "sysUserService", sysUserService);
+
+        com.workload.system.domain.BizImportBatch batch = new com.workload.system.domain.BizImportBatch();
+        batch.setId(100L);
+        batch.setBatchNo("IMP-CAT");
+        batch.setTemplateCategory("G2"); // 批次类别 G2
+        when(batchMapper.selectBizImportBatchById(100L)).thenReturn(batch);
+
+        com.workload.system.domain.BizImportRow row =
+                importRow(1, normalizedJson("G2", "T001", "CS201", "计算机2401"));
+        when(rowMapper.selectByBatchIdAndStatus(100L, "READY")).thenReturn(java.util.List.of(row));
+        com.workload.common.core.domain.entity.SysUser u1 = new com.workload.common.core.domain.entity.SysUser();
+        u1.setUserId(1001L);
+        when(sysUserService.selectUserByUserName("T001")).thenReturn(u1);
+        when(taskMapper.countImportedTask(eq(1001L), any(), eq("测试课"), eq("计算机2401"), eq("G2"))).thenReturn(0);
+
+        org.mockito.Mockito.doReturn(service).when(service).self();
+        org.mockito.Mockito.doReturn(java.math.BigDecimal.TEN).when(service)
+                .processSingleRow(any(TeachingTaskImportDTO.class),
+                        org.mockito.ArgumentMatchers.eq("IMP-CAT"), org.mockito.ArgumentMatchers.eq("G2"));
+
+        service.confirm(new com.workload.system.domain.dto.importing.ImportConfirmRequest(100L, "tok", false));
+
+        // 回放时第三参传批次类别 G2，而非 ALL
+        verify(service).processSingleRow(any(TeachingTaskImportDTO.class),
+                org.mockito.ArgumentMatchers.eq("IMP-CAT"), org.mockito.ArgumentMatchers.eq("G2"));
+    }
+
+    /** 构造 1 行 G1 + 1 行 G2 的 v2 双 Sheet 工作簿（用于分类模板预检闸门测试）。 */
+    private static byte[] oneG1OneG2DataRows() throws Exception
+    {
+        String[] headers = v2Headers();
+        try (org.apache.poi.ss.usermodel.Workbook wb = new org.apache.poi.xssf.usermodel.XSSFWorkbook();
+             java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream())
+        {
+            org.apache.poi.ss.usermodel.Sheet data = wb.createSheet("导入数据");
+            writeHeader(data, headers);
+            writeTypedDataRow(data, 1, "T001", "计算机2401", "G1");
+            writeTypedDataRow(data, 2, "T002", "计算机2402", "G2");
+            wb.write(out);
+            return out.toByteArray();
+        }
+    }
+
+    /** 写一行数据，工作量类别由 type 指定；G1/G2 均在「计划学时」列（13）填学时。 */
+    private static void writeTypedDataRow(org.apache.poi.ss.usermodel.Sheet sheet, int rowIdx,
+                                          String userCode, String className, String type)
+    {
+        org.apache.poi.ss.usermodel.Row r = sheet.createRow(rowIdx);
+        r.createCell(0).setCellValue("2025-2026-1");
+        r.createCell(1).setCellValue(userCode);
+        r.createCell(2).setCellValue("教师" + rowIdx);
+        r.createCell(3).setCellValue("高等数学");
+        r.createCell(4).setCellValue("MATH101");
+        r.createCell(5).setCellValue(type);
+        r.createCell(6).setCellValue("本科");
+        r.createCell(7).setCellValue("理工类");
+        r.createCell(8).setCellValue("必修");
+        r.createCell(12).setCellValue(50);      // 选课/指导人数
+        r.createCell(13).setCellValue(48);      // 计划学时（G1/G2 通用）
+        r.createCell(18).setCellValue(className); // 班级
+    }
+
     private static com.workload.system.domain.BizImportRow importRow(int rowNo, String normalizedJson)
     {
         com.workload.system.domain.BizImportRow row = new com.workload.system.domain.BizImportRow();

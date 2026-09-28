@@ -147,7 +147,7 @@ class BizTeachingTaskControllerTest
     void v2TemplateSeparatesInstructionsFromImportRows() throws Exception
     {
         MockHttpServletResponse response = new MockHttpServletResponse();
-        controller.importTemplate("V2", response);
+        controller.importTemplate("V2", null, response);
         try (Workbook wb = WorkbookFactory.create(new ByteArrayInputStream(response.getContentAsByteArray())))
         {
             Sheet dataSheet = wb.getSheet("导入数据");
@@ -206,7 +206,7 @@ class BizTeachingTaskControllerTest
         verify(teachingTaskImportService, never()).confirm(any());
     }
 
-    /** /importPreview 端点把上传文件与模板版本透传给服务预检。 */
+    /** /importPreview 端点把上传文件、模板版本与模板类别透传给服务预检。 */
     @Test
     void importPreviewDelegatesToService() throws Exception
     {
@@ -215,11 +215,27 @@ class BizTeachingTaskControllerTest
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", new byte[]{1, 2, 3});
         ImportPreviewResponse preview = new ImportPreviewResponse(9L, "TEACHING_TASK", "V2",
                 2, 2, 0, java.util.List.of(), java.util.List.of(), "tok");
-        when(teachingTaskImportService.preview(any(), eq("tasks.xlsx"), eq("V2"))).thenReturn(preview);
+        when(teachingTaskImportService.preview(any(), eq("tasks.xlsx"), eq("V2"), eq("ALL"))).thenReturn(preview);
 
-        controller.importPreview(file, "V2");
+        controller.importPreview(file, "V2", "ALL");
 
-        verify(teachingTaskImportService).preview(any(), eq("tasks.xlsx"), eq("V2"));
+        verify(teachingTaskImportService).preview(any(), eq("tasks.xlsx"), eq("V2"), eq("ALL"));
+    }
+
+    /** /importPreview 端点把分类模板类别（G1）透传给服务预检，用于分类导入锁定类别。 */
+    @Test
+    void importPreviewPassesTemplateTypeForTypedImport() throws Exception
+    {
+        ReflectionTestUtils.setField(controller, "importMaxSizeMb", 10L);
+        MockMultipartFile file = new MockMultipartFile("file", "tasks.xlsx",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", new byte[]{1, 2, 3});
+        ImportPreviewResponse preview = new ImportPreviewResponse(9L, "TEACHING_TASK", "V2",
+                2, 2, 0, java.util.List.of(), java.util.List.of(), "tok");
+        when(teachingTaskImportService.preview(any(), eq("tasks.xlsx"), eq("V2"), eq("G1"))).thenReturn(preview);
+
+        controller.importPreview(file, "V2", "G1");
+
+        verify(teachingTaskImportService).preview(any(), eq("tasks.xlsx"), eq("V2"), eq("G1"));
     }
 
     /** /importConfirm 端点把确认请求透传给服务确认。 */

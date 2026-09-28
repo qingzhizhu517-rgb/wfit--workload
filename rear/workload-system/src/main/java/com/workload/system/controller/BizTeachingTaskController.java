@@ -125,12 +125,16 @@ public class BizTeachingTaskController extends BaseController
     /**
      * 两阶段导入 · 预检：上传文件只解析「导入数据」页，逐行落 biz_import_row 暂存，
      * 绝不写业务表；返回可导入/被阻断行数与一次性确认令牌。
+     * <p>
+     * {@code templateType}（ALL/G1/G2/G3）用于分类导入锁定类别：非 ALL 时数据页中类别不符的行
+     * 判 BLOCKED，并落批次 template_category 供确认阶段二次闸门。省略即 ALL（通用模板）。
      */
     @PreAuthorize("@ss.hasPermi('system:teachingTask:import')")
     @Log(title = "教学任务导入预检", businessType = BusinessType.IMPORT)
     @PostMapping("/importPreview")
     public AjaxResult importPreview(@RequestParam("file") MultipartFile file,
-            @RequestParam(value = "templateVersion", required = false, defaultValue = "V2") String templateVersion)
+            @RequestParam(value = "templateVersion", required = false, defaultValue = "V2") String templateVersion,
+            @RequestParam(value = "templateType", required = false, defaultValue = "ALL") String templateType)
     {
         String invalidMsg = ImportFileValidator.validateExcelFile(file, importMaxSizeMb);
         if (invalidMsg != null)
@@ -140,7 +144,7 @@ public class BizTeachingTaskController extends BaseController
         try
         {
             ImportPreviewResponse preview = teachingTaskImportService.preview(
-                    file.getInputStream(), file.getOriginalFilename(), templateVersion);
+                    file.getInputStream(), file.getOriginalFilename(), templateVersion, templateType);
             return success("预检完成").put("data", preview);
         }
         catch (Exception e)
@@ -165,27 +169,33 @@ public class BizTeachingTaskController extends BaseController
     /**
      * 下载导入模板。
      * <p>
-     * V2（默认）返回双 Sheet 工作簿：「示例与说明」含 G1/G3/G4/G5/G6 五类示例（虚构「示例教师」标签），
-     * 「导入数据」仅表头零数据行——导入器只解析数据页，模板示例绝不入库。
+     * {@code version}（V1/V2）决定版式：V2（默认）返回双 Sheet 工作簿（「示例与说明」+「导入数据」），
      * V1 返回旧单 Sheet 兼容模板（17 列，含单一基数列）。
+     * {@code templateType}（ALL/G1/G2/G3）仅用于文件名/说明标注——模板列集不变，分类锁定靠导入时
+     * 预检/确认闸门校验，而非按类别裁列。两参均可省略，向后兼容。
      */
     @PreAuthorize("@ss.hasPermi('system:teachingTask:import')")
     @PostMapping("/importTemplate")
     public void importTemplate(@RequestParam(value = "version", required = false) String version,
+            @RequestParam(value = "templateType", required = false) String templateType,
             HttpServletResponse response) throws Exception
     {
         String v = StringUtils.hasText(version) ? version.trim().toUpperCase() : "V2";
+        // 类别仅用于文件名标注，不裁列；非法/空归 ALL（不加类别后缀）
+        String category = normalizeTemplateTypeLabel(templateType);
+        String suffix = "ALL".equals(category) ? "" : "_" + category;
         response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
 
         if ("V1".equals(v))
         {
-            response.setHeader("Content-Disposition", "attachment;filename=teachingTaskTemplate_V1.xlsx");
+            response.setHeader("Content-Disposition",
+                    "attachment;filename=teachingTaskTemplate_V1" + suffix + ".xlsx");
             EasyExcel.write(response.getOutputStream(), TeachingTaskImportV1DTO.class)
                     .sheet("教学任务导入模板").doWrite(new ArrayList<>());
             return;
         }
 
-        response.setHeader("Content-Disposition", "attachment;filename=teachingTaskTemplate.xlsx");
+        response.setHeader("Content-Disposition", "attachment;filename=teachingTaskTemplate" + suffix + ".xlsx");
         // 双 Sheet：说明页（含五类示例）+ 数据页（仅表头）。用同一 ExcelWriter 写两个 Sheet。
         try (com.alibaba.excel.ExcelWriter writer = EasyExcel.write(response.getOutputStream(),
                 TeachingTaskImportDTO.class).build())
@@ -195,6 +205,17 @@ public class BizTeachingTaskController extends BaseController
             WriteSheet data = EasyExcel.writerSheet(1, "导入数据").build();
             writer.write(new ArrayList<>(), data);
         }
+    }
+
+    /** 模板类别标签归一化（仅供文件名标注）：null/空/非法 → ALL；其余转大写限 G1/G2/G3。 */
+    private static String normalizeTemplateTypeLabel(String templateType)
+    {
+        if (!StringUtils.hasText(templateType))
+        {
+            return "ALL";
+        }
+        String t = templateType.trim().toUpperCase();
+        return ("G1".equals(t) || "G2".equals(t) || "G3".equals(t)) ? t : "ALL";
     }
 
     /**

@@ -48,16 +48,25 @@ export function delTeachingTask(id) {
 // （batchId / importType / templateVersion / totalCount / readyCount / blockedCount /
 //   rows[rowNo,userCode,userName,status,errorCode,errorMessage] / warnings / confirmToken）
 // templateVersion 省略时不带参数，后端默认 V2。
-export function importPreviewTeachingTask(file, templateVersion) {
+// templateType（ALL/G1/G2/G3）用于分类导入锁定类别：非 ALL 时数据页类别不符的行判 BLOCKED，
+// 并落批次 template_category 供确认阶段二次闸门；省略即 ALL（通用模板）。
+export function importPreviewTeachingTask(file, templateVersion, templateType) {
   const formData = new FormData()
   formData.append('file', file)
+  const params = {}
+  if (templateVersion) {
+    params.templateVersion = templateVersion
+  }
+  if (templateType) {
+    params.templateType = templateType
+  }
   return request({
     url: '/system/teachingTask/importPreview',
     method: 'post',
     // 必须显式指定 multipart，否则会命中 axios 全局默认的 application/json 头，
     // 浏览器不生成 boundary，后端 @RequestParam("file") 解析失败（MultipartException）
     headers: { 'Content-Type': 'multipart/form-data' },
-    params: templateVersion ? { templateVersion } : {},
+    params,
     data: formData
   })
 }

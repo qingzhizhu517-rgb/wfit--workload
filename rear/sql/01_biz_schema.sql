@@ -92,6 +92,7 @@ CREATE TABLE biz_import_batch (
   status               TINYINT(1)    DEFAULT 0                    COMMENT '0解析中/1待确认/2已导入/3已驳回/4失败',
   error_summary        VARCHAR(1000) DEFAULT NULL,
   template_version     VARCHAR(20)   DEFAULT NULL                 COMMENT '模板版本 V1/V2/ROSTER_V1/ROLE_V1',
+  template_category    VARCHAR(8)    DEFAULT 'ALL'                COMMENT '模板类别 ALL/G1/G2/G3（分类导入锁定，与版式 template_version 不同）',
   source_hash          CHAR(64)      DEFAULT NULL                 COMMENT '源文件SHA-256',
   operator_id          BIGINT(20)    DEFAULT NULL                 COMMENT '操作者用户ID',
   operator_name        VARCHAR(64)   DEFAULT NULL                 COMMENT '操作者用户名',
