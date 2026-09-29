@@ -17,7 +17,7 @@ import jakarta.servlet.http.HttpServletResponse;
  *
  * @author wflg
  */
-public interface Attachment1ExportService
+public interface IAttachment1ExportService
 {
     /**
      * 单教师附件1导出：无明细返回文本、有明细无汇总抛「先核算汇总」、否则写 xlsx。

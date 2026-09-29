@@ -29,7 +29,7 @@ import com.workload.system.domain.dto.PaySummaryExportDTO;
 import com.workload.system.domain.dto.PersonalWorkloadDetailExportDTO;
 import com.workload.system.calc.rule.RuleParamService;
 import com.workload.system.mapper.BizExportMapper;
-import com.workload.system.service.Attachment1ExportService;
+import com.workload.system.service.IAttachment1ExportService;
 import com.workload.system.service.ISysUserService;
 
 import jakarta.servlet.http.HttpServletResponse;
@@ -53,7 +53,7 @@ public class BizExportController extends BaseController
     private RuleParamService ruleParamService;
 
     @Autowired
-    private Attachment1ExportService attachment1ExportService;
+    private IAttachment1ExportService attachment1ExportService;
 
     /**
      * 导出个人工作量明细表（附件1格式）
@@ -100,7 +100,7 @@ public class BizExportController extends BaseController
      * 导出附件1（标准表一）：一行一开课任务，39 列 A~AM。
      * <p>
      * 与 {@code /personalWorkload}（追溯明细）并存：本端点对齐教务处「-新」模板。
-     * 参数校验与数据范围收口后委托 {@link Attachment1ExportService#writeSingle}——
+     * 参数校验与数据范围收口后委托 {@link IAttachment1ExportService#writeSingle}——
      * 模板渲染（三层表头、X/Y 文理分列、总计/签字/备注固定行、合并单元格、行数伸缩）
      * 已下沉到服务实现，Controller 只保留 HTTP 边界职责。
      * </p>
@@ -130,7 +130,7 @@ public class BizExportController extends BaseController
      * 与单人 GET 分权在于「批量属管理操作」：教师角色一律拒绝，且不允许「替换为本人后继续」，
      * 否则持有 {@code system:export:personal} 的教师能借 body 探测他人是否存在（横向越权）。
      * 学期/教师列表在委托导出服务前先做非空与去重校验；安全上限由服务端配置固定，
-     * 前端提示不能替代后端拒绝。实际渲染与阈值裁决在 {@link Attachment1ExportService#writeBatch} 内。
+     * 前端提示不能替代后端拒绝。实际渲染与阈值裁决在 {@link IAttachment1ExportService#writeBatch} 内。
      * </p>
      */
     @PreAuthorize("@ss.hasPermi('system:export:personal')")

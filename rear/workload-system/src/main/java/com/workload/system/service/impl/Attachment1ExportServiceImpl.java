@@ -35,7 +35,7 @@ import com.workload.system.domain.dto.Attachment1BatchRequest;
 import com.workload.system.domain.dto.Attachment1RowDTO;
 import com.workload.system.domain.dto.Attachment1TeacherDTO;
 import com.workload.system.mapper.BizExportMapper;
-import com.workload.system.service.Attachment1ExportService;
+import com.workload.system.service.IAttachment1ExportService;
 import com.workload.system.service.ISysUserService;
 
 import jakarta.servlet.http.HttpServletResponse;
@@ -59,7 +59,7 @@ import jakarta.servlet.http.HttpServletResponse;
  * @author wflg
  */
 @Service
-public class Attachment1ExportServiceImpl implements Attachment1ExportService
+public class Attachment1ExportServiceImpl implements IAttachment1ExportService
 {
     private static final Logger log = LoggerFactory.getLogger(Attachment1ExportServiceImpl.class);
 
@@ -208,10 +208,20 @@ public class Attachment1ExportServiceImpl implements Attachment1ExportService
                 {
                     assertRenderable(data);
                     XSSFSheet clone = out.cloneSheet(0);
-                    // cloneSheet 不复制打印设置（POI 限制，会打 WARN），手动从模板页补齐，保住版式保真度
-                    copyPrintSetup(out.getSheetAt(0), clone);
-                    fillAttachment1(clone, data.teacher(), data.rows(), semester);
-                    out.setSheetName(out.getSheetIndex(clone), uniqueSheetName(data, usedNames));
+                    try
+                    {
+                        // cloneSheet 不复制打印设置（POI 限制，会打 WARN），手动从模板页补齐，保住版式保真度
+                        copyPrintSetup(out.getSheetAt(0), clone);
+                        fillAttachment1(clone, data.teacher(), data.rows(), semester);
+                        out.setSheetName(out.getSheetIndex(clone), uniqueSheetName(data, usedNames));
+                    }
+                    catch (Exception fillEx)
+                    {
+                        // 填值中途失败：移除已创建但半填充的克隆页，否则产物会残留一个 POI 自动命名
+                        // 的垃圾 Sheet 且该教师又出现在失败清单，形成自相矛盾的工作簿
+                        out.removeSheetAt(out.getSheetIndex(clone));
+                        throw fillEx;
+                    }
                 }
                 catch (ServiceException se)
                 {
@@ -287,8 +297,18 @@ public class Attachment1ExportServiceImpl implements Attachment1ExportService
         try (InputStream is = template().getInputStream())
         {
             XSSFWorkbook wb = new XSSFWorkbook(is);
-            fillAttachment1(wb.getSheetAt(0), data.teacher(), data.rows(), semester);
-            return wb;
+            try
+            {
+                fillAttachment1(wb.getSheetAt(0), data.teacher(), data.rows(), semester);
+                return wb;
+            }
+            catch (Exception fillEx)
+            {
+                // 填值失败时 wb 不会被返回、调用方 try-with-resources 也拿不到它，
+                // 必须在此关闭，否则 OPCPackage/临时文件句柄泄漏（批量多教师失败会累积）
+                wb.close();
+                throw fillEx;
+            }
         }
     }
 
@@ -372,11 +392,13 @@ public class Attachment1ExportServiceImpl implements Attachment1ExportService
         return candidate;
     }
 
-    /** 文件名净化：移除路径分隔符与控制字符、中和 {@code ..}，防 ZIP 路径穿越 */
+    /** 文件名净化：移除路径分隔符/控制字符、中和 {@code ..}，并替换 Windows 非法文件名字符
+     *  {@code :*?<>|"}，与 {@link #safeSheetBase} 口径一致，避免解压端因非法名丢文件 */
     private String cleanFileNamePart(String name, Long userId)
     {
         String s = StringUtils.isEmpty(name) ? ("教师" + userId) : name.trim();
         s = s.replaceAll("[\\\\/\\r\\n\\t\\x00-\\x1f]", "_"); // 路径分隔符 + 控制字符
+        s = s.replaceAll("[:*?<>|\"\\[\\]]", "_"); // Windows 非法文件名字符（与 Sheet 名净化对齐）
         s = s.replace("..", "_"); // 中和目录穿越
         s = s.replaceAll("^\\.+", "_"); // 前导点
         return StringUtils.isEmpty(s.trim()) ? ("教师" + userId) : s.trim();
