@@ -3,6 +3,7 @@ package com.workload.system.service.impl;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -11,19 +12,32 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import java.math.BigDecimal;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import com.workload.common.exception.ServiceException;
 import com.workload.system.calc.PayCalcService;
 import com.workload.system.calc.WorkloadWriteGuard;
+import com.workload.system.calc.allowance.AllowanceAStrategy;
+import com.workload.system.calc.allowance.AllowanceBStrategy;
+import com.workload.system.calc.allowance.AllowanceCStrategy;
 import com.workload.system.calc.allowance.AllowanceCalcStrategy;
+import com.workload.system.calc.allowance.AllowanceDStrategy;
+import com.workload.system.calc.allowance.AllowanceEStrategy;
+import com.workload.system.calc.allowance.AllowanceFStrategy;
+import com.workload.system.calc.allowance.AllowanceGStrategy;
 import com.workload.system.calc.allowance.AllowanceStrategyFactory;
+import com.workload.system.calc.rule.RuleParamService;
 import com.workload.system.domain.BizAllowanceItem;
 import com.workload.system.mapper.BizAllowanceItemMapper;
 
@@ -230,6 +244,69 @@ class BizAllowanceItemServiceImplTest
         verify(payCalcService).assertAllowanceEditable(9L, "2025-2026-2");
     }
 
+    /**
+     * A–G 逐类：工厂返回<b>真实</b>策略（仅 Mock RuleParamService 返回 fallback），
+     * insertBizAllowanceItem 后 mapper 必须收到策略算出的 amount 与调用方传入的 status。
+     * <p>
+     * 这也固化了「金额在写入时算好落库」的边界：{@code PayCalcServiceImpl} 无
+     * {@code AllowanceStrategyFactory} 依赖，recalcPay 只对已落库的 amount(status=1) 求和，
+     * 不重跑策略（见 PayCalcServiceImpl.recalcPay 与 PayCalcServiceImplTest）。
+     */
+    @ParameterizedTest(name = "{0} => {2}")
+    @MethodSource("persistenceCases")
+    @DisplayName("A–G 各类落库金额来自真实策略，status 原样透传")
+    void insertPersistsStrategyAmountAndStatusForEachType(String type, BizAllowanceItem item,
+            String expectedAmount)
+    {
+        AllowanceCalcStrategy strategy = realStrategyFor(type);
+        when(allowanceStrategyFactory.get(type)).thenReturn(strategy);
+
+        service.insertBizAllowanceItem(item);
+
+        assertThat(item.getAmount()).isEqualByComparingTo(expectedAmount);
+        assertThat(item.getStatus()).isEqualTo(1);
+        verify(bizAllowanceItemMapper).insertBizAllowanceItem(item);
+    }
+
+    static Stream<Arguments> persistenceCases()
+    {
+        return Stream.of(
+                Arguments.of("A", persistItem("A", "自学", 5L, null, null, null, null), "120.00"),
+                Arguments.of("B", persistItem("B", "分散", 10L, null, null, null, null), "100.00"),
+                Arguments.of("B", persistItem("B", "集中不跟班", 10L, null, null, null, null), "150.00"),
+                Arguments.of("C", persistItem("C", null, 2L, null, null, null, null), "240.00"),
+                Arguments.of("D", persistItem("D", null, 60L, null, null, null, null), "80.00"),
+                Arguments.of("E", persistItem("E", null, null, "1.5", null, null, null), "90.00"),
+                Arguments.of("F", persistItem("F", null, null, null, "2", 3L, null), "450.00"),
+                Arguments.of("G", persistItem("G", null, null, null, null, null, "4"), "120.00"));
+    }
+
+    private static BizAllowanceItem persistItem(String type, String subtype, Long students,
+            String hours, String days, Long classes, String units)
+    {
+        BizAllowanceItem item = new BizAllowanceItem();
+        item.setUserId(1L);
+        item.setSemester("2025-2026-1");
+        item.setFeeType(type);
+        item.setFeeSubtype(subtype);
+        item.setStudentCount(students);
+        item.setStatus(1);
+        if (hours != null)
+        {
+            item.setDurationHours(new BigDecimal(hours));
+        }
+        if (days != null)
+        {
+            item.setDays(new BigDecimal(days));
+        }
+        item.setClassCount(classes);
+        if (units != null)
+        {
+            item.setWorkloadUnits(new BigDecimal(units));
+        }
+        return item;
+    }
+
     private BizAllowanceItem selfItem(long count)
     {
         BizAllowanceItem item = new BizAllowanceItem();
@@ -239,5 +316,25 @@ class BizAllowanceItemServiceImplTest
         item.setFeeSubtype("自学加辅导");
         item.setStudentCount(count);
         return item;
+    }
+
+    /** 构造对应 fee_type 的<b>真实</b>策略，只把 RuleParamService Mock 为返回 fallback。 */
+    private AllowanceCalcStrategy realStrategyFor(String type)
+    {
+        RuleParamService rule = mock(RuleParamService.class);
+        when(rule.get(anyString(), any(BigDecimal.class))).thenAnswer(inv -> inv.getArgument(1));
+        AllowanceCalcStrategy strategy = switch (type)
+        {
+            case "A" -> new AllowanceAStrategy();
+            case "B" -> new AllowanceBStrategy();
+            case "C" -> new AllowanceCStrategy();
+            case "D" -> new AllowanceDStrategy();
+            case "E" -> new AllowanceEStrategy();
+            case "F" -> new AllowanceFStrategy();
+            case "G" -> new AllowanceGStrategy();
+            default -> throw new IllegalArgumentException("未知酬金类型: " + type);
+        };
+        ReflectionTestUtils.setField(strategy, "ruleParamService", rule);
+        return strategy;
     }
 }
