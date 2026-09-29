@@ -20,6 +20,8 @@ import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -209,5 +211,40 @@ class BizExportControllerTest
                     .isInstanceOf(ServiceException.class)
                     .hasMessageContaining("至少选择 1 位教师");
         }
+    }
+
+    /**
+     * 格式校验收口：空串 / 未支持格式 / 夹带路径穿越的格式串都必须抛业务异常，
+     * 绝不静默回落成 XLSX，否则前端可借 format 探测/绕过。规范化逻辑落在
+     * {@link Attachment1BatchRequest#normalizedFormat()}，直接对契约断言最精确。
+     */
+    @ParameterizedTest
+    @ValueSource(strings = {"", "pdf", "../../zip"})
+    void rejectsUnsupportedFormat(String format)
+    {
+        Attachment1BatchRequest request = new Attachment1BatchRequest();
+        request.setSemester("2026-2027-1");
+        request.setUserIds(List.of(2001L));
+        request.setFormat(format);
+        assertThatThrownBy(request::normalizedFormat)
+                .isInstanceOf(ServiceException.class)
+                .hasMessageContaining("format 仅支持");
+    }
+
+    /**
+     * 单人 GET 越权收口回归：教师传他人 userId（999），经 {@code DataScopeUtil.resolveUserId}
+     * 强制收敛为本人（1003）后才委托服务，导出的必然是本人数据而非被探测的他人。
+     */
+    @Test
+    void singleGetStillScopesTeacherToSelf() throws Exception
+    {
+        when(exportMapper.selectAttachment1Rows(1003L, "2026-2027-1")).thenReturn(List.of());
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        try (MockedStatic<DataScopeUtil> scope = mockStatic(DataScopeUtil.class))
+        {
+            scope.when(() -> DataScopeUtil.resolveUserId(999L)).thenReturn(1003L);
+            controller.exportAttachment1(999L, "2026-2027-1", response);
+        }
+        verify(attachment1ExportService).writeSingle(eq(1003L), eq("2026-2027-1"), any());
     }
 }

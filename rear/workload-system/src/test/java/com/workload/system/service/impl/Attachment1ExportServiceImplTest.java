@@ -15,8 +15,10 @@ import java.math.BigDecimal;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -296,6 +298,72 @@ class Attachment1ExportServiceImplTest
             assertThat(wb.getSheet("甲")).isNull();         // user 1 (3 行) 超限 -> 无 Sheet
             assertThat(wb.getSheet("_失败清单").getRow(1).getCell(0).getNumericCellValue()).isEqualTo(1.0);
             assertThat(wb.getSheet("_失败清单").getRow(1).getCell(2).getStringCellValue()).contains("超过");
+        }
+    }
+
+    // ---------------------------------------------------------------- Task 5：安全与失败矩阵
+
+    /**
+     * 文件名 / Sheet 名净化回归：教师姓名含 {@code / : * ? [ ] \} 时——
+     * ZIP entry 既无路径穿越（{@code .. / \}）也无 Windows 非法文件名字符残留；
+     * XLSX 每个 Sheet 名合法（≤31 且不含 Excel 禁用字符 {@code [ ] : * ? / \}）。
+     * 断言 Task 3 已加的净化确实生效，防回归。
+     */
+    @Test
+    void sanitizesZipEntryAndSheetNames() throws Exception
+    {
+        String nasty = "甲/乙:丙*丁?戊[己]庚\\辛";
+        List<Long> ids = List.of(1L);
+        stubBatch(ids, List.of(row(1L, "课")), List.of(teacher(1L, nasty)));
+
+        // ZIP：entry 名无路径穿越、无 Windows 非法字符
+        MockHttpServletResponse zipResp = new MockHttpServletResponse();
+        service.writeBatch(SEMESTER, ids, Format.ZIP, zipResp);
+        String entry = zipEntryNames(zipResp.getContentAsByteArray()).stream()
+                .filter(n -> n.startsWith("表一_")).findFirst().orElseThrow();
+        assertThat(entry).doesNotContain("..").doesNotContain("/").doesNotContain("\\")
+                .doesNotContainPattern("[:*?<>|\"\\[\\]]");
+
+        // XLSX：每个 Sheet 名合法
+        MockHttpServletResponse xlsxResp = new MockHttpServletResponse();
+        service.writeBatch(SEMESTER, ids, Format.XLSX, xlsxResp);
+        try (Workbook wb = WorkbookFactory.create(new ByteArrayInputStream(xlsxResp.getContentAsByteArray())))
+        {
+            for (int i = 0; i < wb.getNumberOfSheets(); i++)
+            {
+                String sheetName = wb.getSheetName(i);
+                assertThat(sheetName.length()).isLessThanOrEqualTo(31);
+                assertThat(sheetName).doesNotContainPattern("[\\[\\]:*?/\\\\]");
+            }
+        }
+    }
+
+    /**
+     * 失败原因可区分：rows 空 → 「无工作量明细」；有明细但无汇总 → 「尚未核算汇总」。
+     * 两类教师同批导出，失败清单里原因不能混同，否则对账时无法判断该补明细还是补核算。
+     */
+    @Test
+    void noSummaryAndNoRowsProduceDifferentReasons() throws Exception
+    {
+        List<Long> ids = List.of(1L, 2L);
+        // user 1：无任何明细；user 2：有明细但汇总缺失（teacher 为空）
+        stubBatch(ids, List.of(row(2L, "课")), List.of());
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        service.writeBatch(SEMESTER, ids, Format.XLSX, response);
+
+        try (Workbook wb = WorkbookFactory.create(new ByteArrayInputStream(response.getContentAsByteArray())))
+        {
+            Sheet fail = wb.getSheet("_失败清单");
+            Map<Double, String> reasonByUser = new HashMap<>();
+            for (int r = 1; r <= 2; r++)
+            {
+                reasonByUser.put(fail.getRow(r).getCell(0).getNumericCellValue(),
+                        fail.getRow(r).getCell(2).getStringCellValue());
+            }
+            assertThat(reasonByUser.get(1.0)).contains("无工作量明细");
+            assertThat(reasonByUser.get(2.0)).contains("尚未核算汇总");
+            assertThat(reasonByUser.get(1.0)).isNotEqualTo(reasonByUser.get(2.0));
         }
     }
 
