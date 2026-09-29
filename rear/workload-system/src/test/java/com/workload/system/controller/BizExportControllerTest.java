@@ -2,8 +2,10 @@ package com.workload.system.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.within;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -11,9 +13,13 @@ import static org.mockito.Mockito.when;
 
 import java.io.ByteArrayInputStream;
 import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
@@ -34,6 +40,7 @@ import com.workload.system.calc.rule.RuleParamService;
 import com.workload.system.domain.dto.Attachment1BatchRequest;
 import com.workload.system.domain.dto.Attachment1RowDTO;
 import com.workload.system.domain.dto.Attachment1TeacherDTO;
+import com.workload.system.domain.dto.PaySummaryExportDTO;
 import com.workload.system.mapper.BizExportMapper;
 import com.workload.system.service.impl.Attachment1ExportServiceImpl;
 import com.workload.system.service.ISysUserService;
@@ -246,5 +253,130 @@ class BizExportControllerTest
             controller.exportAttachment1(999L, "2026-2027-1", response);
         }
         verify(attachment1ExportService).writeSingle(eq(1003L), eq("2026-2027-1"), any());
+    }
+
+    /**
+     * 附件2 同源验收：Controller 只补「是否触顶 / 计酬超额 / 备注」三列，
+     * 绩效/其他/总金额三列必须原样取 DTO（源自 biz_pay_record），绝不在 Controller 重算。
+     * <p>
+     * 五行覆盖：已核算专任、外聘、540 封顶、无费率、totalPay=null 未核算。
+     * 备注文案与 {@code BizExportController.fillPayExplain} 现有实现严格对齐：
+     * 外聘含「不计发」、封顶含「540」（取 CAP_200PCT 规则值）、未核算含「尚未核算」。
+     * 金额透传用哨兵证明：专任正常行 totalPay 置 5（若 Controller 重算应为 8390），
+     * 断言导出仍为 5，即证明未重算。
+     */
+    @Test
+    void paySummaryExportRendersDtoAmountsAndExplainRemarks() throws Exception
+    {
+        List<PaySummaryExportDTO> rows = List.of(
+                // 专任正常：绩效 7190.40 / 其他 1200.00；总金额置哨兵 5（重算应为 8390）证明原样透传
+                payDto("PAY_T99001", "酬金专任教授", "专任", "282.72", "180", "102.72", 0, "70",
+                        "7190.40", "1200.00", 5L),
+                // 外聘：备注含「不计发」
+                payDto("PAY_T99003", "酬金外聘讲师", "外聘", "982.33", "180", "802.33", 1, "50",
+                        "0.00", "0.00", 0L),
+                // 540 封顶：备注含「540」
+                payDto("PAY_T99004", "酬金封顶教授", "专任", "600", "180", "420", 1, "70",
+                        "25200.00", "0.00", 25200L),
+                // 无费率职称：pay_rate NULL
+                payDto("PAY_T99005", "酬金无费率师", "专任", "300", "180", "120", 0, null,
+                        "0.00", "0.00", 0L),
+                // 未核算：酬金三列均 null，备注含「尚未核算」
+                payDto("PAY_T99002", "酬金未核算师", "专任", "200", "180", "20", 0, "50",
+                        null, null, null));
+
+        when(exportMapper.selectPaySummaryExport(eq("2099-2100-1"), isNull())).thenReturn(rows);
+        when(ruleParamService.get(eq("CAP_200PCT"), any())).thenReturn(new BigDecimal("540"));
+
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        try (MockedStatic<DataScopeUtil> scope = mockStatic(DataScopeUtil.class))
+        {
+            scope.when(() -> DataScopeUtil.resolveUserId(null)).thenReturn(null);
+            controller.exportPaySummary("2099-2100-1", response);
+        }
+
+        try (Workbook workbook = WorkbookFactory.create(
+                new ByteArrayInputStream(response.getContentAsByteArray())))
+        {
+            Sheet sheet = workbook.getSheetAt(0);
+            Map<String, Integer> col = headerIndex(sheet);
+            Map<String, Row> byName = dataRowsByName(sheet, col.get("姓名"));
+
+            // 金额列取 DTO（不在 Controller 重算）：哨兵总金额 5 原样透传
+            Row regular = byName.get("酬金专任教授");
+            assertThat(regular.getCell(col.get("绩效酬金(元)")).getNumericCellValue())
+                    .isCloseTo(7190.40, within(0.001));
+            assertThat(regular.getCell(col.get("其他酬金(元)")).getNumericCellValue())
+                    .isCloseTo(1200.00, within(0.001));
+            assertThat(regular.getCell(col.get("总金额(元)")).getNumericCellValue())
+                    .isCloseTo(5.0, within(0.001));
+
+            // 外聘：备注含「不计发」
+            assertThat(byName.get("酬金外聘讲师").getCell(col.get("备注")).getStringCellValue())
+                    .contains("不计发");
+            // 540 封顶：备注含「540」
+            assertThat(byName.get("酬金封顶教授").getCell(col.get("备注")).getStringCellValue())
+                    .contains("540");
+            // 未核算：备注含「尚未核算」
+            assertThat(byName.get("酬金未核算师").getCell(col.get("备注")).getStringCellValue())
+                    .contains("尚未核算");
+        }
+    }
+
+    /** 造一行附件2 导出 DTO；金额/费率为 null 时不设值（模拟未核算或无费率） */
+    private static PaySummaryExportDTO payDto(String code, String name, String nature,
+            String total, String rated, String excess, Integer capped, String rate,
+            String coursePay, String otherPay, Long totalPay)
+    {
+        PaySummaryExportDTO dto = new PaySummaryExportDTO();
+        dto.setUserCode(code);
+        dto.setUserName(name);
+        dto.setSemester("2099-2100-1");
+        dto.setTeacherNature(nature);
+        dto.setTotalWorkload(total == null ? null : new BigDecimal(total));
+        dto.setRatedWorkload(rated == null ? null : new BigDecimal(rated));
+        dto.setExcessWorkload(excess == null ? null : new BigDecimal(excess));
+        dto.setCapped(capped);
+        dto.setPayRate(rate == null ? null : new BigDecimal(rate));
+        dto.setCoursePay(coursePay == null ? null : new BigDecimal(coursePay));
+        dto.setOtherPayTotal(otherPay == null ? null : new BigDecimal(otherPay));
+        dto.setTotalPay(totalPay);
+        return dto;
+    }
+
+    /** 读表头行（EasyExcel 写在第 0 行）为「列名 -> 列号」，按名定位避免依赖列序 */
+    private static Map<String, Integer> headerIndex(Sheet sheet)
+    {
+        Map<String, Integer> index = new HashMap<>();
+        Row header = sheet.getRow(0);
+        for (int c = 0; c < header.getLastCellNum(); c++)
+        {
+            Cell cell = header.getCell(c);
+            if (cell != null && cell.getCellType() == CellType.STRING)
+            {
+                index.put(cell.getStringCellValue(), c);
+            }
+        }
+        return index;
+    }
+
+    /** 数据行（第 1 行起）按「姓名」列值索引，便于按教师定位断言 */
+    private static Map<String, Row> dataRowsByName(Sheet sheet, int nameCol)
+    {
+        Map<String, Row> byName = new HashMap<>();
+        for (int r = 1; r <= sheet.getLastRowNum(); r++)
+        {
+            Row row = sheet.getRow(r);
+            if (row == null)
+            {
+                continue;
+            }
+            Cell cell = row.getCell(nameCol);
+            if (cell != null && cell.getCellType() == CellType.STRING)
+            {
+                byName.put(cell.getStringCellValue(), row);
+            }
+        }
+        return byName;
     }
 }
