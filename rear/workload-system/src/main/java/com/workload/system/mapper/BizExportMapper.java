@@ -65,4 +65,31 @@ public interface BizExportMapper
      */
     public Attachment1TeacherDTO selectAttachment1Teacher(@Param("userId") Long userId,
                                                           @Param("semester") String semester);
+
+    /**
+     * 附件1（批量）：一次取齐多位教师的任务行，供批量导出按 {@code userId} 分组。
+     * <p>
+     * 列集与分组/过滤口径与单人 {@link #selectAttachment1Rows} 完全一致，仅额外选出
+     * {@code i.user_id AS userId} 并在 where 用 {@code user_id IN (...)}、group by 追加
+     * {@code i.user_id}，避免退化为 N×2 次单人查询。ID 由 MyBatis 绑定，绝不拼接字符串。
+     *
+     * @param userIds  去重、保序后的教师用户 ID 列表
+     * @param semester 学年学期
+     * @return 全部教师的任务行（含 userId 定位列），按 user_id、明细主键插入序排序
+     */
+    public List<Attachment1RowDTO> selectAttachment1RowsBatch(@Param("userIds") List<Long> userIds,
+                                                              @Param("semester") String semester);
+
+    /**
+     * 附件1（批量）：一次取齐多位教师的教师级信息，供批量导出按 {@code userId} 分组。
+     * <p>
+     * 列集与单人 {@link #selectAttachment1Teacher} 一致，额外选出 {@code s.user_id AS userId}
+     * 并用 {@code user_id IN (...)}。ID 由 MyBatis 绑定，绝不拼接字符串。
+     *
+     * @param userIds  去重、保序后的教师用户 ID 列表
+     * @param semester 学年学期
+     * @return 全部教师的教师级信息（含 userId 定位列），按 user_id 排序
+     */
+    public List<Attachment1TeacherDTO> selectAttachment1TeachersBatch(@Param("userIds") List<Long> userIds,
+                                                                      @Param("semester") String semester);
 }

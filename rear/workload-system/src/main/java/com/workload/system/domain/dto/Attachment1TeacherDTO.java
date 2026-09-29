@@ -10,6 +10,9 @@ import java.math.BigDecimal;
  */
 public class Attachment1TeacherDTO
 {
+    /** 内部定位字段：教师用户 ID（不对应模板列，仅供批量结果按 userId 分组）。 */
+    private Long userId;
+
     /** 标题/首行 A 列：学院（sys_dept.dept_name） */
     private String collegeName;
 
@@ -52,6 +55,8 @@ public class Attachment1TeacherDTO
     /** AM 教师签字（线上签署时非空；线下签为 null 留空） */
     private String teacherSign;
 
+    public Long getUserId() { return userId; }
+    public void setUserId(Long userId) { this.userId = userId; }
     public String getCollegeName() { return collegeName; }
     public void setCollegeName(String collegeName) { this.collegeName = collegeName; }
     public String getTeacherName() { return teacherName; }

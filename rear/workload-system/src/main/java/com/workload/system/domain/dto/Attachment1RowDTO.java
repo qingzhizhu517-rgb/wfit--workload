@@ -11,6 +11,9 @@ import java.math.BigDecimal;
  */
 public class Attachment1RowDTO
 {
+    /** 内部定位字段：所属教师用户 ID（不对应模板列，仅供批量结果按 userId 分组）。 */
+    private Long userId;
+
     /** C 课程名称（task 优先，手工明细取 item 快照） */
     private String courseName;
 
@@ -89,6 +92,8 @@ public class Attachment1RowDTO
     /** AB G6 = W*R6*0.4 */
     private BigDecimal g6;
 
+    public Long getUserId() { return userId; }
+    public void setUserId(Long userId) { this.userId = userId; }
     public String getCourseName() { return courseName; }
     public void setCourseName(String courseName) { this.courseName = courseName; }
     public String getEducationLevel() { return educationLevel; }
