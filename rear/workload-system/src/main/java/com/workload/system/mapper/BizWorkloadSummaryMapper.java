@@ -31,6 +31,15 @@ public interface BizWorkloadSummaryMapper
             @Param("semester") String semester);
 
     /**
+     * 酬金重算写前锁定读：按教师+学期加行锁读取汇总，随后复核冻结状态再写 pay_record，
+     * 关闭"初查草稿 → 审批事务置待审 → 酬金仍按旧状态写入"的并发窗口。
+     * 与 {@link #selectByUserSemesterForUpdate} 同为 FOR UPDATE，但直接返回汇总数据供绩效读取，
+     * recalcPay 因此只需一次锁定查询。
+     */
+    public BizWorkloadSummary selectForPayUpdate(@Param("userId") Long userId,
+            @Param("semester") String semester);
+
+    /**
      * 查询学期工作量汇总列表
      * 
      * @param bizWorkloadSummary 学期工作量汇总

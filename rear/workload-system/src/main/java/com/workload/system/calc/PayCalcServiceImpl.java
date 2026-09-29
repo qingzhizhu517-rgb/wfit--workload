@@ -41,20 +41,19 @@ public class PayCalcServiceImpl implements PayCalcService
     @Autowired
     private BizTeacherProfileMapper bizTeacherProfileMapper;
 
-    @Autowired
-    private WorkloadWriteGuard writeGuard;
-
     @Override
     @Transactional(rollbackFor = Exception.class)
     public BizPayRecord recalcPay(Long userId, String semester)
     {
-        writeGuard.lockDraftOrAbsent(userId, semester);
         // userId 合法性校验：教师档案不存在则快速失败，避免任意 userId 生成零值脏数据
         if (bizTeacherProfileMapper.selectBizTeacherProfileByUserId(userId) == null)
         {
             throw new ServiceException("教师档案不存在，无法重算");
         }
-        BizWorkloadSummary summary = findSummary(userId, semester);
+        // 写前锁定读：FOR UPDATE 行锁读取汇总并复核冻结状态，关闭"初查草稿 → 审批置待审
+        // → 酬金仍按旧状态写入"的并发窗口。锁定顺序固定为 summary → allowance → pay_record，
+        // 审批只更新 summary，避免逆序死锁。
+        BizWorkloadSummary summary = bizWorkloadSummaryMapper.selectForPayUpdate(userId, semester);
         if (summary == null)
         {
             throw new ServiceException("学期汇总不存在，请先重算汇总");

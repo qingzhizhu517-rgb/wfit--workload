@@ -87,6 +87,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         for update
     </select>
 
+    <!-- 酬金重算写前锁定读：行锁读取该教师学期汇总，复核冻结状态后再写 pay_record -->
+    <select id="selectForPayUpdate" resultMap="BizWorkloadSummaryResult">
+        <include refid="selectBizWorkloadSummaryVo"/>
+        where user_id = #{userId} and semester = #{semester}
+        limit 1 for update
+    </select>
+
     <insert id="insertBizWorkloadSummary" parameterType="BizWorkloadSummary" useGeneratedKeys="true" keyProperty="id">
         insert into biz_workload_summary
         <trim prefix="(" suffix=")" suffixOverrides=",">
