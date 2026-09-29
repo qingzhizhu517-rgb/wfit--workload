@@ -166,6 +166,15 @@ wfit:
   import:
     # Excel 导入单文件大小上限（MB），对应 @Value("${wfit.import.max-size:10}")
     max-size: 10
+  # 批量导出附件1（表一）安全上限：由后端固定，前端提示不能替代后端拒绝。
+  export:
+    attachment1:
+      # xlsx 多 Sheet 单工作簿最多容纳的教师数，超出应改用 zip
+      workbook-max-teachers: 20
+      # zip 逐教师打包单次最多容纳的教师数
+      zip-max-teachers: 100
+      # 单教师任务行上限，超出只把该教师写入失败清单，不影响其余教师
+      max-rows-per-teacher: 5000
   # 导入新建教师账号的默认初始密码，对应 @Value("${wfit.default-password:123456}")
   # 这是业务配置（非密钥）：教师首次登录后须自行改密。可用 WFIT_DEFAULT_PASSWORD 覆盖。
   default-password: ${WFIT_DEFAULT_PASSWORD:123456}

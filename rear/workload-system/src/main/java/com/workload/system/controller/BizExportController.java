@@ -6,6 +6,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFRow;
@@ -15,22 +16,28 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.alibaba.excel.EasyExcel;
+import com.workload.common.annotation.Log;
 import com.workload.common.core.controller.BaseController;
 import com.workload.common.core.domain.entity.SysUser;
+import com.workload.common.enums.BusinessType;
 import com.workload.common.exception.ServiceException;
 import com.workload.common.utils.DataScopeUtil;
 import com.workload.common.utils.StringUtils;
+import com.workload.system.domain.dto.Attachment1BatchRequest;
 import com.workload.system.domain.dto.Attachment1RowDTO;
 import com.workload.system.domain.dto.Attachment1TeacherDTO;
 import com.workload.system.domain.dto.PaySummaryExportDTO;
 import com.workload.system.domain.dto.PersonalWorkloadDetailExportDTO;
 import com.workload.system.calc.rule.RuleParamService;
 import com.workload.system.mapper.BizExportMapper;
+import com.workload.system.service.Attachment1ExportService;
 import com.workload.system.service.ISysUserService;
 
 import jakarta.servlet.http.HttpServletResponse;
@@ -52,6 +59,9 @@ public class BizExportController extends BaseController
 
     @Autowired
     private RuleParamService ruleParamService;
+
+    @Autowired
+    private Attachment1ExportService attachment1ExportService;
 
     /**
      * 导出个人工作量明细表（附件1格式）
@@ -150,6 +160,39 @@ public class BizExportController extends BaseController
                             "表一_" + userLabel(userId) + "_" + semester + ".xlsx", StandardCharsets.UTF_8));
             wb.write(response.getOutputStream());
         }
+    }
+
+    /**
+     * 批量导出附件1（表一）：一次导出多位教师，输出 xlsx 多 Sheet 或 zip 逐教师打包。
+     * <p>
+     * 与单人 GET 分权在于「批量属管理操作」：教师角色一律拒绝，且不允许「替换为本人后继续」，
+     * 否则持有 {@code system:export:personal} 的教师能借 body 探测他人是否存在（横向越权）。
+     * 学期/教师列表在委托导出服务前先做非空与去重校验；安全上限由服务端配置固定，
+     * 前端提示不能替代后端拒绝。实际渲染与阈值裁决在 {@link Attachment1ExportService#writeBatch} 内。
+     * </p>
+     */
+    @PreAuthorize("@ss.hasPermi('system:export:personal')")
+    @Log(title = "批量导出表一", businessType = BusinessType.EXPORT)
+    @PostMapping("/attachment1/batch")
+    public void exportAttachment1Batch(@RequestBody Attachment1BatchRequest request,
+            HttpServletResponse response) throws Exception
+    {
+        if (DataScopeUtil.isTeacherOnly())
+        {
+            throw new ServiceException("教师角色不允许批量导出，请使用单教师导出");
+        }
+        String semester = request == null ? null : StringUtils.trim(request.getSemester());
+        if (StringUtils.isEmpty(semester))
+        {
+            throw new ServiceException("semester 不能为空");
+        }
+        List<Long> ids = request.getUserIds() == null ? List.of()
+                : request.getUserIds().stream().filter(Objects::nonNull).distinct().toList();
+        if (ids.isEmpty())
+        {
+            throw new ServiceException("至少选择 1 位教师");
+        }
+        attachment1ExportService.writeBatch(semester, ids, request.normalizedFormat(), response);
     }
 
     /**

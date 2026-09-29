@@ -2,7 +2,10 @@ package com.workload.system.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.io.ByteArrayInputStream;
@@ -21,11 +24,14 @@ import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockHttpServletResponse;
 
+import com.workload.common.exception.ServiceException;
 import com.workload.common.utils.DataScopeUtil;
 import com.workload.system.calc.rule.RuleParamService;
+import com.workload.system.domain.dto.Attachment1BatchRequest;
 import com.workload.system.domain.dto.Attachment1RowDTO;
 import com.workload.system.domain.dto.Attachment1TeacherDTO;
 import com.workload.system.mapper.BizExportMapper;
+import com.workload.system.service.Attachment1ExportService;
 import com.workload.system.service.ISysUserService;
 
 @ExtendWith(MockitoExtension.class)
@@ -39,6 +45,9 @@ class BizExportControllerTest
 
     @Mock
     private RuleParamService ruleParamService;
+
+    @Mock
+    private Attachment1ExportService attachment1ExportService;
 
     @InjectMocks
     private BizExportController controller;
@@ -107,6 +116,74 @@ class BizExportControllerTest
                     2003L, "2026-2027-1", new MockHttpServletResponse()))
                     .isInstanceOf(com.workload.common.exception.ServiceException.class)
                     .hasMessageContaining("先核算汇总");
+        }
+    }
+
+    @Test
+    void batchAttachment1RejectsTeacherRole()
+    {
+        Attachment1BatchRequest request = new Attachment1BatchRequest();
+        request.setSemester("2026-2027-1");
+        request.setUserIds(List.of(2001L, 2002L));
+        request.setFormat("xlsx");
+        try (MockedStatic<DataScopeUtil> scope = mockStatic(DataScopeUtil.class))
+        {
+            scope.when(DataScopeUtil::isTeacherOnly).thenReturn(true);
+            assertThatThrownBy(() -> controller.exportAttachment1Batch(request,
+                    new MockHttpServletResponse()))
+                    .isInstanceOf(ServiceException.class)
+                    .hasMessageContaining("教师角色不允许批量导出");
+        }
+    }
+
+    @Test
+    void batchAttachment1DelegatesDistinctUsers() throws Exception
+    {
+        Attachment1BatchRequest request = new Attachment1BatchRequest();
+        request.setSemester("2026-2027-1");
+        request.setUserIds(List.of(2002L, 2001L, 2002L));
+        request.setFormat("xlsx");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        try (MockedStatic<DataScopeUtil> scope = mockStatic(DataScopeUtil.class))
+        {
+            scope.when(DataScopeUtil::isTeacherOnly).thenReturn(false);
+            controller.exportAttachment1Batch(request, response);
+        }
+        verify(attachment1ExportService).writeBatch(eq("2026-2027-1"),
+                eq(List.of(2002L, 2001L)), eq(Attachment1BatchRequest.Format.XLSX), any());
+    }
+
+    @Test
+    void batchAttachment1RejectsEmptySemester()
+    {
+        Attachment1BatchRequest request = new Attachment1BatchRequest();
+        request.setSemester("   ");
+        request.setUserIds(List.of(2001L));
+        request.setFormat("xlsx");
+        try (MockedStatic<DataScopeUtil> scope = mockStatic(DataScopeUtil.class))
+        {
+            scope.when(DataScopeUtil::isTeacherOnly).thenReturn(false);
+            assertThatThrownBy(() -> controller.exportAttachment1Batch(request,
+                    new MockHttpServletResponse()))
+                    .isInstanceOf(ServiceException.class)
+                    .hasMessageContaining("semester 不能为空");
+        }
+    }
+
+    @Test
+    void batchAttachment1RejectsEmptyUserIds()
+    {
+        Attachment1BatchRequest request = new Attachment1BatchRequest();
+        request.setSemester("2026-2027-1");
+        request.setUserIds(java.util.Arrays.asList((Long) null, null));
+        request.setFormat("xlsx");
+        try (MockedStatic<DataScopeUtil> scope = mockStatic(DataScopeUtil.class))
+        {
+            scope.when(DataScopeUtil::isTeacherOnly).thenReturn(false);
+            assertThatThrownBy(() -> controller.exportAttachment1Batch(request,
+                    new MockHttpServletResponse()))
+                    .isInstanceOf(ServiceException.class)
+                    .hasMessageContaining("至少选择 1 位教师");
         }
     }
 }
