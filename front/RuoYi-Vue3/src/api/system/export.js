@@ -29,3 +29,13 @@ export function exportPaySummary(params) {
     responseType: 'blob'
   })
 }
+
+// 批量导出表一（多教师）：xlsx 多 Sheet 或 zip 逐教师；返回文件流（blob）
+export function exportAttachment1Batch(data) {
+  return request({
+    url: '/system/export/attachment1/batch',
+    method: 'post',
+    data,
+    responseType: 'blob'
+  })
+}

@@ -202,6 +202,26 @@
           </el-button>
         </el-tooltip>
       </el-col>
+      <el-col
+        v-if="!isTeacher"
+        :span="1.5"
+      >
+        <el-tooltip
+          content="批量导出表一：按跨页勾选的教师批量导出，1-20人可选单工作簿(xlsx)，21-100人只能压缩包(zip)；无明细/未汇总教师写入失败清单"
+          placement="top"
+        >
+          <el-button
+            v-hasPermi="['system:export:personal']"
+            type="success"
+            plain
+            icon="Files"
+            :disabled="!crossPageSelectedIds.length"
+            @click="handleBatchExport"
+          >
+            批量导出表一{{ crossPageSelectedIds.length ? `(${crossPageSelectedIds.length})` : '' }}
+          </el-button>
+        </el-tooltip>
+      </el-col>
       <el-col :span="1.5">
         <el-tooltip
           content="附件1明细（追溯用）：本人/所选教师该学期工作量明细，含重复次序、班级与各项系数"
@@ -250,8 +270,10 @@
     />
 
     <el-table
+      ref="summaryTableRef"
       v-loading="loading"
       :data="workloadSummaryList"
+      row-key="userId"
       stripe
       empty-text="暂无数据"
       @selection-change="handleSelectionChange"
@@ -261,6 +283,7 @@
         type="selection"
         width="50"
         align="center"
+        :reserve-selection="true"
       />
       <el-table-column
         v-if="!isTeacher"
@@ -830,6 +853,63 @@
         </template>
       </template>
     </el-dialog>
+
+    <!-- 批量导出表一：格式确认 -->
+    <el-dialog
+      v-model="batchExportOpen"
+      title="批量导出表一"
+      width="480px"
+      append-to-body
+    >
+      <el-alert
+        :title="batchExportTip"
+        type="info"
+        :closable="false"
+        class="mb12"
+      />
+      <el-descriptions
+        :column="1"
+        border
+        class="mb12"
+      >
+        <el-descriptions-item label="学年学期">
+          {{ batchExportSemester }}
+        </el-descriptions-item>
+        <el-descriptions-item label="已选教师">
+          {{ batchExportCount }} 位
+        </el-descriptions-item>
+      </el-descriptions>
+      <el-form label-width="88px">
+        <el-form-item label="输出格式">
+          <el-radio-group v-model="batchExportFormat">
+            <el-radio
+              value="xlsx"
+              :disabled="!batchExportAllowXlsx"
+            >
+              单个工作簿(.xlsx)
+            </el-radio>
+            <el-radio value="zip">
+              压缩包(.zip)
+            </el-radio>
+          </el-radio-group>
+        </el-form-item>
+      </el-form>
+      <div class="run-hint">
+        无明细 / 未汇总的教师会写入「失败清单」，不影响其他教师导出。
+      </div>
+      <template #footer>
+        <el-button @click="batchExportOpen = false">
+          取消
+        </el-button>
+        <el-button
+          type="primary"
+          :loading="batchExportLoading"
+          @click="doBatchExport"
+        >
+          导出
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -837,9 +917,10 @@
 import TeacherOverview from '@/components/TeacherOverview'
 import { listWorkloadSummary, delWorkloadSummary } from '@/api/system/workloadSummary'
 import { recalcSummary, previewSummary, genG11, runCalc, runCalcBatch } from '@/api/system/calc'
-import { exportPersonalWorkload, exportPaySummary, exportAttachment1 } from '@/api/system/export'
+import { exportPersonalWorkload, exportPaySummary, exportAttachment1, exportAttachment1Batch } from '@/api/system/export'
 import { ElMessageBox } from 'element-plus'
 import { saveBlobAsFile } from '@/utils/blobDownload'
+import { mergePageSelection, selectedIds } from '@/utils/crossPageSelection'
 import { auditSubmit, auditApprove, auditReject, auditUnlock, auditBatchSubmit, auditTeacherConfirm } from '@/api/system/audit'
 import UserSelect from '@/components/UserSelect/index.vue'
 import SemesterSelect from '@/components/SemesterSelect/index.vue'
@@ -880,6 +961,25 @@ const selectedUserIds = ref([])
 const multiple = ref(true)
 const batchCalcLoading = ref(false)
 const total = ref(0)
+
+// 跨页选择：以 userId 为键的全局已选集合，翻页保留、当前页取消即时生效；筛选变化必清空
+const summaryTableRef = ref(null)
+const selectedByUserId = ref(new Map())
+const crossPageSelectedIds = computed(() => selectedIds(selectedByUserId.value))
+
+// 批量导出表一：格式确认对话框
+const batchExportOpen = ref(false)
+const batchExportLoading = ref(false)
+const batchExportSemester = ref('')
+const batchExportCount = ref(0)
+const batchExportFormat = ref('xlsx')
+const batchExportAllowXlsx = computed(() => batchExportCount.value <= 20)
+const batchExportTip = computed(() => {
+  if (batchExportCount.value > 20) {
+    return `已选 ${batchExportCount.value} 位教师，超过 20 位只能导出压缩包(zip)`
+  }
+  return `已选 ${batchExportCount.value} 位教师，默认单个工作簿(xlsx)，也可切换为压缩包(zip)`
+})
 
 const detailOpen = ref(false)
 const detailRow = ref(null)
@@ -965,6 +1065,8 @@ function getList() {
 /** 搜索按钮操作；URL 变化时由路由 watcher 统一发起请求，避免重复查询。 */
 function handleQuery() {
   queryParams.value.pageNum = 1
+  // 筛选条件变化即清空跨页选择，避免把不同学期/教师/状态混进同一批次
+  clearCrossPageSelection()
   if (!syncQueryRoute()) getList()
 }
 
@@ -981,6 +1083,18 @@ function handleSelectionChange(selection) {
   // 同一教师同学期只会有一条汇总，但跨学期查询时可能重复，去重后再送批量核算
   selectedUserIds.value = [...new Set(selection.map(item => item.userId).filter(Boolean))]
   multiple.value = !selection.length
+  // 跨页选择：以当前页全部行为范围，把当前页勾选结果并入全局 Map（其他页保留）
+  selectedByUserId.value = mergePageSelection(
+    selectedByUserId.value,
+    workloadSummaryList.value,
+    selection
+  )
+}
+
+/** 清空跨页选择：筛选范围（学期/教师/状态）变化时调用，防止跨学期混批 */
+function clearCrossPageSelection() {
+  selectedByUserId.value = new Map()
+  if (summaryTableRef.value) summaryTableRef.value.clearSelection()
 }
 
 /** 校验教师+学期已选 */
@@ -1169,6 +1283,48 @@ function handleExportAttach2() {
   })
 }
 
+/** 打开批量导出表一的格式确认框（按跨页勾选的教师） */
+function handleBatchExport() {
+  const semester = queryParams.value.semester
+  if (!semester) {
+    proxy.$modal.alertWarning('请先在搜索栏填写「学年学期」')
+    return
+  }
+  const count = crossPageSelectedIds.value.length
+  if (!count) {
+    proxy.$modal.alertWarning('请先勾选需要导出的教师')
+    return
+  }
+  if (count > 100) {
+    // 后端同样限制 100 人，这里先行拦截并提示拆批，避免无谓的大请求
+    proxy.$modal.alertWarning(`已选 ${count} 位教师，单次最多 100 位，请拆分批次后再导出`)
+    return
+  }
+  batchExportSemester.value = semester
+  batchExportCount.value = count
+  // 1-20 人默认 xlsx；21-100 人只能 zip
+  batchExportFormat.value = count > 20 ? 'zip' : 'xlsx'
+  batchExportOpen.value = true
+}
+
+/** 执行批量导出：xlsx 走默认 MIME，zip 显式 application/zip */
+function doBatchExport() {
+  const semester = batchExportSemester.value
+  const userIds = crossPageSelectedIds.value
+  const count = userIds.length
+  const format = batchExportFormat.value === 'zip' ? 'zip' : 'xlsx'
+  const ext = format
+  const mime = format === 'zip' ? 'application/zip' : undefined
+  batchExportLoading.value = true
+  exportAttachment1Batch({ semester, userIds, format }).then(res => {
+    return saveBlobAsFile(res, `表一批量_${semester}_${count}人.${ext}`, mime)
+  }).then(() => {
+    batchExportOpen.value = false
+  }).finally(() => {
+    batchExportLoading.value = false
+  })
+}
+
 /** 生成 G11 管理服务明细 */
 function handleGenG11() {
   const { semester } = queryParams.value
@@ -1339,6 +1495,8 @@ watch(
       : getCurrentSemester()
     queryParams.value.status = parseEnumQuery(status, allowedSummaryStatuses)
     queryParams.value.pageNum = 1
+    // 学期/状态经 URL 变化也要清跨页选择，防止跨筛选范围混批
+    clearCrossPageSelection()
     getList()
   },
   { immediate: true }
