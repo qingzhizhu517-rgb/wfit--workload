@@ -17,16 +17,26 @@ const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.s
  */
 export async function saveBlobAsFile(data, fileName, mime = XLSX_MIME) {
   const blob = data instanceof Blob ? data : new Blob([data], { type: mime })
-  if (!blobValidate(blob)) {
+  const blobType = blob.type || ''
+  // 后端错误体有两种：application/json（标准 AjaxResult）与 text/plain（如导出接口在
+  // 「未找到该教师该学期的工作量明细」时直接 200 写纯文本）。二者都不是文件流，若不拦截
+  // 会把提示语当成 .xlsx 存成损坏文件。text/plain 正文即人类可读提示，直接展示。
+  const isTextPlain = blobType.includes('text/plain')
+  if (!blobValidate(blob) || isTextPlain) {
     const text = await blob.text()
     let message = '导出失败'
-    try {
-      const result = JSON.parse(text)
-      message = result.msg || message
-    } catch {
-      // 后端未返回标准 JSON 时保留统一错误消息。
+    if (isTextPlain) {
+      message = text.trim() || message
+      ElMessage.warning(message)
+    } else {
+      try {
+        const result = JSON.parse(text)
+        message = result.msg || message
+      } catch {
+        // 后端未返回标准 JSON 时保留统一错误消息。
+      }
+      ElMessage.error(message)
     }
-    ElMessage.error(message)
     throw new Error(message)
   }
   const url = window.URL.createObjectURL(blob)

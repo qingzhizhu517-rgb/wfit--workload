@@ -207,7 +207,7 @@
         :span="1.5"
       >
         <el-tooltip
-          content="批量导出表一：按跨页勾选的教师批量导出，1-20人可选单工作簿(xlsx)，21-100人只能压缩包(zip)；无明细/未汇总教师写入失败清单"
+          content="批量导出表一：需先在搜索栏选定「学年学期」（批量导出为单学期操作），按跨页勾选的教师批量导出，1-20人可选单工作簿(xlsx)，21-100人只能压缩包(zip)；无明细/未汇总教师写入失败清单"
           placement="top"
         >
           <el-button
@@ -215,7 +215,7 @@
             type="success"
             plain
             icon="Files"
-            :disabled="!crossPageSelectedIds.length"
+            :disabled="!queryParams.semester || !crossPageSelectedIds.length"
             @click="handleBatchExport"
           >
             批量导出表一{{ crossPageSelectedIds.length ? `(${crossPageSelectedIds.length})` : '' }}
@@ -273,7 +273,7 @@
       ref="summaryTableRef"
       v-loading="loading"
       :data="workloadSummaryList"
-      row-key="userId"
+      row-key="id"
       stripe
       empty-text="暂无数据"
       @selection-change="handleSelectionChange"
@@ -920,7 +920,7 @@ import { recalcSummary, previewSummary, genG11, runCalc, runCalcBatch } from '@/
 import { exportPersonalWorkload, exportPaySummary, exportAttachment1, exportAttachment1Batch } from '@/api/system/export'
 import { ElMessageBox } from 'element-plus'
 import { saveBlobAsFile } from '@/utils/blobDownload'
-import { mergePageSelection, selectedIds } from '@/utils/crossPageSelection'
+import { mergePageSelection, selectedIds, distinctUserIds } from '@/utils/crossPageSelection'
 import { auditSubmit, auditApprove, auditReject, auditUnlock, auditBatchSubmit, auditTeacherConfirm } from '@/api/system/audit'
 import UserSelect from '@/components/UserSelect/index.vue'
 import SemesterSelect from '@/components/SemesterSelect/index.vue'
@@ -955,17 +955,21 @@ let listRequestId = 0
 const loading = ref(true)
 const calcLoading = ref(false)
 const showSearch = ref(true)
-const ids = ref([])
-// 勾选行对应的教师 userId：ids 存的是汇总主键，批量核算按教师维度调用，两者不可混用
-const selectedUserIds = ref([])
-const multiple = ref(true)
 const batchCalcLoading = ref(false)
 const total = ref(0)
 
-// 跨页选择：以 userId 为键的全局已选集合，翻页保留、当前页取消即时生效；筛选变化必清空
+// 跨页选择：以汇总主键 id 为键的全局已选集合（翻页保留、当前页取消即时生效；筛选变化必清空）。
+// 该 Map 是所有派生选择状态的唯一真源，避免在 reserve-selection 下依赖 Element Plus 事件的时序怪癖。
+// 用 id（每行唯一）而非 userId 为键：清空学期筛选后列表跨多学期，同一教师多行 userId 相同，
+// 以 userId 为键会折叠导致计数错误；导出/核算按教师维度调用时再用 distinctUserIds 折算并去重。
 const summaryTableRef = ref(null)
-const selectedByUserId = ref(new Map())
-const crossPageSelectedIds = computed(() => selectedIds(selectedByUserId.value))
+const selectedRowMap = ref(new Map())
+// 已选行数（= 汇总主键 id 数），与表格勾选一一对应，用于计数展示与删除/批量提交
+const crossPageSelectedIds = computed(() => selectedIds(selectedRowMap.value))
+const ids = crossPageSelectedIds
+// 折算到教师维度并去重，用于「核算所选」（按教师逐个调用，跨页语义与勾选一致）
+const selectedUserIds = computed(() => distinctUserIds(selectedRowMap.value))
+const multiple = computed(() => selectedRowMap.value.size === 0)
 
 // 批量导出表一：格式确认对话框
 const batchExportOpen = ref(false)
@@ -1077,15 +1081,12 @@ function resetQuery() {
   handleQuery()
 }
 
-// 多选框选中数据
+// 多选框选中数据：仅更新跨页 Map（唯一真源），ids/selectedUserIds/multiple 皆由其派生。
+// reserve-selection 下 selection 已含跨页勾选，「核算所选」与批量导出因此同为跨页语义，
+// 与按钮文案「表格中勾选的教师」「跨页勾选的教师」一致；二者均要求先选定学期。
 function handleSelectionChange(selection) {
-  ids.value = selection.map(item => item.id)
-  // 同一教师同学期只会有一条汇总，但跨学期查询时可能重复，去重后再送批量核算
-  selectedUserIds.value = [...new Set(selection.map(item => item.userId).filter(Boolean))]
-  multiple.value = !selection.length
-  // 跨页选择：以当前页全部行为范围，把当前页勾选结果并入全局 Map（其他页保留）
-  selectedByUserId.value = mergePageSelection(
-    selectedByUserId.value,
+  selectedRowMap.value = mergePageSelection(
+    selectedRowMap.value,
     workloadSummaryList.value,
     selection
   )
@@ -1093,8 +1094,15 @@ function handleSelectionChange(selection) {
 
 /** 清空跨页选择：筛选范围（学期/教师/状态）变化时调用，防止跨学期混批 */
 function clearCrossPageSelection() {
-  selectedByUserId.value = new Map()
-  if (summaryTableRef.value) summaryTableRef.value.clearSelection()
+  selectedRowMap.value = new Map()
+  const table = summaryTableRef.value
+  if (!table) return
+  table.clearSelection()
+  // reserve-selection 下 clearSelection 对已渲染行的勾选偶发不同步，下一帧再清一次兜底；
+  // 且行键为唯一 id，切换筛选后新行 id 不同，旧勾选不会重新附着到新数据上
+  nextTick(() => {
+    if (summaryTableRef.value) summaryTableRef.value.clearSelection()
+  })
 }
 
 /** 校验教师+学期已选 */
@@ -1283,14 +1291,22 @@ function handleExportAttach2() {
   })
 }
 
-/** 打开批量导出表一的格式确认框（按跨页勾选的教师） */
+/** 取当前跨页选中、且属于指定学期的教师 userId（批量导出为单学期操作，须按学期过滤后去重） */
+function collectExportUserIds(semester) {
+  const inSemester = new Map(
+    [...selectedRowMap.value].filter(([, row]) => row.semester === semester)
+  )
+  return distinctUserIds(inSemester)
+}
+
+/** 打开批量导出表一的格式确认框（按跨页勾选、当前学期的教师） */
 function handleBatchExport() {
   const semester = queryParams.value.semester
   if (!semester) {
-    proxy.$modal.alertWarning('请先在搜索栏填写「学年学期」')
+    proxy.$modal.alertWarning('请先在搜索栏选定「学年学期」（批量导出为单学期操作）')
     return
   }
-  const count = crossPageSelectedIds.value.length
+  const count = collectExportUserIds(semester).length
   if (!count) {
     proxy.$modal.alertWarning('请先勾选需要导出的教师')
     return
@@ -1310,8 +1326,13 @@ function handleBatchExport() {
 /** 执行批量导出：xlsx 走默认 MIME，zip 显式 application/zip */
 function doBatchExport() {
   const semester = batchExportSemester.value
-  const userIds = crossPageSelectedIds.value
+  const userIds = collectExportUserIds(semester)
   const count = userIds.length
+  if (!count) {
+    proxy.$modal.msgWarning('已选教师为空，请重新勾选后再导出')
+    batchExportOpen.value = false
+    return
+  }
   const format = batchExportFormat.value === 'zip' ? 'zip' : 'xlsx'
   const ext = format
   const mime = format === 'zip' ? 'application/zip' : undefined
@@ -1319,6 +1340,10 @@ function doBatchExport() {
   exportAttachment1Batch({ semester, userIds, format }).then(res => {
     return saveBlobAsFile(res, `表一批量_${semester}_${count}人.${ext}`, mime)
   }).then(() => {
+    batchExportOpen.value = false
+  }).catch(() => {
+    // saveBlobAsFile 已就 JSON/纯文本错误体弹过提示、request 拦截器兜底网络错误；
+    // 此处只负责收拾对话框：关闭并复位，避免留下卡在 loading 的半截对话框
     batchExportOpen.value = false
   }).finally(() => {
     batchExportLoading.value = false
