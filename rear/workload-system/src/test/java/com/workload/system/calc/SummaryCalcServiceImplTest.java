@@ -23,10 +23,13 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DuplicateKeyException;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import com.workload.system.calc.PayAcceptanceFixture.SummaryCase;
 import com.workload.system.calc.rule.ComplianceChecker;
 import com.workload.system.calc.rule.RuleParamService;
+import com.workload.system.domain.BizPayRate;
 import com.workload.system.domain.BizTeacherProfile;
 import com.workload.system.domain.BizWorkloadItem;
 import com.workload.system.domain.BizWorkloadSummary;
@@ -272,6 +275,87 @@ class SummaryCalcServiceImplTest
         assertThatThrownBy(() -> service.recalcSummary(USER, SEMESTER, true))
                 .isInstanceOf(com.workload.common.exception.ServiceException.class)
                 .hasMessageContaining("禁止重算");
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("com.workload.system.calc.PayAcceptanceFixture#performanceCases")
+    @DisplayName("绩效边界固化：专任/低于额定/外聘/540封顶/无费率（第二十条）")
+    void performancePayBoundariesMatchFixture(SummaryCase c)
+    {
+        when(complianceChecker.check(any(), anyString(), any())).thenReturn(result(false));
+        stubPerformanceCase(c);
+
+        BizWorkloadSummary summary = service.recalcSummary(USER, SEMESTER, false);
+
+        assertThat(summary.getTotalWorkload()).isEqualByComparingTo(c.total());
+        assertThat(summary.getPerformancePay()).isEqualByComparingTo(c.expectedPay());
+        assertThat(summary.getIsCapped()).isEqualTo(c.capped());
+        if (c.rate() == null)
+        {
+            // 无费率口径（待办#9 当前行为）：不报错、payRate=null、绩效 0.00
+            assertThat(summary.getPayRate()).isNull();
+        }
+        else
+        {
+            assertThat(summary.getPayRate()).isEqualByComparingTo(c.rate());
+        }
+        if (c.capped() == 1)
+        {
+            assertThat(summary.getRemark()).contains("绩效酬金已按封顶值核算");
+        }
+        else
+        {
+            assertThat(summary.getRemark()).doesNotContain("绩效酬金已按封顶值核算");
+        }
+    }
+
+    @Test
+    @DisplayName("540 边界确认 > 语义：540 不触顶、540.01 触顶（isCapped 用严格大于）")
+    void cap200BoundaryUsesStrictGreaterThan()
+    {
+        when(complianceChecker.check(any(), anyString(), any())).thenReturn(result(false));
+
+        stubPerformanceCase(new SummaryCase("恰好540", "专任", "教授", "540", "70", "25200.00", 0));
+        BizWorkloadSummary exactly = service.recalcSummary(USER, SEMESTER, false);
+        assertThat(exactly.getIsCapped()).isEqualTo(0);
+        assertThat(exactly.getPerformancePay()).isEqualByComparingTo("25200.00");
+
+        stubPerformanceCase(new SummaryCase("540.01", "专任", "教授", "540.01", "70", "25200.00", 1));
+        BizWorkloadSummary over = service.recalcSummary(USER, SEMESTER, false);
+        assertThat(over.getIsCapped()).isEqualTo(1);
+        assertThat(over.getPerformancePay()).isEqualByComparingTo("25200.00");
+    }
+
+    /**
+     * 让明细总和等于 case.total（单条 G1 明细），档案返回 nature/title，
+     * 费率 Mapper 按 rate 返回当前有效费率或空列表（无费率场景）。
+     */
+    private void stubPerformanceCase(SummaryCase c)
+    {
+        when(bizWorkloadItemMapper.selectBizWorkloadItemList(any()))
+                .thenReturn(Collections.singletonList(item("G1", c.total())));
+        BizTeacherProfile profile = new BizTeacherProfile();
+        profile.setTeacherNature(c.nature());
+        profile.setTitle(c.title());
+        when(bizTeacherProfileMapper.selectBizTeacherProfileByUserId(USER)).thenReturn(profile);
+        if (c.rate() == null)
+        {
+            when(bizPayRateMapper.selectBizPayRateList(any())).thenReturn(Collections.emptyList());
+        }
+        else
+        {
+            when(bizPayRateMapper.selectBizPayRateList(any()))
+                    .thenReturn(Collections.singletonList(payRate(c.title(), c.rate())));
+        }
+    }
+
+    private BizPayRate payRate(String title, String rate)
+    {
+        BizPayRate payRate = new BizPayRate();
+        payRate.setTitle(title);
+        payRate.setRate(new BigDecimal(rate));
+        payRate.setStatus(1);
+        return payRate;
     }
 
     private BizWorkloadSummary summaryWithStatus(int status)
