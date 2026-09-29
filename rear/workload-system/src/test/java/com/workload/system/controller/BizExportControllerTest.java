@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -16,13 +17,14 @@ import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import com.workload.common.exception.ServiceException;
 import com.workload.common.utils.DataScopeUtil;
@@ -31,9 +33,17 @@ import com.workload.system.domain.dto.Attachment1BatchRequest;
 import com.workload.system.domain.dto.Attachment1RowDTO;
 import com.workload.system.domain.dto.Attachment1TeacherDTO;
 import com.workload.system.mapper.BizExportMapper;
-import com.workload.system.service.Attachment1ExportService;
+import com.workload.system.service.impl.Attachment1ExportServiceImpl;
 import com.workload.system.service.ISysUserService;
 
+/**
+ * BizExportController 单元测试。
+ * <p>
+ * 单人 GET 渲染契约（39 列 / G4/G6 / 固定块）是回归底线：这些用例通过一个
+ * <b>真实但被 spy 包裹</b>的 {@link Attachment1ExportServiceImpl} 保持原样通过——
+ * Task 3 把渲染下沉到服务后，GET 只委托，故断言必须仍打到真实渲染路径而非 Mock。
+ * 批量端点仍以 {@code verify(spy)} 校验委托语义（真实方法一并执行，无副作用影响断言）。
+ */
 @ExtendWith(MockitoExtension.class)
 class BizExportControllerTest
 {
@@ -46,11 +56,25 @@ class BizExportControllerTest
     @Mock
     private RuleParamService ruleParamService;
 
-    @Mock
-    private Attachment1ExportService attachment1ExportService;
+    private Attachment1ExportServiceImpl attachment1ExportService;
 
-    @InjectMocks
     private BizExportController controller;
+
+    @BeforeEach
+    void wire()
+    {
+        // 真实服务（spy）：GET 渲染走真实 writeSingle，批量端点仍可 verify 委托
+        attachment1ExportService = spy(new Attachment1ExportServiceImpl(exportMapper, sysUserService));
+        ReflectionTestUtils.setField(attachment1ExportService, "workbookMaxTeachers", 20);
+        ReflectionTestUtils.setField(attachment1ExportService, "zipMaxTeachers", 100);
+        ReflectionTestUtils.setField(attachment1ExportService, "maxRowsPerTeacher", 5000);
+
+        controller = new BizExportController();
+        ReflectionTestUtils.setField(controller, "exportMapper", exportMapper);
+        ReflectionTestUtils.setField(controller, "sysUserService", sysUserService);
+        ReflectionTestUtils.setField(controller, "ruleParamService", ruleParamService);
+        ReflectionTestUtils.setField(controller, "attachment1ExportService", attachment1ExportService);
+    }
 
     @Test
     void attachment1WritesCalculatedG4AndG6WithoutRecalculatingDisplayFactors() throws Exception
