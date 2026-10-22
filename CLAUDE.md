@@ -83,7 +83,7 @@ wfit--workload/                         # 仓库根（GitHub: qingzhizhu517-rgb/
 │       ├── 25_calculation_menu.sql           # G1/G2/G3 分类导入菜单 + 系数申请权限登记（幂等）
 │       ├── 26_coefficient_teacher_perm.sql   # 授教师 role4 系数申请 add/list 权限（幂等）
 │       ├── 27_calc_flow_menu.sql             # 系数申请列表页菜单入口（幂等）
-│       ├── 28_import_framework.sql           # 两阶段导入契约：biz_import_batch 补 6 列 + biz_import_row 逐行暂存表 + biz_teaching_task 源数量快照列（幂等）
+│       ├── 28_import_framework.sql           # 两阶段导入契约：biz_import_batch 补 7 列 + biz_import_row 逐行暂存表 + biz_teaching_task 源数量快照列（幂等）
 │       ├── ry_20260321.sql            # RuoYi 基础系统表
 │       └── quartz.sql                 # Quartz 调度器表
 ├── front/RuoYi-Vue3/                  # 前端 Vue 3 项目
@@ -335,8 +335,8 @@ A 项 ≥20 人归零（第十五条1(2)，落 `biz_allowance_item.remark`）；
 | 支撑层 | biz_workload_category_dict | 类别字典（G1-G11，绑定策略 Bean） |
 | 支撑层 | biz_workload_rule | 核算规则参数（39 条，Redis 缓存） |
 | 支撑层 | biz_pay_rate | 酬金费率（教授70/副60/讲50/助40） |
-| 支撑层 | biz_import_batch | 导入批次记录（28 号脚本补两阶段导入契约 6 列） |
-| 支撑层 | biz_import_row | 导入逐行暂存（预检落库 → 确认按 `row_no` 回放，`28_import_framework.sql` 创建，不在 01 schema） |
+| 支撑层 | biz_import_batch | 导入批次记录（当前 01 已含两阶段导入契约 7 列，28 号脚本用于存量库补齐） |
+| 支撑层 | biz_import_row | 导入逐行暂存（预检落库 → 确认按 `row_no` 回放；当前 01 已内联，28 号脚本亦可幂等创建） |
 | 源数据层 | biz_teaching_task | 教学任务（Excel 导入的原始数据） |
 | 源数据层 | biz_role_assignment | 兼容表名：教师学期岗位减免来源记录（同步 G11 的依据） |
 | 计算明细层 | biz_workload_item | 工作量明细主表 |
