@@ -4,7 +4,7 @@ High-signal guide for AI agents working in this repo. See `CLAUDE.md` for full c
 
 ## Project
 
-University workload management system (WFIT) — calculates teaching workload (G1-G11), summaries, pay. Built on RuoYi-Vue3 framework. All M1-M5 milestones complete.
+University workload management system (WFIT) — calculates teaching workload (G1-G11), summaries, pay. Built on RuoYi-Vue3 framework. M1-M5 are historical implementation milestones, not final acceptance. Current integration/verification status is in `task_plan.md` and `docs/验收/`.
 
 ## Quick Reference
 
@@ -33,7 +33,7 @@ front/RuoYi-Vue3/               # Vue 3.5 + Vite 6 + Element Plus
 ## Non-Obvious Facts
 
 - **Credentials come from environment variables.** `WFIT_DB_PASSWORD`, `WFIT_DRUID_PASSWORD`, and `WFIT_TOKEN_SECRET` have no defaults — the backend fails to start if they are unset. Copy `.env.example` to `.env` (gitignored) and fill them in, or inject via IDEA run configuration. DB host defaults to `127.0.0.1`; the `172.19.80.1` in older docs is a retired WSL bridge IP.
-- **Limited automated tests.** Only `workload-system` has JUnit 5 tests (`CalcStrategyFactoryTest`, `StrategyCacheTest` in `src/test/**/calc/strategy/`); run via `mvn test -pl workload-system`. No `spring-boot-starter-test` / integration tests. Verify other changes via Swagger UI (`/swagger-ui.html`) or frontend.
+- **Tests:** use JDK 17 and `mvn -f rear/pom.xml test` from the root. Integrated baseline: 452 regular tests. `CoefficientApprovalTransactionIT` has 14 MySQL cases and must be invoked explicitly with a local isolated database; absent configuration fails. See `docs/本地MySQL事务集成测试.md`. Frontend: `npm ci`, `npm run test:unit`, `npm run test:tooling`, `npm run build:prod`; Node/npm versions are pinned. Full lint still has debt; `lint:baseline` only rejects new violations.
 - **Frontend proxy**: all `/dev-api` requests strip prefix and proxy to `http://localhost:8084` (see `vite.config.js`).
 - **Calculation engine uses Spring bean names** — `biz_workload_category_dict.calc_strategy` column stores bean names like `theoryCalcStrategy`. `CalcStrategyFactory` resolves by bean name, not by class.
 - **Removed 2026-09-10**: `workload-quartz`, `workload-generator`, `manage` modules were deleted
@@ -53,6 +53,8 @@ front/RuoYi-Vue3/               # Vue 3.5 + Vite 6 + Element Plus
 - MyBatis XML maps in `resources/mapper/system/`
 
 ## SQL Execution Order
+
+The list below is historical base initialization only. Current authoritative inventory: `rear/sql/MIGRATIONS.md`. Latest code also requires 23/24/25/26/27/28/30/31. Local old 28 snapshot and 29 permission scripts were renamed to 30/31 without changing content. Never replay destructive fresh scripts on an existing database.
 
 Fresh database (DB: `wflg_workload`) — execute in order:
 
@@ -113,5 +115,9 @@ Note: `biz_workload_item.status` is a **different** state machine
 
 - All credentials are injected via environment variables; see `.env.example` (tracked) and `.env` (gitignored).
 - `.mcp.json` holds a local MySQL password and is gitignored — do not commit it.
-- ⚠️ Historical leak: the DB password, Druid console password, and JWT secret were committed in plaintext in earlier commits. The working tree is clean now, but old commits remain reachable. The real remediation is **rotating those credentials**, not editing the files.
+- ⚠️ Historical leak: the DB password, Druid console password, and JWT secret were committed in plaintext in earlier commits. Current application configuration uses environment variables, but old commits remain reachable. The real remediation is **rotating those credentials**, not editing the files.
 - `front/RuoYi-Vue3/.env.development` is tracked but contains only the page title and `/dev-api` prefix — no secrets.
+
+## Verified toolchain
+
+JDK 17 (`.java-version`), Node 24.16.0 (`.nvmrc`), npm 11.13.0. G1/G2/G3 do not multiply Q3. G11 comes from the registry-confirmed semester value, capped at 180; teachers self-report G8/G9 only. Frontend `.env` contains tracked public defaults only; root `.env` and all `*.local` remain ignored.

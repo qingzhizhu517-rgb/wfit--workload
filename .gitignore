@@ -54,3 +54,6 @@ __pycache__/
 
 # ---- AI 工具本地记忆 ----
 .workbuddy/
+
+# Public frontend defaults (no credentials)
+!front/RuoYi-Vue3/.env

@@ -12,7 +12,9 @@
     "preview": "vite preview",
     "lint": "eslint --ext .js,.vue --ignore-path .gitignore .",
     "lint:fix": "eslint --ext .js,.vue --ignore-path .gitignore . --fix",
-    "test:unit": "node --test tests/*.test.mjs"
+    "test:unit": "node --test tests/*.test.mjs",
+    "lint:baseline": "node scripts/lint-baseline.mjs",
+    "test:tooling": "node --test scripts/*.test.mjs"
   },
   "repository": {
     "type": "git",
@@ -55,5 +57,10 @@
   },
   "resolutions": {
     "quill": "2.0.2"
-  }
+  },
+  "engines": {
+    "node": "24.16.0",
+    "npm": "11.13.0"
+  },
+  "packageManager": "npm@11.13.0"
 }

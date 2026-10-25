@@ -1,0 +1,67 @@
+name: Verify
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version-file: .java-version
+          cache: maven
+          cache-dependency-path: rear/**/pom.xml
+      - run: mvn -f rear/pom.xml -B -ntp test
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-tests
+          path: rear/**/target/surefire-reports/
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: front/RuoYi-Vue3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: front/RuoYi-Vue3/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - run: npm run test:unit && npm run test:tooling
+      - run: npm run build:prod
+      - name: Reject new lint violations
+        run: npm run lint:baseline
+      - name: Full lint debt (known failing baseline)
+        id: full-lint
+        continue-on-error: true
+        run: npm run lint
+      - name: Publish debt summary
+        if: always()
+        run: cat artifacts/lint/summary.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frontend-lint-debt
+          path: front/RuoYi-Vue3/artifacts/lint/
+  whitespace:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Check introduced whitespace
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          if [ -n "$BASE" ] && git cat-file -e "$BASE^{commit}" 2>/dev/null; then
+            git diff --check "$BASE" HEAD
+          else
+            git show --format= --check HEAD
+          fi

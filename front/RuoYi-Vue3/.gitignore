@@ -19,5 +19,7 @@ selenium-debug.log
 *.sln
 *.local
 
-package-lock.json
 yarn.lock
+
+# Generated verification reports
+artifacts/

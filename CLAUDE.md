@@ -16,7 +16,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | M4 | Excel 导入与教师申报 | ✅ 已完成 | EasyExcel 导入、教师自主申报（declare.vue）、数据闭环 |
 | M5 | 审批流与报表导出 | ✅ 已完成 | 审批状态机（2026-09-10 简化为两级）、附件1/2 报表导出、批量提交审核 |
 
-**整体完成度：100%**（核心功能全部落地，剩余为优化和完善）
+**当前状态（2026-10-25）：核心功能已实现，整合基线验证中，尚未完成一期业务验收。** M1—M5为历史实现里程碑；当前风险与进度以 `task_plan.md`、`docs/验收/` 和2026-10-25路线图为准。
 
 ## 技术栈
 
@@ -52,7 +52,7 @@ wfit--workload/                         # 仓库根（GitHub: qingzhizhu517-rgb/
 │   │   ├── src/main/**/service/       # 业务 Service
 │   │   ├── src/main/**/mapper/        # MyBatis Mapper 接口
 │   │   ├── src/main/**/domain/        # 实体类
-│   │   └── src/test/**/calc/strategy/ # JUnit 5 单元测试（CalcStrategyFactoryTest, StrategyCacheTest）
+│   │   └── src/test/**/              # 策略、服务、输入契约等单测及显式MySQL IT
 │   ├── workload-framework/            # 框架层：Security、数据源、AOP、配置
 │   ├── workload-common/               # 通用工具、注解、异常处理
 │   └── sql/                           # 建表 + 种子数据 + 计算规则 + 菜单
@@ -75,7 +75,7 @@ wfit--workload/                         # 仓库根（GitHub: qingzhizhu517-rgb/
 │       ├── 17_simplify_approval.sql   # 审批流两级化（状态 3→2 迁移，幂等）
 │       ├── 18_fix_r5_approval.sql     # G5 本科毕业论文不封顶，专科阈值 APPROVAL_R5_JUNIOR（幂等）
 │       ├── 19_enable_allowance_d.sql  # 启用代阅卷酬金 D 五档费率（幂等）
-│       ├── 20_service_rate_semantics.sql # G11 岗位减免值语义固化（rate 为学期标准，幂等）
+│       ├── 20_service_rate_semantics.sql # 废弃历史脚本，不执行学年值转换
 │       ├── 21_export_columns.sql      # 附件1/2 导出列补充（幂等）
 │       ├── 22_semester_position_workload.sql # G11 直接同步本学期岗位减免值（幂等）
 │       ├── 23_calculation_consistency.sql    # 不可变计算快照表 + 明细 calculation_version/last_calculated_at（幂等）
@@ -186,7 +186,10 @@ mysql -u root -p wflg_workload < rear/sql/15_fix_menu_buttons.sql
 
 ## 测试
 
-- **后端**：`workload-system` 模块引入了 JUnit 5 + Mockito + AssertJ，现有单元测试位于 `src/test/**/calc/strategy/`（`CalcStrategyFactoryTest`、`StrategyCacheTest`），运行 `mvn test -pl workload-system`。其余模块**无**测试；无 `spring-boot-starter-test`，故没有集成测试。
+迁移以 `rear/sql/MIGRATIONS.md` 为准；最新快照上下文与核对权限分别为30和31。旧初始化章节不是完整部署清单。
+
+- **后端**：JDK17，从仓库根 `mvn -f rear/pom.xml test`；当前452项常规测试。显式MySQL事务IT为14项，使用专用隔离库及环境变量，不能把默认单测成功当作IT成功。见 `docs/本地MySQL事务集成测试.md`。
+- **前端**：固定Node24.16.0/npm11.13.0；`npm ci`、`npm run test:unit`、`npm run test:tooling`、`npm run build:prod`。`npm run lint`仍失败；`npm run lint:baseline`仅防新增债务。
 - **手动验证**：启动后端 + 前端，通过 Swagger UI (`/swagger-ui.html`) 或前端页面测试。
 - **API 冒烟**：根目录 `test_api.sh` 提供 12 项 curl 冒烟测试，需先启动后端并关闭验证码（`UPDATE sys_config SET config_value='false' WHERE config_key='sys.account.captchaEnabled'`）。
 
@@ -372,7 +375,7 @@ A 项 ≥20 人归零（第十五条1(2)，落 `biz_allowance_item.remark`）；
 |---|------|------|
 | A1 | 教务助理(role3)被越权授予 `unlock`，可复活院领导已完结记录 | ✅ `13_fix_audit_perm.sql` 撤销授权，unlock 仅授管理员 |
 | A2 | 策略解析失败（bean 名配错）静默返回 null，工作量被无声置 0 | ✅ `CalcStrategyFactory.resolve()` 改为抛 `ServiceException` |
-| A3 | G11 历史折算模型曾反复调整 | ⏸️ **2026-09-12 业务口径替代**：教务导出的“职务匹配工作量”已是本学期岗位减免值。后续不再使用 `allowance_rate` 学年折半或督导例外，也不按任职天数二次计算；当前代码待按新口径改造 |
+| A3 | G11 历史折算模型曾反复调整 | ⏸️ **2026-09-12 业务口径替代**：教务导出的“职务匹配工作量”已是本学期岗位减免值。后续不再使用 `allowance_rate` 学年折半或督导例外，也不按任职天数二次计算；当前代码已按本学期值同步，正式真实数据验收仍待完成 |
 | A4 | 教学任务导入自调用致 `@Transactional` 失效，部分失败提交半截数据 | ✅ 改用 `AopContext.currentProxy()` 每行独立事务 |
 | A5 | 院领导待签(2)环节无驳回路径 | ✅ `BizAuditServiceImpl.reject` 放开 `from∈{1,2}`；院领导授 `reject` 权限 |
 | A6 | G4 人数上限 20 与权威文档 R4≤60 冲突 | ✅ `CourseDesignCalcStrategy` 默认值改 60；`14_fix_calc_rules.sql` 已随 02 并入。**注意：本机库直到 2026-08-31 才真正执行到 60**（原记「已部署库」不实），且 `RuleParamServiceImpl` 缓存无 TTL，改库后必须删 Redis 键 `wl_rule:CAP_R4_MAX`，否则重启也读旧值 —— 见待办 #10。**2026-09-10 起语义变更：CAP_R4_MAX 由截断上限改为告警阈值，R4 按实际人数计算不再 min()**（办法第十四条4 未写「超出不计」） |
