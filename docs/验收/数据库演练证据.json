@@ -1,0 +1,2167 @@
+{
+  "source": {
+    "host": "127.0.0.1",
+    "port": 3306,
+    "schema": "wflg_workload",
+    "version": "9.0.1"
+  },
+  "isolated": {
+    "host": "127.0.0.1",
+    "port": 13306,
+    "upgrade_schema": "wfit_verify_20261025_150548",
+    "restore_schema": "wfit_restore_20261025_150548"
+  },
+  "before": {
+    "biz_allowance_item": {
+      "columns": [
+        "id",
+        "pay_record_id",
+        "user_id",
+        "semester",
+        "fee_type",
+        "fee_subtype",
+        "student_count",
+        "duration_hours",
+        "days",
+        "class_count",
+        "workload_units",
+        "lecture_name",
+        "ext",
+        "amount",
+        "status",
+        "create_by",
+        "create_time",
+        "update_by",
+        "update_time",
+        "remark"
+      ],
+      "count": 0,
+      "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "ddl_sha256": "532c45b30a00420031c2ea92ff17d3bc7dceeebd79459c36e9e48fbc12461009",
+      "column_metadata_sha256": "189f38d485b836d097b73fcba52f96d1a9719b9c8ee3c77ce74d3a4bd48dae53"
+    },
+    "biz_audit_log": {
+      "columns": [
+        "id",
+        "summary_id",
+        "action",
+        "from_status",
+        "to_status",
+        "operator_id",
+        "operator_name",
+        "reason",
+        "create_time"
+      ],
+      "count": 0,
+      "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "ddl_sha256": "646997e9d390cdcf9ccc57701e08648e31379836f47ec1dde132100306edf894",
+      "column_metadata_sha256": "405a103adf4e4991926e576fdde555b6e52c37e4fcd991a25ea0c4510e6da46b"
+    },
+    "biz_coefficient_adjustment": {
+      "columns": [
+        "id",
+        "user_id",
+        "semester",
+        "task_id",
+        "item_id",
+        "category",
+        "factor_code",
+        "old_value",
+        "requested_value",
+        "reason",
+        "attachment_url",
+        "status",
+        "reviewer_id",
+        "review_reason",
+        "reviewed_at",
+        "base_calculation_version",
+        "create_by",
+        "create_time",
+        "update_by",
+        "update_time",
+        "remark",
+        "pending_key"
+      ],
+      "count": 0,
+      "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "ddl_sha256": "f2cbece807e88c700522be2b1455f85fb96617415fcacf687e0b5674dcd05b3c",
+      "column_metadata_sha256": "1b71e5cb7f5069732bee004713d01b5c82b6d74c7408c5b2c4e5face341d640a"
+    },
+    "biz_import_batch": {
+      "columns": [
+        "id",
+        "batch_no",
+        "import_type",
+        "file_name",
+        "file_url",
+        "total_count",
+        "success_count",
+        "fail_count",
+        "status",
+        "error_summary",
+        "create_by",
+        "create_time",
+        "update_by",
+        "update_time",
+        "remark"
+      ],
+      "count": 0,
+      "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "ddl_sha256": "f14916ac4e9655a426349bd76df3f48cead2ddd6229d2ac7c30b913db23b9814",
+      "column_metadata_sha256": "b217b4f8da585d8c59d3e1ca9f6409018ca2ef52dd1edee27e97977ae7b6fb5f"
+    },
+    "biz_pay_rate": {
+      "columns": [
+        "id",
+        "title",
+        "rate",
+        "effective_from",
+        "effective_to",
+        "status",
+        "create_by",
+        "create_time",
+        "update_by",
+        "update_time",
+        "remark"
+      ],
+      "count": 4,
+      "data_sha256": "9399a1cc6d9717cf74542478ddad9df2d7c705463bc080e57317c289f2a8d1b2",
+      "ddl_sha256": "c60003b606be387fc6b67c215b87853e02bf9fb482bac42bc6a5b28a75297829",
+      "column_metadata_sha256": "111af98e54f40f521e16d30f90a24eccdba98d934dbc5ef5795b871d7d105adb"
+    },
+    "biz_pay_record": {
+      "columns": [
+        "id",
+        "user_id",
+        "semester",
+        "summary_id",
+        "course_hour_pay",
+        "other_pay_total",
+        "total_pay",
+        "status",
+        "create_by",
+        "create_time",
+        "update_by",
+        "update_time",
+        "remark"
+      ],
+      "count": 0,
+      "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "ddl_sha256": "2d0cf56a5544ce996b892b1296cff2e951c23b2cc27caa56fc6e59db99b90caa",
+      "column_metadata_sha256": "e9e1cdd66287d80bffe2ad33548cddaadf994544ec86a1760a993789eb25936d"
+    },
+    "biz_role_assignment": {
+      "columns": [
+        "id",
+        "user_id",
+        "role_type",
+        "target",
+        "start_date",
+        "end_date",
+        "semester",
+        "academic_year",
+        "allowance_rate",
+        "source_batch_id",
+        "status",
+        "create_by",
+        "create_time",
+        "update_by",
+        "update_time",
+        "remark"
+      ],
+      "count": 2,
+      "data_sha256": "4d6942625d3ef53887b133ebe22aa4d804cfda759e4e0b91c9591e89899187ce",
+      "ddl_sha256": "581804483094f5b5d54afce45cfd8abc857cb7d1095aea24cf65cd9cedef55db",
+      "column_metadata_sha256": "dd12073a069d8cdffba56f5fb9bb6007044e6d1c0dc82adce7ad15b9bbec51b7"
+    },
+    "biz_teacher_profile": {
+      "columns": [
+        "user_id",
+        "title",
+        "teacher_nature",
+        "special_status",
+        "special_status_start",
+        "special_status_end",
+        "enterprise_eval_result",
+        "dept_id",
+        "create_by",
+        "create_time",
+        "update_by",
+        "update_time",
+        "remark"
+      ],
+      "count": 6,
+      "data_sha256": "8382076b77393ca6e5b0da34f29bbdb37e14b08f7947141b568edd298ae4aa5e",
+      "ddl_sha256": "ff2e9cf599c2c4d2add8750b7bda3e7047929362952121384e8a73c513617421",
+      "column_metadata_sha256": "453bf5521beaa1e88284d86697f654b92ab5f3441af53e96d054a52868a99aab"
+    },
+    "biz_teaching_task": {
+      "columns": [
+        "id",
+        "user_id",
+        "semester",
+        "academic_year",
+        "course_name",
+        "course_code",
+        "education_level",
+        "major_category",
+        "course_nature",
+        "course_level",
+        "course_role",
+        "class_name",
+        "student_count",
+        "theory_hours",
+        "practice_hours",
+        "repeat_order",
+        "is_retake",
+        "import_source",
+        "import_batch",
+        "import_time",
+        "status",
+        "create_by",
+        "create_time",
+        "update_by",
+        "update_time",
+        "remark"
+      ],
+      "count": 9,
+      "data_sha256": "9f92d6620ba606702c87c9bf3a8c6b356cb2adfa6e7af6e7b3316d2fe0fbd752",
+      "ddl_sha256": "0c6e92a7708ac9bd7b5b18cd3c64e9a06b3133b05b0fc61e59b613082332938e",
+      "column_metadata_sha256": "f34662b83f2be96e196f22762c00282a39c0d096157285766bf6602b8e689b5c"
+    },
+    "biz_wl_concentrated_internship": {
+      "columns": [
+        "item_id",
+        "W",
+        "R6",
+        "create_by",
+        "create_time",
+        "update_by",
+        "update_time",
+        "remark"
+      ],
+      "count": 1,
+      "data_sha256": "35ba8e694df3613dd12ddaf44dd91ff2e8a51db4029d5f12aef4ef725dc9dff5",
+      "ddl_sha256": "b46757b78127be29222d34be165afb408e0eb00b5c1f34215010114eedd72b89",
+      "column_metadata_sha256": "37d5b692a2588a91fb59aa0316eb92727b14d3f6c26f03743325d4f50035fa6f"
+    },
+    "biz_wl_course_design": {
+      "columns": [
+        "item_id",
+        "J4",
+        "R4",
+        "create_by",
+        "create_time",
+        "update_by",
+        "update_time",
+        "remark"
+      ],
+      "count": 1,
+      "data_sha256": "4bfde00679993b88291bd0ef0ec0070148ffea18088c1c9ecab81ab35ecee29a",
+      "ddl_sha256": "8cf948c5be2f645aa64eea7f696349b9585b7c467aa5f508f49970d374f37530",
+      "column_metadata_sha256": "2ed2fc0527bdb2333334152c607aab09d6434bdbd5edb11b37d74e4790071779"
+    },
+    "biz_wl_internship_training": {
+      "columns": [
+        "item_id",
+        "T",
+        "D",
+        "K",
+        "Q1",
+        "Q2",
+        "Q3",
+        "create_by",
+        "create_time",
+        "update_by",
+        "update_time",
+        "remark"
+      ],
+      "count": 1,
+      "data_sha256": "cddff567d5f8b83a38d478d4f2dd1a59050afda35fd62e7e96021f16d1b59fbe",
+      "ddl_sha256": "d4cb87214fb58865c8030be6b61258c74c5bfa591527c62a4f629711aa696ba9",
+      "column_metadata_sha256": "df98831f72bfec57444b2553f024a9426b2c603d00b040b00324201a1d54927d"
+    },
+    "biz_wl_management": {
+      "columns": [
+        "item_id",
+        "assignment_id",
+        "role_type",
+        "prorated_amount",
+        "proration_basis",
+        "source_batch_id",
+        "create_by",
+        "create_time",
+        "update_by",
+        "update_time",
+        "remark"
+      ],
+      "count": 1,
+      "data_sha256": "b0c70ab76a8fd0eebc3834d0a6c3bef68d558870b087c04e5b57e75d292f98bd",
+      "ddl_sha256": "a2ec0bfa9ff43f33a6f897d5299951f3fddffe6789da8b9e9e7f9ca5303f8f3e",
+      "column_metadata_sha256": "37216c6593b6703872bbfa16faab7fff5b3f668e72f7f10b80a5044b84bb64ec"
+    },
+    "biz_wl_practice": {
+      "columns": [
+        "item_id",
+        "J2",
+        "K",
+        "C2",
+        "Q1",
+        "Q2",
+        "Q3",
+        "create_by",
+        "create_time",
+        "update_by",
+        "update_time",
+        "remark"
+      ],
+      "count": 1,
+      "data_sha256": "7bc171e49811f19422f06bdbf1b68111897dae108a27578fff4036123d24684a",
+      "ddl_sha256": "6d01345442aadc25631d69ce693c2b1b561fb26c56cae00fcc1739fe3b3f3c4e",
+      "column_metadata_sha256": "0bf9d61098a8ecf0f09f3c9a157ce3d77dd69a1e310106841c04397d3dd86b8e"
+    },
+    "biz_wl_theory": {
+      "columns": [
+        "item_id",
+        "J1",
+        "C1",
+        "K1",
+        "Q1",
+        "Q2",
+        "Q3",
+        "N",
+        "create_by",
+        "create_time",
+        "update_by",
+        "update_time",
+        "remark"
+      ],
+      "count": 7,
+      "data_sha256": "74a0c90c2d9160da86c125aa0616a8b402ee3f0e1baf53f9f3f641b6956f6ec5",
+      "ddl_sha256": "f5511155237db1d94c0d1507ebc593d9a6397b28ae254218551c2a6b876a06a5",
+      "column_metadata_sha256": "a13c7914790496165e997a9b2f0f1efcbe0393105f59bc0baff9f26feaa68e2a"
+    },
+    "biz_wl_thesis": {
+      "columns": [
+        "item_id",
+        "R5",
+        "K5",
+        "education_level",
+        "major",
+        "discipline_category",
+        "create_by",
+        "create_time",
+        "update_by",
+        "update_time",
+        "remark"
+      ],
+      "count": 1,
+      "data_sha256": "b72a2b390b5c09909dfc9211b7863b2ea43df21aa2b862d6e8d06cb8da868c79",
+      "ddl_sha256": "c3901006d9aed8d616dca7c7b377b76cab09fdae92b0398ff575e8a71903e6a2",
+      "column_metadata_sha256": "33e480e16d9d0d2efe1e6355b7d948536889b2d4a80aaeeee0c21883ef557ea7"
+    },
+    "biz_workload_calc_snapshot": {
+      "columns": [
+        "id",
+        "item_id",
+        "calculation_version",
+        "formula_expression",
+        "factor_json",
+        "source_json",
+        "rule_version",
+        "result",
+        "snapshot_hash",
+        "created_by",
+        "created_at",
+        "context_json"
+      ],
+      "count": 0,
+      "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "ddl_sha256": "0d11ea91c9e39919ab906d9150154dfbc413268877ad67a6c0ec8cf6d1a0e416",
+      "column_metadata_sha256": "9bba7afd347aceff61a3b3e32a22036352822440c2c1576c6aae4b638ba49df2"
+    },
+    "biz_workload_category_dict": {
+      "columns": [
+        "type_code",
+        "type_name",
+        "parent_group",
+        "calc_strategy",
+        "is_calc_excess",
+        "sort_order",
+        "status",
+        "create_by",
+        "create_time",
+        "update_by",
+        "update_time",
+        "remark"
+      ],
+      "count": 11,
+      "data_sha256": "a5437b8b38d27c97bc13cfeea6cec280890cf514f0bf05ec99e66644e35c831a",
+      "ddl_sha256": "78db456bc872ace89880bab7a70543c0320d92cfbb7b0f3644c3ceaa14b454b8",
+      "column_metadata_sha256": "bb7653933cad2d2c79e1623a1427fe3399f15b40663983f5f28fefe8e0240541"
+    },
+    "biz_workload_item": {
+      "columns": [
+        "id",
+        "user_id",
+        "semester",
+        "academic_year",
+        "item_type",
+        "source_type",
+        "task_id",
+        "assignment_id",
+        "role_type",
+        "course_name",
+        "education_level",
+        "major_category",
+        "calculated_workload",
+        "description",
+        "is_over_limit",
+        "dean_approval_status",
+        "dean_approval_by",
+        "dean_approval_time",
+        "appeal_status",
+        "appeal_reason",
+        "appeal_reply",
+        "status",
+        "create_by",
+        "create_time",
+        "update_by",
+        "update_time",
+        "remark",
+        "calculation_version",
+        "last_calculated_at"
+      ],
+      "count": 14,
+      "data_sha256": "a101ecf99c4b396730418ff023869d3e6c4b9860ed71eaf0238003ab6b58738b",
+      "ddl_sha256": "31f2394f71167d954b044804811f4a424a8933651960e80a683e713a87166666",
+      "column_metadata_sha256": "3f98aa5823ecc5afcc94b290445fef18f927ede14f92870ffbd93bcbd7f46cf4"
+    },
+    "biz_workload_rule": {
+      "columns": [
+        "id",
+        "rule_code",
+        "rule_value",
+        "rule_desc",
+        "effective_from",
+        "effective_to",
+        "status",
+        "create_by",
+        "create_time",
+        "update_by",
+        "update_time",
+        "remark"
+      ],
+      "count": 43,
+      "data_sha256": "885e0ba8f159d900547c002e118c2a081c19f31c11d5a67a2928a4f608f19d33",
+      "ddl_sha256": "16a29ef1285db85559a3a82f4c53a7dff3af4b21124c59411d9d0c7dd1103730",
+      "column_metadata_sha256": "abff7393a59308062e5da8d72185cdf1d735b9d85b3e96e5e98898d85e6e2ce9"
+    },
+    "biz_workload_summary": {
+      "columns": [
+        "id",
+        "user_id",
+        "semester",
+        "academic_year",
+        "G7",
+        "G8",
+        "G9",
+        "G10",
+        "G11",
+        "total_workload",
+        "rated_workload",
+        "excess_workload",
+        "g8_remark",
+        "g11_remark",
+        "title",
+        "pay_rate",
+        "performance_pay",
+        "is_capped",
+        "basic_teaching_standard",
+        "basic_teaching_met",
+        "status",
+        "teacher_sign",
+        "teacher_sign_time",
+        "dept_leader_sign",
+        "dept_leader_sign_time",
+        "academic_assistant_sign",
+        "academic_assistant_sign_time",
+        "lock_time",
+        "create_by",
+        "create_time",
+        "update_by",
+        "update_time",
+        "remark"
+      ],
+      "count": 4,
+      "data_sha256": "04bd00aa3a43e20f12c0b2b10031ad0fec0ccb7360a708a41908e6f5b4a9e41d",
+      "ddl_sha256": "e8d3ec1ab5ebba298a161c3f4fd1c1af259725da069db2a901fc95d8301c0797",
+      "column_metadata_sha256": "b059eee5e6579689838496aed99c0549ea1037b1d0cf5eeb93436c6da1d46880"
+    },
+    "gen_table": {
+      "columns": [
+        "table_id",
+        "table_name",
+        "table_comment",
+        "sub_table_name",
+        "sub_table_fk_name",
+        "class_name",
+        "tpl_category",
+        "tpl_web_type",
+        "package_name",
+        "module_name",
+        "business_name",
+        "function_name",
+        "function_author",
+        "form_col_num",
+        "gen_type",
+        "gen_path",
+        "options",
+        "create_by",
+        "create_time",
+        "update_by",
+        "update_time",
+        "remark"
+      ],
+      "count": 0,
+      "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "ddl_sha256": "56b629590f6ed6da009e033971e35ad975ca12ac600973567ee1fe6368dcc945",
+      "column_metadata_sha256": "48d4840784f3981e0a742aa115a050201ce90a2e827bdc44fb4854c66468b62c"
+    },
+    "gen_table_column": {
+      "columns": [
+        "column_id",
+        "table_id",
+        "column_name",
+        "column_comment",
+        "column_type",
+        "java_type",
+        "java_field",
+        "is_pk",
+        "is_increment",
+        "is_required",
+        "is_insert",
+        "is_edit",
+        "is_list",
+        "is_query",
+        "query_type",
+        "html_type",
+        "dict_type",
+        "sort",
+        "create_by",
+        "create_time",
+        "update_by",
+        "update_time"
+      ],
+      "count": 0,
+      "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "ddl_sha256": "917a6859d68ff33a1ab01009d620c864e182c53d44ec51ccf21166be3c391a95",
+      "column_metadata_sha256": "9fe333f8d3a076b0da73c4be05a70223f6ab87207e4f07a732f177aeeae9b94f"
+    },
+    "QRTZ_BLOB_TRIGGERS": {
+      "columns": [
+        "sched_name",
+        "trigger_name",
+        "trigger_group",
+        "blob_data"
+      ],
+      "count": 0,
+      "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "ddl_sha256": "43207f5e48ba05d2c33853b5d77a4aa2836e0b846699f2df9823121ec9a2341d",
+      "column_metadata_sha256": "c652984c46c35b1c7b11c62413756efff69d9a0e08d14daada5e3e663852d642"
+    },
+    "QRTZ_CALENDARS": {
+      "columns": [
+        "sched_name",
+        "calendar_name",
+        "calendar"
+      ],
+      "count": 0,
+      "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "ddl_sha256": "77ab512a7dc7e2ba264800705d46d995a6e1e3fbf696c9a68fb412e92fbc92d4",
+      "column_metadata_sha256": "3f31e0222d6e8c3935e50fbfd3d83029ee6300976d8c164679ea8231ec0bc93c"
+    },
+    "QRTZ_CRON_TRIGGERS": {
+      "columns": [
+        "sched_name",
+        "trigger_name",
+        "trigger_group",
+        "cron_expression",
+        "time_zone_id"
+      ],
+      "count": 0,
+      "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "ddl_sha256": "49fb29f65528fb4201d73dc505d48a438ffc59c9bbc6583c85520b98916c5355",
+      "column_metadata_sha256": "860a46a609e9116b6a371c0aa5b32b2d60e274d7de17cb36ee06dab14298674f"
+    },
+    "QRTZ_FIRED_TRIGGERS": {
+      "columns": [
+        "sched_name",
+        "entry_id",
+        "trigger_name",
+        "trigger_group",
+        "instance_name",
+        "fired_time",
+        "sched_time",
+        "priority",
+        "state",
+        "job_name",
+        "job_group",
+        "is_nonconcurrent",
+        "requests_recovery"
+      ],
+      "count": 0,
+      "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "ddl_sha256": "1f4bf610b0a5274eea50bd37a1d2e8aeeb82962b5fd5693321d9522db4e437aa",
+      "column_metadata_sha256": "c0adf6a1080062ae85b605468e97055e9fef5b80752f7f6fc2f8cbd02c09990b"
+    },
+    "QRTZ_JOB_DETAILS": {
+      "columns": [
+        "sched_name",
+        "job_name",
+        "job_group",
+        "description",
+        "job_class_name",
+        "is_durable",
+        "is_nonconcurrent",
+        "is_update_data",
+        "requests_recovery",
+        "job_data"
+      ],
+      "count": 0,
+      "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "ddl_sha256": "c7dac8e28b19b4783ec376d3207c2a3e34050a9a90427a068bd662ff65c0af90",
+      "column_metadata_sha256": "19163ee898de7708854b117f25b03f4c0361ce59c82c779c2fa73e2598989acb"
+    },
+    "QRTZ_LOCKS": {
+      "columns": [
+        "sched_name",
+        "lock_name"
+      ],
+      "count": 0,
+      "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "ddl_sha256": "51462afbad41db1c89d74897e4fc8db6c193df7cdcf43a98904a4cc342c4e107",
+      "column_metadata_sha256": "f307281f9a29e6df4f541158f0ebb5db89648f741f46fc960f0a7495debb4690"
+    },
+    "QRTZ_PAUSED_TRIGGER_GRPS": {
+      "columns": [
+        "sched_name",
+        "trigger_group"
+      ],
+      "count": 0,
+      "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "ddl_sha256": "19b6e725b1a06edb51a387b1530de2fe208a1c5a58bf2433358a5c3eb0bf6534",
+      "column_metadata_sha256": "463a03c0de1adaed1d2ddbc8fc0c65bed9afdeb3bedde0f90bb24394f30f3ffb"
+    },
+    "QRTZ_SCHEDULER_STATE": {
+      "columns": [
+        "sched_name",
+        "instance_name",
+        "last_checkin_time",
+        "checkin_interval"
+      ],
+      "count": 0,
+      "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "ddl_sha256": "561f067b7bab3ba24d73ad60410b776a683d6303d9398045e1576df422658262",
+      "column_metadata_sha256": "5f355c3689cdade875ff11e041e11542899870f3b0614e77eaed1646bbd7d039"
+    },
+    "QRTZ_SIMPLE_TRIGGERS": {
+      "columns": [
+        "sched_name",
+        "trigger_name",
+        "trigger_group",
+        "repeat_count",
+        "repeat_interval",
+        "times_triggered"
+      ],
+      "count": 0,
+      "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "ddl_sha256": "14540754f2f06fa62c4a3207aae761597b69c57fd46d87532cc03217739598d4",
+      "column_metadata_sha256": "f18d64eff6a480bc42559f30786b66ccb0d51baab8f7301f87b92649d2c3fba7"
+    },
+    "QRTZ_SIMPROP_TRIGGERS": {
+      "columns": [
+        "sched_name",
+        "trigger_name",
+        "trigger_group",
+        "str_prop_1",
+        "str_prop_2",
+        "str_prop_3",
+        "int_prop_1",
+        "int_prop_2",
+        "long_prop_1",
+        "long_prop_2",
+        "dec_prop_1",
+        "dec_prop_2",
+        "bool_prop_1",
+        "bool_prop_2"
+      ],
+      "count": 0,
+      "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "ddl_sha256": "e87cfca1f5069c338b5bbe12abac9606873a7bdb9ae5e85b542fd5f7c9ceeb91",
+      "column_metadata_sha256": "441d0c42710810355b5d1ff8644c50c6a2944fd0349de8d8e7b301abe23a8ba8"
+    },
+    "QRTZ_TRIGGERS": {
+      "columns": [
+        "sched_name",
+        "trigger_name",
+        "trigger_group",
+        "job_name",
+        "job_group",
+        "description",
+        "next_fire_time",
+        "prev_fire_time",
+        "priority",
+        "trigger_state",
+        "trigger_type",
+        "start_time",
+        "end_time",
+        "calendar_name",
+        "misfire_instr",
+        "job_data"
+      ],
+      "count": 0,
+      "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "ddl_sha256": "00a7a65faed0cdee28ef4eb3359c499dfbce3a8db5f7e2721479cb1dccdb85dc",
+      "column_metadata_sha256": "5e70e77530708017fa0ab7079a1afed1971a4738f30151423514525153e3ca9b"
+    },
+    "sys_config": {
+      "columns": [
+        "config_id",
+        "config_name",
+        "config_key",
+        "config_value",
+        "config_type",
+        "create_by",
+        "create_time",
+        "update_by",
+        "update_time",
+        "remark"
+      ],
+      "count": 8,
+      "data_sha256": "cfd2827f5c338db54b79ada3a6ed3abd16af067633d654e4a3e0503b1e5523ab",
+      "ddl_sha256": "c091bbf2091203caca0ebd9d7fd806e19f6e0f7fb2b54a08721fa80fa29a0a9b",
+      "column_metadata_sha256": "4d8cf6d9ce926ae1c7b12130b57cacf8c12ce345358651cd04dca58adc0d2dfa"
+    },
+    "sys_dept": {
+      "columns": [
+        "dept_id",
+        "parent_id",
+        "ancestors",
+        "dept_name",
+        "order_num",
+        "leader",
+        "phone",
+        "email",
+        "status",
+        "del_flag",
+        "create_by",
+        "create_time",
+        "update_by",
+        "update_time"
+      ],
+      "count": 10,
+      "data_sha256": "60cd92057f4fdb3ec47d5f713b7d85f80c647fafa148eedfcb056e63eed8c101",
+      "ddl_sha256": "9b56c362e31707db5fd6ef48ea88e07179d9c9fb492957edb474c8cf8783490f",
+      "column_metadata_sha256": "f9689787ef3bddde39f01fb3f52e7837112a29258eb5cf2a85a672bae0e572e8"
+    },
+    "sys_dict_data": {
+      "columns": [
+        "dict_code",
+        "dict_sort",
+        "dict_label",
+        "dict_value",
+        "dict_type",
+        "css_class",
+        "list_class",
+        "is_default",
+        "status",
+        "create_by",
+        "create_time",
+        "update_by",
+        "update_time",
+        "remark"
+      ],
+      "count": 29,
+      "data_sha256": "a45e43e6ac5b97b6139da50537b833a321ace3800b8529fe54ef06f0a71ba011",
+      "ddl_sha256": "d3d3755f49cf04f1eef7a9293899e33bee515c259ca9d33b48a1e1f6bd4c28ae",
+      "column_metadata_sha256": "dfd5618b184728e1cee5789c1703770514c667e92c8572d2baba8fdc7a5848b6"
+    },
+    "sys_dict_type": {
+      "columns": [
+        "dict_id",
+        "dict_name",
+        "dict_type",
+        "status",
+        "create_by",
+        "create_time",
+        "update_by",
+        "update_time",
+        "remark"
+      ],
+      "count": 10,
+      "data_sha256": "1226bec801e6adf35d23e3ef2ec748816f513d7cbe4d46331f4e9f17ae91e00d",
+      "ddl_sha256": "69e7d2ced24c63246e067feb73719f62ce2a32279e6b32db3a21e56bbc35ce3b",
+      "column_metadata_sha256": "43712458767cf8de99ad4d4fecb0c1ce6201908bc66a213c5b86223957813e31"
+    },
+    "sys_job": {
+      "columns": [
+        "job_id",
+        "job_name",
+        "job_group",
+        "invoke_target",
+        "cron_expression",
+        "misfire_policy",
+        "concurrent",
+        "status",
+        "create_by",
+        "create_time",
+        "update_by",
+        "update_time",
+        "remark"
+      ],
+      "count": 3,
+      "data_sha256": "2f57113a0ca75a4e7bffed1f16cf020b2bb50574ebe28dacffe165caeb5f1c9a",
+      "ddl_sha256": "0f81e20b2a74b6038d4e1553cd3d8ea4c689ebf2d6debaba73858121946709e1",
+      "column_metadata_sha256": "d91f6bf6023030fce9a1b2ef4d1ec782b74cb418787086d46622d6988e95100d"
+    },
+    "sys_job_log": {
+      "columns": [
+        "job_log_id",
+        "job_name",
+        "job_group",
+        "invoke_target",
+        "job_message",
+        "status",
+        "exception_info",
+        "start_time",
+        "end_time",
+        "create_time"
+      ],
+      "count": 0,
+      "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "ddl_sha256": "f8d6e22b902b3b9efacf6034fe40bec45cc33405136c4ff37f8ca8609859675c",
+      "column_metadata_sha256": "4110968fbc6f14636935f10e0a3069f86ffb080e01849ad1e5b78c79b1c3711a"
+    },
+    "sys_logininfor": {
+      "columns": [
+        "info_id",
+        "user_name",
+        "ipaddr",
+        "login_location",
+        "browser",
+        "os",
+        "status",
+        "msg",
+        "login_time"
+      ],
+      "count": 8,
+      "data_sha256": "efb8fbc11b50211cf52b8e41f33d1e780f3e744044f4c7e6c19e3a999515680c",
+      "ddl_sha256": "d9ec115784ca4a1c8b741e52e6303111737b774971b97bcfc89607280e2f0cea",
+      "column_metadata_sha256": "9a64f0c00f5e50c9cb31017eb249e68c27194a39886b327ffc32f20089fa370f"
+    },
+    "sys_menu": {
+      "columns": [
+        "menu_id",
+        "menu_name",
+        "parent_id",
+        "order_num",
+        "path",
+        "component",
+        "query",
+        "route_name",
+        "is_frame",
+        "is_cache",
+        "menu_type",
+        "visible",
+        "status",
+        "perms",
+        "icon",
+        "create_by",
+        "create_time",
+        "update_by",
+        "update_time",
+        "remark"
+      ],
+      "count": 202,
+      "data_sha256": "7200635f859a2804e96916a3a42f485555857aec198d5a10b809de097a73e191",
+      "ddl_sha256": "c020cd9fc890df3d93728fd58afe8cc8df74291f386d6aa7196f426ab1b74666",
+      "column_metadata_sha256": "9d4145a81c6acadcde237f631408b0effa37730794dbb90dbc54a81df2a3c9f3"
+    },
+    "sys_notice": {
+      "columns": [
+        "notice_id",
+        "notice_title",
+        "notice_type",
+        "notice_content",
+        "status",
+        "create_by",
+        "create_time",
+        "update_by",
+        "update_time",
+        "remark"
+      ],
+      "count": 3,
+      "data_sha256": "7d05d1eecafe92f18c5f65078260b31d19edaacad0ee0529a61d734fd87b010e",
+      "ddl_sha256": "dd8da92d015808d70a38b593e92016bdad3d2c8fa288cc9b0c60cc00e7af0e86",
+      "column_metadata_sha256": "e639f3bb88d38d0734f9b3091cb917508be910036cd43bf3121674b1be495e99"
+    },
+    "sys_notice_read": {
+      "columns": [
+        "read_id",
+        "notice_id",
+        "user_id",
+        "read_time"
+      ],
+      "count": 0,
+      "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "ddl_sha256": "65740eca5610a6e354b4dfa113faf0826214a901eb3008a59fb278e0a3566864",
+      "column_metadata_sha256": "50866a193a689ed110b1ea5d282ce90fdd7432697dff0b2a6f8fe4db1bb0a4c0"
+    },
+    "sys_oper_log": {
+      "columns": [
+        "oper_id",
+        "title",
+        "business_type",
+        "method",
+        "request_method",
+        "operator_type",
+        "oper_name",
+        "dept_name",
+        "oper_url",
+        "oper_ip",
+        "oper_location",
+        "oper_param",
+        "json_result",
+        "status",
+        "error_msg",
+        "oper_time",
+        "cost_time"
+      ],
+      "count": 2,
+      "data_sha256": "fd3de6dcf777340f625af2ffa82fa1ac5fdc7538d4b09a5fd5b2177fad7bef01",
+      "ddl_sha256": "88c02306260cc64444cdf5e8d53baae800207bb8b6690fa9c649c273210d4fac",
+      "column_metadata_sha256": "b91e28dbec56e71b95466869bb9c36665f428f8f3c22d9476968394d672bc671"
+    },
+    "sys_post": {
+      "columns": [
+        "post_id",
+        "post_code",
+        "post_name",
+        "post_sort",
+        "status",
+        "create_by",
+        "create_time",
+        "update_by",
+        "update_time",
+        "remark"
+      ],
+      "count": 4,
+      "data_sha256": "ffa1ae1e3a1aa579a40dd651739bef1978e4644ee57e4070acba970ff88fb578",
+      "ddl_sha256": "98762cb85a3a354498dc7ea97ec1f2bbda1a6c3d2cf631573607e416a9e59b3f",
+      "column_metadata_sha256": "a3fa21e30c5efb943567d7676fe75d078498b0a682001f0614ccd6d99a86a49c"
+    },
+    "sys_role": {
+      "columns": [
+        "role_id",
+        "role_name",
+        "role_key",
+        "role_sort",
+        "data_scope",
+        "menu_check_strictly",
+        "dept_check_strictly",
+        "status",
+        "del_flag",
+        "create_by",
+        "create_time",
+        "update_by",
+        "update_time",
+        "remark"
+      ],
+      "count": 5,
+      "data_sha256": "89982a24c45134e85fdfbda383df6d2c4f49debd10e9a0d77485e4d6e9a47fb7",
+      "ddl_sha256": "baf833d24a43427b312187ebeb9eff9b98a4b4a885cd4bf421a09822c1849b42",
+      "column_metadata_sha256": "5d2513b908e62ae58348ee5328832fcc65eefc02b5bf8d695262e81c921a0909"
+    },
+    "sys_role_dept": {
+      "columns": [
+        "role_id",
+        "dept_id"
+      ],
+      "count": 3,
+      "data_sha256": "81dc1226137c6897402267fff4594685110263531cfc6aeaacf0826080fce5d1",
+      "ddl_sha256": "6044e865948e3cf396f006d7f06ebfc8ab819ad9937175f68c84f64859adce55",
+      "column_metadata_sha256": "ee40e73fdce9b02798adc1ba24528dbfa8b713b0551ac6de4744ce576628b715"
+    },
+    "sys_role_menu": {
+      "columns": [
+        "role_id",
+        "menu_id"
+      ],
+      "count": 479,
+      "data_sha256": "c89d2dad52b29517b1852293987c6f4bd2a6d5d94e13ac129579c772e4274e83",
+      "ddl_sha256": "13fab8bd973be7100a43c8de48f0b6dccd0b396a9f652bd3f5c632fcf9495f46",
+      "column_metadata_sha256": "ab96cdc414b02e2d0bca479e54bef3a3a48e4e118388669b7cc9ce7a3760c898"
+    },
+    "sys_user": {
+      "columns": [
+        "user_id",
+        "dept_id",
+        "user_name",
+        "nick_name",
+        "user_type",
+        "email",
+        "phonenumber",
+        "sex",
+        "avatar",
+        "password",
+        "status",
+        "del_flag",
+        "login_ip",
+        "login_date",
+        "pwd_update_date",
+        "create_by",
+        "create_time",
+        "update_by",
+        "update_time",
+        "remark"
+      ],
+      "count": 10,
+      "data_sha256": "b0c5fd77ad4700499c1d08939613805f98a4549be762f12772e1ec66a91789d4",
+      "ddl_sha256": "339b9c9e1fea321e8f22a2c8dc1e59f2e24f9eb76c247c5babcab521381f3744",
+      "column_metadata_sha256": "39969db73123d4e129e4524cce7b20a1175453cf19c141bd012e464228cca1d6"
+    },
+    "sys_user_post": {
+      "columns": [
+        "user_id",
+        "post_id"
+      ],
+      "count": 2,
+      "data_sha256": "13c0b8f8159e79b10af5819b19ef50fcd5f9f9a849b0721ac7f5fe137cc9d964",
+      "ddl_sha256": "38da75eaba3cd9d638661f2cf67abe078cc355c75fcc4ffbd463609fb8789a22",
+      "column_metadata_sha256": "1fa3bf2b9a4e1b593ca146d38b3ec7499fe4a6c30dc268219d2eb350a07bd5d4"
+    },
+    "sys_user_role": {
+      "columns": [
+        "user_id",
+        "role_id"
+      ],
+      "count": 10,
+      "data_sha256": "35eabe3b8d8f3ddbb52dac0ea3ac32129b6990edbafe681e6e1bc5401b45770c",
+      "ddl_sha256": "52f57f5f224c8e8f0db05449ca3a7f0c83aeb779dbab70324b229c8b4349435f",
+      "column_metadata_sha256": "ca90ece63d2fcc0df4aa0c95909d82f24a25b154427d5f04c2b2b830adf17cef"
+    }
+  },
+  "after": {
+    "biz_allowance_item": {
+      "columns": [
+        "id",
+        "pay_record_id",
+        "user_id",
+        "semester",
+        "fee_type",
+        "fee_subtype",
+        "student_count",
+        "duration_hours",
+        "days",
+        "class_count",
+        "workload_units",
+        "lecture_name",
+        "ext",
+        "amount",
+        "status",
+        "create_by",
+        "create_time",
+        "update_by",
+        "update_time",
+        "remark"
+      ],
+      "count": 0,
+      "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "ddl_sha256": "532c45b30a00420031c2ea92ff17d3bc7dceeebd79459c36e9e48fbc12461009",
+      "column_metadata_sha256": "189f38d485b836d097b73fcba52f96d1a9719b9c8ee3c77ce74d3a4bd48dae53"
+    },
+    "biz_audit_log": {
+      "columns": [
+        "id",
+        "summary_id",
+        "action",
+        "from_status",
+        "to_status",
+        "operator_id",
+        "operator_name",
+        "reason",
+        "create_time"
+      ],
+      "count": 0,
+      "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "ddl_sha256": "646997e9d390cdcf9ccc57701e08648e31379836f47ec1dde132100306edf894",
+      "column_metadata_sha256": "405a103adf4e4991926e576fdde555b6e52c37e4fcd991a25ea0c4510e6da46b"
+    },
+    "biz_coefficient_adjustment": {
+      "columns": [
+        "id",
+        "user_id",
+        "semester",
+        "task_id",
+        "item_id",
+        "category",
+        "factor_code",
+        "old_value",
+        "requested_value",
+        "reason",
+        "attachment_url",
+        "status",
+        "reviewer_id",
+        "review_reason",
+        "reviewed_at",
+        "base_calculation_version",
+        "create_by",
+        "create_time",
+        "update_by",
+        "update_time",
+        "remark",
+        "pending_key"
+      ],
+      "count": 0,
+      "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "ddl_sha256": "f2cbece807e88c700522be2b1455f85fb96617415fcacf687e0b5674dcd05b3c",
+      "column_metadata_sha256": "1b71e5cb7f5069732bee004713d01b5c82b6d74c7408c5b2c4e5face341d640a"
+    },
+    "biz_import_batch": {
+      "columns": [
+        "id",
+        "batch_no",
+        "import_type",
+        "file_name",
+        "file_url",
+        "total_count",
+        "success_count",
+        "fail_count",
+        "status",
+        "error_summary",
+        "create_by",
+        "create_time",
+        "update_by",
+        "update_time",
+        "remark",
+        "template_version",
+        "source_hash",
+        "operator_id",
+        "operator_name",
+        "confirm_token_hash",
+        "confirmed_at",
+        "template_category"
+      ],
+      "count": 0,
+      "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "ddl_sha256": "89a92d6eff47a177720dc64662d7ff46929cf4b0579117a7c915c808e860391b",
+      "column_metadata_sha256": "01561db88662a386cbe70c4ee9da77ec5903c1a17a8d4105f6c34b9bbf20ed70"
+    },
+    "biz_import_row": {
+      "columns": [
+        "id",
+        "batch_id",
+        "row_no",
+        "raw_json",
+        "normalized_json",
+        "status",
+        "error_code",
+        "error_message",
+        "target_id",
+        "create_by",
+        "create_time",
+        "update_by",
+        "update_time",
+        "remark"
+      ],
+      "count": 0,
+      "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "ddl_sha256": "00c6c0f94315eb39424311136a8361553117d12082f9beaf8570247afd6cbb1d",
+      "column_metadata_sha256": "3fde5ca55804708dfe0873eb2e59aa4befc5e1ed0bbe22f50aded043c80679ab"
+    },
+    "biz_pay_rate": {
+      "columns": [
+        "id",
+        "title",
+        "rate",
+        "effective_from",
+        "effective_to",
+        "status",
+        "create_by",
+        "create_time",
+        "update_by",
+        "update_time",
+        "remark"
+      ],
+      "count": 4,
+      "data_sha256": "9399a1cc6d9717cf74542478ddad9df2d7c705463bc080e57317c289f2a8d1b2",
+      "ddl_sha256": "c60003b606be387fc6b67c215b87853e02bf9fb482bac42bc6a5b28a75297829",
+      "column_metadata_sha256": "111af98e54f40f521e16d30f90a24eccdba98d934dbc5ef5795b871d7d105adb"
+    },
+    "biz_pay_record": {
+      "columns": [
+        "id",
+        "user_id",
+        "semester",
+        "summary_id",
+        "course_hour_pay",
+        "other_pay_total",
+        "total_pay",
+        "status",
+        "create_by",
+        "create_time",
+        "update_by",
+        "update_time",
+        "remark"
+      ],
+      "count": 0,
+      "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "ddl_sha256": "2d0cf56a5544ce996b892b1296cff2e951c23b2cc27caa56fc6e59db99b90caa",
+      "column_metadata_sha256": "e9e1cdd66287d80bffe2ad33548cddaadf994544ec86a1760a993789eb25936d"
+    },
+    "biz_role_assignment": {
+      "columns": [
+        "id",
+        "user_id",
+        "role_type",
+        "target",
+        "start_date",
+        "end_date",
+        "semester",
+        "academic_year",
+        "allowance_rate",
+        "source_batch_id",
+        "status",
+        "create_by",
+        "create_time",
+        "update_by",
+        "update_time",
+        "remark"
+      ],
+      "count": 2,
+      "data_sha256": "4d6942625d3ef53887b133ebe22aa4d804cfda759e4e0b91c9591e89899187ce",
+      "ddl_sha256": "581804483094f5b5d54afce45cfd8abc857cb7d1095aea24cf65cd9cedef55db",
+      "column_metadata_sha256": "dd12073a069d8cdffba56f5fb9bb6007044e6d1c0dc82adce7ad15b9bbec51b7"
+    },
+    "biz_teacher_profile": {
+      "columns": [
+        "user_id",
+        "title",
+        "teacher_nature",
+        "special_status",
+        "special_status_start",
+        "special_status_end",
+        "enterprise_eval_result",
+        "dept_id",
+        "create_by",
+        "create_time",
+        "update_by",
+        "update_time",
+        "remark"
+      ],
+      "count": 6,
+      "data_sha256": "8382076b77393ca6e5b0da34f29bbdb37e14b08f7947141b568edd298ae4aa5e",
+      "ddl_sha256": "ff2e9cf599c2c4d2add8750b7bda3e7047929362952121384e8a73c513617421",
+      "column_metadata_sha256": "453bf5521beaa1e88284d86697f654b92ab5f3441af53e96d054a52868a99aab"
+    },
+    "biz_teaching_task": {
+      "columns": [
+        "id",
+        "user_id",
+        "semester",
+        "academic_year",
+        "course_name",
+        "course_code",
+        "education_level",
+        "major_category",
+        "course_nature",
+        "course_level",
+        "course_role",
+        "class_name",
+        "student_count",
+        "theory_hours",
+        "practice_hours",
+        "repeat_order",
+        "is_retake",
+        "import_source",
+        "import_batch",
+        "import_time",
+        "status",
+        "create_by",
+        "create_time",
+        "update_by",
+        "update_time",
+        "remark",
+        "input_planned_hours",
+        "input_days",
+        "input_weeks",
+        "input_credits",
+        "quantity_type"
+      ],
+      "count": 9,
+      "data_sha256": "9f92d6620ba606702c87c9bf3a8c6b356cb2adfa6e7af6e7b3316d2fe0fbd752",
+      "ddl_sha256": "3aab6724cab01a0fbbdb27e2f8a9657b26e4842f268c60319795baf5028c0bd7",
+      "column_metadata_sha256": "8a712073bffb3c82d226baf1fa2b8de58ebe8627227ea7e4cbaa169bdb016798"
+    },
+    "biz_wl_concentrated_internship": {
+      "columns": [
+        "item_id",
+        "W",
+        "R6",
+        "create_by",
+        "create_time",
+        "update_by",
+        "update_time",
+        "remark"
+      ],
+      "count": 1,
+      "data_sha256": "35ba8e694df3613dd12ddaf44dd91ff2e8a51db4029d5f12aef4ef725dc9dff5",
+      "ddl_sha256": "b46757b78127be29222d34be165afb408e0eb00b5c1f34215010114eedd72b89",
+      "column_metadata_sha256": "37d5b692a2588a91fb59aa0316eb92727b14d3f6c26f03743325d4f50035fa6f"
+    },
+    "biz_wl_course_design": {
+      "columns": [
+        "item_id",
+        "J4",
+        "R4",
+        "create_by",
+        "create_time",
+        "update_by",
+        "update_time",
+        "remark"
+      ],
+      "count": 1,
+      "data_sha256": "4bfde00679993b88291bd0ef0ec0070148ffea18088c1c9ecab81ab35ecee29a",
+      "ddl_sha256": "8cf948c5be2f645aa64eea7f696349b9585b7c467aa5f508f49970d374f37530",
+      "column_metadata_sha256": "2ed2fc0527bdb2333334152c607aab09d6434bdbd5edb11b37d74e4790071779"
+    },
+    "biz_wl_internship_training": {
+      "columns": [
+        "item_id",
+        "T",
+        "D",
+        "K",
+        "Q1",
+        "Q2",
+        "Q3",
+        "create_by",
+        "create_time",
+        "update_by",
+        "update_time",
+        "remark"
+      ],
+      "count": 1,
+      "data_sha256": "cddff567d5f8b83a38d478d4f2dd1a59050afda35fd62e7e96021f16d1b59fbe",
+      "ddl_sha256": "d4cb87214fb58865c8030be6b61258c74c5bfa591527c62a4f629711aa696ba9",
+      "column_metadata_sha256": "df98831f72bfec57444b2553f024a9426b2c603d00b040b00324201a1d54927d"
+    },
+    "biz_wl_management": {
+      "columns": [
+        "item_id",
+        "assignment_id",
+        "role_type",
+        "prorated_amount",
+        "proration_basis",
+        "source_batch_id",
+        "create_by",
+        "create_time",
+        "update_by",
+        "update_time",
+        "remark"
+      ],
+      "count": 1,
+      "data_sha256": "b0c70ab76a8fd0eebc3834d0a6c3bef68d558870b087c04e5b57e75d292f98bd",
+      "ddl_sha256": "a2ec0bfa9ff43f33a6f897d5299951f3fddffe6789da8b9e9e7f9ca5303f8f3e",
+      "column_metadata_sha256": "37216c6593b6703872bbfa16faab7fff5b3f668e72f7f10b80a5044b84bb64ec"
+    },
+    "biz_wl_practice": {
+      "columns": [
+        "item_id",
+        "J2",
+        "K",
+        "C2",
+        "Q1",
+        "Q2",
+        "Q3",
+        "create_by",
+        "create_time",
+        "update_by",
+        "update_time",
+        "remark"
+      ],
+      "count": 1,
+      "data_sha256": "7bc171e49811f19422f06bdbf1b68111897dae108a27578fff4036123d24684a",
+      "ddl_sha256": "6d01345442aadc25631d69ce693c2b1b561fb26c56cae00fcc1739fe3b3f3c4e",
+      "column_metadata_sha256": "0bf9d61098a8ecf0f09f3c9a157ce3d77dd69a1e310106841c04397d3dd86b8e"
+    },
+    "biz_wl_theory": {
+      "columns": [
+        "item_id",
+        "J1",
+        "C1",
+        "K1",
+        "Q1",
+        "Q2",
+        "Q3",
+        "N",
+        "create_by",
+        "create_time",
+        "update_by",
+        "update_time",
+        "remark"
+      ],
+      "count": 7,
+      "data_sha256": "74a0c90c2d9160da86c125aa0616a8b402ee3f0e1baf53f9f3f641b6956f6ec5",
+      "ddl_sha256": "f5511155237db1d94c0d1507ebc593d9a6397b28ae254218551c2a6b876a06a5",
+      "column_metadata_sha256": "a13c7914790496165e997a9b2f0f1efcbe0393105f59bc0baff9f26feaa68e2a"
+    },
+    "biz_wl_thesis": {
+      "columns": [
+        "item_id",
+        "R5",
+        "K5",
+        "education_level",
+        "major",
+        "discipline_category",
+        "create_by",
+        "create_time",
+        "update_by",
+        "update_time",
+        "remark"
+      ],
+      "count": 1,
+      "data_sha256": "b72a2b390b5c09909dfc9211b7863b2ea43df21aa2b862d6e8d06cb8da868c79",
+      "ddl_sha256": "c3901006d9aed8d616dca7c7b377b76cab09fdae92b0398ff575e8a71903e6a2",
+      "column_metadata_sha256": "33e480e16d9d0d2efe1e6355b7d948536889b2d4a80aaeeee0c21883ef557ea7"
+    },
+    "biz_workload_calc_snapshot": {
+      "columns": [
+        "id",
+        "item_id",
+        "calculation_version",
+        "formula_expression",
+        "factor_json",
+        "source_json",
+        "rule_version",
+        "result",
+        "snapshot_hash",
+        "created_by",
+        "created_at",
+        "context_json"
+      ],
+      "count": 0,
+      "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "ddl_sha256": "0d11ea91c9e39919ab906d9150154dfbc413268877ad67a6c0ec8cf6d1a0e416",
+      "column_metadata_sha256": "9bba7afd347aceff61a3b3e32a22036352822440c2c1576c6aae4b638ba49df2"
+    },
+    "biz_workload_category_dict": {
+      "columns": [
+        "type_code",
+        "type_name",
+        "parent_group",
+        "calc_strategy",
+        "is_calc_excess",
+        "sort_order",
+        "status",
+        "create_by",
+        "create_time",
+        "update_by",
+        "update_time",
+        "remark"
+      ],
+      "count": 11,
+      "data_sha256": "a5437b8b38d27c97bc13cfeea6cec280890cf514f0bf05ec99e66644e35c831a",
+      "ddl_sha256": "78db456bc872ace89880bab7a70543c0320d92cfbb7b0f3644c3ceaa14b454b8",
+      "column_metadata_sha256": "bb7653933cad2d2c79e1623a1427fe3399f15b40663983f5f28fefe8e0240541"
+    },
+    "biz_workload_item": {
+      "columns": [
+        "id",
+        "user_id",
+        "semester",
+        "academic_year",
+        "item_type",
+        "source_type",
+        "task_id",
+        "assignment_id",
+        "role_type",
+        "course_name",
+        "education_level",
+        "major_category",
+        "calculated_workload",
+        "description",
+        "is_over_limit",
+        "dean_approval_status",
+        "dean_approval_by",
+        "dean_approval_time",
+        "appeal_status",
+        "appeal_reason",
+        "appeal_reply",
+        "status",
+        "create_by",
+        "create_time",
+        "update_by",
+        "update_time",
+        "remark",
+        "calculation_version",
+        "last_calculated_at"
+      ],
+      "count": 14,
+      "data_sha256": "a101ecf99c4b396730418ff023869d3e6c4b9860ed71eaf0238003ab6b58738b",
+      "ddl_sha256": "31f2394f71167d954b044804811f4a424a8933651960e80a683e713a87166666",
+      "column_metadata_sha256": "3f98aa5823ecc5afcc94b290445fef18f927ede14f92870ffbd93bcbd7f46cf4"
+    },
+    "biz_workload_rule": {
+      "columns": [
+        "id",
+        "rule_code",
+        "rule_value",
+        "rule_desc",
+        "effective_from",
+        "effective_to",
+        "status",
+        "create_by",
+        "create_time",
+        "update_by",
+        "update_time",
+        "remark"
+      ],
+      "count": 43,
+      "data_sha256": "885e0ba8f159d900547c002e118c2a081c19f31c11d5a67a2928a4f608f19d33",
+      "ddl_sha256": "16a29ef1285db85559a3a82f4c53a7dff3af4b21124c59411d9d0c7dd1103730",
+      "column_metadata_sha256": "abff7393a59308062e5da8d72185cdf1d735b9d85b3e96e5e98898d85e6e2ce9"
+    },
+    "biz_workload_summary": {
+      "columns": [
+        "id",
+        "user_id",
+        "semester",
+        "academic_year",
+        "G7",
+        "G8",
+        "G9",
+        "G10",
+        "G11",
+        "total_workload",
+        "rated_workload",
+        "excess_workload",
+        "g8_remark",
+        "g11_remark",
+        "title",
+        "pay_rate",
+        "performance_pay",
+        "is_capped",
+        "basic_teaching_standard",
+        "basic_teaching_met",
+        "status",
+        "teacher_sign",
+        "teacher_sign_time",
+        "dept_leader_sign",
+        "dept_leader_sign_time",
+        "academic_assistant_sign",
+        "academic_assistant_sign_time",
+        "lock_time",
+        "create_by",
+        "create_time",
+        "update_by",
+        "update_time",
+        "remark"
+      ],
+      "count": 4,
+      "data_sha256": "04bd00aa3a43e20f12c0b2b10031ad0fec0ccb7360a708a41908e6f5b4a9e41d",
+      "ddl_sha256": "e8d3ec1ab5ebba298a161c3f4fd1c1af259725da069db2a901fc95d8301c0797",
+      "column_metadata_sha256": "b059eee5e6579689838496aed99c0549ea1037b1d0cf5eeb93436c6da1d46880"
+    },
+    "gen_table": {
+      "columns": [
+        "table_id",
+        "table_name",
+        "table_comment",
+        "sub_table_name",
+        "sub_table_fk_name",
+        "class_name",
+        "tpl_category",
+        "tpl_web_type",
+        "package_name",
+        "module_name",
+        "business_name",
+        "function_name",
+        "function_author",
+        "form_col_num",
+        "gen_type",
+        "gen_path",
+        "options",
+        "create_by",
+        "create_time",
+        "update_by",
+        "update_time",
+        "remark"
+      ],
+      "count": 0,
+      "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "ddl_sha256": "56b629590f6ed6da009e033971e35ad975ca12ac600973567ee1fe6368dcc945",
+      "column_metadata_sha256": "48d4840784f3981e0a742aa115a050201ce90a2e827bdc44fb4854c66468b62c"
+    },
+    "gen_table_column": {
+      "columns": [
+        "column_id",
+        "table_id",
+        "column_name",
+        "column_comment",
+        "column_type",
+        "java_type",
+        "java_field",
+        "is_pk",
+        "is_increment",
+        "is_required",
+        "is_insert",
+        "is_edit",
+        "is_list",
+        "is_query",
+        "query_type",
+        "html_type",
+        "dict_type",
+        "sort",
+        "create_by",
+        "create_time",
+        "update_by",
+        "update_time"
+      ],
+      "count": 0,
+      "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "ddl_sha256": "917a6859d68ff33a1ab01009d620c864e182c53d44ec51ccf21166be3c391a95",
+      "column_metadata_sha256": "9fe333f8d3a076b0da73c4be05a70223f6ab87207e4f07a732f177aeeae9b94f"
+    },
+    "QRTZ_BLOB_TRIGGERS": {
+      "columns": [
+        "sched_name",
+        "trigger_name",
+        "trigger_group",
+        "blob_data"
+      ],
+      "count": 0,
+      "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "ddl_sha256": "43207f5e48ba05d2c33853b5d77a4aa2836e0b846699f2df9823121ec9a2341d",
+      "column_metadata_sha256": "c652984c46c35b1c7b11c62413756efff69d9a0e08d14daada5e3e663852d642"
+    },
+    "QRTZ_CALENDARS": {
+      "columns": [
+        "sched_name",
+        "calendar_name",
+        "calendar"
+      ],
+      "count": 0,
+      "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "ddl_sha256": "77ab512a7dc7e2ba264800705d46d995a6e1e3fbf696c9a68fb412e92fbc92d4",
+      "column_metadata_sha256": "3f31e0222d6e8c3935e50fbfd3d83029ee6300976d8c164679ea8231ec0bc93c"
+    },
+    "QRTZ_CRON_TRIGGERS": {
+      "columns": [
+        "sched_name",
+        "trigger_name",
+        "trigger_group",
+        "cron_expression",
+        "time_zone_id"
+      ],
+      "count": 0,
+      "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "ddl_sha256": "49fb29f65528fb4201d73dc505d48a438ffc59c9bbc6583c85520b98916c5355",
+      "column_metadata_sha256": "860a46a609e9116b6a371c0aa5b32b2d60e274d7de17cb36ee06dab14298674f"
+    },
+    "QRTZ_FIRED_TRIGGERS": {
+      "columns": [
+        "sched_name",
+        "entry_id",
+        "trigger_name",
+        "trigger_group",
+        "instance_name",
+        "fired_time",
+        "sched_time",
+        "priority",
+        "state",
+        "job_name",
+        "job_group",
+        "is_nonconcurrent",
+        "requests_recovery"
+      ],
+      "count": 0,
+      "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "ddl_sha256": "1f4bf610b0a5274eea50bd37a1d2e8aeeb82962b5fd5693321d9522db4e437aa",
+      "column_metadata_sha256": "c0adf6a1080062ae85b605468e97055e9fef5b80752f7f6fc2f8cbd02c09990b"
+    },
+    "QRTZ_JOB_DETAILS": {
+      "columns": [
+        "sched_name",
+        "job_name",
+        "job_group",
+        "description",
+        "job_class_name",
+        "is_durable",
+        "is_nonconcurrent",
+        "is_update_data",
+        "requests_recovery",
+        "job_data"
+      ],
+      "count": 0,
+      "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "ddl_sha256": "c7dac8e28b19b4783ec376d3207c2a3e34050a9a90427a068bd662ff65c0af90",
+      "column_metadata_sha256": "19163ee898de7708854b117f25b03f4c0361ce59c82c779c2fa73e2598989acb"
+    },
+    "QRTZ_LOCKS": {
+      "columns": [
+        "sched_name",
+        "lock_name"
+      ],
+      "count": 0,
+      "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "ddl_sha256": "51462afbad41db1c89d74897e4fc8db6c193df7cdcf43a98904a4cc342c4e107",
+      "column_metadata_sha256": "f307281f9a29e6df4f541158f0ebb5db89648f741f46fc960f0a7495debb4690"
+    },
+    "QRTZ_PAUSED_TRIGGER_GRPS": {
+      "columns": [
+        "sched_name",
+        "trigger_group"
+      ],
+      "count": 0,
+      "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "ddl_sha256": "19b6e725b1a06edb51a387b1530de2fe208a1c5a58bf2433358a5c3eb0bf6534",
+      "column_metadata_sha256": "463a03c0de1adaed1d2ddbc8fc0c65bed9afdeb3bedde0f90bb24394f30f3ffb"
+    },
+    "QRTZ_SCHEDULER_STATE": {
+      "columns": [
+        "sched_name",
+        "instance_name",
+        "last_checkin_time",
+        "checkin_interval"
+      ],
+      "count": 0,
+      "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "ddl_sha256": "561f067b7bab3ba24d73ad60410b776a683d6303d9398045e1576df422658262",
+      "column_metadata_sha256": "5f355c3689cdade875ff11e041e11542899870f3b0614e77eaed1646bbd7d039"
+    },
+    "QRTZ_SIMPLE_TRIGGERS": {
+      "columns": [
+        "sched_name",
+        "trigger_name",
+        "trigger_group",
+        "repeat_count",
+        "repeat_interval",
+        "times_triggered"
+      ],
+      "count": 0,
+      "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "ddl_sha256": "14540754f2f06fa62c4a3207aae761597b69c57fd46d87532cc03217739598d4",
+      "column_metadata_sha256": "f18d64eff6a480bc42559f30786b66ccb0d51baab8f7301f87b92649d2c3fba7"
+    },
+    "QRTZ_SIMPROP_TRIGGERS": {
+      "columns": [
+        "sched_name",
+        "trigger_name",
+        "trigger_group",
+        "str_prop_1",
+        "str_prop_2",
+        "str_prop_3",
+        "int_prop_1",
+        "int_prop_2",
+        "long_prop_1",
+        "long_prop_2",
+        "dec_prop_1",
+        "dec_prop_2",
+        "bool_prop_1",
+        "bool_prop_2"
+      ],
+      "count": 0,
+      "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "ddl_sha256": "e87cfca1f5069c338b5bbe12abac9606873a7bdb9ae5e85b542fd5f7c9ceeb91",
+      "column_metadata_sha256": "441d0c42710810355b5d1ff8644c50c6a2944fd0349de8d8e7b301abe23a8ba8"
+    },
+    "QRTZ_TRIGGERS": {
+      "columns": [
+        "sched_name",
+        "trigger_name",
+        "trigger_group",
+        "job_name",
+        "job_group",
+        "description",
+        "next_fire_time",
+        "prev_fire_time",
+        "priority",
+        "trigger_state",
+        "trigger_type",
+        "start_time",
+        "end_time",
+        "calendar_name",
+        "misfire_instr",
+        "job_data"
+      ],
+      "count": 0,
+      "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "ddl_sha256": "00a7a65faed0cdee28ef4eb3359c499dfbce3a8db5f7e2721479cb1dccdb85dc",
+      "column_metadata_sha256": "5e70e77530708017fa0ab7079a1afed1971a4738f30151423514525153e3ca9b"
+    },
+    "sys_config": {
+      "columns": [
+        "config_id",
+        "config_name",
+        "config_key",
+        "config_value",
+        "config_type",
+        "create_by",
+        "create_time",
+        "update_by",
+        "update_time",
+        "remark"
+      ],
+      "count": 8,
+      "data_sha256": "cfd2827f5c338db54b79ada3a6ed3abd16af067633d654e4a3e0503b1e5523ab",
+      "ddl_sha256": "c091bbf2091203caca0ebd9d7fd806e19f6e0f7fb2b54a08721fa80fa29a0a9b",
+      "column_metadata_sha256": "4d8cf6d9ce926ae1c7b12130b57cacf8c12ce345358651cd04dca58adc0d2dfa"
+    },
+    "sys_dept": {
+      "columns": [
+        "dept_id",
+        "parent_id",
+        "ancestors",
+        "dept_name",
+        "order_num",
+        "leader",
+        "phone",
+        "email",
+        "status",
+        "del_flag",
+        "create_by",
+        "create_time",
+        "update_by",
+        "update_time"
+      ],
+      "count": 10,
+      "data_sha256": "60cd92057f4fdb3ec47d5f713b7d85f80c647fafa148eedfcb056e63eed8c101",
+      "ddl_sha256": "9b56c362e31707db5fd6ef48ea88e07179d9c9fb492957edb474c8cf8783490f",
+      "column_metadata_sha256": "f9689787ef3bddde39f01fb3f52e7837112a29258eb5cf2a85a672bae0e572e8"
+    },
+    "sys_dict_data": {
+      "columns": [
+        "dict_code",
+        "dict_sort",
+        "dict_label",
+        "dict_value",
+        "dict_type",
+        "css_class",
+        "list_class",
+        "is_default",
+        "status",
+        "create_by",
+        "create_time",
+        "update_by",
+        "update_time",
+        "remark"
+      ],
+      "count": 29,
+      "data_sha256": "a45e43e6ac5b97b6139da50537b833a321ace3800b8529fe54ef06f0a71ba011",
+      "ddl_sha256": "d3d3755f49cf04f1eef7a9293899e33bee515c259ca9d33b48a1e1f6bd4c28ae",
+      "column_metadata_sha256": "dfd5618b184728e1cee5789c1703770514c667e92c8572d2baba8fdc7a5848b6"
+    },
+    "sys_dict_type": {
+      "columns": [
+        "dict_id",
+        "dict_name",
+        "dict_type",
+        "status",
+        "create_by",
+        "create_time",
+        "update_by",
+        "update_time",
+        "remark"
+      ],
+      "count": 10,
+      "data_sha256": "1226bec801e6adf35d23e3ef2ec748816f513d7cbe4d46331f4e9f17ae91e00d",
+      "ddl_sha256": "69e7d2ced24c63246e067feb73719f62ce2a32279e6b32db3a21e56bbc35ce3b",
+      "column_metadata_sha256": "43712458767cf8de99ad4d4fecb0c1ce6201908bc66a213c5b86223957813e31"
+    },
+    "sys_job": {
+      "columns": [
+        "job_id",
+        "job_name",
+        "job_group",
+        "invoke_target",
+        "cron_expression",
+        "misfire_policy",
+        "concurrent",
+        "status",
+        "create_by",
+        "create_time",
+        "update_by",
+        "update_time",
+        "remark"
+      ],
+      "count": 3,
+      "data_sha256": "2f57113a0ca75a4e7bffed1f16cf020b2bb50574ebe28dacffe165caeb5f1c9a",
+      "ddl_sha256": "0f81e20b2a74b6038d4e1553cd3d8ea4c689ebf2d6debaba73858121946709e1",
+      "column_metadata_sha256": "d91f6bf6023030fce9a1b2ef4d1ec782b74cb418787086d46622d6988e95100d"
+    },
+    "sys_job_log": {
+      "columns": [
+        "job_log_id",
+        "job_name",
+        "job_group",
+        "invoke_target",
+        "job_message",
+        "status",
+        "exception_info",
+        "start_time",
+        "end_time",
+        "create_time"
+      ],
+      "count": 0,
+      "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "ddl_sha256": "f8d6e22b902b3b9efacf6034fe40bec45cc33405136c4ff37f8ca8609859675c",
+      "column_metadata_sha256": "4110968fbc6f14636935f10e0a3069f86ffb080e01849ad1e5b78c79b1c3711a"
+    },
+    "sys_logininfor": {
+      "columns": [
+        "info_id",
+        "user_name",
+        "ipaddr",
+        "login_location",
+        "browser",
+        "os",
+        "status",
+        "msg",
+        "login_time"
+      ],
+      "count": 8,
+      "data_sha256": "efb8fbc11b50211cf52b8e41f33d1e780f3e744044f4c7e6c19e3a999515680c",
+      "ddl_sha256": "d9ec115784ca4a1c8b741e52e6303111737b774971b97bcfc89607280e2f0cea",
+      "column_metadata_sha256": "9a64f0c00f5e50c9cb31017eb249e68c27194a39886b327ffc32f20089fa370f"
+    },
+    "sys_menu": {
+      "columns": [
+        "menu_id",
+        "menu_name",
+        "parent_id",
+        "order_num",
+        "path",
+        "component",
+        "query",
+        "route_name",
+        "is_frame",
+        "is_cache",
+        "menu_type",
+        "visible",
+        "status",
+        "perms",
+        "icon",
+        "create_by",
+        "create_time",
+        "update_by",
+        "update_time",
+        "remark"
+      ],
+      "count": 202,
+      "data_sha256": "7200635f859a2804e96916a3a42f485555857aec198d5a10b809de097a73e191",
+      "ddl_sha256": "c020cd9fc890df3d93728fd58afe8cc8df74291f386d6aa7196f426ab1b74666",
+      "column_metadata_sha256": "9d4145a81c6acadcde237f631408b0effa37730794dbb90dbc54a81df2a3c9f3"
+    },
+    "sys_notice": {
+      "columns": [
+        "notice_id",
+        "notice_title",
+        "notice_type",
+        "notice_content",
+        "status",
+        "create_by",
+        "create_time",
+        "update_by",
+        "update_time",
+        "remark"
+      ],
+      "count": 3,
+      "data_sha256": "7d05d1eecafe92f18c5f65078260b31d19edaacad0ee0529a61d734fd87b010e",
+      "ddl_sha256": "dd8da92d015808d70a38b593e92016bdad3d2c8fa288cc9b0c60cc00e7af0e86",
+      "column_metadata_sha256": "e639f3bb88d38d0734f9b3091cb917508be910036cd43bf3121674b1be495e99"
+    },
+    "sys_notice_read": {
+      "columns": [
+        "read_id",
+        "notice_id",
+        "user_id",
+        "read_time"
+      ],
+      "count": 0,
+      "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "ddl_sha256": "65740eca5610a6e354b4dfa113faf0826214a901eb3008a59fb278e0a3566864",
+      "column_metadata_sha256": "50866a193a689ed110b1ea5d282ce90fdd7432697dff0b2a6f8fe4db1bb0a4c0"
+    },
+    "sys_oper_log": {
+      "columns": [
+        "oper_id",
+        "title",
+        "business_type",
+        "method",
+        "request_method",
+        "operator_type",
+        "oper_name",
+        "dept_name",
+        "oper_url",
+        "oper_ip",
+        "oper_location",
+        "oper_param",
+        "json_result",
+        "status",
+        "error_msg",
+        "oper_time",
+        "cost_time"
+      ],
+      "count": 2,
+      "data_sha256": "fd3de6dcf777340f625af2ffa82fa1ac5fdc7538d4b09a5fd5b2177fad7bef01",
+      "ddl_sha256": "88c02306260cc64444cdf5e8d53baae800207bb8b6690fa9c649c273210d4fac",
+      "column_metadata_sha256": "b91e28dbec56e71b95466869bb9c36665f428f8f3c22d9476968394d672bc671"
+    },
+    "sys_post": {
+      "columns": [
+        "post_id",
+        "post_code",
+        "post_name",
+        "post_sort",
+        "status",
+        "create_by",
+        "create_time",
+        "update_by",
+        "update_time",
+        "remark"
+      ],
+      "count": 4,
+      "data_sha256": "ffa1ae1e3a1aa579a40dd651739bef1978e4644ee57e4070acba970ff88fb578",
+      "ddl_sha256": "98762cb85a3a354498dc7ea97ec1f2bbda1a6c3d2cf631573607e416a9e59b3f",
+      "column_metadata_sha256": "a3fa21e30c5efb943567d7676fe75d078498b0a682001f0614ccd6d99a86a49c"
+    },
+    "sys_role": {
+      "columns": [
+        "role_id",
+        "role_name",
+        "role_key",
+        "role_sort",
+        "data_scope",
+        "menu_check_strictly",
+        "dept_check_strictly",
+        "status",
+        "del_flag",
+        "create_by",
+        "create_time",
+        "update_by",
+        "update_time",
+        "remark"
+      ],
+      "count": 5,
+      "data_sha256": "89982a24c45134e85fdfbda383df6d2c4f49debd10e9a0d77485e4d6e9a47fb7",
+      "ddl_sha256": "baf833d24a43427b312187ebeb9eff9b98a4b4a885cd4bf421a09822c1849b42",
+      "column_metadata_sha256": "5d2513b908e62ae58348ee5328832fcc65eefc02b5bf8d695262e81c921a0909"
+    },
+    "sys_role_dept": {
+      "columns": [
+        "role_id",
+        "dept_id"
+      ],
+      "count": 3,
+      "data_sha256": "81dc1226137c6897402267fff4594685110263531cfc6aeaacf0826080fce5d1",
+      "ddl_sha256": "6044e865948e3cf396f006d7f06ebfc8ab819ad9937175f68c84f64859adce55",
+      "column_metadata_sha256": "ee40e73fdce9b02798adc1ba24528dbfa8b713b0551ac6de4744ce576628b715"
+    },
+    "sys_role_menu": {
+      "columns": [
+        "role_id",
+        "menu_id"
+      ],
+      "count": 479,
+      "data_sha256": "c89d2dad52b29517b1852293987c6f4bd2a6d5d94e13ac129579c772e4274e83",
+      "ddl_sha256": "13fab8bd973be7100a43c8de48f0b6dccd0b396a9f652bd3f5c632fcf9495f46",
+      "column_metadata_sha256": "ab96cdc414b02e2d0bca479e54bef3a3a48e4e118388669b7cc9ce7a3760c898"
+    },
+    "sys_user": {
+      "columns": [
+        "user_id",
+        "dept_id",
+        "user_name",
+        "nick_name",
+        "user_type",
+        "email",
+        "phonenumber",
+        "sex",
+        "avatar",
+        "password",
+        "status",
+        "del_flag",
+        "login_ip",
+        "login_date",
+        "pwd_update_date",
+        "create_by",
+        "create_time",
+        "update_by",
+        "update_time",
+        "remark"
+      ],
+      "count": 10,
+      "data_sha256": "b0c5fd77ad4700499c1d08939613805f98a4549be762f12772e1ec66a91789d4",
+      "ddl_sha256": "339b9c9e1fea321e8f22a2c8dc1e59f2e24f9eb76c247c5babcab521381f3744",
+      "column_metadata_sha256": "39969db73123d4e129e4524cce7b20a1175453cf19c141bd012e464228cca1d6"
+    },
+    "sys_user_post": {
+      "columns": [
+        "user_id",
+        "post_id"
+      ],
+      "count": 2,
+      "data_sha256": "13c0b8f8159e79b10af5819b19ef50fcd5f9f9a849b0721ac7f5fe137cc9d964",
+      "ddl_sha256": "38da75eaba3cd9d638661f2cf67abe078cc355c75fcc4ffbd463609fb8789a22",
+      "column_metadata_sha256": "1fa3bf2b9a4e1b593ca146d38b3ec7499fe4a6c30dc268219d2eb350a07bd5d4"
+    },
+    "sys_user_role": {
+      "columns": [
+        "user_id",
+        "role_id"
+      ],
+      "count": 10,
+      "data_sha256": "35eabe3b8d8f3ddbb52dac0ea3ac32129b6990edbafe681e6e1bc5401b45770c",
+      "ddl_sha256": "52f57f5f224c8e8f0db05449ca3a7f0c83aeb779dbab70324b229c8b4349435f",
+      "column_metadata_sha256": "ca90ece63d2fcc0df4aa0c95909d82f24a25b154427d5f04c2b2b830adf17cef"
+    }
+  },
+  "applied": [
+    {
+      "round": 1,
+      "file": "28_import_framework.sql",
+      "sha256": "042ec49220cebacc010af1b9265a7c7365c3d62251202f227b105b96499acbdd"
+    },
+    {
+      "round": 1,
+      "file": "30_snapshot_context.sql",
+      "sha256": "358b80863d33648a453153a004fc16c68e662188e9b0f841f137cf7fb9d081af"
+    },
+    {
+      "round": 1,
+      "file": "31_item_review_permission.sql",
+      "sha256": "054181fc0624593a584441b782e0f2865d9dd747155342ee1f930fa71dc3b11f"
+    },
+    {
+      "round": 2,
+      "file": "28_import_framework.sql",
+      "sha256": "042ec49220cebacc010af1b9265a7c7365c3d62251202f227b105b96499acbdd"
+    },
+    {
+      "round": 2,
+      "file": "30_snapshot_context.sql",
+      "sha256": "358b80863d33648a453153a004fc16c68e662188e9b0f841f137cf7fb9d081af"
+    },
+    {
+      "round": 2,
+      "file": "31_item_review_permission.sql",
+      "sha256": "054181fc0624593a584441b782e0f2865d9dd747155342ee1f930fa71dc3b11f"
+    }
+  ],
+  "restore_exact_match": true,
+  "original_unchanged": true,
+  "existing_data_unchanged": true,
+  "restored_table_count": 52,
+  "upgraded_table_count": 53
+}
