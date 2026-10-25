@@ -4,6 +4,8 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.HashSet;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -11,6 +13,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.workload.common.exception.ServiceException;
 import com.workload.system.calc.rule.RuleParamService;
 import com.workload.system.domain.BizTeachingTask;
+import com.workload.system.domain.BizCoefficientAdjustment;
+import com.workload.system.mapper.BizCoefficientAdjustmentMapper;
 import com.workload.system.domain.BizWlConcentratedInternship;
 import com.workload.system.domain.BizWlCourseDesign;
 import com.workload.system.domain.BizWlInternshipTraining;
@@ -24,15 +28,16 @@ import com.workload.system.domain.vo.FactorFormulaVo;
 import com.workload.system.domain.vo.FactorFormulaVo.FactorVo;
 import com.workload.system.domain.vo.FactorFormulaVo.SourceTaskVo;
 import com.workload.system.mapper.BizWorkloadCalcSnapshotMapper;
-import com.workload.system.service.IBizTeachingTaskService;
-import com.workload.system.service.IBizWlConcentratedInternshipService;
-import com.workload.system.service.IBizWlCourseDesignService;
-import com.workload.system.service.IBizWlInternshipTrainingService;
-import com.workload.system.service.IBizWlManagementService;
-import com.workload.system.service.IBizWlPracticeService;
-import com.workload.system.service.IBizWlTheoryService;
-import com.workload.system.service.IBizWlThesisService;
+import com.workload.system.mapper.BizTeachingTaskMapper;
+import com.workload.system.mapper.BizWlConcentratedInternshipMapper;
+import com.workload.system.mapper.BizWlCourseDesignMapper;
+import com.workload.system.mapper.BizWlInternshipTrainingMapper;
+import com.workload.system.mapper.BizWlManagementMapper;
+import com.workload.system.mapper.BizWlPracticeMapper;
+import com.workload.system.mapper.BizWlTheoryMapper;
+import com.workload.system.mapper.BizWlThesisMapper;
 import com.workload.system.service.IWorkloadFactorFormulaService;
+import com.workload.system.service.SnapshotContextCodec;
 
 /**
  * 查询 G1-G6、G11 明细并构造可追溯的公式说明。
@@ -53,26 +58,35 @@ public class WorkloadFactorFormulaServiceImpl implements IWorkloadFactorFormulaS
     private static final String DERIVED = "DERIVED";
     private static final String DISPLAY_ONLY = "DISPLAY_ONLY";
 
-    @Autowired private IBizWlTheoryService theoryService;
-    @Autowired private IBizWlPracticeService practiceService;
-    @Autowired private IBizWlInternshipTrainingService internshipTrainingService;
-    @Autowired private IBizWlCourseDesignService courseDesignService;
-    @Autowired private IBizWlThesisService thesisService;
-    @Autowired private IBizWlConcentratedInternshipService concentratedInternshipService;
-    @Autowired private IBizWlManagementService managementService;
+    // 解释器只读输入，不依赖会触发重算的写服务，避免 Calc → Formula → DetailService → Calc 环。
+    @Autowired private BizWlTheoryMapper theoryMapper;
+    @Autowired private BizWlPracticeMapper practiceMapper;
+    @Autowired private BizWlInternshipTrainingMapper internshipTrainingMapper;
+    @Autowired private BizWlCourseDesignMapper courseDesignMapper;
+    @Autowired private BizWlThesisMapper thesisMapper;
+    @Autowired private BizWlConcentratedInternshipMapper concentratedInternshipMapper;
+    @Autowired private BizWlManagementMapper managementMapper;
     @Autowired private RuleParamService ruleParamService;
     @Autowired private BizWorkloadCalcSnapshotMapper snapshotMapper;
-    @Autowired private IBizTeachingTaskService teachingTaskService;
+    @Autowired private BizTeachingTaskMapper teachingTaskMapper;
+
+    @Autowired private BizCoefficientAdjustmentMapper adjustmentMapper;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
     public FactorFormulaVo build(BizWorkloadItem item)
     {
+        if (item == null || item.getItemType() == null) return null;
+        BizWorkloadCalcSnapshot snapshot = item.getId() == null ? null
+                : snapshotMapper.selectLatestByItemId(item.getId());
+        if (snapshot != null) return fromSnapshot(item, snapshot);
         FactorFormulaVo vo = buildFresh(item);
-        if (vo == null) return null;
-        // 详情读取：用最新已固化快照覆盖因子取值/来源（历史保真），无快照则 legacy。
-        applySnapshotOrLegacy(vo, item);
+        if (vo != null)
+        {
+            vo.setLegacy(true);
+            vo.setReproducible(false);
+        }
         return vo;
     }
 
@@ -82,61 +96,86 @@ public class WorkloadFactorFormulaServiceImpl implements IWorkloadFactorFormulaS
         if (item == null || item.getItemType() == null) return null;
         FactorFormulaVo vo = switch (item.getItemType())
         {
-            case "G1" -> buildG1(item, theoryService.selectBizWlTheoryByItemId(item.getId()));
-            case "G2" -> buildG2(item, practiceService.selectBizWlPracticeByItemId(item.getId()));
-            case "G3" -> buildG3(item, internshipTrainingService.selectBizWlInternshipTrainingByItemId(item.getId()));
-            case "G4" -> buildG4(item, courseDesignService.selectBizWlCourseDesignByItemId(item.getId()));
-            case "G5" -> buildG5(item, thesisService.selectBizWlThesisByItemId(item.getId()));
-            case "G6" -> buildG6(item, concentratedInternshipService.selectBizWlConcentratedInternshipByItemId(item.getId()));
-            case "G11" -> buildG11(item, managementService.selectBizWlManagementByItemId(item.getId()));
+            case "G1" -> buildG1(item, theoryMapper.selectBizWlTheoryByItemId(item.getId()));
+            case "G2" -> buildG2(item, practiceMapper.selectBizWlPracticeByItemId(item.getId()));
+            case "G3" -> buildG3(item, internshipTrainingMapper.selectBizWlInternshipTrainingByItemId(item.getId()));
+            case "G4" -> buildG4(item, courseDesignMapper.selectBizWlCourseDesignByItemId(item.getId()));
+            case "G5" -> buildG5(item, thesisMapper.selectBizWlThesisByItemId(item.getId()));
+            case "G6" -> buildG6(item, concentratedInternshipMapper.selectBizWlConcentratedInternshipByItemId(item.getId()));
+            case "G11" -> buildG11(item, managementMapper.selectBizWlManagementByItemId(item.getId()));
             default -> null;
         };
         if (vo == null) return null;
         // 源数据（教学任务）只读快照始终按当前任务表构造，与是否 overlay 无关。
         vo.setSourceTask(buildSourceTask(item));
+        attachApprovedSources(item, vo);
         return vo;
     }
 
-    /**
-     * 详情来源解释：命中最新快照则从快照覆盖因子取值/来源并标记可复现；无快照回落 legacy。
-     * 快照 JSON 解析失败直接抛出，绝不吞异常后伪装为可复现。
-     */
-    private void applySnapshotOrLegacy(FactorFormulaVo vo, BizWorkloadItem item)
+    /** 只把当前仍生效的最新批准值记为审批来源，不把恰好相等的旧批文重新套用。 */
+    private void attachApprovedSources(BizWorkloadItem item, FactorFormulaVo vo)
     {
-        BizWorkloadCalcSnapshot snapshot = item.getId() == null ? null
-                : snapshotMapper.selectLatestByItemId(item.getId());
-        if (snapshot == null)
+        if (item.getId() == null || (!"G1".equals(item.getItemType()) && !"G2".equals(item.getItemType()))) return;
+        BizCoefficientAdjustment filter = new BizCoefficientAdjustment();
+        filter.setItemId(item.getId());
+        filter.setCategory(item.getItemType());
+        filter.setStatus(BizCoefficientAdjustment.STATUS_APPROVED);
+        // Mapper按id降序；同一因子只看最新批准申请，后续更改了值就不再冒充该审批结果。
+        Set<String> seen = new HashSet<>();
+        for (BizCoefficientAdjustment approved : adjustmentMapper.selectCoefficientAdjustmentList(filter))
         {
-            vo.setLegacy(true);
-            vo.setReproducible(false);
-            return;
+            if (!seen.add(approved.getFactorCode())) continue;
+            for (FactorVo factor : vo.getFactors())
+            {
+                if (factor.getKey().equals(approved.getFactorCode()) && factor.getValue() instanceof BigDecimal value
+                        && approved.getRequestedValue() != null && value.compareTo(approved.getRequestedValue()) == 0)
+                {
+                    factor.setSource("APPROVED_OVERRIDE");
+                    factor.setSourceRef("coefficient-adjustment:" + approved.getId());
+                }
+            }
         }
-        vo.setLegacy(false);
-        vo.setReproducible(true);
-        vo.setSnapshotVersion(snapshot.getCalculationVersion());
-        vo.setSnapshotHash(snapshot.getSnapshotHash());
-        vo.setCalculatedAt(snapshot.getCreatedAt());
-        overlayFromSnapshot(vo, snapshot);
     }
 
-    /** 用快照里已固化的 factor_json / source_json 覆盖每个因子的取值与来源。 */
-    private void overlayFromSnapshot(FactorFormulaVo vo, BizWorkloadCalcSnapshot snapshot)
+    /**
+     * 历史解释只读持久化快照，不加载当前子表、任务或规则。
+     * 旧格式没有保存课程上下文和因子说明，不能用现值补齐后伪装历史证据。
+     */
+    private FactorFormulaVo fromSnapshot(BizWorkloadItem item, BizWorkloadCalcSnapshot snapshot)
     {
         Map<String, String> values = parseMap(snapshot.getFactorJson());
         Map<String, String> sources = parseMap(snapshot.getSourceJson());
-        if (vo.getFactors() == null) return;
-        for (FactorVo factor : vo.getFactors())
+        if (snapshot.getFormulaExpression() == null || snapshot.getFormulaExpression().isBlank()
+                || snapshot.getResult() == null || values == null || values.isEmpty()
+                || sources == null || !sources.keySet().equals(values.keySet()))
         {
-            if (factor == null || factor.getKey() == null) continue;
-            if (sources.containsKey(factor.getKey()))
-            {
-                factor.setSource(sources.get(factor.getKey()));
-            }
-            if (values.containsKey(factor.getKey()))
-            {
-                factor.setValue(parseNumericOrRaw(values.get(factor.getKey())));
-            }
+            throw new ServiceException("计算快照不完整，无法可靠解释历史结果（明细 " + item.getId() + "）");
         }
+        List<FactorVo> factors = new ArrayList<>();
+        for (Map.Entry<String, String> entry : values.entrySet())
+        {
+            String source = sources.get(entry.getKey());
+            FactorVo factor = new FactorVo(entry.getKey(), parseNumericOrRaw(entry.getValue()), source,
+                    entry.getKey(), DISPLAY_ONLY.equals(source) ? DISPLAY_ONLY : null);
+            factor.setRuleVersion(snapshot.getRuleVersion());
+            factors.add(factor);
+        }
+        FactorFormulaVo vo = new FactorFormulaVo(item.getItemType(), snapshot.getFormulaExpression(),
+                snapshot.getResult(), "公式、因子和结果来自历史快照；旧快照未保存课程源数据及完整因子说明。",
+                factors);
+        vo.setLegacy(false);
+        vo.setReproducible(factors.stream()
+                .filter(factor -> !DISPLAY_ONLY.equals(factor.getStatus()))
+                .allMatch(factor -> factor.getValue() != null && !factor.getValue().toString().isBlank()
+                        && factor.getSource() != null && !factor.getSource().isBlank()));
+        if (snapshot.getContextJson() != null)
+        {
+            vo = SnapshotContextCodec.restore(snapshot.getContextJson(), vo);
+        }
+        vo.setSnapshotVersion(snapshot.getCalculationVersion());
+        vo.setSnapshotHash(snapshot.getSnapshotHash());
+        vo.setCalculatedAt(snapshot.getCreatedAt());
+        return vo;
     }
 
     private Map<String, String> parseMap(String json)
@@ -173,7 +212,7 @@ public class WorkloadFactorFormulaServiceImpl implements IWorkloadFactorFormulaS
     private SourceTaskVo buildSourceTask(BizWorkloadItem item)
     {
         if (item.getTaskId() == null) return null;
-        BizTeachingTask task = teachingTaskService.selectBizTeachingTaskById(item.getTaskId());
+        BizTeachingTask task = teachingTaskMapper.selectBizTeachingTaskById(item.getTaskId());
         if (task == null) return null;
         SourceTaskVo vo = new SourceTaskVo();
         vo.setCourseLevel(task.getCourseLevel());

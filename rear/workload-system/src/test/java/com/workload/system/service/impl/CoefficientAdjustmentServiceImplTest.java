@@ -15,6 +15,16 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
+import java.util.List;
+import java.util.Set;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import com.workload.common.core.domain.entity.SysRole;
+import com.workload.common.core.domain.entity.SysUser;
+import com.workload.common.core.domain.model.LoginUser;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -53,6 +63,63 @@ class CoefficientAdjustmentServiceImplTest
     private final BizWorkloadSummaryMapper summaryMapper = mock(BizWorkloadSummaryMapper.class);
     @Spy private WorkloadWriteGuard workloadWriteGuard = new WorkloadWriteGuard(summaryMapper);
     @InjectMocks private CoefficientAdjustmentServiceImpl service;
+
+    @BeforeEach
+    void loginAsOwner()
+    {
+        login(2002L, "teacher");
+    }
+
+    @AfterEach
+    void clearAuthentication()
+    {
+        SecurityContextHolder.clearContext();
+    }
+
+    private void login(Long userId, String roleKey)
+    {
+        SysUser user = new SysUser(userId);
+        SysRole role = new SysRole();
+        role.setRoleKey(roleKey);
+        user.setRoles(List.of(role));
+        LoginUser principal = new LoginUser(userId, 1L, user, Set.of());
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(principal, null, List.of()));
+    }
+
+    @Test
+    void teacherCannotSubmitForAnotherTeachersItem()
+    {
+        login(1003L, "teacher");
+        when(itemMapper.selectBizWorkloadItemById(9L)).thenReturn(item("G1"));
+
+        assertThatThrownBy(() -> service.submit(request("G1", "C1", new BigDecimal("1.2"), "理由")))
+                .isInstanceOf(ServiceException.class).hasMessageContaining("无权");
+        verifyNoInteractions(adjustmentMapper, summaryMapper, workloadCalcService);
+    }
+
+    @Test
+    void teacherCannotSubmitForItemWithoutOwner()
+    {
+        BizWorkloadItem orphan = item("G1");
+        orphan.setUserId(null);
+        when(itemMapper.selectBizWorkloadItemById(9L)).thenReturn(orphan);
+
+        assertThatThrownBy(() -> service.submit(request("G1", "C1", new BigDecimal("1.2"), "理由")))
+                .isInstanceOf(ServiceException.class).hasMessageContaining("无权");
+        verifyNoInteractions(adjustmentMapper, summaryMapper, workloadCalcService);
+    }
+
+    @Test
+    void businessAdminCanSubmitForTeacher()
+    {
+        login(1001L, "biz_admin");
+        when(itemMapper.selectBizWorkloadItemById(9L)).thenReturn(item("G1"));
+        service.submit(request("G1", "C1", new BigDecimal("1.2"), "教务复核"));
+        ArgumentCaptor<BizCoefficientAdjustment> saved = ArgumentCaptor.forClass(BizCoefficientAdjustment.class);
+        verify(adjustmentMapper).insertCoefficientAdjustment(saved.capture());
+        assertThat(saved.getValue().getUserId()).isEqualTo(2002L);
+    }
 
     // ---- 白名单：G1 的 C1/K1/Q1/Q2/N 与 G2 的 K/C2/Q1/Q2 共 9 个可提交 ----
     @ParameterizedTest
@@ -161,11 +228,11 @@ class CoefficientAdjustmentServiceImplTest
             service.approve(5L, "材料有效");
         }
 
-        // 顺序：先更新因子（不改版本）→ recalcItem（版本+1并落快照）→ 条件通过申请
+        // 顺序：先更新因子（不改版本）→ 条件通过申请 → recalcItem（捕获审批来源并版本+1）
         InOrder order = inOrder(theoryMapper, workloadCalcService, adjustmentMapper);
         order.verify(theoryMapper).updateQ2IfVersion(9L, new BigDecimal("1.50"), 3L);
-        order.verify(workloadCalcService).recalcItem(9L);
         order.verify(adjustmentMapper).markApprovedIfPending(5L, 1004L, "材料有效", 3L);
+        order.verify(workloadCalcService).recalcItem(9L);
         // 只改被申请因子，其它 theory 列与 practice 子表一律不动
         verify(theoryMapper, never()).updateC1IfVersion(anyLong(), any(), anyLong());
         verify(theoryMapper, never()).updateK1IfVersion(anyLong(), any(), anyLong());
@@ -190,8 +257,8 @@ class CoefficientAdjustmentServiceImplTest
 
         InOrder order = inOrder(practiceMapper, workloadCalcService, adjustmentMapper);
         order.verify(practiceMapper).updateKIfVersion(9L, new BigDecimal("0.90"), 3L);
-        order.verify(workloadCalcService).recalcItem(9L);
         order.verify(adjustmentMapper).markApprovedIfPending(5L, 1004L, "复核通过", 3L);
+        order.verify(workloadCalcService).recalcItem(9L);
         verifyNoInteractions(theoryMapper);
     }
 
@@ -226,6 +293,7 @@ class CoefficientAdjustmentServiceImplTest
                     .isInstanceOf(ServiceException.class);
         }
         verify(adjustmentMapper).markApprovedIfPending(eq(5L), eq(1004L), eq("材料有效"), eq(3L));
+        verify(workloadCalcService, never()).recalcItem(anyLong());
     }
 
     @Test

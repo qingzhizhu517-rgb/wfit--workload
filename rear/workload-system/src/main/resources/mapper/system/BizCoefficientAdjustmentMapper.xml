@@ -113,6 +113,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <!-- 服务端读取当前系数值：白名单固定列名，禁止 ${} 拼列。命中不到返回 NULL。 -->
+    <select id="selectPendingIdsForUpdate" resultType="java.lang.Long">
+        select id from biz_coefficient_adjustment
+        where user_id = #{userId} and semester = #{semester} and status = 0
+        order by id
+        for update
+    </select>
+
     <select id="selectCurrentFactorValue" resultType="java.math.BigDecimal">
         <choose>
             <when test="category == 'G1' and factorCode == 'C1'">select C1 from biz_wl_theory where item_id = #{itemId}</when>

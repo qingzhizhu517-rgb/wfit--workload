@@ -24,6 +24,69 @@ class BizAuditServiceImplTest
     @Mock private BizWorkloadSummaryMapper summaryMapper;
     @Mock private BizAuditLogMapper auditLogMapper;
     @Mock private BizAuditLogWriter auditLogWriter;
+    @Mock private com.workload.system.mapper.BizWorkloadItemMapper itemMapper;
+    @Mock private com.workload.system.mapper.BizCoefficientAdjustmentMapper adjustmentMapper;
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(ints = {0, 1})
+    void pendingCoefficientBlocksSubmissionAndFinalApproval(int status)
+    {
+        BizWorkloadSummary summary = new BizWorkloadSummary();
+        summary.setId(7L); summary.setUserId(1003L); summary.setSemester("2025-2026-1"); summary.setStatus(status);
+        when(summaryMapper.selectBizWorkloadSummaryById(7L)).thenReturn(summary);
+        when(summaryMapper.selectByUserSemesterForUpdate(1003L, "2025-2026-1")).thenReturn(summary);
+        when(adjustmentMapper.selectPendingIdsForUpdate(1003L, "2025-2026-1")).thenReturn(java.util.List.of(81L));
+        try (var scope = org.mockito.Mockito.mockStatic(com.workload.common.utils.DataScopeUtil.class);
+             var security = org.mockito.Mockito.mockStatic(com.workload.common.utils.SecurityUtils.class))
+        {
+            assertThatThrownBy(() -> { if (status == 0) service.submit(7L); else service.approve(7L); })
+                    .isInstanceOf(ServiceException.class).hasMessageContaining("待审系数");
+        }
+        var order = org.mockito.Mockito.inOrder(summaryMapper, adjustmentMapper);
+        order.verify(summaryMapper).selectByUserSemesterForUpdate(1003L, "2025-2026-1");
+        order.verify(adjustmentMapper).selectPendingIdsForUpdate(1003L, "2025-2026-1");
+        org.mockito.Mockito.verifyNoInteractions(auditLogMapper, auditLogWriter);
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(ints = {0, 1})
+    void noPendingCoefficientAllowsExistingTransition(int status)
+    {
+        BizWorkloadSummary summary = new BizWorkloadSummary();
+        summary.setId(7L); summary.setUserId(1003L); summary.setSemester("2025-2026-1"); summary.setStatus(status);
+        when(summaryMapper.selectBizWorkloadSummaryById(7L)).thenReturn(summary);
+        when(summaryMapper.selectByUserSemesterForUpdate(1003L, "2025-2026-1")).thenReturn(summary);
+        when(adjustmentMapper.selectPendingIdsForUpdate(1003L, "2025-2026-1")).thenReturn(java.util.List.of());
+        if (status == 0) when(summaryMapper.updateStatusIf(7L, 0, 1, "qa")).thenReturn(1);
+        else when(summaryMapper.approveSummary(7L, 1, 2, "qa", "qa")).thenReturn(1);
+        try (var scope = org.mockito.Mockito.mockStatic(com.workload.common.utils.DataScopeUtil.class);
+             var security = org.mockito.Mockito.mockStatic(com.workload.common.utils.SecurityUtils.class))
+        {
+            security.when(com.workload.common.utils.SecurityUtils::getUsername).thenReturn("qa");
+            if (status == 0) service.submit(7L); else service.approve(7L);
+        }
+        if (status == 0) verify(summaryMapper).updateStatusIf(7L, 0, 1, "qa");
+        else verify(summaryMapper).approveSummary(7L, 1, 2, "qa", "qa");
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(ints = {0, 1})
+    void unreviewedItemsBlockSubmissionAndFinalApproval(int status)
+    {
+        BizWorkloadSummary summary = new BizWorkloadSummary();
+        summary.setId(7L); summary.setUserId(1003L); summary.setSemester("2025-2026-1"); summary.setStatus(status);
+        when(summaryMapper.selectBizWorkloadSummaryById(7L)).thenReturn(summary);
+        when(summaryMapper.selectByUserSemesterForUpdate(1003L, "2025-2026-1")).thenReturn(summary);
+        when(itemMapper.selectUnreviewedIdsForUpdate(1003L, "2025-2026-1"))
+                .thenReturn(java.util.List.of(9L));
+        try (var scope = org.mockito.Mockito.mockStatic(com.workload.common.utils.DataScopeUtil.class);
+             var security = org.mockito.Mockito.mockStatic(com.workload.common.utils.SecurityUtils.class))
+        {
+            assertThatThrownBy(() -> { if (status == 0) service.submit(7L); else service.approve(7L); })
+                    .isInstanceOf(ServiceException.class).hasMessageContaining("未核对");
+        }
+        org.mockito.Mockito.verifyNoInteractions(auditLogMapper, auditLogWriter);
+    }
 
     @Test
     void finishedSummaryCannotBeUnlocked()

@@ -11,6 +11,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="formulaExpression"  column="formula_expression"  />
         <result property="factorJson"         column="factor_json"         />
         <result property="sourceJson"         column="source_json"         />
+        <result property="contextJson"        column="context_json"        />
         <result property="ruleVersion"        column="rule_version"        />
         <result property="result"             column="result"              />
         <result property="snapshotHash"       column="snapshot_hash"       />
@@ -20,17 +21,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <sql id="selectBizWorkloadCalcSnapshotVo">
         select id, item_id, calculation_version, formula_expression, factor_json, source_json,
-               rule_version, result, snapshot_hash, created_by, created_at
+               context_json, rule_version, result, snapshot_hash, created_by, created_at
         from biz_workload_calc_snapshot
     </sql>
 
     <insert id="insertBizWorkloadCalcSnapshot" parameterType="BizWorkloadCalcSnapshot" useGeneratedKeys="true" keyProperty="id">
         insert into biz_workload_calc_snapshot
         (item_id, calculation_version, formula_expression, factor_json, source_json,
-         rule_version, result, snapshot_hash, created_by, created_at)
+         context_json, rule_version, result, snapshot_hash, created_by, created_at)
         values
         (#{itemId}, #{calculationVersion}, #{formulaExpression}, #{factorJson}, #{sourceJson},
-         #{ruleVersion}, #{result}, #{snapshotHash}, #{createdBy}, #{createdAt})
+         #{contextJson}, #{ruleVersion}, #{result}, #{snapshotHash}, #{createdBy}, #{createdAt})
     </insert>
 
     <select id="selectMaxVersionByItemId" parameterType="Long" resultType="java.lang.Long">

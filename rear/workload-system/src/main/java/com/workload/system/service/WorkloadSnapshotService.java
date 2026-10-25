@@ -68,7 +68,8 @@ public class WorkloadSnapshotService
         String sourceJson = serialize(buildOrderedMap(formula.getFactors(), false));
         String formulaExpression = normalizeExpression(formula.getExpression());
         BigDecimal result = formula.getResult();
-        String snapshotHash = sha256(factorJson, sourceJson, formulaExpression, ruleVersion, result);
+        String contextJson = SnapshotContextCodec.encode(formula);
+        String snapshotHash = sha256(factorJson, sourceJson, formulaExpression, ruleVersion, result, contextJson);
 
         BizWorkloadCalcSnapshot snapshot = new BizWorkloadCalcSnapshot();
         snapshot.setItemId(item.getId());
@@ -76,6 +77,7 @@ public class WorkloadSnapshotService
         snapshot.setFormulaExpression(formulaExpression);
         snapshot.setFactorJson(factorJson);
         snapshot.setSourceJson(sourceJson);
+        snapshot.setContextJson(contextJson);
         snapshot.setRuleVersion(ruleVersion);
         snapshot.setResult(result);
         snapshot.setSnapshotHash(snapshotHash);
@@ -150,7 +152,7 @@ public class WorkloadSnapshotService
 
     /** 覆盖规范化后的 factorJson+sourceJson+formula+ruleVersion+result，生成稳定 SHA-256。 */
     private String sha256(String factorJson, String sourceJson, String formulaExpression,
-            String ruleVersion, BigDecimal result)
+            String ruleVersion, BigDecimal result, String contextJson)
     {
         StringBuilder payload = new StringBuilder();
         payload.append(factorJson == null ? "" : factorJson).append('\n');
@@ -158,6 +160,7 @@ public class WorkloadSnapshotService
         payload.append(formulaExpression == null ? "" : formulaExpression).append('\n');
         payload.append(ruleVersion == null ? "" : ruleVersion).append('\n');
         payload.append(result == null ? "" : result.toPlainString());
+        payload.append('\n').append(contextJson);
 
         try
         {

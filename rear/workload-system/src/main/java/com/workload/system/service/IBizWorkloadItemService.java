@@ -5,15 +5,17 @@ import com.workload.system.domain.BizWorkloadItem;
 
 /**
  * 工作量明细主表Service接口
- * 
+ *
  * @author wflg
  * @date 2026-07-20
  */
-public interface IBizWorkloadItemService 
+public interface IBizWorkloadItemService
 {
+    /** 教务核对，绑定所查看的版本与学时；与教师自行申报分离。 */
+    int confirm(Long id, Long expectedVersion, java.math.BigDecimal expectedWorkload);
     /**
      * 查询工作量明细主表
-     * 
+     *
      * @param id 工作量明细主表主键
      * @return 工作量明细主表
      */
@@ -21,7 +23,7 @@ public interface IBizWorkloadItemService
 
     /**
      * 查询工作量明细主表列表
-     * 
+     *
      * @param bizWorkloadItem 工作量明细主表
      * @return 工作量明细主表集合
      */
@@ -29,7 +31,7 @@ public interface IBizWorkloadItemService
 
     /**
      * 新增工作量明细主表
-     * 
+     *
      * @param bizWorkloadItem 工作量明细主表
      * @return 结果
      */
@@ -37,7 +39,7 @@ public interface IBizWorkloadItemService
 
     /**
      * 修改工作量明细主表
-     * 
+     *
      * @param bizWorkloadItem 工作量明细主表
      * @return 结果
      */
@@ -45,7 +47,7 @@ public interface IBizWorkloadItemService
 
     /**
      * 批量删除工作量明细主表
-     * 
+     *
      * @param ids 需要删除的工作量明细主表主键集合
      * @return 结果
      */
@@ -53,7 +55,7 @@ public interface IBizWorkloadItemService
 
     /**
      * 删除工作量明细主表信息
-     * 
+     *
      * @param id 工作量明细主表主键
      * @return 结果
      */

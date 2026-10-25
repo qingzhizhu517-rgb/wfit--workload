@@ -28,7 +28,7 @@ import com.workload.common.core.page.TableDataInfo;
 
 /**
  * 学期工作量汇总Controller
- * 
+ *
  * @author wflg
  * @date 2026-07-20
  */
@@ -107,7 +107,7 @@ public class BizWorkloadSummaryController extends BaseController
      *
      * 说明：审批状态迁移与签字一律走 /system/audit/* 审批链（带原子条件更新 + 审计日志），
      * 本通用 edit 端点对所有角色都禁止改动 status/各签字字段/lock_time（防状态机后门），
-     * 且已完结(2)记录整体锁定不可改。教师额外仅可改备注。
+     * 所有角色仅可改草稿备注；Service 对待审/已完结记录统一冻结。
      */
     @PreAuthorize("@ss.hasPermi('system:workloadSummary:edit')")
     @Log(title = "学期工作量汇总", businessType = BusinessType.UPDATE)
@@ -126,10 +126,10 @@ public class BizWorkloadSummaryController extends BaseController
         // 按数据库记录的归属人校验，防止伪造 userId 绕过
         DataScopeUtil.assertOwnOrAdmin(existing.getUserId());
 
-        // 已完结(2)记录锁定，任何角色不可经通用 edit 修改；如需变更请先走审批解锁
+        // 已完结(2)记录永久锁定；待审的事务内检查由 Service 执行
         if (existing.getStatus() != null && existing.getStatus() == WorkloadSummaryStatus.FINISHED)
         {
-            throw new ServiceException("该汇总已完结锁定，禁止修改；如需变更请先解锁");
+            throw new ServiceException("该汇总已完结永久锁定，禁止修改");
         }
 
         // 审批流字段一律不允许经此端点写入（对所有角色生效），状态迁移只能走审批链。

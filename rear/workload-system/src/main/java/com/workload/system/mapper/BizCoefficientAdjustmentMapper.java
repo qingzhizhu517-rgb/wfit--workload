@@ -39,6 +39,9 @@ public interface BizCoefficientAdjustmentMapper
      */
     public int countPendingByUserSemester(@Param("userId") Long userId, @Param("semester") String semester);
 
+    /** 审核前的当前读：调用方须先锁定教师学期汇总，防止RR快照漏掉新提交的申请。 */
+    List<Long> selectPendingIdsForUpdate(@Param("userId") Long userId, @Param("semester") String semester);
+
     /**
      * 服务端读取指定明细某系数的当前值，作为申请的 old_value。
      * <p>只读；用 &lt;choose&gt; 白名单映射到固定列名，绝不用 ${} 拼列名。</p>

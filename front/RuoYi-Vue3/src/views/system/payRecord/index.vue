@@ -71,17 +71,6 @@
       <template v-if="!isTeacher">
         <el-col :span="1.5">
           <el-button
-            v-hasPermi="['system:payRecord:add']"
-            type="primary"
-            plain
-            icon="Plus"
-            @click="handleAdd"
-          >
-            新增
-          </el-button>
-        </el-col>
-        <el-col :span="1.5">
-          <el-button
             v-hasPermi="['system:payRecord:edit']"
             type="success"
             plain
@@ -89,7 +78,7 @@
             :disabled="single"
             @click="handleUpdate"
           >
-            修改
+            编辑备注
           </el-button>
         </el-col>
         <el-col :span="1.5">
@@ -257,7 +246,7 @@
             icon="Edit"
             @click="handleUpdate(scope.row)"
           >
-            修改
+            编辑备注
           </el-button>
           <el-button
             v-hasPermi="['system:payRecord:remove']"
@@ -280,7 +269,7 @@
       @pagination="getList"
     />
 
-    <!-- 添加或修改酬金汇总对话框 -->
+    <!-- 只读核算结果与草稿备注维护 -->
     <el-dialog
       v-model="open"
       :title="title"
@@ -293,84 +282,37 @@
         :rules="rules"
         label-width="110px"
       >
+        <el-alert
+          title="金额由核算生成；仅草稿记录可编辑备注。待审和已完结记录不可修改。"
+          type="info"
+          :closable="false"
+          class="mb8"
+        />
+        <el-descriptions
+          :column="2"
+          border
+          class="mb8"
+        >
+          <el-descriptions-item label="教师">
+            {{ userLabel(form.userId) }}
+          </el-descriptions-item>
+          <el-descriptions-item label="学年学期">
+            {{ form.semester }}
+          </el-descriptions-item>
+          <el-descriptions-item label="课时/绩效酬金">
+            {{ formatAmount(form.courseHourPay) }}
+          </el-descriptions-item>
+          <el-descriptions-item label="其他酬金合计">
+            {{ formatAmount(form.otherPayTotal) }}
+          </el-descriptions-item>
+          <el-descriptions-item label="总金额">
+            {{ formatAmount(form.totalPay) }}
+          </el-descriptions-item>
+          <el-descriptions-item label="发放状态">
+            {{ form.status === 1 ? '已发放' : '未发放' }}
+          </el-descriptions-item>
+        </el-descriptions>
         <el-row :gutter="16">
-          <el-col :span="12">
-            <el-form-item
-              label="教师"
-              prop="userId"
-            >
-              <user-select v-model="form.userId" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item
-              label="学年学期"
-              prop="semester"
-            >
-              <el-input
-                v-model="form.semester"
-                placeholder="如 2025-2026-1"
-                maxlength="20"
-              />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item
-              label="课时/绩效酬金"
-              prop="courseHourPay"
-            >
-              <el-input-number
-                v-model="form.courseHourPay"
-                :min="0"
-                :precision="2"
-                controls-position="right"
-                style="width: 100%"
-              />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item
-              label="其他酬金合计"
-              prop="otherPayTotal"
-            >
-              <el-input-number
-                v-model="form.otherPayTotal"
-                :min="0"
-                :precision="2"
-                controls-position="right"
-                style="width: 100%"
-              />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item
-              label="总金额"
-              prop="totalPay"
-            >
-              <el-input-number
-                v-model="form.totalPay"
-                :min="0"
-                :precision="0"
-                controls-position="right"
-                style="width: 100%"
-              />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item
-              label="状态"
-              prop="status"
-            >
-              <el-radio-group v-model="form.status">
-                <el-radio :value="0">
-                  未发放
-                </el-radio>
-                <el-radio :value="1">
-                  已发放
-                </el-radio>
-              </el-radio-group>
-            </el-form-item>
-          </el-col>
           <el-col :span="24">
             <el-form-item
               label="备注"
@@ -407,7 +349,7 @@
 
 <script setup name="PayRecord">
 import { useRoute, useRouter } from 'vue-router'
-import { listPayRecord, getPayRecord, delPayRecord, addPayRecord, updatePayRecord } from '@/api/system/payRecord'
+import { listPayRecord, getPayRecord, delPayRecord, updatePayRecord } from '@/api/system/payRecord'
 import { recalcPay } from '@/api/system/calc'
 import UserSelect from '@/components/UserSelect/index.vue'
 import { useUserMap } from '@/utils/userCache'
@@ -515,13 +457,6 @@ function handleSelectionChange(selection) {
   multiple.value = !selection.length
 }
 
-/** 新增按钮操作 */
-function handleAdd() {
-  reset()
-  open.value = true
-  title.value = '添加酬金记录'
-}
-
 /** 修改按钮操作 */
 function handleUpdate(row) {
   reset()
@@ -529,7 +464,7 @@ function handleUpdate(row) {
   getPayRecord(_id).then(response => {
     form.value = response.data
     open.value = true
-    title.value = '修改酬金记录'
+    title.value = '查看核算结果与编辑备注'
   })
 }
 
@@ -537,19 +472,11 @@ function handleUpdate(row) {
 function submitForm() {
   proxy.$refs['payRecordRef'].validate(valid => {
     if (valid) {
-      if (form.value.id !== null && form.value.id !== undefined) {
-        updatePayRecord(form.value).then(() => {
-          proxy.$modal.msgSuccess('修改成功')
-          open.value = false
-          getList()
-        })
-      } else {
-        addPayRecord(form.value).then(() => {
-          proxy.$modal.msgSuccess('新增成功')
-          open.value = false
-          getList()
-        })
-      }
+      updatePayRecord({ id: form.value.id, remark: form.value.remark }).then(() => {
+        proxy.$modal.msgSuccess('备注已保存')
+        open.value = false
+        getList()
+      })
     }
   })
 }

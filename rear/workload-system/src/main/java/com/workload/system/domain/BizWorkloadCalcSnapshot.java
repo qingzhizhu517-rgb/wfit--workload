@@ -36,6 +36,13 @@ public class BizWorkloadCalcSnapshot implements Serializable
     /** 因子来源 JSON（与 factorJson 同 key 顺序） */
     private String sourceJson;
 
+    /** 版本化历史解释上下文；旧快照为空，不回填当前数据。 */
+    private String contextJson;
+
+    public String getContextJson() { return contextJson; }
+
+    public void setContextJson(String contextJson) { this.contextJson = contextJson; }
+
     /** 规则版本标识 */
     private String ruleVersion;
 

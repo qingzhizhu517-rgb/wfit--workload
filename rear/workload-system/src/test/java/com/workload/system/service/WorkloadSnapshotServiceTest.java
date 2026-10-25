@@ -81,6 +81,17 @@ class WorkloadSnapshotServiceTest
     }
 
     @Test
+    void changedApprovalEvidenceChangesHashEvenWhenMoneyIsUnchanged()
+    {
+        FactorFormulaVo formula = g1Formula();
+        formula.getFactors().get(0).setSourceRef("approval:1");
+        BizWorkloadCalcSnapshot first = service.capture(item(), formula, "v1");
+        formula.getFactors().get(0).setSourceRef("approval:2");
+        BizWorkloadCalcSnapshot second = service.capture(item(), formula, "v1");
+        assertThat(second.getSnapshotHash()).isNotEqualTo(first.getSnapshotHash());
+    }
+
+    @Test
     void versionIncrementsFromExistingMaxVersion()
     {
         when(snapshotMapper.selectMaxVersionByItemId(ITEM_ID)).thenReturn(3L);

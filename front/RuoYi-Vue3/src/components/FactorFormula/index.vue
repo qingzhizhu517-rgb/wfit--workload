@@ -7,7 +7,7 @@
     <div class="ff-head">
       <div>
         <div class="ff-kicker">
-          {{ formula.reproducible === false ? '当前规则参考' : '计算口径' }}
+          {{ formulaLabel }}
         </div>
         <div class="ff-expression">
           {{ formula.expression || formula.formulaType || itemType }}
@@ -223,9 +223,18 @@ const displayOnlyFactors = computed(() => {
   if (props.formula?.reproducible === false) return factors
   return factors.filter(factor => factor.status === 'DISPLAY_ONLY')
 })
-const referenceLabel = computed(() => props.formula?.reproducible === false
-  ? '参考因子（未保存历史规则快照，不作为结果复算式）'
-  : '仅展示，不参与计算')
+const formulaLabel = computed(() => {
+  if (hasSnapshotVersion.value) {
+    return props.formula?.reproducible === false ? '历史快照（因子不完整）' : '历史计算口径'
+  }
+  return props.formula?.reproducible === false ? '当前规则参考' : '计算口径'
+})
+const referenceLabel = computed(() => {
+  if (props.formula?.reproducible !== false) return '仅展示，不参与计算'
+  return hasSnapshotVersion.value
+    ? '历史因子记录不完整，不能据此复算结果'
+    : '参考因子（未保存历史规则快照，不作为结果复算式）'
+})
 
 const emptyText = computed(() => {
   const text = {

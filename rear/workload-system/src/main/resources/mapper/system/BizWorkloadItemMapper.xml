@@ -3,7 +3,7 @@
 PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.workload.system.mapper.BizWorkloadItemMapper">
-    
+
     <resultMap type="BizWorkloadItem" id="BizWorkloadItemResult">
         <result property="id"    column="id"    />
         <result property="userId"    column="user_id"    />
@@ -42,7 +42,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <select id="selectBizWorkloadItemList" parameterType="BizWorkloadItem" resultMap="BizWorkloadItemResult">
         <include refid="selectBizWorkloadItemVo"/>
-        <where>  
+        <where>
             <if test="userId != null "> and user_id = #{userId}</if>
             <if test="semester != null  and semester != ''"> and semester = #{semester}</if>
             <if test="academicYear != null  and academicYear != ''"> and academic_year = #{academicYear}</if>
@@ -66,7 +66,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="status != null "> and status = #{status}</if>
         </where>
     </select>
-    
+
     <select id="selectBizWorkloadItemById" parameterType="Long" resultMap="BizWorkloadItemResult">
         <include refid="selectBizWorkloadItemVo"/>
         where id = #{id}
@@ -192,7 +192,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </delete>
 
     <delete id="deleteBizWorkloadItemByIds" parameterType="String">
-        delete from biz_workload_item where id in 
+        delete from biz_workload_item where id in
         <foreach item="id" collection="array" open="(" separator="," close=")">
             #{id}
         </foreach>
@@ -204,4 +204,23 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where semester = #{semester} and user_id is not null
         order by user_id
     </select>
+    <select id="selectUnreviewedIdsForUpdate" resultType="java.lang.Long">
+        select id from biz_workload_item
+        where user_id = #{userId} and semester = #{semester}
+          and (status is null or status not in (1, 3))
+        order by id
+        for update
+    </select>
+
+    <update id="confirmIfUnchanged">
+        update biz_workload_item i
+        set i.status = 1, i.update_by = #{reviewer}, i.update_time = now()
+        where i.id = #{id} and i.status = 0
+          and ifnull(i.calculation_version, 0) = #{version}
+          and i.calculated_workload = #{workload}
+          and not exists (select 1 from biz_workload_summary s
+              where s.user_id = i.user_id and s.semester = i.semester and ifnull(s.status, 0) != 0)
+          and not exists (select 1 from biz_coefficient_adjustment a
+              where a.user_id = i.user_id and a.semester = i.semester and a.status = 0)
+    </update>
 </mapper>

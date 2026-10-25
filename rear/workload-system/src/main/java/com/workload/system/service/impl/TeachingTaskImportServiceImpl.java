@@ -181,6 +181,8 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
     @Transactional(rollbackFor = Exception.class)
     public BigDecimal processSingleRow(TeachingTaskImportDTO dto, String batchNo, String templateType)
     {
+        // 同一个规范化输入用于校验、任务落库和系数派生。
+        normalizeRow(dto);
         // 1. 校验必填字段
         validateRow(dto);
 
@@ -332,11 +334,14 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
     private void handlePreviewRow(Long batchId, int physicalRow, TeachingTaskImportDTO normalized,
                                   Object rawDto, String templateType, List<ImportRowView> views, int[] counts)
     {
+        // V2 的 rawDto 与 normalized 指向同一 DTO，先保存原始值，避免默认值改写审计原文。
+        String rawJson = toJson(rawDto);
         String status;
         String errorMessage = null;
         String errorCode = null;
         try
         {
+            normalizeRow(normalized);
             validateRow(normalized);
             // 分类模板闸门：与写库前 processSingleRow 复用同一判定，错误信息含「模板类别 Gx」
             assertTemplateType(normalized, templateType);
@@ -354,7 +359,7 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
         BizImportRow row = new BizImportRow();
         row.setBatchId(batchId);
         row.setRowNo(physicalRow);
-        row.setRawJson(toJson(rawDto));
+        row.setRawJson(rawJson);
         row.setNormalizedJson(toJson(normalized));
         row.setStatus(status);
         if (errorMessage != null)
@@ -411,6 +416,10 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
                 {
                     throw new ServiceException("暂存行解析为空，无法确认导入");
                 }
+                // 暂存数据仍需在查重之前重新规范化和校验；旧批次也不能绕过输入契约。
+                normalizeRow(dto);
+                validateRow(dto);
+                assertTemplateType(dto, category);
                 if (isDuplicate(dto))
                 {
                     row.setStatus("SKIPPED");
@@ -675,6 +684,17 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
         }
     }
 
+    /** 规范化可选默认值，预检、确认和直接导入共用同一输入。 */
+    private void normalizeRow(TeachingTaskImportDTO dto)
+    {
+        if (dto == null)
+        {
+            throw new ServiceException("导入行不能为空");
+        }
+        dto.setCourseNature(defaultStr(dto.getCourseNature(), "必修").trim());
+        dto.setMajorCategory(defaultStr(dto.getMajorCategory(), "理工类").trim());
+    }
+
     /**
      * 校验必填字段
      */
@@ -712,6 +732,15 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
         validateCourseCoefficientScope(type, dto.getCourseCoefficient());
         // v2 数量字段按类别校验：先拒不适用字段（互斥），再校必填 + 精度/人数
         validateQuantityByCategory(type, dto);
+        // G1/G2/G3 的人数虽可省略，显式填写时也必须为正。
+        if (dto.getStudentCount() != null && dto.getStudentCount() <= 0)
+        {
+            throw new ServiceException("选课/指导人数必须为正整数");
+        }
+        if (dto.getCourseCoefficient() != null && dto.getCourseCoefficient().signum() <= 0)
+        {
+            throw new ServiceException("课程系数必须大于 0");
+        }
         // 重复次序为可选列；填了就必须是正整数，填 0 或负数属笔误，直接拒绝而非静默当 1
         if (dto.getRepeatOrder() != null && dto.getRepeatOrder() < 1)
         {

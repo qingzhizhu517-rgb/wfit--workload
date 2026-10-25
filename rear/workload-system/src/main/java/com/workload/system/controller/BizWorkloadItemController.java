@@ -35,7 +35,7 @@ import com.workload.common.core.page.TableDataInfo;
  * <p>
  * TODO 异议（objection）/申诉（appeal）/院部审批（dean_approval）接口属下一迭代；
  * 当前 deanApproval 类、appealStatus/appealReply 等字段不提供写入口，edit 白名单也不允许直改。
- * 
+ *
  * @author wflg
  * @date 2026-07-20
  */
@@ -58,7 +58,7 @@ public class BizWorkloadItemController extends BaseController
      * 校验该教师该学期的汇总是否处于可编辑状态（填报中 0 或 驳回退回后的 0）。
      * 汇总一旦提交进入审批链（1 教务处待审 / 2 已完结），底层明细即冻结，
      * 教师不得再增删改，防止绕过审批修改在审数据。
-     * 仅对教师角色生效；管理端（教务/管理员）不受此限，仍可修订。
+     * 这里仅对教师提前提示；Service 对所有角色统一执行事务内冻结检查。
      */
     private void assertItemEditable(Long userId, String semester)
     {
@@ -139,6 +139,16 @@ public class BizWorkloadItemController extends BaseController
             log.warn("工作量公式说明加载失败, itemId={}", id, e);
         }
         return success(bizWorkloadItem);
+    }
+
+    public record ConfirmRequest(Long expectedVersion, java.math.BigDecimal expectedWorkload) {}
+
+    @PreAuthorize("@ss.hasPermi('system:workloadItem:review')")
+    @Log(title = "教务核对明细", businessType = BusinessType.UPDATE)
+    @PostMapping("/{id}/confirm")
+    public AjaxResult confirm(@PathVariable Long id, @RequestBody ConfirmRequest request)
+    {
+        return toAjax(bizWorkloadItemService.confirm(id, request.expectedVersion(), request.expectedWorkload()));
     }
 
     /**

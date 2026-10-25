@@ -42,3 +42,8 @@ export function delWorkloadItem(id) {
     method: 'delete'
   })
 }
+
+// 教务核对：版本和学时均须与所查看的结果一致。
+export function confirmWorkloadItem(id, data) {
+  return request({ url: `/system/workloadItem/${id}/confirm`, method: 'post', data })
+}

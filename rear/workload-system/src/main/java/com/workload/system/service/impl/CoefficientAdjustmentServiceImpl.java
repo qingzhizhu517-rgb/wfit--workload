@@ -11,6 +11,7 @@ import org.springframework.util.StringUtils;
 
 import com.workload.common.exception.ServiceException;
 import com.workload.common.utils.DateUtils;
+import com.workload.common.utils.DataScopeUtil;
 import com.workload.common.utils.SecurityUtils;
 import com.workload.system.calc.WorkloadCalcService;
 import com.workload.system.calc.WorkloadWriteGuard;
@@ -87,6 +88,8 @@ public class CoefficientAdjustmentServiceImpl implements ICoefficientAdjustmentS
         {
             throw new ServiceException("工作量明细不存在, itemId=" + request.getItemId());
         }
+        // 先按数据库归属鉴权，再读取系数或锁定汇总；把申请归到明细所有者不等于校验申请人。
+        DataScopeUtil.assertOwnOrAdmin(item.getUserId());
         // 5) 明细类别须与申请类别一致
         if (!request.getCategory().equals(item.getItemType()))
         {
@@ -132,21 +135,22 @@ public class CoefficientAdjustmentServiceImpl implements ICoefficientAdjustmentS
         //   a. 读申请并确认仍为待审；
         //   b. 按白名单原子应用被申请因子到 G 子表（JOIN 主表校验 baseVersion/明细未核对/汇总非草稿）；
         //      —— 只更新因子，不动主表 calculation_version；
-        //   c. recalcItem：用新因子重算，产出 APPROVED_OVERRIDE 新快照并把主表版本 +1（原子条件更新）；
-        //   d. 条件置 APPROVED（仍待审且 base_calculation_version 未变才成功）。
+        //   c. 条件置 APPROVED（仍待审且 base_calculation_version 未变才成功）；
+        //   d. recalcItem：读取新因子及审批来源，产出新快照并把主表版本 +1。
         BizCoefficientAdjustment adjustment = requirePending(id);
         Long baseVersion = adjustment.getBaseCalculationVersion();
         // b. 原子应用因子；先更新因子（不改版本），再 recalcItem（版本 +1），保证版本序一致。
         applyRequestedFactor(adjustment, baseVersion);
-        // c. 重算：recalcItem 内部读回被改写的 G 子表新值，落新快照并原子更新主表版本。
-        workloadCalcService.recalcItem(adjustment.getItemId());
-        // d. 条件置 APPROVED。
+        // c. 先在同一事务内条件置 APPROVED，供随后快照捕获审批来源。
+        // 重算失败会使因子更新、审批状态与快照一起回滚。
         int affected = adjustmentMapper.markApprovedIfPending(
                 id, SecurityUtils.getUserId(), reviewReason, baseVersion);
         if (affected == 0)
         {
             throw new ServiceException("申请状态已变更或计算版本已更新，通过失败（并发冲突）");
         }
+        // d. 读回新因子和已批准来源，落新快照并原子更新主表版本。
+        workloadCalcService.recalcItem(adjustment.getItemId());
     }
 
     /**

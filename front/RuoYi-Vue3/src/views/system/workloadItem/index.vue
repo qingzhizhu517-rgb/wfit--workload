@@ -329,6 +329,14 @@
             <template #dropdown>
               <el-dropdown-menu>
                 <el-dropdown-item
+                  v-if="scope.row.status === 0"
+                  v-hasPermi="['system:workloadItem:review']"
+                  command="confirm"
+                  icon="Check"
+                >
+                  教务核对通过
+                </el-dropdown-item>
+                <el-dropdown-item
                   v-hasPermi="['system:workloadItem:edit']"
                   command="recalc"
                   icon="Refresh"
@@ -735,7 +743,7 @@
 
 <script setup name="WorkloadItem">
 import FactorFormula from '@/components/FactorFormula'
-import { listWorkloadItem, getWorkloadItem, delWorkloadItem, addWorkloadItem, updateWorkloadItem } from '@/api/system/workloadItem'
+import { listWorkloadItem, getWorkloadItem, delWorkloadItem, addWorkloadItem, updateWorkloadItem, confirmWorkloadItem } from '@/api/system/workloadItem'
 import { recalcItem, recalcItems } from '@/api/system/calc'
 import { submitCoefficientAdjustment } from '@/api/system/coefficientAdjustment'
 import UserSelect from '@/components/UserSelect/index.vue'
@@ -1011,9 +1019,27 @@ function handleRecalcItem(row) {
   }).catch(() => {})
 }
 
+/** 先取最新详情，让核对人明确确认学时和版本；后台仍做原子条件校验。 */
+async function handleConfirm(row) {
+  const { data } = await getWorkloadItem(row.id)
+  try {
+    await proxy.$modal.confirm(`核对明细 #${data.id}：${data.courseName || data.itemType}，${data.calculatedWorkload} 学时（版本 ${data.calculationVersion || 0}）。通过后该明细将锁定，是否确认？`)
+    await confirmWorkloadItem(data.id, {
+      expectedVersion: data.calculationVersion || 0,
+      expectedWorkload: data.calculatedWorkload
+    })
+    proxy.$modal.msgSuccess('教务核对通过')
+    getList()
+  } catch {
+    // 用户取消或请求拦截器已显示服务端拒绝原因。
+  }
+}
+
 /** 更多操作下拉命令 */
 function handleMoreCmd(cmd, row) {
-  if (cmd === 'recalc') {
+  if (cmd === 'confirm') {
+    handleConfirm(row)
+  } else if (cmd === 'recalc') {
     handleRecalcItem(row)
   } else if (cmd === 'edit') {
     handleUpdate(row)

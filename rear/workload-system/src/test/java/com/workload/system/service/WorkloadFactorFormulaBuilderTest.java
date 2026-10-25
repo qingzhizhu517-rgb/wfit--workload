@@ -29,38 +29,35 @@ import com.workload.system.domain.BizWorkloadCalcSnapshot;
 import com.workload.system.domain.BizWorkloadItem;
 import com.workload.system.domain.vo.FactorFormulaVo;
 import com.workload.system.mapper.BizWorkloadCalcSnapshotMapper;
-import com.workload.system.service.IBizTeachingTaskService;
-import com.workload.system.service.IBizWlConcentratedInternshipService;
-import com.workload.system.service.IBizWlCourseDesignService;
-import com.workload.system.service.IBizWlInternshipTrainingService;
-import com.workload.system.service.IBizWlManagementService;
-import com.workload.system.service.IBizWlPracticeService;
-import com.workload.system.service.IBizWlTheoryService;
-import com.workload.system.service.IBizWlThesisService;
+import com.workload.system.mapper.BizTeachingTaskMapper;
+import com.workload.system.mapper.BizWlConcentratedInternshipMapper;
+import com.workload.system.mapper.BizWlCourseDesignMapper;
+import com.workload.system.mapper.BizWlInternshipTrainingMapper;
+import com.workload.system.mapper.BizWlManagementMapper;
+import com.workload.system.mapper.BizWlPracticeMapper;
+import com.workload.system.mapper.BizWlTheoryMapper;
+import com.workload.system.mapper.BizWlThesisMapper;
 
 @ExtendWith(MockitoExtension.class)
 class WorkloadFactorFormulaBuilderTest
 {
     @InjectMocks private WorkloadFactorFormulaServiceImpl builder;
-    @Mock private IBizWlTheoryService theoryService;
-    @Mock private IBizWlPracticeService practiceService;
-    @Mock private IBizWlInternshipTrainingService internshipTrainingService;
-    @Mock private IBizWlCourseDesignService courseDesignService;
-    @Mock private IBizWlThesisService thesisService;
-    @Mock private IBizWlConcentratedInternshipService concentratedInternshipService;
-    @Mock private IBizWlManagementService managementService;
+    @Mock private BizWlTheoryMapper theoryMapper;
+    @Mock private BizWlPracticeMapper practiceMapper;
+    @Mock private BizWlInternshipTrainingMapper internshipTrainingMapper;
+    @Mock private BizWlCourseDesignMapper courseDesignMapper;
+    @Mock private BizWlThesisMapper thesisMapper;
+    @Mock private BizWlConcentratedInternshipMapper concentratedInternshipMapper;
+    @Mock private BizWlManagementMapper managementMapper;
     @Mock private RuleParamService ruleParamService;
     @Mock private BizWorkloadCalcSnapshotMapper snapshotMapper;
-    @Mock private IBizTeachingTaskService teachingTaskService;
+    @Mock private BizTeachingTaskMapper teachingTaskMapper;
+    @Mock private com.workload.system.mapper.BizCoefficientAdjustmentMapper adjustmentMapper;
 
     @Test
     void detailUsesPersistedSnapshotSources()
     {
         BizWorkloadItem item = item("G1", "IMPORT", "57.60");
-        BizWlTheory d = new BizWlTheory();
-        d.setJ1(n("32")); d.setC1(n("1")); d.setK1(n("1.1"));
-        d.setQ1(n("1")); d.setQ2(n("1")); d.setQ3(n("1.5")); d.setN(n("1.2"));
-        when(theoryService.selectBizWlTheoryByItemId(7L)).thenReturn(d);
         when(snapshotMapper.selectLatestByItemId(7L)).thenReturn(snapshotWithQ2("1.50", "APPROVED_OVERRIDE"));
 
         FactorFormulaVo vo = builder.build(item);
@@ -81,6 +78,139 @@ class WorkloadFactorFormulaBuilderTest
     }
 
     @Test
+    void historicalFormulaDoesNotDependOnCurrentRulesOrDeletedSourceRows()
+    {
+        BizWorkloadItem item = item("G4", "IMPORT", "999");
+        item.setTaskId(555L);
+        BizWorkloadCalcSnapshot snapshot = snapshotWithQ2("1", "RULE_DEFAULT");
+        snapshot.setFormulaExpression("J4 × R4 × 0.4");
+        snapshot.setResult(n("40"));
+        snapshot.setRuleVersion("historical-v1");
+        snapshot.setFactorJson("{\"J4\":\"2\",\"R4\":\"50\",\"CONST\":\"0.4\"}");
+        snapshot.setSourceJson("{\"J4\":\"IMPORT_VALUE\",\"R4\":\"IMPORT_VALUE\",\"CONST\":\"FORMULA_CONSTANT\"}");
+        when(snapshotMapper.selectLatestByItemId(7L)).thenReturn(snapshot);
+
+        FactorFormulaVo result = builder.build(item);
+
+        assertThat(result).isNotNull();
+        assertThat(result.getExpression()).isEqualTo("J4 × R4 × 0.4");
+        assertThat(result.getResult()).isEqualByComparingTo("40");
+        assertThat(result.getFactors()).extracting(FactorFormulaVo.FactorVo::getKey)
+                .containsExactly("J4", "R4", "CONST");
+        assertThat(result.getFactors().get(2).getValue()).isEqualTo(n("0.4"));
+        assertThat(result.getFactors().get(2).getRuleVersion()).isEqualTo("historical-v1");
+        assertThat(result.getSourceTask()).isNull();
+        assertThat(result.getDescription()).contains("未保存", "源数据");
+        verifyNoInteractions(ruleParamService, courseDesignMapper, teachingTaskMapper);
+    }
+
+    @Test
+    void incompleteSnapshotCannotPretendToBeReproducible()
+    {
+        BizWorkloadCalcSnapshot snapshot = snapshotWithQ2("1", "RULE_DEFAULT");
+        snapshot.setFormulaExpression(null);
+        when(snapshotMapper.selectLatestByItemId(7L)).thenReturn(snapshot);
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> builder.build(item("G4", "IMPORT", "40")))
+                .isInstanceOf(com.workload.common.exception.ServiceException.class)
+                .hasMessageContaining("快照");
+    }
+
+    @Test
+    void missingHistoricalFactorValueIsNotReproducible()
+    {
+        BizWorkloadCalcSnapshot snapshot = snapshotWithQ2("1", "RULE_DEFAULT");
+        snapshot.setFactorJson("{\"J1\":null}");
+        snapshot.setSourceJson("{\"J1\":\"IMPORT_VALUE\"}");
+        when(snapshotMapper.selectLatestByItemId(7L)).thenReturn(snapshot);
+
+        assertThat(builder.build(item("G1", "IMPORT", "40")).isReproducible()).isFalse();
+    }
+
+    @Test
+    void capturedContextRestoresCourseAndFactorEvidenceWithoutLiveQueries()
+    {
+        FactorFormulaVo.FactorVo factor = new FactorFormulaVo.FactorVo("Q2", n("1.5"),
+                "APPROVED_OVERRIDE", "课程质量系数", "APPROVED");
+        factor.setSourceRef("coefficient-adjustment:81");
+        factor.setRuleCode("COEF_Q2");
+        factor.setRuleVersion("rule-v1");
+        FactorFormulaVo formula = new FactorFormulaVo("G1", "Q2", n("1.5"),
+                "历史审批依据", java.util.List.of(factor));
+        FactorFormulaVo.SourceTaskVo task = new FactorFormulaVo.SourceTaskVo();
+        task.setCourseNature("必修");
+        task.setClassName("历史班级");
+        task.setRepeatOrder(2L);
+        formula.setSourceTask(task);
+        BizWorkloadItem item = item("G1", "IMPORT", "999");
+        BizWorkloadCalcSnapshot snapshot = new com.workload.system.service.WorkloadSnapshotService(snapshotMapper)
+                .capture(item, formula, "rule-v1");
+        when(snapshotMapper.selectLatestByItemId(7L)).thenReturn(snapshot);
+        task.setClassName("后来修改的班级");
+        factor.setSourceRef("later-change");
+
+        FactorFormulaVo restored = builder.build(item);
+
+        assertThat(restored.getSourceTask()).isNotNull();
+        assertThat(restored.getSourceTask().getClassName()).isEqualTo("历史班级");
+        assertThat(restored.getSourceTask().getCourseNature()).isEqualTo("必修");
+        assertThat(restored.getDescription()).isEqualTo("历史审批依据");
+        assertThat(restored.getFactors().get(0).getSourceRef()).isEqualTo("coefficient-adjustment:81");
+        assertThat(restored.getFactors().get(0).getRuleCode()).isEqualTo("COEF_Q2");
+        assertThat(restored.getFactors().get(0).getStatus()).isEqualTo("APPROVED");
+        verifyNoInteractions(ruleParamService, teachingTaskMapper, theoryMapper);
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {
+            "{", "{\"formatVersion\":99}",
+            "{\"formatVersion\":1,\"formulaType\":\"G1\",\"factors\":[]}"
+    })
+    void malformedOrMismatchedContextMustNotFallBackToCurrentData(String context)
+    {
+        BizWorkloadCalcSnapshot snapshot = snapshotWithQ2("1", "RULE_DEFAULT");
+        snapshot.setContextJson(context);
+        when(snapshotMapper.selectLatestByItemId(7L)).thenReturn(snapshot);
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> builder.build(item("G1", "IMPORT", "40")))
+                .isInstanceOf(com.workload.common.exception.ServiceException.class)
+                .hasMessageContaining("快照上下文");
+        verifyNoInteractions(ruleParamService, theoryMapper, teachingTaskMapper);
+    }
+
+    @Test
+    void freshFormulaCarriesApprovedFactorReference()
+    {
+        BizWlTheory detail = new BizWlTheory();
+        detail.setQ2(n("1.5"));
+        when(theoryMapper.selectBizWlTheoryByItemId(7L)).thenReturn(detail);
+        com.workload.system.domain.BizCoefficientAdjustment approved = new com.workload.system.domain.BizCoefficientAdjustment();
+        approved.setId(81L); approved.setFactorCode("Q2"); approved.setRequestedValue(n("1.50"));
+        when(adjustmentMapper.selectCoefficientAdjustmentList(any())).thenReturn(java.util.List.of(approved));
+        FactorFormulaVo result = builder.buildFresh(item("G1", "IMPORT", "48"));
+        FactorFormulaVo.FactorVo q2 = result.getFactors().stream().filter(f -> "Q2".equals(f.getKey())).findFirst().orElseThrow();
+        assertThat(q2.getSource()).isEqualTo("APPROVED_OVERRIDE");
+        assertThat(q2.getSourceRef()).isEqualTo("coefficient-adjustment:81");
+        verify(adjustmentMapper).selectCoefficientAdjustmentList(org.mockito.ArgumentMatchers.argThat(filter ->
+                filter.getItemId().equals(7L) && filter.getCategory().equals("G1") && filter.getStatus() == 1));
+    }
+
+    @Test
+    void changedValueMustNotReuseAnOlderMatchingApproval()
+    {
+        BizWlTheory detail = new BizWlTheory(); detail.setQ2(n("1.5"));
+        when(theoryMapper.selectBizWlTheoryByItemId(7L)).thenReturn(detail);
+        com.workload.system.domain.BizCoefficientAdjustment latest = new com.workload.system.domain.BizCoefficientAdjustment();
+        latest.setId(82L); latest.setFactorCode("Q2"); latest.setRequestedValue(n("1.8"));
+        com.workload.system.domain.BizCoefficientAdjustment older = new com.workload.system.domain.BizCoefficientAdjustment();
+        older.setId(81L); older.setFactorCode("Q2"); older.setRequestedValue(n("1.5"));
+        when(adjustmentMapper.selectCoefficientAdjustmentList(any())).thenReturn(java.util.List.of(latest, older));
+
+        FactorFormulaVo result = builder.buildFresh(item("G1", "IMPORT", "48"));
+        FactorFormulaVo.FactorVo q2 = result.getFactors().stream().filter(f -> "Q2".equals(f.getKey())).findFirst().orElseThrow();
+        assertThat(q2.getSource()).isNotEqualTo("APPROVED_OVERRIDE");
+        assertThat(q2.getSourceRef()).isNull();
+    }
+
+    @Test
     void detailExposesSourceTaskFields()
     {
         BizWorkloadItem item = item("G1", "IMPORT", "42.24");
@@ -88,14 +218,14 @@ class WorkloadFactorFormulaBuilderTest
         BizWlTheory d = new BizWlTheory();
         d.setJ1(n("32")); d.setC1(n("1")); d.setK1(n("1.1"));
         d.setQ1(n("1")); d.setQ2(n("1")); d.setQ3(n("1.5")); d.setN(n("1.2"));
-        when(theoryService.selectBizWlTheoryByItemId(7L)).thenReturn(d);
+        when(theoryMapper.selectBizWlTheoryByItemId(7L)).thenReturn(d);
         BizTeachingTask task = new BizTeachingTask();
         task.setCourseLevel("省级一流");
         task.setCourseRole("主持人");
         task.setCourseNature("必修");
         task.setClassName("计算机2401");
         task.setRepeatOrder(2L);
-        when(teachingTaskService.selectBizTeachingTaskById(555L)).thenReturn(task);
+        when(teachingTaskMapper.selectBizTeachingTaskById(555L)).thenReturn(task);
 
         FactorFormulaVo vo = builder.build(item);
 
@@ -114,7 +244,7 @@ class WorkloadFactorFormulaBuilderTest
         BizWlTheory d = new BizWlTheory();
         d.setJ1(n("32")); d.setC1(n("1")); d.setK1(n("1.1"));
         d.setQ1(n("1")); d.setQ2(n("1")); d.setQ3(n("1.5")); d.setN(n("1.2"));
-        when(theoryService.selectBizWlTheoryByItemId(7L)).thenReturn(d);
+        when(theoryMapper.selectBizWlTheoryByItemId(7L)).thenReturn(d);
 
         FactorFormulaVo vo = builder.build(item);
 
@@ -134,7 +264,7 @@ class WorkloadFactorFormulaBuilderTest
         BizWlTheory d = new BizWlTheory();
         d.setJ1(n("32")); d.setC1(n("1")); d.setK1(n("1.1"));
         d.setQ1(n("1")); d.setQ2(n("1")); d.setQ3(n("1.5")); d.setN(n("1.2"));
-        when(theoryService.selectBizWlTheoryByItemId(7L)).thenReturn(d);
+        when(theoryMapper.selectBizWlTheoryByItemId(7L)).thenReturn(d);
 
         FactorFormulaVo vo = builder.buildFresh(item);
 
@@ -174,7 +304,7 @@ class WorkloadFactorFormulaBuilderTest
         BizWlManagement detail = new BizWlManagement();
         detail.setProratedAmount(n("90"));
         detail.setSourceBatchId("POSITION-2025-1");
-        when(managementService.selectBizWlManagementByItemId(7L)).thenReturn(detail);
+        when(managementMapper.selectBizWlManagementByItemId(7L)).thenReturn(detail);
 
         FactorFormulaVo result = builder.build(item("G11", "IMPORT", "90"));
 
@@ -194,7 +324,7 @@ class WorkloadFactorFormulaBuilderTest
         BizWlTheory d = new BizWlTheory();
         d.setJ1(n("32")); d.setC1(n("1")); d.setK1(n("1.1"));
         d.setQ1(n("1")); d.setQ2(n("1")); d.setQ3(n("1.5")); d.setN(n("1.2"));
-        when(theoryService.selectBizWlTheoryByItemId(7L)).thenReturn(d);
+        when(theoryMapper.selectBizWlTheoryByItemId(7L)).thenReturn(d);
 
         FactorFormulaVo result = builder.build(item);
 
@@ -212,7 +342,7 @@ class WorkloadFactorFormulaBuilderTest
         item.setIsOverLimit(1);
         BizWlCourseDesign d = new BizWlCourseDesign();
         d.setJ4(n("1")); d.setR4(70L);
-        when(courseDesignService.selectBizWlCourseDesignByItemId(7L)).thenReturn(d);
+        when(courseDesignMapper.selectBizWlCourseDesignByItemId(7L)).thenReturn(d);
         when(ruleParamService.get("CONST_COURSE_DESIGN", n("0.4"))).thenReturn(n("0.5"));
 
         FactorFormulaVo result = builder.build(item);
@@ -233,7 +363,7 @@ class WorkloadFactorFormulaBuilderTest
         item.setIsOverLimit(1);
         BizWlThesis d = new BizWlThesis();
         d.setR5(11L); d.setK5(n("9"));
-        when(thesisService.selectBizWlThesisByItemId(7L)).thenReturn(d);
+        when(thesisMapper.selectBizWlThesisByItemId(7L)).thenReturn(d);
 
         FactorFormulaVo result = builder.build(item);
 
@@ -248,7 +378,7 @@ class WorkloadFactorFormulaBuilderTest
         BizWorkloadItem item = item("G6", "IMPORT", "32.00");
         BizWlConcentratedInternship d = new BizWlConcentratedInternship();
         d.setW(n("4")); d.setR6(25L);
-        when(concentratedInternshipService.selectBizWlConcentratedInternshipByItemId(7L)).thenReturn(d);
+        when(concentratedInternshipMapper.selectBizWlConcentratedInternshipByItemId(7L)).thenReturn(d);
         when(ruleParamService.get("CAP_R6_MAX", n("20"))).thenReturn(n("24"));
         when(ruleParamService.get("CONST_COURSE_DESIGN", n("0.4"))).thenReturn(n("0.5"));
 
@@ -270,8 +400,8 @@ class WorkloadFactorFormulaBuilderTest
     void shouldReturnNullForAggregateTypeWithoutQueryingDetailTables()
     {
         assertThat(builder.build(item("G8", "MANUAL", "10"))).isNull();
-        verifyNoInteractions(theoryService, practiceService, internshipTrainingService,
-                courseDesignService, thesisService, concentratedInternshipService);
+        verifyNoInteractions(theoryMapper, practiceMapper, internshipTrainingMapper,
+                courseDesignMapper, thesisMapper, concentratedInternshipMapper);
     }
 
     @Test
@@ -281,14 +411,14 @@ class WorkloadFactorFormulaBuilderTest
         BizWlPractice p = new BizWlPractice();
         p.setJ2(n("16")); p.setK(n("0.9")); p.setC2(n("0.9"));
         p.setQ1(n("1")); p.setQ2(n("1")); p.setQ3(n("1.5"));
-        when(practiceService.selectBizWlPracticeByItemId(7L)).thenReturn(p);
+        when(practiceMapper.selectBizWlPracticeByItemId(7L)).thenReturn(p);
         assertThat(builder.build(g2).getExpression()).isEqualTo("J2 × K × C2 × Q1 × Q2");
 
         BizWorkloadItem g3 = item("G3", "IMPORT", "10");
         BizWlInternshipTraining t = new BizWlInternshipTraining();
         t.setT(n("5")); t.setD(n("2")); t.setK(n("1"));
         t.setQ1(n("1")); t.setQ2(n("1")); t.setQ3(n("1.5"));
-        when(internshipTrainingService.selectBizWlInternshipTrainingByItemId(7L)).thenReturn(t);
+        when(internshipTrainingMapper.selectBizWlInternshipTrainingByItemId(7L)).thenReturn(t);
         assertThat(builder.build(g3).getExpression()).isEqualTo("T × D × K × Q1 × Q2");
     }
 
@@ -298,7 +428,7 @@ class WorkloadFactorFormulaBuilderTest
         BizWorkloadItem item = item("G1", "IMPORT", "32.00");
         BizWlTheory detail = new BizWlTheory();
         detail.setJ1(n("32"));
-        when(theoryService.selectBizWlTheoryByItemId(7L)).thenReturn(detail);
+        when(theoryMapper.selectBizWlTheoryByItemId(7L)).thenReturn(detail);
 
         FactorFormulaVo result = builder.build(item);
 

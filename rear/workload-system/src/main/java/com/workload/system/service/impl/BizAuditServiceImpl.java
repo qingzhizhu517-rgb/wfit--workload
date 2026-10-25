@@ -65,6 +65,12 @@ public class BizAuditServiceImpl implements BizAuditService
     private BizWorkloadSummaryMapper bizWorkloadSummaryMapper;
 
     @Autowired
+    private com.workload.system.mapper.BizCoefficientAdjustmentMapper adjustmentMapper;
+
+    @Autowired
+    private com.workload.system.mapper.BizWorkloadItemMapper itemMapper;
+
+    @Autowired
     private BizAuditLogMapper bizAuditLogMapper;
 
     /** 独立事务审计日志写入器（跨 Bean 调用使 REQUIRES_NEW 生效，冲突日志不随外层事务回滚） */
@@ -75,11 +81,13 @@ public class BizAuditServiceImpl implements BizAuditService
     @Transactional(rollbackFor = Exception.class)
     public void submit(Long id)
     {
-        BizWorkloadSummary summary = requireSummary(id);
+        BizWorkloadSummary summary = requireLockedSummary(id);
         assertStatus(summary, WorkloadSummaryStatus.DRAFT, "只有填报中状态才能提交审核");
         // 提交是「本人动作」：教师角色仅可提交本人的汇总，防止横向越权提交他人记录
         // （与 teacherConfirm 的归属校验对齐；教务/管理角色由 assertOwnOrAdmin 放行）
         DataScopeUtil.assertOwnOrAdmin(summary.getUserId());
+        assertNoPendingCoefficients(summary);
+        assertItemsReviewed(summary);
 
         String username = SecurityUtils.getUsername();
         int rows = bizWorkloadSummaryMapper.updateStatusIf(id, WorkloadSummaryStatus.DRAFT, WorkloadSummaryStatus.PENDING_AUDIT, username);
@@ -91,8 +99,10 @@ public class BizAuditServiceImpl implements BizAuditService
     @Transactional(rollbackFor = Exception.class)
     public void approve(Long id)
     {
-        BizWorkloadSummary summary = requireSummary(id);
+        BizWorkloadSummary summary = requireLockedSummary(id);
         assertStatus(summary, WorkloadSummaryStatus.PENDING_AUDIT, "只有待审状态才能审核");
+        assertNoPendingCoefficients(summary);
+        assertItemsReviewed(summary);
 
         String username = SecurityUtils.getUsername();
         // 教务处审核通过即终态：置已完结(2)，同时写 academic_assistant_sign 与 lock_time
@@ -184,6 +194,37 @@ public class BizAuditServiceImpl implements BizAuditService
         receipt.put("failCount", failDetails.size());
         receipt.put("failDetails", failDetails);
         return receipt;
+    }
+
+    /** 与申请提交采用同一教师学期锁；获取锁之后再做当前读，避免RR旧视图漏检。 */
+    private BizWorkloadSummary requireLockedSummary(Long id)
+    {
+        BizWorkloadSummary initial = requireSummary(id);
+        BizWorkloadSummary locked = bizWorkloadSummaryMapper.selectByUserSemesterForUpdate(
+                initial.getUserId(), initial.getSemester());
+        if (locked == null || !java.util.Objects.equals(id, locked.getId()))
+        {
+            throw new ServiceException("汇总记录已变化，请刷新后重试", CODE_STATUS_CONFLICT);
+        }
+        return locked;
+    }
+
+    private void assertItemsReviewed(BizWorkloadSummary summary)
+    {
+        List<Long> unresolved = itemMapper.selectUnreviewedIdsForUpdate(summary.getUserId(), summary.getSemester());
+        if (!unresolved.isEmpty())
+        {
+            throw new ServiceException("存在 " + unresolved.size() + " 条未核对或有异议的明细，请先由教务处理", CODE_STATUS_CONFLICT);
+        }
+    }
+
+    private void assertNoPendingCoefficients(BizWorkloadSummary summary)
+    {
+        List<Long> pending = adjustmentMapper.selectPendingIdsForUpdate(summary.getUserId(), summary.getSemester());
+        if (!pending.isEmpty())
+        {
+            throw new ServiceException("存在 " + pending.size() + " 条待审系数申请，请先处理后再提交或审核", CODE_STATUS_CONFLICT);
+        }
     }
 
     /**
