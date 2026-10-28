@@ -69,6 +69,24 @@ class ThesisCalcStrategyTest
     }
 
     @Test
+    void calculationAndLimitCheckUseCurrentDetailAfterLock()
+    {
+        when(bizWlThesisMapper.selectBizWlThesisByItemId(1L)).thenReturn(detail("6", "9", "本科"));
+        when(bizWlThesisMapper.selectByItemIdForUpdate(1L)).thenReturn(detail("10", "9", "本科"));
+        BizWorkloadItem item = item(1L);
+        BigDecimal before = strategy.calculate(item);
+        strategy.afterCalculated(item, before);
+        assertThat(before).isEqualByComparingTo("54");
+        assertThat(item.getIsOverLimit()).isZero();
+
+        item.getParams().put("currentRead", true);
+        BigDecimal current = strategy.calculate(item);
+        strategy.afterCalculated(item, current);
+        assertThat(current).isEqualByComparingTo("90");
+        assertThat(item.getIsOverLimit()).isEqualTo(1);
+    }
+
+    @Test
     @DisplayName("G5 = R5×K5：本科理工 K5=9，6 人 → 54.00")
     void shouldComputeScitechUndergrad()
     {

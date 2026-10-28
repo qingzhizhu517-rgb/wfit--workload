@@ -30,6 +30,9 @@ class WorkloadWriteGuardTest
     {
         when(mapper.selectByUserSemesterForUpdate(USER, SEMESTER)).thenReturn(null);
         assertThatCode(() -> guard.lockDraftOrAbsent(USER, SEMESTER)).doesNotThrowAnyException();
+        var order = org.mockito.Mockito.inOrder(mapper);
+        order.verify(mapper).lockPeriod(USER, SEMESTER);
+        order.verify(mapper).selectByUserSemesterForUpdate(USER, SEMESTER);
     }
 
     @Test

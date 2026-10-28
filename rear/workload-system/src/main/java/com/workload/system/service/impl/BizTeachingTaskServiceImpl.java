@@ -80,7 +80,9 @@ public class BizTeachingTaskServiceImpl implements IBizTeachingTaskService
     {
         workloadWriteGuard.lockDraftOrAbsent(bizTeachingTask.getUserId(), bizTeachingTask.getSemester());
         bizTeachingTask.setCreateTime(DateUtils.getNowDate());
-        return bizTeachingTaskMapper.insertBizTeachingTask(bizTeachingTask);
+        int rows = bizTeachingTaskMapper.insertBizTeachingTask(bizTeachingTask);
+        workloadWriteGuard.markChanged(bizTeachingTask.getUserId(), bizTeachingTask.getSemester());
+        return rows;
     }
 
     /**
@@ -95,11 +97,14 @@ public class BizTeachingTaskServiceImpl implements IBizTeachingTaskService
     {
         BizTeachingTask existing = requireExistingTask(bizTeachingTask.getId());
         workloadWriteGuard.lockDraftOrAbsent(existing.getUserId(), existing.getSemester());
+        assertNotReferencedByWorkloadItem(existing.getId());
         // 教师与学期决定冻结边界，手工修改不得借请求体迁移到另一冻结域。
         bizTeachingTask.setUserId(existing.getUserId());
         bizTeachingTask.setSemester(existing.getSemester());
         bizTeachingTask.setUpdateTime(DateUtils.getNowDate());
-        return bizTeachingTaskMapper.updateBizTeachingTask(bizTeachingTask);
+        int rows = bizTeachingTaskMapper.updateBizTeachingTask(bizTeachingTask);
+        workloadWriteGuard.markChanged(existing.getUserId(), existing.getSemester());
+        return rows;
     }
 
     /**
@@ -119,6 +124,7 @@ public class BizTeachingTaskServiceImpl implements IBizTeachingTaskService
             BizTeachingTask existing = requireExistingTask(id);
             workloadWriteGuard.lockDraftOrAbsent(existing.getUserId(), existing.getSemester());
             assertNotReferencedByWorkloadItem(id);
+            workloadWriteGuard.markChanged(existing.getUserId(), existing.getSemester());
         }
         return bizTeachingTaskMapper.deleteBizTeachingTaskByIds(ids);
     }
@@ -138,6 +144,7 @@ public class BizTeachingTaskServiceImpl implements IBizTeachingTaskService
         BizTeachingTask existing = requireExistingTask(id);
         workloadWriteGuard.lockDraftOrAbsent(existing.getUserId(), existing.getSemester());
         assertNotReferencedByWorkloadItem(id);
+        workloadWriteGuard.markChanged(existing.getUserId(), existing.getSemester());
         return bizTeachingTaskMapper.deleteBizTeachingTaskById(id);
     }
 
@@ -160,11 +167,12 @@ public class BizTeachingTaskServiceImpl implements IBizTeachingTaskService
     {
         BizWorkloadItem query = new BizWorkloadItem();
         query.setTaskId(taskId);
+        query.getParams().put("currentRead", true);
         List<BizWorkloadItem> items = bizWorkloadItemMapper.selectBizWorkloadItemList(query);
         if (items != null && !items.isEmpty())
         {
             throw new ServiceException("教学任务(id=" + taskId + ")已关联 " + items.size()
-                    + " 条工作量明细，禁止删除，请先处理相关明细");
+                    + " 条工作量明细，请在明细维护中修改；删除前请先处理相关明细");
         }
     }
 }

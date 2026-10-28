@@ -42,7 +42,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         select id, user_id, semester, academic_year, course_name, course_code, education_level, major_category, course_nature, course_level, course_role, class_name, student_count, theory_hours, practice_hours, repeat_order, input_planned_hours, input_days, input_weeks, input_credits, quantity_type, is_retake, import_source, import_batch, import_time, status, create_by, create_time, update_by, update_time, remark from biz_teaching_task
     </sql>
 
-    <select id="selectBizTeachingTaskList" parameterType="BizTeachingTask" resultMap="BizTeachingTaskResult">
+    <select id="selectBizTeachingTaskList" flushCache="true" useCache="false" parameterType="BizTeachingTask" resultMap="BizTeachingTaskResult">
         <include refid="selectBizTeachingTaskVo"/>
         <where>  
             <if test="userId != null "> and user_id = #{userId}</if>
@@ -65,6 +65,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="importTime != null "> and import_time = #{importTime}</if>
             <if test="status != null "> and status = #{status}</if>
         </where>
+        <if test="params.currentRead == true">for update</if>
     </select>
     
     <select id="selectBizTeachingTaskExportList" parameterType="BizTeachingTask"
@@ -239,13 +240,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
          分组口径见《办法》第十四条1，刻意不含 course_code / class_name / course_nature / item_type。
          education_level 用 ifnull 归一，避免 NULL 与 '' 被判为不同组。
          2026-09-10 移除 item_type 限定与 biz_workload_item 关联（办法无类别要求）。 -->
-    <select id="countSameCourseTask" resultType="int">
+    <select id="countSameCourseTask" flushCache="true" useCache="false" resultType="int">
         select count(1)
         from biz_teaching_task t
         where t.user_id = #{userId}
           and t.semester = #{semester}
           and t.course_name = #{courseName}
           and ifnull(t.education_level, '') = ifnull(#{educationLevel}, '')
+        for update
     </select>
 
     <!-- 两阶段导入确认阶段幂等键：教师+学期+课程代码+班级+工作量类别。

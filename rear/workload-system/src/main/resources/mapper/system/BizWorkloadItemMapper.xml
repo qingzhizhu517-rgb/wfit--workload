@@ -65,6 +65,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="appealReply != null  and appealReply != ''"> and appeal_reply = #{appealReply}</if>
             <if test="status != null "> and status = #{status}</if>
         </where>
+            <if test="params.currentRead == true">for update</if>
     </select>
 
     <select id="selectBizWorkloadItemById" parameterType="Long" resultMap="BizWorkloadItemResult">
@@ -204,7 +205,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where semester = #{semester} and user_id is not null
         order by user_id
     </select>
-    <select id="selectUnreviewedIdsForUpdate" resultType="java.lang.Long">
+    <select id="selectUnreviewedIdsForUpdate" flushCache="true" useCache="false" resultType="java.lang.Long">
         select id from biz_workload_item
         where user_id = #{userId} and semester = #{semester}
           and (status is null or status not in (1, 3))
@@ -222,5 +223,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
               where s.user_id = i.user_id and s.semester = i.semester and ifnull(s.status, 0) != 0)
           and not exists (select 1 from biz_coefficient_adjustment a
               where a.user_id = i.user_id and a.semester = i.semester and a.status = 0)
+    </update>
+    <select id="selectByIdForUpdate" resultMap="BizWorkloadItemResult" flushCache="true" useCache="false">
+        <include refid="selectBizWorkloadItemVo"/> where id=#{id} for update
+    </select>
+    <update id="invalidateCalculation">
+        update biz_workload_item set calculated_workload=0, is_over_limit=0,
+            calculation_version=ifnull(calculation_version,0)+1, last_calculated_at=null, update_time=now()
+        where id=#{id}
     </update>
 </mapper>

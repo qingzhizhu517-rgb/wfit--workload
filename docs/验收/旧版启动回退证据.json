@@ -1,0 +1,10 @@
+{
+  "snapshot_commit": "bbc0243d70c38b5ee4c166f3cedd187dbae2e8e6",
+  "jar_sha256": "843f5822d9d4ea094a22a2619ab0000588211874274d7bddf0b8770bc858f5cd",
+  "database_port": 13306,
+  "redis_port": 16379,
+  "application_port": 18084,
+  "started": true,
+  "captcha_success": true,
+  "captcha_enabled": true
+}

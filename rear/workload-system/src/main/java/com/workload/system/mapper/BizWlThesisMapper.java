@@ -11,6 +11,8 @@ import com.workload.system.domain.BizWlThesis;
  */
 public interface BizWlThesisMapper 
 {
+    com.workload.system.domain.BizWlThesis selectByItemIdForUpdate(Long itemId);
+
     /**
      * 查询G5毕业论文明细
      * 

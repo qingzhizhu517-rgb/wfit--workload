@@ -52,6 +52,15 @@ class WorkloadSnapshotServiceTest
     }
 
     @Test
+    void nextSnapshotVersionExceedsInvalidatedItemVersion()
+    {
+        when(snapshotMapper.selectMaxVersionByItemId(ITEM_ID)).thenReturn(3L);
+        BizWorkloadItem item = item(); item.setCalculationVersion(5L);
+        BizWorkloadCalcSnapshot snapshot = service.capture(item, g1Formula(), "RULE-2025-1");
+        assertThat(snapshot.getCalculationVersion()).isEqualTo(6L);
+    }
+
+    @Test
     void sameOrderedFactorsProduceStableHash()
     {
         when(snapshotMapper.selectMaxVersionByItemId(ITEM_ID)).thenReturn(null);

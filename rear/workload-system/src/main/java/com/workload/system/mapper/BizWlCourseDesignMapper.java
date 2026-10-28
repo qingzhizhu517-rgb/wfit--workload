@@ -11,6 +11,8 @@ import com.workload.system.domain.BizWlCourseDesign;
  */
 public interface BizWlCourseDesignMapper 
 {
+    com.workload.system.domain.BizWlCourseDesign selectByItemIdForUpdate(Long itemId);
+
     /**
      * 查询G4课程设计明细
      * 

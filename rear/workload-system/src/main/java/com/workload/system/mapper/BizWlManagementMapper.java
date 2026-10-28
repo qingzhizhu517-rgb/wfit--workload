@@ -12,6 +12,8 @@ import com.workload.system.domain.BizWlManagement;
  */
 public interface BizWlManagementMapper 
 {
+    com.workload.system.domain.BizWlManagement selectByItemIdForUpdate(Long itemId);
+
     /**
      * 查询G11管理服务明细
      * 

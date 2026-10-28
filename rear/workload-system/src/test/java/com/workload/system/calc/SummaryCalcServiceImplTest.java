@@ -75,13 +75,132 @@ class SummaryCalcServiceImplTest
     private ComplianceChecker complianceChecker;
 
     @Mock private WorkloadWriteGuard writeGuard;
+    @Mock private PayCalcService payCalcService;
+    @Mock private com.workload.system.mapper.BizTeachingTaskMapper teachingTaskMapper;
+    @Mock private com.workload.system.mapper.BizRoleAssignmentMapper roleAssignmentMapper;
+
+    @Test
+    void activeTeachingTaskWithoutItemCannotClearDirtySummary()
+    {
+        BizWorkloadSummary draft = summaryWithStatus(0); draft.setNeedsRecalculation(1);
+        when(bizWorkloadSummaryMapper.selectByUserSemesterForUpdate(USER, SEMESTER)).thenReturn(draft);
+        var task = new com.workload.system.domain.BizTeachingTask(); task.setId(91L); task.setStatus(1);
+        when(teachingTaskMapper.selectBizTeachingTaskList(any())).thenReturn(java.util.List.of(task));
+
+        assertThatThrownBy(() -> service.recalcSummary(USER, SEMESTER, true))
+                .hasMessageContaining("尚未生成工作量明细的教学任务");
+        assertThat(draft.getNeedsRecalculation()).isEqualTo(1);
+        verify(teachingTaskMapper).selectBizTeachingTaskList(org.mockito.ArgumentMatchers.argThat(q ->
+                USER.equals(q.getUserId()) && SEMESTER.equals(q.getSemester())
+                        && Integer.valueOf(1).equals(q.getStatus())
+                        && Boolean.TRUE.equals(q.getParams().get("currentRead"))));
+        verify(bizWorkloadSummaryMapper, never()).updateCalculatedFieldsIfStatus(any(), any());
+        verify(bizWorkloadSummaryMapper, never()).insertBizWorkloadSummary(any());
+        org.mockito.Mockito.verifyNoInteractions(payCalcService);
+    }
+
+    @Test
+    void activeRoleWithoutItemCannotClearDirtySummary()
+    {
+        BizWorkloadSummary draft = summaryWithStatus(0); draft.setNeedsRecalculation(1);
+        when(bizWorkloadSummaryMapper.selectByUserSemesterForUpdate(USER, SEMESTER)).thenReturn(draft);
+        var role = new com.workload.system.domain.BizRoleAssignment(); role.setId(92L); role.setStatus(1);
+        when(roleAssignmentMapper.selectBizRoleAssignmentList(any())).thenReturn(java.util.List.of(role));
+
+        assertThatThrownBy(() -> service.recalcSummary(USER, SEMESTER, true))
+                .hasMessageContaining("尚未同步的有效岗位记录");
+        assertThat(draft.getNeedsRecalculation()).isEqualTo(1);
+        verify(roleAssignmentMapper).selectBizRoleAssignmentList(org.mockito.ArgumentMatchers.argThat(q ->
+                USER.equals(q.getUserId()) && SEMESTER.equals(q.getSemester())
+                        && Integer.valueOf(1).equals(q.getStatus())
+                        && Boolean.TRUE.equals(q.getParams().get("currentRead"))));
+        verify(bizWorkloadSummaryMapper, never()).updateCalculatedFieldsIfStatus(any(), any());
+        verify(bizWorkloadSummaryMapper, never()).insertBizWorkloadSummary(any());
+        org.mockito.Mockito.verifyNoInteractions(payCalcService);
+    }
+
+    @Test
+    void rejectedLinkedItemsCountAsProcessedSourcesButContributeNoWorkload()
+    {
+        var task = new com.workload.system.domain.BizTeachingTask(); task.setId(91L); task.setStatus(1);
+        var role = new com.workload.system.domain.BizRoleAssignment(); role.setId(92L); role.setStatus(1);
+        when(teachingTaskMapper.selectBizTeachingTaskList(any())).thenReturn(java.util.List.of(task));
+        when(roleAssignmentMapper.selectBizRoleAssignmentList(any())).thenReturn(java.util.List.of(role));
+        BizWorkloadItem taskItem = item("G1", "40"); taskItem.setTaskId(91L); taskItem.setStatus(3);
+        BizWorkloadItem roleItem = item("G11", "90"); roleItem.setAssignmentId(92L); roleItem.setStatus(3);
+        when(bizWorkloadItemMapper.selectBizWorkloadItemList(any())).thenReturn(java.util.List.of(taskItem, roleItem));
+        when(complianceChecker.check(any(), anyString(), any())).thenReturn(result(false));
+
+        BizWorkloadSummary result = service.recalcSummary(USER, SEMESTER, true);
+
+        assertThat(result.getTotalWorkload()).isEqualByComparingTo("0");
+        assertThat(result.getNeedsRecalculation()).isZero();
+        verify(bizWorkloadSummaryMapper).insertBizWorkloadSummary(result);
+        verify(payCalcService).recalcPay(USER, SEMESTER);
+    }
+
+    @Test
+    void persistedSummarySynchronizesPayAfterSavingFreshAmounts()
+    {
+        BizWorkloadSummary draft = summaryWithStatus(0);
+        draft.setNeedsRecalculation(1);
+        when(bizWorkloadSummaryMapper.selectByUserSemesterForUpdate(USER, SEMESTER)).thenReturn(draft);
+        when(bizWorkloadSummaryMapper.updateCalculatedFieldsIfStatus(any(), eq(0))).thenReturn(1);
+        when(complianceChecker.check(any(), anyString(), any())).thenReturn(result(false));
+
+        service.recalcSummary(USER, SEMESTER, true);
+
+        var order = org.mockito.Mockito.inOrder(bizWorkloadSummaryMapper, payCalcService);
+        order.verify(bizWorkloadSummaryMapper).updateCalculatedFieldsIfStatus(
+                org.mockito.ArgumentMatchers.argThat(saved -> Integer.valueOf(0).equals(saved.getNeedsRecalculation())
+                        && saved.getTotalWorkload().compareTo(new BigDecimal("30")) == 0), eq(0));
+        order.verify(payCalcService).recalcPay(USER, SEMESTER);
+    }
+
+    @Test
+    void payFailurePropagatesSoSummaryTransactionCannotCommitAlone()
+    {
+        BizWorkloadSummary draft = summaryWithStatus(0);
+        when(bizWorkloadSummaryMapper.selectByUserSemesterForUpdate(USER, SEMESTER)).thenReturn(draft);
+        when(bizWorkloadSummaryMapper.updateCalculatedFieldsIfStatus(any(), eq(0))).thenReturn(1);
+        when(complianceChecker.check(any(), anyString(), any())).thenReturn(result(false));
+        when(payCalcService.recalcPay(USER, SEMESTER))
+                .thenThrow(new com.workload.common.exception.ServiceException("酬金同步失败"));
+
+        assertThatThrownBy(() -> service.recalcSummary(USER, SEMESTER, true))
+                .hasMessage("酬金同步失败");
+    }
+
+    @Test
+    void persistedSummaryAggregatesCurrentReadsAndClearsDirtyFlag()
+    {
+        BizWorkloadSummary draft = summaryWithStatus(0);
+        draft.setNeedsRecalculation(1);
+        when(bizWorkloadSummaryMapper.selectByUserSemesterForUpdate(USER, SEMESTER)).thenReturn(draft);
+        when(bizWorkloadSummaryMapper.updateCalculatedFieldsIfStatus(any(), eq(0))).thenReturn(1);
+        when(bizWorkloadItemMapper.selectBizWorkloadItemList(any())).thenAnswer(inv -> {
+            BizWorkloadItem query = inv.getArgument(0);
+            return Collections.singletonList(item("G8", Boolean.TRUE.equals(query.getParams().get("currentRead")) ? "90" : "10"));
+        });
+        when(complianceChecker.check(any(), anyString(), any())).thenReturn(result(false));
+
+        BizWorkloadSummary result = service.recalcSummary(USER, SEMESTER, true);
+
+        assertThat(result.getTotalWorkload()).isEqualByComparingTo("90");
+        assertThat(result.getNeedsRecalculation()).isZero();
+        var order = org.mockito.Mockito.inOrder(writeGuard, bizWorkloadSummaryMapper, bizWorkloadItemMapper);
+        order.verify(writeGuard).lockDraftOrAbsent(USER, SEMESTER);
+        order.verify(bizWorkloadSummaryMapper).selectByUserSemesterForUpdate(USER, SEMESTER);
+        order.verify(bizWorkloadItemMapper).selectBizWorkloadItemList(any());
+        order.verify(bizWorkloadSummaryMapper).updateCalculatedFieldsIfStatus(draft, 0);
+    }
 
     @Test
     void concurrentFreezeRejectsConditionalUpdateMiss()
     {
         when(complianceChecker.check(any(), anyString(), any())).thenReturn(result(false));
-        when(bizWorkloadSummaryMapper.selectBizWorkloadSummaryList(any()))
-                .thenReturn(Collections.singletonList(summaryWithStatus(0)));
+        when(bizWorkloadSummaryMapper.selectByUserSemesterForUpdate(USER, SEMESTER))
+                .thenReturn(summaryWithStatus(0));
 
         assertThatThrownBy(() -> service.recalcSummary(USER, SEMESTER, true))
                 .hasMessageContaining("状态已变化");
@@ -95,8 +214,8 @@ class SummaryCalcServiceImplTest
         when(complianceChecker.check(any(), anyString(), any())).thenReturn(result(false));
         BizWorkloadSummary existing = summaryWithStatus(0);
         existing.setId(42L);
-        when(bizWorkloadSummaryMapper.selectBizWorkloadSummaryList(any()))
-                .thenReturn(Collections.emptyList(), Collections.singletonList(existing));
+        when(bizWorkloadSummaryMapper.selectByUserSemesterForUpdate(USER, SEMESTER))
+                .thenReturn(null, existing);
         when(bizWorkloadSummaryMapper.insertBizWorkloadSummary(any()))
                 .thenThrow(new DuplicateKeyException("concurrent summary"));
         when(bizWorkloadSummaryMapper.updateCalculatedFieldsIfStatus(any(), eq(0))).thenReturn(affectedRows);
@@ -119,8 +238,8 @@ class SummaryCalcServiceImplTest
     void duplicateInsertCannotOverwriteFrozenSummary(int status)
     {
         when(complianceChecker.check(any(), anyString(), any())).thenReturn(result(false));
-        when(bizWorkloadSummaryMapper.selectBizWorkloadSummaryList(any()))
-                .thenReturn(Collections.emptyList(), Collections.singletonList(summaryWithStatus(status)));
+        when(bizWorkloadSummaryMapper.selectByUserSemesterForUpdate(USER, SEMESTER))
+                .thenReturn(null, summaryWithStatus(status));
         when(bizWorkloadSummaryMapper.insertBizWorkloadSummary(any()))
                 .thenThrow(new DuplicateKeyException("concurrent summary"));
 
@@ -219,8 +338,8 @@ class SummaryCalcServiceImplTest
     {
         when(complianceChecker.check(any(), anyString(), any())).thenReturn(result(false));
         BizWorkloadSummary draft = summaryWithStatus(WorkloadSummaryStatus.DRAFT);
-        when(bizWorkloadSummaryMapper.selectBizWorkloadSummaryList(any()))
-                .thenReturn(Collections.singletonList(draft));
+        when(bizWorkloadSummaryMapper.selectByUserSemesterForUpdate(USER, SEMESTER))
+                .thenReturn(draft);
         when(bizWorkloadSummaryMapper.updateCalculatedFieldsIfStatus(any(), eq(0))).thenReturn(1);
 
         service.recalcSummary(USER, SEMESTER, true);
@@ -234,8 +353,8 @@ class SummaryCalcServiceImplTest
     void pendingAuditSummaryCannotBePersisted()
     {
         BizWorkloadSummary pending = summaryWithStatus(WorkloadSummaryStatus.PENDING_AUDIT);
-        when(bizWorkloadSummaryMapper.selectBizWorkloadSummaryList(any()))
-                .thenReturn(Collections.singletonList(pending));
+        when(bizWorkloadSummaryMapper.selectByUserSemesterForUpdate(USER, SEMESTER))
+                .thenReturn(pending);
 
         assertThatThrownBy(() -> service.recalcSummary(USER, SEMESTER, true))
                 .isInstanceOf(com.workload.common.exception.ServiceException.class)
@@ -262,6 +381,7 @@ class SummaryCalcServiceImplTest
         verify(bizWorkloadSummaryMapper, never()).updateBizWorkloadSummary(any());
         verify(bizWorkloadSummaryMapper, never()).updateCalculatedFieldsIfStatus(any(), any());
         verify(writeGuard, never()).lockDraftOrAbsent(any(), any());
+        org.mockito.Mockito.verifyNoInteractions(payCalcService);
     }
 
     @Test
@@ -269,8 +389,8 @@ class SummaryCalcServiceImplTest
     void finishedSummaryCannotBeRecalculated()
     {
         BizWorkloadSummary finished = summaryWithStatus(WorkloadSummaryStatus.FINISHED);
-        when(bizWorkloadSummaryMapper.selectBizWorkloadSummaryList(any()))
-                .thenReturn(Collections.singletonList(finished));
+        when(bizWorkloadSummaryMapper.selectByUserSemesterForUpdate(USER, SEMESTER))
+                .thenReturn(finished);
 
         assertThatThrownBy(() -> service.recalcSummary(USER, SEMESTER, true))
                 .isInstanceOf(com.workload.common.exception.ServiceException.class)

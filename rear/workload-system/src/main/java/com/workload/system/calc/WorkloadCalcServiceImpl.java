@@ -94,7 +94,7 @@ public class WorkloadCalcServiceImpl implements WorkloadCalcService
         {
             throw new ServiceException("工作量明细不存在, id=" + itemId);
         }
-        assertEditable(item);
+        item = lockEditable(item);
         WorkloadCalcStrategy strategy = calcStrategyFactory.get(item.getItemType());
         if (strategy == null)
         {
@@ -123,6 +123,7 @@ public class WorkloadCalcServiceImpl implements WorkloadCalcService
         {
             throw new ServiceException("明细或汇总状态已变化，请刷新后重试");
         }
+        writeGuard.markChanged(item.getUserId(), item.getSemester());
         return value;
     }
 
@@ -152,9 +153,11 @@ public class WorkloadCalcServiceImpl implements WorkloadCalcService
     /** @param includeG11 false 时跳过 G11 明细（由 run 的 GENERATE_G11 阶段负责）。 */
     private int recalcItemsInternal(Long userId, String semester, boolean includeG11)
     {
+        writeGuard.lockDraftOrAbsent(userId, semester);
         BizWorkloadItem query = new BizWorkloadItem();
         query.setUserId(userId);
         query.setSemester(semester);
+        query.getParams().put("currentRead", true);
         List<BizWorkloadItem> items = bizWorkloadItemMapper.selectBizWorkloadItemList(query);
         int count = 0;
         for (BizWorkloadItem item : items)
@@ -174,6 +177,7 @@ public class WorkloadCalcServiceImpl implements WorkloadCalcService
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void onDetailDeleted(Long itemId)
     {
         BizWorkloadItem item = bizWorkloadItemMapper.selectBizWorkloadItemById(itemId);
@@ -181,16 +185,16 @@ public class WorkloadCalcServiceImpl implements WorkloadCalcService
         {
             return;
         }
-        item.setCalculatedWorkload(BigDecimal.ZERO);
-        item.setIsOverLimit(0);
-        item.setUpdateTime(DateUtils.getNowDate());
-        bizWorkloadItemMapper.updateBizWorkloadItem(item);
+        item = lockEditable(item);
+        bizWorkloadItemMapper.invalidateCalculation(itemId);
+        writeGuard.markChanged(item.getUserId(), item.getSemester());
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Map<String, Object> recalcAll(Long userId, String semester)
     {
+        writeGuard.lockDraftOrAbsent(userId, semester);
         // userId 合法性校验：教师档案不存在则快速失败，避免任意 userId 生成零值脏数据
         if (bizTeacherProfileMapper.selectBizTeacherProfileByUserId(userId) == null)
         {
@@ -377,9 +381,11 @@ public class WorkloadCalcServiceImpl implements WorkloadCalcService
             throw new ServiceException("存在待审的系数调整申请，请先处理后再核算");
         }
         // 子表齐全性：对有策略的明细逐条尝试构建公式，构建不出即子表缺失，fail-loud
+        writeGuard.lockDraftOrAbsent(userId, semester);
         BizWorkloadItem query = new BizWorkloadItem();
         query.setUserId(userId);
         query.setSemester(semester);
+        query.getParams().put("currentRead", true);
         for (BizWorkloadItem item : bizWorkloadItemMapper.selectBizWorkloadItemList(query))
         {
             if (item.getStatus() != null && (item.getStatus() == 3 || item.getStatus() == ITEM_STATUS_CONFIRMED))
@@ -437,27 +443,20 @@ public class WorkloadCalcServiceImpl implements WorkloadCalcService
         {
             throw new ServiceException("工作量明细不存在, id=" + itemId);
         }
-        assertEditable(item);
+        item = lockEditable(item);
     }
 
     /**
      * 明细已核对或所在学期汇总已进入审批流程 -> 拒绝修改
      */
-    private void assertEditable(BizWorkloadItem item)
+    private BizWorkloadItem lockEditable(BizWorkloadItem item)
     {
-        if (item.getStatus() != null && item.getStatus() == ITEM_STATUS_CONFIRMED)
-        {
+        writeGuard.lockDraftOrAbsent(item.getUserId(), item.getSemester());
+        item = bizWorkloadItemMapper.selectByIdForUpdate(item.getId());
+        if (item == null) throw new ServiceException("工作量明细已删除，请刷新后重试");
+        if (Integer.valueOf(ITEM_STATUS_CONFIRMED).equals(item.getStatus()))
             throw new ServiceException("明细已核对，系数已冻结，请先取消核对");
-        }
-        BizWorkloadSummary query = new BizWorkloadSummary();
-        query.setUserId(item.getUserId());
-        query.setSemester(item.getSemester());
-        List<BizWorkloadSummary> summaries = bizWorkloadSummaryMapper.selectBizWorkloadSummaryList(query);
-        boolean locked = summaries.stream()
-                .anyMatch(s -> WorkloadSummaryStatus.isWriteFrozen(s.getStatus()));
-        if (locked)
-        {
-            throw new ServiceException("学期汇总已锁定，禁止修改明细");
-        }
+        item.getParams().put("currentRead", true);
+        return item;
     }
 }

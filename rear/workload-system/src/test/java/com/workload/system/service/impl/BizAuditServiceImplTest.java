@@ -20,6 +20,8 @@ import com.workload.system.mapper.BizWorkloadSummaryMapper;
 @ExtendWith(MockitoExtension.class)
 class BizAuditServiceImplTest
 {
+    @org.mockito.Mock private com.workload.system.calc.WorkloadWriteGuard writeGuard;
+
     @InjectMocks private BizAuditServiceImpl service;
     @Mock private BizWorkloadSummaryMapper summaryMapper;
     @Mock private BizAuditLogMapper auditLogMapper;
@@ -86,6 +88,29 @@ class BizAuditServiceImplTest
                     .isInstanceOf(ServiceException.class).hasMessageContaining("未核对");
         }
         org.mockito.Mockito.verifyNoInteractions(auditLogMapper, auditLogWriter);
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(ints = {0, 1})
+    void dirtyFlagCommittedBeforeLockBlocksSubmissionAndApproval(int status)
+    {
+        BizWorkloadSummary before = new BizWorkloadSummary();
+        before.setId(7L); before.setUserId(1003L); before.setSemester("2025-2026-1"); before.setStatus(status);
+        before.setNeedsRecalculation(0);
+        BizWorkloadSummary current = new BizWorkloadSummary();
+        current.setId(7L); current.setUserId(1003L); current.setSemester("2025-2026-1"); current.setStatus(status);
+        current.setNeedsRecalculation(1);
+        when(summaryMapper.selectBizWorkloadSummaryById(7L)).thenReturn(before);
+        when(summaryMapper.selectByUserSemesterForUpdate(1003L, "2025-2026-1")).thenReturn(current);
+        try (var scope = org.mockito.Mockito.mockStatic(com.workload.common.utils.DataScopeUtil.class);
+             var security = org.mockito.Mockito.mockStatic(com.workload.common.utils.SecurityUtils.class))
+        {
+            assertThatThrownBy(() -> { if (status == 0) service.submit(7L); else service.approve(7L); })
+                    .hasMessageContaining("重新核算");
+        }
+        org.mockito.Mockito.verifyNoInteractions(auditLogMapper, auditLogWriter);
+        verify(summaryMapper, never()).updateStatusIf(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
+        verify(summaryMapper, never()).approveSummary(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
     }
 
     @Test

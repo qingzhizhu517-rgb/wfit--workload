@@ -88,6 +88,34 @@ class CoefficientAdjustmentServiceImplTest
     }
 
     @Test
+    void applicationBaseVersionComesFromCurrentReadAfterLock()
+    {
+        BizWorkloadItem before = item("G1");
+        BizWorkloadItem current = item("G1"); current.setCalculationVersion(4L);
+        when(itemMapper.selectBizWorkloadItemById(9L)).thenReturn(before);
+        when(itemMapper.selectByIdForUpdate(9L)).thenReturn(current);
+        service.submit(request("G1", "C1", new BigDecimal("1.2"), "复核"));
+        ArgumentCaptor<BizCoefficientAdjustment> saved = ArgumentCaptor.forClass(BizCoefficientAdjustment.class);
+        verify(adjustmentMapper).insertCoefficientAdjustment(saved.capture());
+        assertThat(saved.getValue().getBaseCalculationVersion()).isEqualTo(4L);
+    }
+
+    @Test
+    void approvalUsesCurrentApplicationStateAfterLock()
+    {
+        BizCoefficientAdjustment before = pendingAdj("G1", "Q2", "1.5");
+        BizCoefficientAdjustment current = pendingAdj("G1", "Q2", "1.5");
+        current.setStatus(BizCoefficientAdjustment.STATUS_APPROVED);
+        when(adjustmentMapper.selectCoefficientAdjustmentById(5L)).thenReturn(before);
+        when(itemMapper.selectByIdForUpdate(9L)).thenReturn(item("G1"));
+        when(adjustmentMapper.selectByIdForUpdate(5L)).thenReturn(current);
+
+        assertThatThrownBy(() -> service.approve(5L, "复核"))
+                .hasMessageContaining("不是待审");
+        verifyNoInteractions(theoryMapper, practiceMapper, workloadCalcService);
+    }
+
+    @Test
     void teacherCannotSubmitForAnotherTeachersItem()
     {
         login(1003L, "teacher");
@@ -114,7 +142,9 @@ class CoefficientAdjustmentServiceImplTest
     void businessAdminCanSubmitForTeacher()
     {
         login(1001L, "biz_admin");
-        when(itemMapper.selectBizWorkloadItemById(9L)).thenReturn(item("G1"));
+        BizWorkloadItem existing = item("G1");
+        when(itemMapper.selectBizWorkloadItemById(9L)).thenReturn(existing);
+        when(itemMapper.selectByIdForUpdate(9L)).thenReturn(existing);
         service.submit(request("G1", "C1", new BigDecimal("1.2"), "教务复核"));
         ArgumentCaptor<BizCoefficientAdjustment> saved = ArgumentCaptor.forClass(BizCoefficientAdjustment.class);
         verify(adjustmentMapper).insertCoefficientAdjustment(saved.capture());
@@ -126,7 +156,9 @@ class CoefficientAdjustmentServiceImplTest
     @CsvSource({"G1,C1", "G1,K1", "G1,Q1", "G1,Q2", "G1,N", "G2,K", "G2,C2", "G2,Q1", "G2,Q2"})
     void allowedFactorCanBeSubmitted(String category, String factorCode)
     {
-        when(itemMapper.selectBizWorkloadItemById(9L)).thenReturn(item(category));
+        BizWorkloadItem existing = item(category);
+        when(itemMapper.selectBizWorkloadItemById(9L)).thenReturn(existing);
+        when(itemMapper.selectByIdForUpdate(9L)).thenReturn(existing);
 
         Long id = service.submit(request(category, factorCode, new BigDecimal("1.20"), "教务复核后上调"));
 
@@ -173,7 +205,9 @@ class CoefficientAdjustmentServiceImplTest
     @Test
     void duplicatePendingIsRejected()
     {
-        when(itemMapper.selectBizWorkloadItemById(9L)).thenReturn(item("G1"));
+        BizWorkloadItem existing = item("G1");
+        when(itemMapper.selectBizWorkloadItemById(9L)).thenReturn(existing);
+        when(itemMapper.selectByIdForUpdate(9L)).thenReturn(existing);
         when(adjustmentMapper.countPendingByItemFactor(9L, "C1")).thenReturn(1);
 
         assertThatThrownBy(() -> service.submit(request("G1", "C1", new BigDecimal("1.1"), "理由")))
@@ -198,7 +232,9 @@ class CoefficientAdjustmentServiceImplTest
     @Test
     void oldValueIsReadFromServerIgnoringClientSuppliedValue()
     {
-        when(itemMapper.selectBizWorkloadItemById(9L)).thenReturn(item("G1"));
+        BizWorkloadItem existing = item("G1");
+        when(itemMapper.selectBizWorkloadItemById(9L)).thenReturn(existing);
+        when(itemMapper.selectByIdForUpdate(9L)).thenReturn(existing);
         when(adjustmentMapper.selectCurrentFactorValue("G1", "C1", 9L)).thenReturn(new BigDecimal("1.10"));
 
         CoefficientAdjustmentRequest req = request("G1", "C1", new BigDecimal("1.20"), "理由");
@@ -219,6 +255,8 @@ class CoefficientAdjustmentServiceImplTest
     {
         BizCoefficientAdjustment adj = pendingAdj("G1", "Q2", "1.50");
         when(adjustmentMapper.selectCoefficientAdjustmentById(5L)).thenReturn(adj);
+        when(itemMapper.selectByIdForUpdate(9L)).thenReturn(item(adj.getCategory()));
+        when(adjustmentMapper.selectByIdForUpdate(5L)).thenReturn(adj);
         when(theoryMapper.updateQ2IfVersion(9L, new BigDecimal("1.50"), 3L)).thenReturn(1);
         when(adjustmentMapper.markApprovedIfPending(anyLong(), anyLong(), anyString(), anyLong())).thenReturn(1);
 
@@ -246,6 +284,8 @@ class CoefficientAdjustmentServiceImplTest
     {
         BizCoefficientAdjustment adj = pendingAdj("G2", "K", "0.90");
         when(adjustmentMapper.selectCoefficientAdjustmentById(5L)).thenReturn(adj);
+        when(itemMapper.selectByIdForUpdate(9L)).thenReturn(item(adj.getCategory()));
+        when(adjustmentMapper.selectByIdForUpdate(5L)).thenReturn(adj);
         when(practiceMapper.updateKIfVersion(9L, new BigDecimal("0.90"), 3L)).thenReturn(1);
         when(adjustmentMapper.markApprovedIfPending(anyLong(), anyLong(), anyString(), anyLong())).thenReturn(1);
 
@@ -267,6 +307,8 @@ class CoefficientAdjustmentServiceImplTest
     {
         BizCoefficientAdjustment adj = pendingAdj("G1", "Q2", "1.50");
         when(adjustmentMapper.selectCoefficientAdjustmentById(5L)).thenReturn(adj);
+        when(itemMapper.selectByIdForUpdate(9L)).thenReturn(item(adj.getCategory()));
+        when(adjustmentMapper.selectByIdForUpdate(5L)).thenReturn(adj);
         // 版本/状态/冻结门任一变化 -> 因子条件更新影响 0 行
         when(theoryMapper.updateQ2IfVersion(9L, new BigDecimal("1.50"), 3L)).thenReturn(0);
 
@@ -283,6 +325,8 @@ class CoefficientAdjustmentServiceImplTest
     {
         BizCoefficientAdjustment adj = pendingAdj("G1", "Q2", "1.50");
         when(adjustmentMapper.selectCoefficientAdjustmentById(5L)).thenReturn(adj);
+        when(itemMapper.selectByIdForUpdate(9L)).thenReturn(item(adj.getCategory()));
+        when(adjustmentMapper.selectByIdForUpdate(5L)).thenReturn(adj);
         when(theoryMapper.updateQ2IfVersion(9L, new BigDecimal("1.50"), 3L)).thenReturn(1);
         when(adjustmentMapper.markApprovedIfPending(anyLong(), anyLong(), anyString(), anyLong())).thenReturn(0);
 
@@ -302,6 +346,8 @@ class CoefficientAdjustmentServiceImplTest
         // 即便库中记录被绕过 submit 写入非白名单组合，approve 路径也必须安全拒绝
         BizCoefficientAdjustment adj = pendingAdj("G3", "Q1", "1.00");
         when(adjustmentMapper.selectCoefficientAdjustmentById(5L)).thenReturn(adj);
+        when(itemMapper.selectByIdForUpdate(9L)).thenReturn(item(adj.getCategory()));
+        when(adjustmentMapper.selectByIdForUpdate(5L)).thenReturn(adj);
 
         assertThatThrownBy(() -> service.approve(5L, "材料有效"))
                 .isInstanceOf(ServiceException.class);
@@ -314,6 +360,8 @@ class CoefficientAdjustmentServiceImplTest
     {
         BizCoefficientAdjustment adj = pendingAdj("G1", "Q2", "1.50");
         when(adjustmentMapper.selectCoefficientAdjustmentById(5L)).thenReturn(adj);
+        when(itemMapper.selectByIdForUpdate(9L)).thenReturn(item(adj.getCategory()));
+        when(adjustmentMapper.selectByIdForUpdate(5L)).thenReturn(adj);
         when(adjustmentMapper.markRejectedIfPending(anyLong(), anyLong(), anyString(), anyLong())).thenReturn(1);
 
         try (MockedStatic<SecurityUtils> security = mockStatic(SecurityUtils.class))

@@ -52,6 +52,60 @@ class BizWorkloadItemWriteTest
         item.setSemester("2025-2026-1"); item.setItemType("G8"); item.setStatus(0);
         item.setCalculatedWorkload(new BigDecimal("10")); return item;
     }
+    @ParameterizedTest
+    @ValueSource(strings = {"G1", "G2", "G3", "G4", "G5", "G6", "G11"})
+    void currentDetailReferenceBlocksSingleAndBatchDeletion(String type)
+    {
+        BizWorkloadItem existing = item(); existing.setItemType(type);
+        when(bizWorkloadItemMapper.selectBizWorkloadItemById(8L)).thenReturn(existing);
+        when(bizWorkloadItemMapper.selectByIdForUpdate(8L)).thenReturn(existing);
+        // 普通查询默认看不到引用；只有锁后当前读返回刚提交的子表记录。
+        switch (type)
+        {
+            case "G1" -> when(theory.selectByItemIdForUpdate(8L)).thenReturn(new BizWlTheory());
+            case "G2" -> when(practice.selectByItemIdForUpdate(8L)).thenReturn(new BizWlPractice());
+            case "G3" -> when(intern.selectByItemIdForUpdate(8L)).thenReturn(new BizWlInternshipTraining());
+            case "G4" -> when(design.selectByItemIdForUpdate(8L)).thenReturn(new BizWlCourseDesign());
+            case "G5" -> when(thesis.selectByItemIdForUpdate(8L)).thenReturn(new BizWlThesis());
+            case "G6" -> when(concentrated.selectByItemIdForUpdate(8L)).thenReturn(new BizWlConcentratedInternship());
+            default -> when(management.selectByItemIdForUpdate(8L)).thenReturn(new BizWlManagement());
+        }
+        assertThatThrownBy(() -> service.deleteBizWorkloadItemById(8L))
+                .hasMessageContaining("引用，禁止删除");
+        assertThatThrownBy(() -> service.deleteBizWorkloadItemByIds(new Long[] {8L}))
+                .hasMessageContaining("引用，禁止删除");
+        verify(bizWorkloadItemMapper, never()).deleteBizWorkloadItemById(any());
+        verify(bizWorkloadItemMapper, never()).deleteBizWorkloadItemByIds(any());
+    }
+
+    @Test void confirmationUsesVersionAfterLockInsteadOfInitialRead()
+    {
+        ((LoginUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal())
+                .setPermissions(Set.of("system:workloadItem:review"));
+        BizWorkloadItem before = item(); before.setCalculationVersion(2L);
+        BizWorkloadItem current = item(); current.setCalculationVersion(3L);
+        when(bizWorkloadItemMapper.selectBizWorkloadItemById(8L)).thenReturn(before);
+        when(bizWorkloadItemMapper.selectByIdForUpdate(8L)).thenReturn(current);
+
+        assertThatThrownBy(() -> service.confirm(8L, 2L, new BigDecimal("10")))
+                .hasMessageContaining("版本");
+        verify(bizWorkloadItemMapper, never()).confirmIfUnchanged(any(), any(), any(), any());
+    }
+
+    @Test void invalidatedAutomaticItemCannotBeConfirmedEvenAtMatchingVersion()
+    {
+        ((LoginUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal())
+                .setPermissions(Set.of("system:workloadItem:review"));
+        BizWorkloadItem current = item(); current.setItemType("G1"); current.setCalculationVersion(3L);
+        current.setLastCalculatedAt(null);
+        when(bizWorkloadItemMapper.selectBizWorkloadItemById(8L)).thenReturn(current);
+        when(bizWorkloadItemMapper.selectByIdForUpdate(8L)).thenReturn(current);
+
+        assertThatThrownBy(() -> service.confirm(8L, 3L, new BigDecimal("10")))
+                .hasMessageContaining("先完成明细核算");
+        verify(bizWorkloadItemMapper, never()).confirmIfUnchanged(any(), any(), any(), any());
+    }
+
     @Test void teacherCannotApproveOwnManualHours()
     {
         assertThatThrownBy(() -> service.confirm(8L, 0L, new BigDecimal("10")))
@@ -65,6 +119,7 @@ class BizWorkloadItemWriteTest
                 .setPermissions(Set.of("system:workloadItem:review"));
         BizWorkloadItem existing = item(); existing.setCalculationVersion(3L);
         when(bizWorkloadItemMapper.selectBizWorkloadItemById(8L)).thenReturn(existing);
+        when(bizWorkloadItemMapper.selectByIdForUpdate(8L)).thenReturn(existing);
         assertThatThrownBy(() -> service.confirm(8L, 2L, new BigDecimal("10")))
                 .isInstanceOf(ServiceException.class).hasMessageContaining("版本");
     }
@@ -75,6 +130,7 @@ class BizWorkloadItemWriteTest
                 .setPermissions(Set.of("system:workloadItem:review"));
         BizWorkloadItem existing = item();
         when(bizWorkloadItemMapper.selectBizWorkloadItemById(8L)).thenReturn(existing);
+        when(bizWorkloadItemMapper.selectByIdForUpdate(8L)).thenReturn(existing);
         when(bizWorkloadItemMapper.confirmIfUnchanged(eq(8L), eq(0L), eq(new BigDecimal("10")), any())).thenReturn(1);
         assertThat(service.confirm(8L, 0L, new BigDecimal("10"))).isEqualTo(1);
     }
@@ -83,7 +139,9 @@ class BizWorkloadItemWriteTest
     {
         ((LoginUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal())
                 .setPermissions(Set.of("system:workloadItem:review"));
-        when(bizWorkloadItemMapper.selectBizWorkloadItemById(8L)).thenReturn(item());
+        BizWorkloadItem existing = item();
+        when(bizWorkloadItemMapper.selectBizWorkloadItemById(8L)).thenReturn(existing);
+        when(bizWorkloadItemMapper.selectByIdForUpdate(8L)).thenReturn(existing);
         when(adjustmentMapper.selectPendingIdsForUpdate(20L, "2025-2026-1")).thenReturn(List.of(81L));
         assertThatThrownBy(() -> service.confirm(8L, 0L, new BigDecimal("10")))
                 .isInstanceOf(ServiceException.class).hasMessageContaining("待审");
@@ -111,6 +169,7 @@ class BizWorkloadItemWriteTest
     {
         BizWorkloadItem existing = item(); existing.setStatus(1);
         when(bizWorkloadItemMapper.selectBizWorkloadItemById(8L)).thenReturn(existing);
+        when(bizWorkloadItemMapper.selectByIdForUpdate(8L)).thenReturn(existing);
         assertThatThrownBy(() -> service.updateBizWorkloadItem(existing)).isInstanceOf(ServiceException.class).hasMessageContaining("已核对");
         verify(bizWorkloadItemMapper, never()).updateBizWorkloadItem(any());
     }
@@ -140,14 +199,18 @@ class BizWorkloadItemWriteTest
     }
     @Test void draftItemCannotBeMovedToAnotherSemester()
     {
-        when(bizWorkloadItemMapper.selectBizWorkloadItemById(8L)).thenReturn(item());
+        BizWorkloadItem existing = item();
+        when(bizWorkloadItemMapper.selectBizWorkloadItemById(8L)).thenReturn(existing);
+        when(bizWorkloadItemMapper.selectByIdForUpdate(8L)).thenReturn(existing);
         BizWorkloadItem update = new BizWorkloadItem(); update.setId(8L); update.setSemester("2026-2027-1");
         assertThatThrownBy(() -> service.updateBizWorkloadItem(update)).isInstanceOf(ServiceException.class).hasMessageContaining("归属");
         verify(bizWorkloadItemMapper, never()).updateBizWorkloadItem(any());
     }
     @Test void draftRemarkUpdateRemainsAvailable()
     {
-        when(bizWorkloadItemMapper.selectBizWorkloadItemById(8L)).thenReturn(item());
+        BizWorkloadItem existing = item();
+        when(bizWorkloadItemMapper.selectBizWorkloadItemById(8L)).thenReturn(existing);
+        when(bizWorkloadItemMapper.selectByIdForUpdate(8L)).thenReturn(existing);
         BizWorkloadItem update = new BizWorkloadItem(); update.setId(8L); update.setRemark("补充说明");
         service.updateBizWorkloadItem(update);
         var order = inOrder(bizWorkloadItemMapper, summaries);

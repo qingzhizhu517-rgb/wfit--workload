@@ -34,6 +34,18 @@ class BizTeachingTaskServiceImplTest
     @Mock private WorkloadWriteGuard writeGuard;
 
     @Test
+    void linkedTeachingTaskCannotBeEditedOutsideDetailMaintenance()
+    {
+        when(taskMapper.selectBizTeachingTaskById(ID)).thenReturn(task(ID, USER, SEMESTER));
+        when(itemMapper.selectBizWorkloadItemList(any())).thenReturn(
+                java.util.List.of(new com.workload.system.domain.BizWorkloadItem()));
+
+        assertThatThrownBy(() -> service.updateBizTeachingTask(task(ID, USER, SEMESTER)))
+                .hasMessageContaining("明细维护");
+        verify(taskMapper, never()).updateBizTeachingTask(any());
+    }
+
+    @Test
     void insertChecksRequestOwnershipBeforeWrite()
     {
         BizTeachingTask task = task(ID, USER, SEMESTER);

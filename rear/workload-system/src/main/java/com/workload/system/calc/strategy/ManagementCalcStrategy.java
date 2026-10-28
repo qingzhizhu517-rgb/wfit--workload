@@ -30,7 +30,7 @@ public class ManagementCalcStrategy extends AbstractWorkloadCalcStrategy
     @Override
     public BigDecimal calculate(BizWorkloadItem item)
     {
-        BizWlManagement detail = bizWlManagementMapper.selectBizWlManagementByItemId(item.getId());
+        BizWlManagement detail = (Boolean.TRUE.equals(item.getParams().get("currentRead")) ? bizWlManagementMapper.selectByItemIdForUpdate(item.getId()) : bizWlManagementMapper.selectBizWlManagementByItemId(item.getId()));
         if (detail != null)
         {
             return scale(num(detail.getProratedAmount()));

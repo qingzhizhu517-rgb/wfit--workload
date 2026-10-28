@@ -55,6 +55,41 @@ class WorkloadFactorFormulaBuilderTest
     @Mock private com.workload.system.mapper.BizCoefficientAdjustmentMapper adjustmentMapper;
 
     @Test
+    void invalidatedVersionDoesNotReuseTheLastHistoricalSnapshot()
+    {
+        BizWorkloadItem item = item("G1", "IMPORT", "0");
+        item.setCalculationVersion(4L);
+        when(snapshotMapper.selectLatestByItemId(7L)).thenReturn(snapshotWithQ2("1.5", "APPROVED_OVERRIDE"));
+        BizWlTheory current = new BizWlTheory(); current.setQ2(n("1.2"));
+        when(theoryMapper.selectBizWlTheoryByItemId(7L)).thenReturn(current);
+
+        FactorFormulaVo result = builder.build(item);
+
+        assertThat(result.isLegacy()).isTrue();
+        assertThat(result.isReproducible()).isFalse();
+        assertThat(result.getSnapshotVersion()).isNull();
+        assertThat(result.getFactors()).filteredOn(f -> "Q2".equals(f.getKey()))
+                .extracting(FactorFormulaVo.FactorVo::getValue).containsExactly(n("1.2"));
+    }
+
+    @Test
+    void freshFormulaUnderLockReadsCurrentDetailInsteadOfSnapshotRead()
+    {
+        BizWorkloadItem item = item("G1", "IMPORT", "48");
+        BizWlTheory stale = new BizWlTheory(); stale.setQ2(n("1.0"));
+        BizWlTheory current = new BizWlTheory(); current.setQ2(n("1.5"));
+        when(theoryMapper.selectBizWlTheoryByItemId(7L)).thenReturn(stale);
+        when(theoryMapper.selectByItemIdForUpdate(7L)).thenReturn(current);
+        FactorFormulaVo before = builder.buildFresh(item);
+        item.getParams().put("currentRead", true);
+        FactorFormulaVo after = builder.buildFresh(item);
+        assertThat(before.getFactors()).filteredOn(f -> "Q2".equals(f.getKey()))
+                .extracting(FactorFormulaVo.FactorVo::getValue).containsExactly(n("1.0"));
+        assertThat(after.getFactors()).filteredOn(f -> "Q2".equals(f.getKey()))
+                .extracting(FactorFormulaVo.FactorVo::getValue).containsExactly(n("1.5"));
+    }
+
+    @Test
     void detailUsesPersistedSnapshotSources()
     {
         BizWorkloadItem item = item("G1", "IMPORT", "57.60");
@@ -144,6 +179,7 @@ class WorkloadFactorFormulaBuilderTest
         BizWorkloadItem item = item("G1", "IMPORT", "999");
         BizWorkloadCalcSnapshot snapshot = new com.workload.system.service.WorkloadSnapshotService(snapshotMapper)
                 .capture(item, formula, "rule-v1");
+        item.setCalculationVersion(snapshot.getCalculationVersion());
         when(snapshotMapper.selectLatestByItemId(7L)).thenReturn(snapshot);
         task.setClassName("后来修改的班级");
         factor.setSourceRef("later-change");
@@ -446,6 +482,7 @@ class WorkloadFactorFormulaBuilderTest
         item.setId(7L);
         item.setItemType(type);
         item.setSourceType(source);
+        item.setCalculationVersion(3L);
         item.setCalculatedWorkload(n(workload));
         return item;
     }

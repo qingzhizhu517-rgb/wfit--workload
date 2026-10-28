@@ -80,4 +80,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             #{itemId}
         </foreach>
     </delete>
+    <select id="selectByItemIdForUpdate" resultMap="BizWlConcentratedInternshipResult" flushCache="true" useCache="false">
+        <include refid="selectBizWlConcentratedInternshipVo"/> where item_id=#{itemId} for update
+    </select>
 </mapper>

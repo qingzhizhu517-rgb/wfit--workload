@@ -188,7 +188,7 @@ mysql -u root -p wflg_workload < rear/sql/15_fix_menu_buttons.sql
 
 迁移以 `rear/sql/MIGRATIONS.md` 为准；最新快照上下文与核对权限分别为30和31。旧初始化章节不是完整部署清单。
 
-- **后端**：JDK17，从仓库根 `mvn -f rear/pom.xml test`；当前452项常规测试。显式MySQL事务IT为14项，使用专用隔离库及环境变量，不能把默认单测成功当作IT成功。见 `docs/本地MySQL事务集成测试.md`。
+- **后端**：JDK17，从仓库根 `mvn -f rear/pom.xml test`；当前491项常规测试。显式MySQL事务IT为31项（旧窄14、来源11、并发6），使用专用隔离库及环境变量，不能把默认单测成功当作IT成功。见 `docs/本地MySQL事务集成测试.md`。
 - **前端**：固定Node24.16.0/npm11.13.0；`npm ci`、`npm run test:unit`、`npm run test:tooling`、`npm run build:prod`。`npm run lint`仍失败；`npm run lint:baseline`仅防新增债务。
 - **手动验证**：启动后端 + 前端，通过 Swagger UI (`/swagger-ui.html`) 或前端页面测试。
 - **API 冒烟**：根目录 `test_api.sh` 提供 12 项 curl 冒烟测试，需先启动后端并关闭验证码（`UPDATE sys_config SET config_value='false' WHERE config_key='sys.account.captchaEnabled'`）。

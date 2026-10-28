@@ -31,6 +31,20 @@ class BizPayRecordFreezeTest
         when(summaries.selectByUserSemesterForUpdate(20L, "2025-2026-1")).thenReturn(summary);
     }
 
+    @ParameterizedTest @ValueSource(booleans = {false, true})
+    void deletingPayMarksStoredSemesterDirty(boolean batch)
+    {
+        setup(0);
+        if (batch) service.deleteBizPayRecordByIds(new Long[] {8L});
+        else service.deleteBizPayRecordById(8L);
+        var order = inOrder(records, summaries);
+        order.verify(records).selectBizPayRecordById(8L);
+        order.verify(summaries).lockPeriod(20L, "2025-2026-1");
+        order.verify(summaries).markNeedsRecalculation(20L, "2025-2026-1");
+        if (batch) order.verify(records).deleteBizPayRecordByIds(new Long[] {8L});
+        else order.verify(records).deleteBizPayRecordById(8L);
+    }
+
     @ParameterizedTest @ValueSource(ints = {1, 2})
     void frozenSummaryRejectsEditEvenWhenRequestOmitsParent(int status)
     {
@@ -48,6 +62,7 @@ class BizPayRecordFreezeTest
         assertThatThrownBy(() -> service.deleteBizPayRecordByIds(new Long[]{8L})).isInstanceOf(ServiceException.class).hasMessageContaining("冻结");
         verify(records, never()).deleteBizPayRecordById(anyLong());
         verify(records, never()).deleteBizPayRecordByIds(any());
+        verify(summaries, never()).markNeedsRecalculation(any(), any());
     }
 
     @Test

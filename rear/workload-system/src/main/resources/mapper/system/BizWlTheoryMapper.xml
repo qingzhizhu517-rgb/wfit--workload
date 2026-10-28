@@ -153,4 +153,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         set d.N = #{value}, d.update_time = now()
         <include refid="theoryFactorWhere"/>
     </update>
+    <select id="selectByItemIdForUpdate" resultMap="BizWlTheoryResult" flushCache="true" useCache="false">
+        <include refid="selectBizWlTheoryVo"/> where item_id=#{itemId} for update
+    </select>
 </mapper>

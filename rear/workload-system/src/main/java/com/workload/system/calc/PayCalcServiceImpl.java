@@ -41,10 +41,14 @@ public class PayCalcServiceImpl implements PayCalcService
     @Autowired
     private BizTeacherProfileMapper bizTeacherProfileMapper;
 
+    @Autowired
+    private WorkloadWriteGuard writeGuard;
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public BizPayRecord recalcPay(Long userId, String semester)
     {
+        writeGuard.lockDraftOrAbsent(userId, semester);
         // userId 合法性校验：教师档案不存在则快速失败，避免任意 userId 生成零值脏数据
         if (bizTeacherProfileMapper.selectBizTeacherProfileByUserId(userId) == null)
         {
@@ -63,6 +67,11 @@ public class PayCalcServiceImpl implements PayCalcService
             throw new ServiceException("学期汇总已进入审批流程，酬金已冻结");
         }
 
+        if (Integer.valueOf(1).equals(summary.getNeedsRecalculation()))
+        {
+            throw new ServiceException("源数据已变更，请先重新核算汇总和酬金");
+        }
+
         BigDecimal courseHourPay = summary.getPerformancePay() == null ? BigDecimal.ZERO
                 : summary.getPerformancePay();
 
@@ -70,6 +79,7 @@ public class PayCalcServiceImpl implements PayCalcService
         allowanceQuery.setUserId(userId);
         allowanceQuery.setSemester(semester);
         allowanceQuery.setStatus(1);
+        allowanceQuery.getParams().put("currentRead", true);
         List<BizAllowanceItem> allowances = bizAllowanceItemMapper.selectBizAllowanceItemList(allowanceQuery);
         BigDecimal otherTotal = allowances.stream()
                 .map(a -> a.getAmount() == null ? BigDecimal.ZERO : a.getAmount())
@@ -150,6 +160,7 @@ public class PayCalcServiceImpl implements PayCalcService
         BizPayRecord query = new BizPayRecord();
         query.setUserId(userId);
         query.setSemester(semester);
+        query.getParams().put("currentRead", true);
         List<BizPayRecord> list = bizPayRecordMapper.selectBizPayRecordList(query);
         return list.isEmpty() ? null : list.get(0);
     }

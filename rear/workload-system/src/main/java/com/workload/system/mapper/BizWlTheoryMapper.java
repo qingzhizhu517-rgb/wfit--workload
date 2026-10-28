@@ -13,6 +13,8 @@ import com.workload.system.domain.BizWlTheory;
  */
 public interface BizWlTheoryMapper
 {
+    com.workload.system.domain.BizWlTheory selectByItemIdForUpdate(Long itemId);
+
     /**
      * 查询G1理论课明细
      * 

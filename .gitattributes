@@ -1,0 +1,2 @@
+# Existing sources use both LF and CRLF. Still reject spaces/tabs at line ends.
+* whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol

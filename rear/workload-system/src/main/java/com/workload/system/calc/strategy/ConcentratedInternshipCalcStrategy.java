@@ -34,7 +34,7 @@ public class ConcentratedInternshipCalcStrategy extends AbstractWorkloadCalcStra
     @Override
     public BigDecimal calculate(BizWorkloadItem item)
     {
-        BizWlConcentratedInternship detail = loadDetail(item.getId());
+        BizWlConcentratedInternship detail = loadDetail(item);
         BigDecimal cap = ruleParamService.get("CAP_R6_MAX", new BigDecimal("20"));
         BigDecimal r6 = num(detail.getR6()).min(cap);
         BigDecimal constant = ruleParamService.get("CONST_COURSE_DESIGN", new BigDecimal("0.4"));
@@ -44,17 +44,19 @@ public class ConcentratedInternshipCalcStrategy extends AbstractWorkloadCalcStra
     @Override
     public void afterCalculated(BizWorkloadItem item, BigDecimal value)
     {
-        BizWlConcentratedInternship detail = loadDetail(item.getId());
+        BizWlConcentratedInternship detail = loadDetail(item);
         BigDecimal cap = ruleParamService.get("CAP_R6_MAX", new BigDecimal("20"));
         item.setIsOverLimit(num(detail.getR6()).compareTo(cap) > 0 ? 1 : 0);
     }
 
-    private BizWlConcentratedInternship loadDetail(Long itemId)
+    private BizWlConcentratedInternship loadDetail(BizWorkloadItem item)
     {
-        BizWlConcentratedInternship detail = bizWlConcentratedInternshipMapper.selectBizWlConcentratedInternshipByItemId(itemId);
+        BizWlConcentratedInternship detail = Boolean.TRUE.equals(item.getParams().get("currentRead"))
+                ? bizWlConcentratedInternshipMapper.selectByItemIdForUpdate(item.getId())
+                : bizWlConcentratedInternshipMapper.selectBizWlConcentratedInternshipByItemId(item.getId());
         if (detail == null)
         {
-            throw new ServiceException("G6集中实习明细缺失, itemId=" + itemId);
+            throw new ServiceException("G6集中实习明细缺失, itemId=" + item.getId());
         }
         return detail;
     }

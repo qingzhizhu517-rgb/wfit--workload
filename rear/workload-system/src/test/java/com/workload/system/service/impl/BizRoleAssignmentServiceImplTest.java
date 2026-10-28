@@ -30,9 +30,54 @@ import com.workload.system.mapper.BizWorkloadSummaryMapper;
 class BizRoleAssignmentServiceImplTest
 {
     @Mock private BizRoleAssignmentMapper mapper;
+    @Mock private com.workload.system.mapper.BizWorkloadItemMapper itemMapper;
     private final BizWorkloadSummaryMapper summaryMapper = mock(BizWorkloadSummaryMapper.class);
     @Spy private WorkloadWriteGuard workloadWriteGuard = new WorkloadWriteGuard(summaryMapper);
     @InjectMocks private BizRoleAssignmentServiceImpl service;
+
+    @ParameterizedTest
+    @ValueSource(strings = {"update", "delete", "batchDelete"})
+    void linkedRoleCannotChangeBehindGeneratedItem(String operation)
+    {
+        when(mapper.selectBizRoleAssignmentById(7L)).thenReturn(assignment());
+        when(itemMapper.selectBizWorkloadItemList(any())).thenReturn(
+                java.util.List.of(new com.workload.system.domain.BizWorkloadItem()));
+        assertThatThrownBy(() -> {
+            switch (operation)
+            {
+                case "update" -> service.updateBizRoleAssignment(assignment());
+                case "delete" -> service.deleteBizRoleAssignmentById(7L);
+                default -> service.deleteBizRoleAssignmentByIds(new Long[] {7L});
+            }
+        }).hasMessageContaining("已关联工作量明细");
+        verify(itemMapper).selectBizWorkloadItemList(org.mockito.ArgumentMatchers.argThat(q ->
+                Long.valueOf(7L).equals(q.getAssignmentId())
+                        && Boolean.TRUE.equals(q.getParams().get("currentRead"))));
+        verify(mapper, never()).updateBizRoleAssignment(any());
+        verify(mapper, never()).deleteBizRoleAssignmentById(any());
+        verify(mapper, never()).deleteBizRoleAssignmentByIds(any());
+        verify(summaryMapper, never()).markNeedsRecalculation(any(), any());
+    }
+
+    @Test
+    void insertingRoleMarksItsSemesterDirty()
+    {
+        service.insertBizRoleAssignment(assignment());
+        var order = inOrder(summaryMapper, mapper);
+        order.verify(summaryMapper).lockPeriod(1L, "2025-2026-1");
+        order.verify(mapper).insertBizRoleAssignment(any());
+        order.verify(summaryMapper).markNeedsRecalculation(1L, "2025-2026-1");
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void deletingUnlinkedRoleMarksStoredSemesterDirty(boolean batch)
+    {
+        when(mapper.selectBizRoleAssignmentById(7L)).thenReturn(assignment());
+        if (batch) service.deleteBizRoleAssignmentByIds(new Long[] {7L});
+        else service.deleteBizRoleAssignmentById(7L);
+        verify(summaryMapper).markNeedsRecalculation(1L, "2025-2026-1");
+    }
 
     @ParameterizedTest
     @ValueSource(ints = {1, 2})
@@ -84,6 +129,7 @@ class BizRoleAssignmentServiceImplTest
         var order = inOrder(summaryMapper, mapper);
         order.verify(summaryMapper).selectByUserSemesterForUpdate(1L, "2025-2026-1");
         order.verify(mapper).updateBizRoleAssignment(change);
+        order.verify(summaryMapper).markNeedsRecalculation(1L, "2025-2026-1");
     }
 
     private void freeze(int status)

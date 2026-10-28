@@ -72,6 +72,7 @@ class BizAllowanceItemServiceImplTest
         doThrow(new ServiceException("数据已冻结")).when(writeGuard).lockDraftOrAbsent(1L, "2025-2026-1");
         assertThatThrownBy(() -> service.insertBizAllowanceItem(selfItem(15L))).hasMessageContaining("冻结");
         verifyNoInteractions(allowanceStrategyFactory, bizAllowanceItemMapper);
+        verify(writeGuard, never()).markChanged(any(), any());
     }
 
     @Test
@@ -226,6 +227,8 @@ class BizAllowanceItemServiceImplTest
 
         assertThat(forged.getUserId()).isEqualTo(9L);
         assertThat(forged.getSemester()).isEqualTo("2025-2026-2");
+        verify(writeGuard).markChanged(9L, "2025-2026-2");
+        verify(writeGuard, never()).markChanged(1L, "2025-2026-1");
     }
 
     @Test
@@ -242,6 +245,7 @@ class BizAllowanceItemServiceImplTest
         service.deleteBizAllowanceItemById(7L);
 
         verify(payCalcService).assertAllowanceEditable(9L, "2025-2026-2");
+        verify(writeGuard).markChanged(9L, "2025-2026-2");
     }
 
     /**
@@ -260,12 +264,14 @@ class BizAllowanceItemServiceImplTest
     {
         AllowanceCalcStrategy strategy = realStrategyFor(type);
         when(allowanceStrategyFactory.get(type)).thenReturn(strategy);
+        when(bizAllowanceItemMapper.insertBizAllowanceItem(item)).thenReturn(1);
 
         service.insertBizAllowanceItem(item);
 
         assertThat(item.getAmount()).isEqualByComparingTo(expectedAmount);
         assertThat(item.getStatus()).isEqualTo(1);
         verify(bizAllowanceItemMapper).insertBizAllowanceItem(item);
+        verify(writeGuard).markChanged(item.getUserId(), item.getSemester());
     }
 
     static Stream<Arguments> persistenceCases()

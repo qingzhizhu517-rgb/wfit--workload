@@ -27,7 +27,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         select id, user_id, role_type, target, start_date, end_date, semester, academic_year, allowance_rate, source_batch_id, status, create_by, create_time, update_by, update_time, remark from biz_role_assignment
     </sql>
 
-    <select id="selectBizRoleAssignmentList" parameterType="BizRoleAssignment" resultMap="BizRoleAssignmentResult">
+    <select id="selectBizRoleAssignmentList" flushCache="true" useCache="false" parameterType="BizRoleAssignment" resultMap="BizRoleAssignmentResult">
         <include refid="selectBizRoleAssignmentVo"/>
         <where>  
             <if test="userId != null "> and user_id = #{userId}</if>
@@ -41,6 +41,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="sourceBatchId != null and sourceBatchId != ''"> and source_batch_id = #{sourceBatchId}</if>
             <if test="status != null "> and status = #{status}</if>
         </where>
+        <if test="params.currentRead == true">for update</if>
     </select>
     
     <select id="selectBizRoleAssignmentById" parameterType="Long" resultMap="BizRoleAssignmentResult">
@@ -118,7 +119,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             #{id}
         </foreach>
     </delete>
-    <select id="selectActiveByUserSemesterForUpdate" resultMap="BizRoleAssignmentResult">
+    <select id="selectActiveByUserSemesterForUpdate" flushCache="true" useCache="false" resultMap="BizRoleAssignmentResult">
         <include refid="selectBizRoleAssignmentVo"/>
         where user_id = #{userId} and semester = #{semester} and status = 1
         order by id

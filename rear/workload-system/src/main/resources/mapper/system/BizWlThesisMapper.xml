@@ -94,4 +94,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             #{itemId}
         </foreach>
     </delete>
+    <select id="selectByItemIdForUpdate" resultMap="BizWlThesisResult" flushCache="true" useCache="false">
+        <include refid="selectBizWlThesisVo"/> where item_id=#{itemId} for update
+    </select>
 </mapper>

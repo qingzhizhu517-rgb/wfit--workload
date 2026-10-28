@@ -119,6 +119,7 @@ public class BizWorkloadItemServiceImpl implements IBizWorkloadItemService
             created.setRoleType(bizWorkloadItem.getRoleType());
         }
         created.setCreateTime(DateUtils.getNowDate());
+        writeGuard.markChanged(owner, created.getSemester());
         return bizWorkloadItemMapper.insertBizWorkloadItem(created);
     }
 
@@ -141,6 +142,7 @@ public class BizWorkloadItemServiceImpl implements IBizWorkloadItemService
         {
             throw new ServiceException("明细归属、类别及源记录关联不可通过通用修改迁移");
         }
+        writeGuard.markChanged(existing.getUserId(), existing.getSemester());
         bizWorkloadItem.setUpdateTime(DateUtils.getNowDate());
         return bizWorkloadItemMapper.updateBizWorkloadItem(bizWorkloadItem);
     }
@@ -160,7 +162,8 @@ public class BizWorkloadItemServiceImpl implements IBizWorkloadItemService
         if (ids == null || ids.length == 0) return 0;
         for (Long id : ids)
         {
-            requireEditable(id);
+            BizWorkloadItem item = requireEditable(id);
+            writeGuard.markChanged(item.getUserId(), item.getSemester());
             assertNotReferencedByWlDetail(id);
         }
         return bizWorkloadItemMapper.deleteBizWorkloadItemByIds(ids);
@@ -178,7 +181,8 @@ public class BizWorkloadItemServiceImpl implements IBizWorkloadItemService
     @Transactional(rollbackFor = Exception.class)
     public int deleteBizWorkloadItemById(Long id)
     {
-        requireEditable(id);
+        BizWorkloadItem item = requireEditable(id);
+        writeGuard.markChanged(item.getUserId(), item.getSemester());
         assertNotReferencedByWlDetail(id);
         return bizWorkloadItemMapper.deleteBizWorkloadItemById(id);
     }
@@ -193,31 +197,31 @@ public class BizWorkloadItemServiceImpl implements IBizWorkloadItemService
     private void assertNotReferencedByWlDetail(Long itemId)
     {
         String referencedTable = null;
-        if (bizWlTheoryMapper.selectBizWlTheoryByItemId(itemId) != null)
+        if (bizWlTheoryMapper.selectByItemIdForUpdate(itemId) != null)
         {
             referencedTable = "biz_wl_theory";
         }
-        else if (bizWlPracticeMapper.selectBizWlPracticeByItemId(itemId) != null)
+        else if (bizWlPracticeMapper.selectByItemIdForUpdate(itemId) != null)
         {
             referencedTable = "biz_wl_practice";
         }
-        else if (bizWlInternshipTrainingMapper.selectBizWlInternshipTrainingByItemId(itemId) != null)
+        else if (bizWlInternshipTrainingMapper.selectByItemIdForUpdate(itemId) != null)
         {
             referencedTable = "biz_wl_internship_training";
         }
-        else if (bizWlCourseDesignMapper.selectBizWlCourseDesignByItemId(itemId) != null)
+        else if (bizWlCourseDesignMapper.selectByItemIdForUpdate(itemId) != null)
         {
             referencedTable = "biz_wl_course_design";
         }
-        else if (bizWlThesisMapper.selectBizWlThesisByItemId(itemId) != null)
+        else if (bizWlThesisMapper.selectByItemIdForUpdate(itemId) != null)
         {
             referencedTable = "biz_wl_thesis";
         }
-        else if (bizWlConcentratedInternshipMapper.selectBizWlConcentratedInternshipByItemId(itemId) != null)
+        else if (bizWlConcentratedInternshipMapper.selectByItemIdForUpdate(itemId) != null)
         {
             referencedTable = "biz_wl_concentrated_internship";
         }
-        else if (bizWlManagementMapper.selectBizWlManagementByItemId(itemId) != null)
+        else if (bizWlManagementMapper.selectByItemIdForUpdate(itemId) != null)
         {
             referencedTable = "biz_wl_management";
         }
@@ -250,7 +254,7 @@ public class BizWorkloadItemServiceImpl implements IBizWorkloadItemService
             throw new ServiceException("计算版本或学时已变化，请刷新详情后重新核对");
         if (!Integer.valueOf(0).equals(item.getStatus()))
             throw new ServiceException("只有草稿明细可核对通过");
-        if (!"G8".equals(item.getItemType()) && !"G9".equals(item.getItemType()) && version == 0)
+        if (!"G8".equals(item.getItemType()) && !"G9".equals(item.getItemType()) && (version == 0 || item.getLastCalculatedAt() == null))
             throw new ServiceException("请先完成明细核算再核对");
         if (!adjustmentMapper.selectPendingIdsForUpdate(item.getUserId(), item.getSemester()).isEmpty())
             throw new ServiceException("存在待审系数申请，请先处理");
@@ -266,6 +270,8 @@ public class BizWorkloadItemServiceImpl implements IBizWorkloadItemService
         if (item == null) throw new ServiceException("工作量明细不存在");
         DataScopeUtil.assertOwnOrAdmin(item.getUserId());
         writeGuard.lockDraftOrAbsent(item.getUserId(), item.getSemester());
+        item = bizWorkloadItemMapper.selectByIdForUpdate(id);
+        if (item == null) throw new ServiceException("工作量明细已删除，请刷新后重试");
         if (Integer.valueOf(1).equals(item.getStatus()))
         {
             throw new ServiceException("明细已核对，禁止修改或删除");

@@ -37,7 +37,7 @@ public class CourseDesignCalcStrategy extends AbstractWorkloadCalcStrategy
     @Override
     public BigDecimal calculate(BizWorkloadItem item)
     {
-        BizWlCourseDesign detail = loadDetail(item.getId());
+        BizWlCourseDesign detail = loadDetail(item);
         BigDecimal constant = ruleParamService.get("CONST_COURSE_DESIGN", new BigDecimal("0.4"));
         // 第十四条4 未写「超出部分不计算」，R4 按实际人数计（2026-09-10 按办法原文修正，
         // 原 min(R4, CAP_R4_MAX) 截断会擅自减少教师工作量）
@@ -47,18 +47,20 @@ public class CourseDesignCalcStrategy extends AbstractWorkloadCalcStrategy
     @Override
     public void afterCalculated(BizWorkloadItem item, BigDecimal value)
     {
-        BizWlCourseDesign detail = loadDetail(item.getId());
+        BizWlCourseDesign detail = loadDetail(item);
         // CAP_R4_MAX 由截断上限改为告警阈值：超 60 人仅置超标标记，不减量
         BigDecimal warnThreshold = ruleParamService.get("CAP_R4_MAX", new BigDecimal("60"));
         item.setIsOverLimit(num(detail.getR4()).compareTo(warnThreshold) > 0 ? 1 : 0);
     }
 
-    private BizWlCourseDesign loadDetail(Long itemId)
+    private BizWlCourseDesign loadDetail(BizWorkloadItem item)
     {
-        BizWlCourseDesign detail = bizWlCourseDesignMapper.selectBizWlCourseDesignByItemId(itemId);
+        BizWlCourseDesign detail = Boolean.TRUE.equals(item.getParams().get("currentRead"))
+                ? bizWlCourseDesignMapper.selectByItemIdForUpdate(item.getId())
+                : bizWlCourseDesignMapper.selectBizWlCourseDesignByItemId(item.getId());
         if (detail == null)
         {
-            throw new ServiceException("G4课程设计明细缺失, itemId=" + itemId);
+            throw new ServiceException("G4课程设计明细缺失, itemId=" + item.getId());
         }
         return detail;
     }

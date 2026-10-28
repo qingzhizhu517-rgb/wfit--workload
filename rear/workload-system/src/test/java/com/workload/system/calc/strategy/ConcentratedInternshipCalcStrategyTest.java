@@ -66,6 +66,24 @@ class ConcentratedInternshipCalcStrategyTest
     }
 
     @Test
+    void calculationAndLimitCheckUseCurrentDetailAfterLock()
+    {
+        when(mapper.selectBizWlConcentratedInternshipByItemId(1L)).thenReturn(detail("4", "18"));
+        when(mapper.selectByItemIdForUpdate(1L)).thenReturn(detail("4", "25"));
+        BizWorkloadItem item = item(1L);
+        BigDecimal before = strategy.calculate(item);
+        strategy.afterCalculated(item, before);
+        assertThat(before).isEqualByComparingTo("28.8");
+        assertThat(item.getIsOverLimit()).isZero();
+
+        item.getParams().put("currentRead", true);
+        BigDecimal current = strategy.calculate(item);
+        strategy.afterCalculated(item, current);
+        assertThat(current).isEqualByComparingTo("32");
+        assertThat(item.getIsOverLimit()).isEqualTo(1);
+    }
+
+    @Test
     @DisplayName("基本公式：W×R6×0.4 —— 4 周 ×18 人 ×0.4 = 28.80")
     void shouldComputeBasicFormula()
     {

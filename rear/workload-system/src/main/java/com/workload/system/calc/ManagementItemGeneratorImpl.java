@@ -179,6 +179,7 @@ public class ManagementItemGeneratorImpl implements ManagementItemGenerator
         query.setSemester(semester);
         query.setItemType("G11");
         query.setAssignmentId(assignmentId);
+        query.getParams().put("currentRead", true);
         List<BizWorkloadItem> items = itemMapper.selectBizWorkloadItemList(query);
         return items.isEmpty() ? null : items.get(0);
     }

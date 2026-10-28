@@ -41,7 +41,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where id = #{id}
     </select>
 
-    <select id="selectCoefficientAdjustmentList" parameterType="BizCoefficientAdjustment" resultMap="BizCoefficientAdjustmentResult">
+    <select id="selectCoefficientAdjustmentList" flushCache="true" useCache="false" parameterType="BizCoefficientAdjustment" resultMap="BizCoefficientAdjustmentResult">
         <include refid="selectCoefficientAdjustmentVo"/>
         <where>
             <if test="userId != null">and user_id = #{userId}</if>
@@ -52,6 +52,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="status != null">and status = #{status}</if>
         </where>
         order by id desc
+        <if test="params.currentRead == true">for update</if>
     </select>
 
     <insert id="insertCoefficientAdjustment" parameterType="BizCoefficientAdjustment" useGeneratedKeys="true" keyProperty="id">
@@ -113,24 +114,24 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <!-- 服务端读取当前系数值：白名单固定列名，禁止 ${} 拼列。命中不到返回 NULL。 -->
-    <select id="selectPendingIdsForUpdate" resultType="java.lang.Long">
+    <select id="selectPendingIdsForUpdate" flushCache="true" useCache="false" resultType="java.lang.Long">
         select id from biz_coefficient_adjustment
         where user_id = #{userId} and semester = #{semester} and status = 0
         order by id
         for update
     </select>
 
-    <select id="selectCurrentFactorValue" resultType="java.math.BigDecimal">
+    <select id="selectCurrentFactorValue" flushCache="true" useCache="false" resultType="java.math.BigDecimal">
         <choose>
-            <when test="category == 'G1' and factorCode == 'C1'">select C1 from biz_wl_theory where item_id = #{itemId}</when>
-            <when test="category == 'G1' and factorCode == 'K1'">select K1 from biz_wl_theory where item_id = #{itemId}</when>
-            <when test="category == 'G1' and factorCode == 'Q1'">select Q1 from biz_wl_theory where item_id = #{itemId}</when>
-            <when test="category == 'G1' and factorCode == 'Q2'">select Q2 from biz_wl_theory where item_id = #{itemId}</when>
-            <when test="category == 'G1' and factorCode == 'N'">select N from biz_wl_theory where item_id = #{itemId}</when>
-            <when test="category == 'G2' and factorCode == 'K'">select K from biz_wl_practice where item_id = #{itemId}</when>
-            <when test="category == 'G2' and factorCode == 'C2'">select C2 from biz_wl_practice where item_id = #{itemId}</when>
-            <when test="category == 'G2' and factorCode == 'Q1'">select Q1 from biz_wl_practice where item_id = #{itemId}</when>
-            <when test="category == 'G2' and factorCode == 'Q2'">select Q2 from biz_wl_practice where item_id = #{itemId}</when>
+            <when test="category == 'G1' and factorCode == 'C1'">select C1 from biz_wl_theory where item_id = #{itemId} for update</when>
+            <when test="category == 'G1' and factorCode == 'K1'">select K1 from biz_wl_theory where item_id = #{itemId} for update</when>
+            <when test="category == 'G1' and factorCode == 'Q1'">select Q1 from biz_wl_theory where item_id = #{itemId} for update</when>
+            <when test="category == 'G1' and factorCode == 'Q2'">select Q2 from biz_wl_theory where item_id = #{itemId} for update</when>
+            <when test="category == 'G1' and factorCode == 'N'">select N from biz_wl_theory where item_id = #{itemId} for update</when>
+            <when test="category == 'G2' and factorCode == 'K'">select K from biz_wl_practice where item_id = #{itemId} for update</when>
+            <when test="category == 'G2' and factorCode == 'C2'">select C2 from biz_wl_practice where item_id = #{itemId} for update</when>
+            <when test="category == 'G2' and factorCode == 'Q1'">select Q1 from biz_wl_practice where item_id = #{itemId} for update</when>
+            <when test="category == 'G2' and factorCode == 'Q2'">select Q2 from biz_wl_practice where item_id = #{itemId} for update</when>
             <otherwise>select null</otherwise>
         </choose>
     </select>
@@ -154,4 +155,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             update_time = now()
         where id = #{id} and status = 0 and base_calculation_version = #{baseVersion}
     </update>
+    <select id="selectByIdForUpdate" resultMap="BizCoefficientAdjustmentResult" flushCache="true" useCache="false">
+        <include refid="selectCoefficientAdjustmentVo"/> where id=#{id} for update
+    </select>
 </mapper>

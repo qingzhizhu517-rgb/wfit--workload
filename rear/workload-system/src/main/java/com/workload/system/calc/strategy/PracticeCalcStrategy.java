@@ -32,7 +32,7 @@ public class PracticeCalcStrategy extends AbstractWorkloadCalcStrategy
     @Override
     public BigDecimal calculate(BizWorkloadItem item)
     {
-        BizWlPractice detail = bizWlPracticeMapper.selectBizWlPracticeByItemId(item.getId());
+        BizWlPractice detail = (Boolean.TRUE.equals(item.getParams().get("currentRead")) ? bizWlPracticeMapper.selectByItemIdForUpdate(item.getId()) : bizWlPracticeMapper.selectBizWlPracticeByItemId(item.getId()));
         if (detail == null)
         {
             throw new ServiceException("G2课内实践明细缺失, itemId=" + item.getId());

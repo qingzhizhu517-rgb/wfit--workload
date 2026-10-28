@@ -5,6 +5,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 <mapper namespace="com.workload.system.mapper.BizWorkloadSummaryMapper">
     
     <resultMap type="BizWorkloadSummary" id="BizWorkloadSummaryResult">
+        <result property="needsRecalculation" column="needs_recalculation"/>
         <result property="id"    column="id"    />
         <result property="userId"    column="user_id"    />
         <result property="semester"    column="semester"    />
@@ -41,7 +42,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectBizWorkloadSummaryVo">
-        select id, user_id, semester, academic_year, G7, G8, G9, G10, G11, total_workload, rated_workload, excess_workload, g8_remark, g11_remark, title, pay_rate, performance_pay, is_capped, basic_teaching_standard, basic_teaching_met, status, teacher_sign, teacher_sign_time, dept_leader_sign, dept_leader_sign_time, academic_assistant_sign, academic_assistant_sign_time, lock_time, create_by, create_time, update_by, update_time, remark from biz_workload_summary
+        select id, user_id, semester, needs_recalculation, academic_year, G7, G8, G9, G10, G11, total_workload, rated_workload, excess_workload, g8_remark, g11_remark, title, pay_rate, performance_pay, is_capped, basic_teaching_standard, basic_teaching_met, status, teacher_sign, teacher_sign_time, dept_leader_sign, dept_leader_sign_time, academic_assistant_sign, academic_assistant_sign_time, lock_time, create_by, create_time, update_by, update_time, remark from biz_workload_summary
     </sql>
 
     <select id="selectBizWorkloadSummaryList" parameterType="BizWorkloadSummary" resultMap="BizWorkloadSummaryResult">
@@ -81,14 +82,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where id = #{id}
     </select>
 
-    <select id="selectByUserSemesterForUpdate" resultMap="BizWorkloadSummaryResult">
+    <select id="selectByUserSemesterForUpdate" flushCache="true" useCache="false" resultMap="BizWorkloadSummaryResult">
         <include refid="selectBizWorkloadSummaryVo"/>
         where user_id = #{userId} and semester = #{semester}
         for update
     </select>
 
     <!-- 酬金重算写前锁定读：行锁读取该教师学期汇总，复核冻结状态后再写 pay_record -->
-    <select id="selectForPayUpdate" resultMap="BizWorkloadSummaryResult">
+    <select id="selectForPayUpdate" flushCache="true" useCache="false" resultMap="BizWorkloadSummaryResult">
         <include refid="selectBizWorkloadSummaryVo"/>
         where user_id = #{userId} and semester = #{semester}
         limit 1 for update
@@ -97,6 +98,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <insert id="insertBizWorkloadSummary" parameterType="BizWorkloadSummary" useGeneratedKeys="true" keyProperty="id">
         insert into biz_workload_summary
         <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="needsRecalculation != null">needs_recalculation,</if>
             <if test="userId != null">user_id,</if>
             <if test="semester != null and semester != ''">semester,</if>
             <if test="academicYear != null">academic_year,</if>
@@ -131,6 +133,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="remark != null">remark,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="needsRecalculation != null">#{needsRecalculation},</if>
             <if test="userId != null">#{userId},</if>
             <if test="semester != null and semester != ''">#{semester},</if>
             <if test="academicYear != null">#{academicYear},</if>
@@ -293,7 +296,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </update>
     <update id="updateCalculatedFieldsIfStatus">
         update biz_workload_summary
-        set academic_year = #{summary.academicYear},
+        set needs_recalculation = 0, academic_year = #{summary.academicYear},
             G7 = #{summary.G7}, G8 = #{summary.G8}, G9 = #{summary.G9},
             G10 = #{summary.G10}, G11 = #{summary.G11},
             total_workload = #{summary.totalWorkload}, rated_workload = #{summary.ratedWorkload},
@@ -303,5 +306,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             basic_teaching_met = #{summary.basicTeachingMet}, remark = #{summary.remark},
             update_time = #{summary.updateTime}
         where id = #{summary.id} and status = #{expectedStatus}
+    </update>
+    <!-- INSERT/UPDATE takes an exclusive record lock even before the first summary exists. -->
+    <insert id="lockPeriod">
+        insert into biz_workload_period_lock(user_id, semester) values(#{userId}, #{semester})
+        on duplicate key update user_id = #{userId}
+    </insert>
+    <update id="markNeedsRecalculation">
+        update biz_workload_summary set needs_recalculation=1, update_time=now()
+        where user_id=#{userId} and semester=#{semester} and status=0
     </update>
 </mapper>

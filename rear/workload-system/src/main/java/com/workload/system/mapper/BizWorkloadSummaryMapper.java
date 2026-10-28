@@ -12,6 +12,9 @@ import com.workload.system.domain.BizWorkloadSummary;
  */
 public interface BizWorkloadSummaryMapper
 {
+    int lockPeriod(@Param("userId") Long userId, @Param("semester") String semester);
+    int markNeedsRecalculation(@Param("userId") Long userId, @Param("semester") String semester);
+
     /** 仅草稿允许写入计算字段，保留审核状态和签名。 */
     int updateCalculatedFieldsIfStatus(@Param("summary") BizWorkloadSummary summary,
             @Param("expectedStatus") Integer expectedStatus);

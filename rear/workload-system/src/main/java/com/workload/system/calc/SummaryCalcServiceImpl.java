@@ -10,6 +10,12 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+import com.workload.system.domain.BizTeachingTask;
+import com.workload.system.domain.BizRoleAssignment;
+import com.workload.system.mapper.BizTeachingTaskMapper;
+import com.workload.system.mapper.BizRoleAssignmentMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
@@ -66,6 +72,15 @@ public class SummaryCalcServiceImpl implements SummaryCalcService
     @Autowired
     private WorkloadWriteGuard writeGuard;
 
+    @Autowired
+    private PayCalcService payCalcService;
+
+    @Autowired
+    private BizTeachingTaskMapper teachingTaskMapper;
+
+    @Autowired
+    private BizRoleAssignmentMapper roleAssignmentMapper;
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public BizWorkloadSummary recalcSummary(Long userId, String semester, boolean persist)
@@ -79,7 +94,9 @@ public class SummaryCalcServiceImpl implements SummaryCalcService
         {
             throw new ServiceException("教师档案不存在，无法重算");
         }
-        BizWorkloadSummary summary = findSummary(userId, semester);
+        BizWorkloadSummary summary = persist
+                ? bizWorkloadSummaryMapper.selectByUserSemesterForUpdate(userId, semester)
+                : findSummary(userId, semester);
         if (persist && summary != null && WorkloadSummaryStatus.isWriteFrozen(summary.getStatus()))
         {
             throw new ServiceException("学期汇总已进入审批流程，禁止重算");
@@ -94,7 +111,8 @@ public class SummaryCalcServiceImpl implements SummaryCalcService
         }
 
         // 1. 聚合明细（排除已驳回）；明细列表同时供制度性校验复用
-        List<BizWorkloadItem> items = loadItems(userId, semester);
+        List<BizWorkloadItem> items = loadItems(userId, semester, persist);
+        if (persist) assertSourcesMaterialized(userId, semester, items);
         Map<String, BigDecimal> typeSum = aggregateItems(items);
         BigDecimal g7 = sumOf(typeSum, "G1", "G2", "G3", "G4", "G5", "G6");
         BigDecimal g8 = sumOf(typeSum, "G8");
@@ -107,6 +125,7 @@ public class SummaryCalcServiceImpl implements SummaryCalcService
         BigDecimal rated = ruleParamService.get("RATED_WORKLOAD", new BigDecimal("180"));
         BigDecimal cap200 = ruleParamService.get("CAP_200PCT", new BigDecimal("540"));
 
+        summary.setNeedsRecalculation(0);
         summary.setAcademicYear(deriveAcademicYear(semester));
         summary.setG7(scale(g7));
         summary.setG8(scale(g8));
@@ -170,7 +189,7 @@ public class SummaryCalcServiceImpl implements SummaryCalcService
                 }
                 catch (DuplicateKeyException e)
                 {
-                    BizWorkloadSummary existed = findSummary(userId, semester);
+                    BizWorkloadSummary existed = bizWorkloadSummaryMapper.selectByUserSemesterForUpdate(userId, semester);
                     if (existed == null)
                     {
                         throw new ServiceException("学期汇总保存失败，请重试");
@@ -188,8 +207,30 @@ public class SummaryCalcServiceImpl implements SummaryCalcService
             {
                 updateDraftSummary(summary);
             }
+            // 汇总与酬金必须一起提交；下游失败时回滚新鲜度和全部金额。
+            payCalcService.recalcPay(userId, semester);
         }
         return summary;
+    }
+
+    private void assertSourcesMaterialized(Long userId, String semester, List<BizWorkloadItem> items)
+    {
+        Set<Long> taskIds = items.stream().map(BizWorkloadItem::getTaskId).collect(Collectors.toSet());
+        Set<Long> assignmentIds = items.stream().map(BizWorkloadItem::getAssignmentId).collect(Collectors.toSet());
+        BizTeachingTask tasks = new BizTeachingTask();
+        tasks.setUserId(userId); tasks.setSemester(semester); tasks.setStatus(1);
+        tasks.getParams().put("currentRead", true);
+        if (teachingTaskMapper.selectBizTeachingTaskList(tasks).stream().anyMatch(t -> !taskIds.contains(t.getId())))
+        {
+            throw new ServiceException("存在尚未生成工作量明细的教学任务，请先处理教学任务后重新核算");
+        }
+        BizRoleAssignment roles = new BizRoleAssignment();
+        roles.setUserId(userId); roles.setSemester(semester); roles.setStatus(1);
+        roles.getParams().put("currentRead", true);
+        if (roleAssignmentMapper.selectBizRoleAssignmentList(roles).stream().anyMatch(r -> !assignmentIds.contains(r.getId())))
+        {
+            throw new ServiceException("存在尚未同步的有效岗位记录，请先同步岗位减免后重新核算");
+        }
     }
 
     private void updateDraftSummary(BizWorkloadSummary summary)
@@ -337,11 +378,12 @@ public class SummaryCalcServiceImpl implements SummaryCalcService
         return list.isEmpty() ? null : list.get(0);
     }
 
-    private List<BizWorkloadItem> loadItems(Long userId, String semester)
+    private List<BizWorkloadItem> loadItems(Long userId, String semester, boolean currentRead)
     {
         BizWorkloadItem query = new BizWorkloadItem();
         query.setUserId(userId);
         query.setSemester(semester);
+        query.getParams().put("currentRead", currentRead);
         return bizWorkloadItemMapper.selectBizWorkloadItemList(query);
     }
 

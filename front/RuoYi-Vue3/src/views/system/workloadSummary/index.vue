@@ -454,6 +454,18 @@
         </template>
       </el-table-column>
       <el-table-column
+        label="核算状态"
+        align="center"
+        width="105"
+      >
+        <template #default="scope">
+          <biz-tag
+            :value="scope.row.needsRecalculation"
+            :map="recalculationMap"
+          />
+        </template>
+      </el-table-column>
+      <el-table-column
         label="操作"
         align="center"
         :width="isTeacher ? 100 : 220"
@@ -477,6 +489,7 @@
             link
             type="success"
             icon="Promotion"
+            :disabled="scope.row.needsRecalculation === 1"
             @click="handleSubmit(scope.row)"
           >
             提交
@@ -499,6 +512,7 @@
               link
               type="success"
               icon="Promotion"
+              :disabled="scope.row.needsRecalculation === 1"
               @click="handleSubmit(scope.row)"
             >
               提交
@@ -522,16 +536,6 @@
               @click="handleReject(scope.row)"
             >
               驳回
-            </el-button>
-            <el-button
-              v-if="scope.row.status === 2"
-              v-hasPermi="['system:audit:unlock']"
-              link
-              type="info"
-              icon="Unlock"
-              @click="handleUnlock(scope.row)"
-            >
-              解锁
             </el-button>
             <!-- 更多操作下拉 -->
             <el-dropdown
@@ -589,6 +593,13 @@
       title="学期汇总详情"
       :size="detailDrawerSize"
     >
+      <el-alert
+        v-if="detailRow?.needsRecalculation === 1"
+        title="来源数据已变化，请由教务重新核算汇总后再提交审核。"
+        type="warning"
+        show-icon
+        :closable="false"
+      />
       <el-descriptions
         v-if="detailRow"
         :column="detailColumns"
@@ -921,7 +932,7 @@ import { exportPersonalWorkload, exportPaySummary, exportAttachment1, exportAtta
 import { ElMessageBox } from 'element-plus'
 import { saveBlobAsFile } from '@/utils/blobDownload'
 import { mergePageSelection, selectedIds, distinctUserIds } from '@/utils/crossPageSelection'
-import { auditSubmit, auditApprove, auditReject, auditUnlock, auditBatchSubmit, auditTeacherConfirm } from '@/api/system/audit'
+import { auditSubmit, auditApprove, auditReject, auditBatchSubmit, auditTeacherConfirm } from '@/api/system/audit'
 import UserSelect from '@/components/UserSelect/index.vue'
 import SemesterSelect from '@/components/SemesterSelect/index.vue'
 import { useUserMap } from '@/utils/userCache'
@@ -941,6 +952,8 @@ const userStore = useUserStore()
 
 const isTeacher = computed(() => userStore.roles.includes('teacher'))
 const isLeader = computed(() => userStore.roles.includes('leader'))
+
+const recalculationMap = { 1: { label: '需重新核算', type: 'warning' }, 0: { label: '已核算', type: 'success' } }
 
 const metStatusMap = { 1: { label: '已达标', type: 'success' }, 0: { label: '未达标', type: 'danger' } }
 
@@ -1412,6 +1425,10 @@ function handleExport() {
 
 /** 提交审核 */
 function handleSubmit(row) {
+  if (row.needsRecalculation === 1) {
+    proxy.$modal.msgWarning('来源数据已变化，请先重新核算汇总')
+    return
+  }
   proxy.$modal.confirm(`确认提交「${userLabel(row.userId)}」${row.semester} 的工作量汇总审核？`).then(() => {
     return auditSubmit(row.id)
   }).then(() => {
@@ -1452,16 +1469,6 @@ function handleReject(row) {
   }).then(() => {
     getList()
     proxy.$modal.msgSuccess('已驳回，退回填报中')
-  }).catch(() => {})
-}
-
-/** 解锁 */
-function handleUnlock(row) {
-  proxy.$modal.confirm(`确认解锁「${userLabel(row.userId)}」${row.semester} 的工作量汇总？解锁后可重新编辑。`).then(() => {
-    return auditUnlock(row.id)
-  }).then(() => {
-    getList()
-    proxy.$modal.msgSuccess('已解锁')
   }).catch(() => {})
 }
 

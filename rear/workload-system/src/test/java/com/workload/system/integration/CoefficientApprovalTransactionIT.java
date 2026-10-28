@@ -44,13 +44,13 @@ class CoefficientApprovalTransactionIT
     void setup() throws Exception
     {
         String url = System.getenv("WFIT_TEST_DB_URL");
-        assertThat(url).as("必须显式配置本地测试数据库URL").startsWith("jdbc:mysql://127.0.0.1:");
+        assertThat(url).as("必须显式配置本地测试数据库URL").startsWith("jdbc:mysql://127.0.0.1:").doesNotContain(":3306/");
         dataSource = new SingleConnectionDataSource(url, System.getenv("WFIT_TEST_DB_USER"),
                 System.getenv("WFIT_TEST_DB_PASSWORD"), true);
         jdbc = new JdbcTemplate(dataSource);
         // 先建立所有临时影子表，随后才允许任何写入；连接关闭时MySQL自动删除。
         for (String table : List.of("biz_workload_item", "biz_wl_theory", "biz_workload_summary",
-                "biz_coefficient_adjustment", "biz_workload_calc_snapshot"))
+                "biz_coefficient_adjustment", "biz_workload_calc_snapshot", "biz_workload_period_lock"))
         {
             String ddl = jdbc.queryForObject("SHOW CREATE TABLE " + table, (rs, n) -> rs.getString(2));
             jdbc.execute(ddl.replaceFirst("CREATE TABLE", "CREATE TEMPORARY TABLE"));
@@ -74,6 +74,8 @@ class CoefficientApprovalTransactionIT
         calc = mock(WorkloadCalcService.class);
         var target = new CoefficientAdjustmentServiceImpl();
         ReflectionTestUtils.setField(target, "adjustmentMapper", sessions.getMapper(BizCoefficientAdjustmentMapper.class));
+        ReflectionTestUtils.setField(target, "itemMapper", sessions.getMapper(BizWorkloadItemMapper.class));
+        ReflectionTestUtils.setField(target, "workloadWriteGuard", new com.workload.system.calc.WorkloadWriteGuard(sessions.getMapper(BizWorkloadSummaryMapper.class)));
         ReflectionTestUtils.setField(target, "theoryMapper", sessions.getMapper(BizWlTheoryMapper.class));
         ReflectionTestUtils.setField(target, "workloadCalcService", calc);
         TransactionInterceptor advice = new TransactionInterceptor();
@@ -129,7 +131,7 @@ class CoefficientApprovalTransactionIT
     void frozenSummaryRejectsApprovalBeforeAnyCalculation(int status)
     {
         jdbc.update("INSERT INTO biz_workload_summary(user_id,semester,status) VALUES(1003,'2025-2026-1',?)", status);
-        assertThatThrownBy(this::approve).isInstanceOf(ServiceException.class).hasMessageContaining("并发冲突");
+        assertThatThrownBy(this::approve).isInstanceOf(ServiceException.class).hasMessageContaining("冻结");
         assertThat(jdbc.queryForObject("SELECT Q2 FROM biz_wl_theory WHERE item_id=9", BigDecimal.class)).isEqualByComparingTo("1");
         assertThat(jdbc.queryForObject("SELECT status FROM biz_coefficient_adjustment WHERE id=5", Integer.class)).isZero();
         verifyNoInteractions(calc);
@@ -150,8 +152,10 @@ class CoefficientApprovalTransactionIT
     void pendingApplicationOrUnreviewedItemBlocksSummaryTransition(int status, boolean pending)
     {
         if (!pending) jdbc.update("UPDATE biz_coefficient_adjustment SET status=2 WHERE id=5");
-        jdbc.update("INSERT INTO biz_workload_summary(id,user_id,semester,status) VALUES(7,1003,'2025-2026-1',?)", status);
+        if (pending) jdbc.update("UPDATE biz_workload_item SET status=1 WHERE id=9");
+        jdbc.update("INSERT INTO biz_workload_summary(id,user_id,semester,status,needs_recalculation) VALUES(7,1003,'2025-2026-1',?,0)", status);
         var target = new com.workload.system.service.impl.BizAuditServiceImpl();
+        ReflectionTestUtils.setField(target, "writeGuard", new com.workload.system.calc.WorkloadWriteGuard(sessions.getMapper(BizWorkloadSummaryMapper.class)));
         ReflectionTestUtils.setField(target, "bizWorkloadSummaryMapper", sessions.getMapper(BizWorkloadSummaryMapper.class));
         ReflectionTestUtils.setField(target, "adjustmentMapper", sessions.getMapper(BizCoefficientAdjustmentMapper.class));
         ReflectionTestUtils.setField(target, "itemMapper", sessions.getMapper(BizWorkloadItemMapper.class));

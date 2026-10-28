@@ -80,7 +80,9 @@ public class WorkloadFactorFormulaServiceImpl implements IWorkloadFactorFormulaS
         if (item == null || item.getItemType() == null) return null;
         BizWorkloadCalcSnapshot snapshot = item.getId() == null ? null
                 : snapshotMapper.selectLatestByItemId(item.getId());
-        if (snapshot != null) return fromSnapshot(item, snapshot);
+        if (snapshot != null && (item.getCalculationVersion() == null
+                || java.util.Objects.equals(snapshot.getCalculationVersion(), item.getCalculationVersion())))
+            return fromSnapshot(item, snapshot);
         FactorFormulaVo vo = buildFresh(item);
         if (vo != null)
         {
@@ -96,13 +98,13 @@ public class WorkloadFactorFormulaServiceImpl implements IWorkloadFactorFormulaS
         if (item == null || item.getItemType() == null) return null;
         FactorFormulaVo vo = switch (item.getItemType())
         {
-            case "G1" -> buildG1(item, theoryMapper.selectBizWlTheoryByItemId(item.getId()));
-            case "G2" -> buildG2(item, practiceMapper.selectBizWlPracticeByItemId(item.getId()));
-            case "G3" -> buildG3(item, internshipTrainingMapper.selectBizWlInternshipTrainingByItemId(item.getId()));
-            case "G4" -> buildG4(item, courseDesignMapper.selectBizWlCourseDesignByItemId(item.getId()));
-            case "G5" -> buildG5(item, thesisMapper.selectBizWlThesisByItemId(item.getId()));
-            case "G6" -> buildG6(item, concentratedInternshipMapper.selectBizWlConcentratedInternshipByItemId(item.getId()));
-            case "G11" -> buildG11(item, managementMapper.selectBizWlManagementByItemId(item.getId()));
+            case "G1" -> buildG1(item, (Boolean.TRUE.equals(item.getParams().get("currentRead")) ? theoryMapper.selectByItemIdForUpdate(item.getId()) : theoryMapper.selectBizWlTheoryByItemId(item.getId())));
+            case "G2" -> buildG2(item, (Boolean.TRUE.equals(item.getParams().get("currentRead")) ? practiceMapper.selectByItemIdForUpdate(item.getId()) : practiceMapper.selectBizWlPracticeByItemId(item.getId())));
+            case "G3" -> buildG3(item, (Boolean.TRUE.equals(item.getParams().get("currentRead")) ? internshipTrainingMapper.selectByItemIdForUpdate(item.getId()) : internshipTrainingMapper.selectBizWlInternshipTrainingByItemId(item.getId())));
+            case "G4" -> buildG4(item, (Boolean.TRUE.equals(item.getParams().get("currentRead")) ? courseDesignMapper.selectByItemIdForUpdate(item.getId()) : courseDesignMapper.selectBizWlCourseDesignByItemId(item.getId())));
+            case "G5" -> buildG5(item, (Boolean.TRUE.equals(item.getParams().get("currentRead")) ? thesisMapper.selectByItemIdForUpdate(item.getId()) : thesisMapper.selectBizWlThesisByItemId(item.getId())));
+            case "G6" -> buildG6(item, (Boolean.TRUE.equals(item.getParams().get("currentRead")) ? concentratedInternshipMapper.selectByItemIdForUpdate(item.getId()) : concentratedInternshipMapper.selectBizWlConcentratedInternshipByItemId(item.getId())));
+            case "G11" -> buildG11(item, (Boolean.TRUE.equals(item.getParams().get("currentRead")) ? managementMapper.selectByItemIdForUpdate(item.getId()) : managementMapper.selectBizWlManagementByItemId(item.getId())));
             default -> null;
         };
         if (vo == null) return null;
@@ -122,6 +124,7 @@ public class WorkloadFactorFormulaServiceImpl implements IWorkloadFactorFormulaS
         filter.setStatus(BizCoefficientAdjustment.STATUS_APPROVED);
         // Mapper按id降序；同一因子只看最新批准申请，后续更改了值就不再冒充该审批结果。
         Set<String> seen = new HashSet<>();
+        filter.getParams().put("currentRead", item.getParams().get("currentRead"));
         for (BizCoefficientAdjustment approved : adjustmentMapper.selectCoefficientAdjustmentList(filter))
         {
             if (!seen.add(approved.getFactorCode())) continue;

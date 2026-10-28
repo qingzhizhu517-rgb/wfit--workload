@@ -31,7 +31,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         select id, pay_record_id, user_id, semester, fee_type, fee_subtype, student_count, duration_hours, days, class_count, workload_units, lecture_name, ext, amount, status, create_by, create_time, update_by, update_time, remark from biz_allowance_item
     </sql>
 
-    <select id="selectBizAllowanceItemList" parameterType="BizAllowanceItem" resultMap="BizAllowanceItemResult">
+    <select id="selectBizAllowanceItemList" parameterType="BizAllowanceItem" flushCache="true" useCache="false" resultMap="BizAllowanceItemResult">
         <include refid="selectBizAllowanceItemVo"/>
         <where>  
             <if test="payRecordId != null "> and pay_record_id = #{payRecordId}</if>
@@ -49,6 +49,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="amount != null "> and amount = #{amount}</if>
             <if test="status != null "> and status = #{status}</if>
         </where>
+        <if test="params.currentRead == true">for update</if>
     </select>
     
     <select id="selectBizAllowanceItemById" parameterType="Long" resultMap="BizAllowanceItemResult">

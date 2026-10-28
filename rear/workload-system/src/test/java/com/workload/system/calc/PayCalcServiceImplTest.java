@@ -40,6 +40,8 @@ import com.workload.system.mapper.BizWorkloadSummaryMapper;
 @ExtendWith(MockitoExtension.class)
 class PayCalcServiceImplTest
 {
+    @org.mockito.Mock private com.workload.system.calc.WorkloadWriteGuard writeGuard;
+
     private static final Long USER = 1L;
     private static final String SEMESTER = "2025-2026-1";
 
@@ -57,6 +59,19 @@ class PayCalcServiceImplTest
     }
 
     // ==================== 汇总金额 / 停用过滤 / 舍入 ====================
+
+    @Test
+    void dirtySummaryCannotProducePayFromStaleAmounts()
+    {
+        BizWorkloadSummary dirty = summaryWithStatus(WorkloadSummaryStatus.DRAFT);
+        dirty.setNeedsRecalculation(1);
+        dirty.setPerformancePay(new BigDecimal("100.00"));
+        when(summaryMapper.selectForPayUpdate(USER, SEMESTER)).thenReturn(dirty);
+
+        assertThatThrownBy(() -> service.recalcPay(USER, SEMESTER))
+                .isInstanceOf(ServiceException.class).hasMessageContaining("重新核算");
+        org.mockito.Mockito.verifyNoInteractions(allowanceMapper, payRecordMapper);
+    }
 
     @Test
     void sumsOnlyEnabledAllowancesAndRoundsTotalHalfUp()

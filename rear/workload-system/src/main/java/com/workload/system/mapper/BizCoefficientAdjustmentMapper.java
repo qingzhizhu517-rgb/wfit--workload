@@ -13,6 +13,8 @@ import com.workload.system.domain.BizCoefficientAdjustment;
  */
 public interface BizCoefficientAdjustmentMapper
 {
+    BizCoefficientAdjustment selectByIdForUpdate(Long id);
+
     /**
      * 查询系数调整申请
      */

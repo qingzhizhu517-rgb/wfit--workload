@@ -1,4 +1,4 @@
-# 数据库迁移清单（2026-10-25）
+# 数据库迁移清单（更新2026-10-28）
 
 编号不是执行记录。部署前按结构、索引和权限确认状态，不能以“已到28”推断兼容。本次验证 MySQL 9.0.1；MySQL 8 尚未验证。
 
@@ -11,8 +11,9 @@
 | 28_import_framework.sql | import_batch、teaching_task | import_row，7个批次列，5个任务数量列，普通来源索引；移除历史唯一来源索引 |
 | 30_snapshot_context.sql | 23快照表 | 可空 LONGTEXT context_json；旧快照不回填 |
 | 31_item_review_permission.sql | 业务菜单2010及角色 | 独立核对按钮；按角色key授管理/教务，不授教师 |
+| 32_workload_consistency.sql | summary及现行状态0/1/2 | 教师学期互斥锁表；needs_recalculation非空默认1，旧草稿需重算，既有待审/完结保持原流程 |
 
-上述三条重复执行两轮通过，已有业务行保持不变，证据见 `docs/验收/数据库升级与恢复.md`。只读检查命令（五项 WFIT_DB_HOST/PORT/NAME/USER/PASSWORD 由环境注入）：
+28/30/31重复执行两轮通过；32亦单独重复两轮验证，53→54表、原列数据保持一致（`docs/验收/32迁移演练证据.json`）。已有业务行保持不变，证据见 `docs/验收/数据库升级与恢复.md`。只读检查命令（五项 WFIT_DB_HOST/PORT/NAME/USER/PASSWORD 由环境注入）：
 
 ```sh
 python3 rear/scripts/check-migrations.py --mysql /usr/local/mysql/bin/mysql
@@ -28,7 +29,7 @@ python3 rear/scripts/check-migrations.py --mysql /usr/local/mysql/bin/mysql
 
 ## 空库与历史脚本
 
-空的专用开发库候选顺序：`ry_20260321 → quartz → 01 → 02 → 03 → 04 → 05 → 06 → 08 → 13 → 16 → 17 → 18 → 19 → 23 → 24 → 25 → 26 → 27 → 28 → 30 → 31`。本次验证存量库恢复升级，未执行整套空库初始化。该路径包含测试数据与测试账号，不直接用于共享部署。
+空的专用开发库候选顺序：`ry_20260321 → quartz → 01 → 02 → 03 → 04 → 05 → 06 → 08 → 13 → 16 → 17 → 18 → 19 → 23 → 24 → 25 → 26 → 27 → 28 → 30 → 31 → 32`。本次验证存量库恢复升级，未执行整套空库初始化。该路径包含测试数据与测试账号，不直接用于共享部署。
 
 | 脚本 | 使用边界与检查 |
 |---|---|
@@ -87,5 +88,8 @@ python3 rear/scripts/check-migrations.py --mysql /usr/local/mysql/bin/mysql
 | `28_import_framework.sql` | `042ec49220cebacc010af1b9265a7c7365c3d62251202f227b105b96499acbdd` |
 | `30_snapshot_context.sql` | `358b80863d33648a453153a004fc16c68e662188e9b0f841f137cf7fb9d081af` |
 | `31_item_review_permission.sql` | `054181fc0624593a584441b782e0f2865d9dd747155342ee1f930fa71dc3b11f` |
+| `32_workload_consistency.sql` | `86ba2308657e9b233f1f0ac257cc6c2ad93155f92a4dc28aebb25a3b1c6224a2` |
 | `quartz.sql` | `68ddc1c2dcd003e5a5470d88f23bfe8daee54d2b6ae77c720e5b82f8dd57ef0a` |
 | `ry_20260321.sql` | `c9fbf093800da257534a3329a82d77ab2d5987d9987639c92a43026a33ff7f69` |
+
+32必须先于T03应用发布执行。新代码依赖该锁表及列；仅应用回退不能撤销已产生的数据，禁止DROP表/列回退。旧版不会维护新鲜度标志，若短暂回退旧应用，应禁止业务写入；重新启用新应用前必须对草稿重新标记待核算并重算。

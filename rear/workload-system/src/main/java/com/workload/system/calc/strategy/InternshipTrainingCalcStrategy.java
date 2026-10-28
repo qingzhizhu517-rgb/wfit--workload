@@ -32,7 +32,7 @@ public class InternshipTrainingCalcStrategy extends AbstractWorkloadCalcStrategy
     @Override
     public BigDecimal calculate(BizWorkloadItem item)
     {
-        BizWlInternshipTraining detail = bizWlInternshipTrainingMapper.selectBizWlInternshipTrainingByItemId(item.getId());
+        BizWlInternshipTraining detail = (Boolean.TRUE.equals(item.getParams().get("currentRead")) ? bizWlInternshipTrainingMapper.selectByItemIdForUpdate(item.getId()) : bizWlInternshipTrainingMapper.selectBizWlInternshipTrainingByItemId(item.getId()));
         if (detail == null)
         {
             throw new ServiceException("G3教学实习实训明细缺失, itemId=" + item.getId());

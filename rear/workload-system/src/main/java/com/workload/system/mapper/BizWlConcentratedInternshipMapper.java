@@ -11,6 +11,8 @@ import com.workload.system.domain.BizWlConcentratedInternship;
  */
 public interface BizWlConcentratedInternshipMapper 
 {
+    com.workload.system.domain.BizWlConcentratedInternship selectByItemIdForUpdate(Long itemId);
+
     /**
      * 查询G6集中实习明细
      * 

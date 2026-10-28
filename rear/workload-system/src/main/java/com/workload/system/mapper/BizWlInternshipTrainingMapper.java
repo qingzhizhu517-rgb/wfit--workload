@@ -11,6 +11,8 @@ import com.workload.system.domain.BizWlInternshipTraining;
  */
 public interface BizWlInternshipTrainingMapper 
 {
+    com.workload.system.domain.BizWlInternshipTraining selectByItemIdForUpdate(Long itemId);
+
     /**
      * 查询G3教学实习实训明细
      * 

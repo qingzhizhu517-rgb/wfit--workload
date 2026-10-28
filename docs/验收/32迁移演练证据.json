@@ -1,0 +1,11 @@
+{
+  "migration": "32_workload_consistency.sql",
+  "sha256": "86ba2308657e9b233f1f0ac257cc6c2ad93155f92a4dc28aebb25a3b1c6224a2",
+  "before_tables": 53,
+  "after_tables": 54,
+  "old_columns_data_unchanged": true,
+  "repeat_identical": true,
+  "freshness_counts": [
+    "0\t1\t4"
+  ]
+}

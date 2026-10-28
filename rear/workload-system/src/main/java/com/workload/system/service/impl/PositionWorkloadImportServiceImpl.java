@@ -302,6 +302,7 @@ public class PositionWorkloadImportServiceImpl implements IPositionWorkloadImpor
         assignment.setRemark(dto.getRemark());
         assignment.setCreateTime(new Date());
         roleAssignmentMapper.insertBizRoleAssignment(assignment);
+        workloadWriteGuard.markChanged(user.getUserId(), dto.getSemester());
     }
 
     /**

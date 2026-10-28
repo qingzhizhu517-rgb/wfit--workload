@@ -229,6 +229,7 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
 
         // 9. 回写计算结果（连同回调置上的 is_over_limit、快照版本/时间一并落库，共用同一条 UPDATE）
         workloadItemMapper.updateBizWorkloadItem(item);
+        workloadWriteGuard.markChanged(user.getUserId(), dto.getSemester());
 
         return calculated;
     }

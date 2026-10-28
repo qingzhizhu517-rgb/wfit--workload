@@ -13,6 +13,8 @@ import com.workload.system.domain.BizWlPractice;
  */
 public interface BizWlPracticeMapper
 {
+    com.workload.system.domain.BizWlPractice selectByItemIdForUpdate(Long itemId);
+
     /**
      * 查询G2课内实践明细
      * 

@@ -97,6 +97,13 @@ public class CoefficientAdjustmentServiceImpl implements ICoefficientAdjustmentS
         }
         // 6) 汇总冻结门（含「审批流程」提示）——事务内 SELECT ... FOR UPDATE
         workloadWriteGuard.lockDraftOrAbsent(item.getUserId(), item.getSemester());
+        item = itemMapper.selectByIdForUpdate(item.getId());
+        if (item == null) throw new ServiceException("工作量明细已删除");
+        DataScopeUtil.assertOwnOrAdmin(item.getUserId());
+        if (!request.getCategory().equals(item.getItemType()))
+        {
+            throw new ServiceException("申请类别与明细类别不一致，请刷新后重试");
+        }
         // 7) 同一 item+factor 只允许一条待审（唯一键为最终防线，此处先查给出友好错误）
         if (adjustmentMapper.countPendingByItemFactor(request.getItemId(), request.getFactorCode()) > 0)
         {
@@ -213,6 +220,11 @@ public class CoefficientAdjustmentServiceImpl implements ICoefficientAdjustmentS
         {
             throw new ServiceException("系数调整申请不存在, id=" + id);
         }
+        workloadWriteGuard.lockDraftOrAbsent(adjustment.getUserId(), adjustment.getSemester());
+        if (itemMapper.selectByIdForUpdate(adjustment.getItemId()) == null)
+            throw new ServiceException("工作量明细不存在");
+        adjustment = adjustmentMapper.selectByIdForUpdate(id);
+        if (adjustment == null) throw new ServiceException("系数调整申请已删除");
         // 非待审直接拒绝，避免在最终条件更新前产生任何副作用（因子应用/重算）
         if (adjustment.getStatus() == null || adjustment.getStatus() != BizCoefficientAdjustment.STATUS_PENDING)
         {

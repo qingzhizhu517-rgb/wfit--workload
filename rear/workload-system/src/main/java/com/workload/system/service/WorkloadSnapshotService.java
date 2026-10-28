@@ -73,7 +73,8 @@ public class WorkloadSnapshotService
 
         BizWorkloadCalcSnapshot snapshot = new BizWorkloadCalcSnapshot();
         snapshot.setItemId(item.getId());
-        snapshot.setCalculationVersion(nextVersion(item.getId()));
+        snapshot.setCalculationVersion(Math.max(nextVersion(item.getId()),
+                (item.getCalculationVersion() == null ? 0L : item.getCalculationVersion()) + 1L));
         snapshot.setFormulaExpression(formulaExpression);
         snapshot.setFactorJson(factorJson);
         snapshot.setSourceJson(sourceJson);

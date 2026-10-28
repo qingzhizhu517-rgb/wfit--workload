@@ -33,7 +33,7 @@ public class TheoryCalcStrategy extends AbstractWorkloadCalcStrategy
     @Override
     public BigDecimal calculate(BizWorkloadItem item)
     {
-        BizWlTheory detail = bizWlTheoryMapper.selectBizWlTheoryByItemId(item.getId());
+        BizWlTheory detail = (Boolean.TRUE.equals(item.getParams().get("currentRead")) ? bizWlTheoryMapper.selectByItemIdForUpdate(item.getId()) : bizWlTheoryMapper.selectBizWlTheoryByItemId(item.getId()));
         if (detail == null)
         {
             throw new ServiceException("G1理论课明细缺失, itemId=" + item.getId());

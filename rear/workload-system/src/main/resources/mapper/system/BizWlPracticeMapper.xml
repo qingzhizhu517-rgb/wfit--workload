@@ -139,4 +139,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         set d.Q2 = #{value}, d.update_time = now()
         <include refid="practiceFactorWhere"/>
     </update>
+    <select id="selectByItemIdForUpdate" resultMap="BizWlPracticeResult" flushCache="true" useCache="false">
+        <include refid="selectBizWlPracticeVo"/> where item_id=#{itemId} for update
+    </select>
 </mapper>

@@ -76,7 +76,9 @@ public class BizAllowanceItemServiceImpl implements IBizAllowanceItemService
         payCalcService.assertAllowanceEditable(bizAllowanceItem.getUserId(), bizAllowanceItem.getSemester());
         recalcAmount(bizAllowanceItem);
         bizAllowanceItem.setCreateTime(DateUtils.getNowDate());
-        return bizAllowanceItemMapper.insertBizAllowanceItem(bizAllowanceItem);
+        int rows = bizAllowanceItemMapper.insertBizAllowanceItem(bizAllowanceItem);
+        writeGuard.markChanged(bizAllowanceItem.getUserId(), bizAllowanceItem.getSemester());
+        return rows;
     }
 
     /**
@@ -100,7 +102,9 @@ public class BizAllowanceItemServiceImpl implements IBizAllowanceItemService
         bizAllowanceItem.setSemester(old.getSemester());
         recalcAmount(bizAllowanceItem);
         bizAllowanceItem.setUpdateTime(DateUtils.getNowDate());
-        return requireWritten(bizAllowanceItemMapper.updateIfSummaryDraft(bizAllowanceItem));
+        int rows = requireWritten(bizAllowanceItemMapper.updateIfSummaryDraft(bizAllowanceItem));
+        writeGuard.markChanged(old.getUserId(), old.getSemester());
+        return rows;
     }
 
     /**
@@ -142,7 +146,9 @@ public class BizAllowanceItemServiceImpl implements IBizAllowanceItemService
         }
         writeGuard.lockDraftOrAbsent(old.getUserId(), old.getSemester());
         payCalcService.assertAllowanceEditable(old.getUserId(), old.getSemester());
-        return requireWritten(bizAllowanceItemMapper.deleteByIdIfSummaryDraft(id));
+        int rows = requireWritten(bizAllowanceItemMapper.deleteByIdIfSummaryDraft(id));
+        writeGuard.markChanged(old.getUserId(), old.getSemester());
+        return rows;
     }
 
     private int requireWritten(int rows)

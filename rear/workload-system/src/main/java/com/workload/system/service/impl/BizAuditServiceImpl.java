@@ -65,6 +65,9 @@ public class BizAuditServiceImpl implements BizAuditService
     private BizWorkloadSummaryMapper bizWorkloadSummaryMapper;
 
     @Autowired
+    private com.workload.system.calc.WorkloadWriteGuard writeGuard;
+
+    @Autowired
     private com.workload.system.mapper.BizCoefficientAdjustmentMapper adjustmentMapper;
 
     @Autowired
@@ -86,8 +89,9 @@ public class BizAuditServiceImpl implements BizAuditService
         // 提交是「本人动作」：教师角色仅可提交本人的汇总，防止横向越权提交他人记录
         // （与 teacherConfirm 的归属校验对齐；教务/管理角色由 assertOwnOrAdmin 放行）
         DataScopeUtil.assertOwnOrAdmin(summary.getUserId());
-        assertNoPendingCoefficients(summary);
+        assertFresh(summary);
         assertItemsReviewed(summary);
+        assertNoPendingCoefficients(summary);
 
         String username = SecurityUtils.getUsername();
         int rows = bizWorkloadSummaryMapper.updateStatusIf(id, WorkloadSummaryStatus.DRAFT, WorkloadSummaryStatus.PENDING_AUDIT, username);
@@ -101,8 +105,9 @@ public class BizAuditServiceImpl implements BizAuditService
     {
         BizWorkloadSummary summary = requireLockedSummary(id);
         assertStatus(summary, WorkloadSummaryStatus.PENDING_AUDIT, "只有待审状态才能审核");
-        assertNoPendingCoefficients(summary);
+        assertFresh(summary);
         assertItemsReviewed(summary);
+        assertNoPendingCoefficients(summary);
 
         String username = SecurityUtils.getUsername();
         // 教务处审核通过即终态：置已完结(2)，同时写 academic_assistant_sign 与 lock_time
@@ -115,7 +120,7 @@ public class BizAuditServiceImpl implements BizAuditService
     @Transactional(rollbackFor = Exception.class)
     public void reject(Long id, String reason)
     {
-        BizWorkloadSummary summary = requireSummary(id);
+        BizWorkloadSummary summary = requireLockedSummary(id);
         // 简化两级审批后只剩一个审批环节（教务处待审 1），故驳回只支持 1 → 0
         Integer current = summary.getStatus();
         if (current == null || current != WorkloadSummaryStatus.PENDING_AUDIT)
@@ -144,7 +149,7 @@ public class BizAuditServiceImpl implements BizAuditService
     @Transactional(rollbackFor = Exception.class)
     public void teacherConfirm(Long id)
     {
-        BizWorkloadSummary summary = requireSummary(id);
+        BizWorkloadSummary summary = requireLockedSummary(id);
         if (summary.getStatus() == null || summary.getStatus() != WorkloadSummaryStatus.PENDING_AUDIT)
         {
             throw new ServiceException("只有待审状态才能教师确认（当前状态: " + summary.getStatus() + "）", CODE_STATUS_CONFLICT);
@@ -200,6 +205,7 @@ public class BizAuditServiceImpl implements BizAuditService
     private BizWorkloadSummary requireLockedSummary(Long id)
     {
         BizWorkloadSummary initial = requireSummary(id);
+        writeGuard.lockPeriod(initial.getUserId(), initial.getSemester());
         BizWorkloadSummary locked = bizWorkloadSummaryMapper.selectByUserSemesterForUpdate(
                 initial.getUserId(), initial.getSemester());
         if (locked == null || !java.util.Objects.equals(id, locked.getId()))
@@ -207,6 +213,12 @@ public class BizAuditServiceImpl implements BizAuditService
             throw new ServiceException("汇总记录已变化，请刷新后重试", CODE_STATUS_CONFLICT);
         }
         return locked;
+    }
+
+    private void assertFresh(BizWorkloadSummary summary)
+    {
+        if (Integer.valueOf(1).equals(summary.getNeedsRecalculation()))
+            throw new ServiceException("源数据已变更，请重新核算汇总和酬金后再提交或审核", CODE_STATUS_CONFLICT);
     }
 
     private void assertItemsReviewed(BizWorkloadSummary summary)

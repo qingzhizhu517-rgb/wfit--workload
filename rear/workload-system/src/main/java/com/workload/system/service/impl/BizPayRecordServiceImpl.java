@@ -106,7 +106,8 @@ public class BizPayRecordServiceImpl implements IBizPayRecordService
         // 全部检查通过才删除，避免批次中冻结记录引起部分删除。
         for (Long id : ids)
         {
-            requireEditable(id);
+            BizPayRecord existing = requireEditable(id);
+            writeGuard.markChanged(existing.getUserId(), existing.getSemester());
         }
         return bizPayRecordMapper.deleteBizPayRecordByIds(ids);
     }
@@ -121,7 +122,8 @@ public class BizPayRecordServiceImpl implements IBizPayRecordService
     @Transactional(rollbackFor = Exception.class)
     public int deleteBizPayRecordById(Long id)
     {
-        requireEditable(id);
+        BizPayRecord existing = requireEditable(id);
+        writeGuard.markChanged(existing.getUserId(), existing.getSemester());
         return bizPayRecordMapper.deleteBizPayRecordById(id);
     }
     /** 冻结保护必须使用数据库归属，不能相信部分更新请求中的教师或学期。 */

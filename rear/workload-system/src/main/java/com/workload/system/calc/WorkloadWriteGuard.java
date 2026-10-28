@@ -27,10 +27,25 @@ public class WorkloadWriteGuard
         {
             throw new ServiceException("缺少教师或学期，无法校验冻结状态");
         }
+        lockPeriod(userId, semester);
         BizWorkloadSummary summary = summaryMapper.selectByUserSemesterForUpdate(userId, semester);
         if (summary != null && WorkloadSummaryStatus.isWriteFrozen(summary.getStatus()))
         {
             throw new ServiceException("学期汇总已进入审批流程，数据已冻结");
         }
+    }
+    /** All writers and audit actions use period -> summary -> item -> adjustment order. */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void lockPeriod(Long userId, String semester)
+    {
+        if (userId == null || !StringUtils.hasText(semester))
+            throw new ServiceException("缺少教师或学期，无法加锁");
+        summaryMapper.lockPeriod(userId, semester);
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void markChanged(Long userId, String semester)
+    {
+        summaryMapper.markNeedsRecalculation(userId, semester);
     }
 }

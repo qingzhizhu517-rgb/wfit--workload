@@ -34,10 +34,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
          #{contextJson}, #{ruleVersion}, #{result}, #{snapshotHash}, #{createdBy}, #{createdAt})
     </insert>
 
-    <select id="selectMaxVersionByItemId" parameterType="Long" resultType="java.lang.Long">
-        select max(calculation_version)
-        from biz_workload_calc_snapshot
-        where item_id = #{itemId}
+    <select id="selectMaxVersionByItemId" flushCache="true" useCache="false" parameterType="Long" resultType="java.lang.Long">
+        select calculation_version from biz_workload_calc_snapshot
+        where item_id = #{itemId} order by calculation_version desc limit 1 for update
     </select>
 
     <select id="selectLatestByItemId" parameterType="Long" resultMap="BizWorkloadCalcSnapshotResult">

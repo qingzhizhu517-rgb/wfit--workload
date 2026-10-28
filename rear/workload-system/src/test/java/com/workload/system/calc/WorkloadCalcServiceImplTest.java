@@ -89,6 +89,62 @@ class WorkloadCalcServiceImplTest
     }
 
     @Test
+    void recalculationUsesTheItemReadAfterPeriodLock()
+    {
+        BizWorkloadItem before = givenDraftItemWithoutSummary();
+        before.setItemType("G1");
+        before.setCalculationVersion(2L);
+        BizWorkloadItem current = new BizWorkloadItem();
+        current.setId(ITEM_ID); current.setUserId(USER); current.setSemester(SEMESTER);
+        current.setItemType("G1"); current.setStatus(0); current.setCalculationVersion(5L);
+        when(itemMapper.selectByIdForUpdate(ITEM_ID)).thenReturn(current);
+        when(calcStrategyFactory.get("G1")).thenReturn(strategy);
+        when(strategy.calculate(current)).thenReturn(new BigDecimal("52.80"));
+        when(factorFormulaService.buildFresh(current)).thenReturn(aFormula());
+        when(snapshotService.capture(eq(current), any(), anyString())).thenReturn(aSnapshot(6L));
+        when(itemMapper.updateCalculationIfEditable(current, 1, 0)).thenReturn(1);
+
+        service.recalcItem(ITEM_ID);
+
+        InOrder order = inOrder(itemMapper, writeGuard, strategy);
+        order.verify(itemMapper).selectBizWorkloadItemById(ITEM_ID);
+        order.verify(writeGuard).lockDraftOrAbsent(USER, SEMESTER);
+        order.verify(itemMapper).selectByIdForUpdate(ITEM_ID);
+        order.verify(strategy).calculate(current);
+        order.verify(itemMapper).updateCalculationIfEditable(current, 1, 0);
+        order.verify(writeGuard).markChanged(USER, SEMESTER);
+        assertThat(current.getParams()).containsEntry("currentRead", true);
+        assertThat(current.getCalculationVersion()).isEqualTo(6L);
+        assertThat(before.getCalculationVersion()).isEqualTo(2L);
+    }
+
+    @Test
+    void confirmationCommittedBeforeLockRejectsRecalculation()
+    {
+        givenDraftItemWithoutSummary();
+        BizWorkloadItem current = new BizWorkloadItem(); current.setStatus(1);
+        when(itemMapper.selectByIdForUpdate(ITEM_ID)).thenReturn(current);
+
+        assertThatThrownBy(() -> service.recalcItem(ITEM_ID))
+                .hasMessageContaining("已核对");
+        verify(calcStrategyFactory, never()).get(any());
+        verify(writeGuard, never()).markChanged(any(), any());
+    }
+
+    @Test
+    void deletingDetailInvalidatesCalculationAndMarksSummaryDirtyUnderLock()
+    {
+        givenDraftItemWithoutSummary();
+        service.onDetailDeleted(ITEM_ID);
+        InOrder order = inOrder(writeGuard, itemMapper);
+        order.verify(writeGuard).lockDraftOrAbsent(USER, SEMESTER);
+        order.verify(itemMapper).selectByIdForUpdate(ITEM_ID);
+        order.verify(itemMapper).invalidateCalculation(ITEM_ID);
+        order.verify(writeGuard).markChanged(USER, SEMESTER);
+        verify(itemMapper, never()).updateBizWorkloadItem(any());
+    }
+
+    @Test
     void draftSummaryAllowsItemModification()
     {
         givenItemAndSummary(WorkloadSummaryStatus.DRAFT);
@@ -319,7 +375,7 @@ class WorkloadCalcServiceImplTest
         item.setSemester(SEMESTER);
         item.setStatus(0);
         when(itemMapper.selectBizWorkloadItemById(ITEM_ID)).thenReturn(item);
-        when(summaryMapper.selectBizWorkloadSummaryList(any())).thenReturn(Collections.emptyList());
+        when(itemMapper.selectByIdForUpdate(ITEM_ID)).thenReturn(item);
         return item;
     }
 
@@ -336,7 +392,9 @@ class WorkloadCalcServiceImplTest
         summary.setUserId(USER);
         summary.setSemester(SEMESTER);
         summary.setStatus(summaryStatus);
-        when(summaryMapper.selectBizWorkloadSummaryList(any()))
-                .thenReturn(Collections.singletonList(summary));
+        if (summaryStatus != 0)
+            doThrow(new ServiceException("学期汇总已冻结，禁止修改明细")).when(writeGuard).lockDraftOrAbsent(USER, SEMESTER);
+        else
+            when(itemMapper.selectByIdForUpdate(ITEM_ID)).thenReturn(item);
     }
 }

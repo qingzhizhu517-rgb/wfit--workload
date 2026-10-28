@@ -49,12 +49,21 @@ def main():
         'biz_workload_item': 'calculation_version last_calculated_at',
         'biz_workload_calc_snapshot': 'item_id calculation_version snapshot_hash context_json',
         'biz_coefficient_adjustment': 'id item_id status',
+        'biz_workload_summary': 'needs_recalculation',
+        'biz_workload_period_lock': 'user_id semester',
     }
     for table, names in expected.items():
         for column in names.split():
             checks[f'column:{table}.{column}'] = (table, column) in present
     checks['context:nullable_longtext'] = present.get(
         ('biz_workload_calc_snapshot', 'context_json')) == ('longtext', 'YES')
+    freshness = present.get(('biz_workload_summary', 'needs_recalculation'), ('', ''))
+    checks['freshness:non_null_flag'] = (
+        freshness[0].split('(')[0] == 'tinyint' and freshness[1] == 'NO')
+    default = query("SELECT column_default FROM information_schema.columns "
+                    "WHERE table_schema=DATABASE() AND table_name='biz_workload_summary' "
+                    "AND column_name='needs_recalculation';")
+    checks['freshness:uncalculated_by_default'] = default == [['1']]
     index_rows = query("SELECT table_name,index_name,non_unique,"
                        "GROUP_CONCAT(column_name ORDER BY seq_in_index) "
                        "FROM information_schema.statistics WHERE table_schema=DATABASE() "
@@ -69,6 +78,8 @@ def main():
         ('biz_import_row', 'uk_batch_row')) == ('0', 'batch_id,row_no')
     checks['index:unique_snapshot_version'] = indexes.get(
         ('biz_workload_calc_snapshot', 'uk_item_version')) == ('0', 'item_id,calculation_version')
+    checks['index:unique_teacher_semester_lock'] = indexes.get(
+        ('biz_workload_period_lock', 'PRIMARY')) == ('0', 'user_id,semester')
     tables = {table for table, _ in present}
     if {'sys_menu', 'sys_role', 'sys_role_menu'} <= tables:
         menus = query("SELECT menu_id,parent_id,menu_type,status FROM sys_menu "

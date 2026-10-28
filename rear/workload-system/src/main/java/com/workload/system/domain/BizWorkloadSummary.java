@@ -21,6 +21,11 @@ public class BizWorkloadSummary extends BaseEntity
     /** $column.columnComment */
     private Long id;
 
+    /** 源数值发生变更后，必须完成全量核算才能提交。 */
+    private Integer needsRecalculation;
+    public Integer getNeedsRecalculation() { return needsRecalculation; }
+    public void setNeedsRecalculation(Integer value) { needsRecalculation = value; }
+
     /** $column.columnComment */
     @Excel(name = "${comment}", readConverterExp = "$column.readConverterExp()")
     private Long userId;

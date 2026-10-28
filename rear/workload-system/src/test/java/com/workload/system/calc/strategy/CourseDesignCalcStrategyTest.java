@@ -54,6 +54,24 @@ class CourseDesignCalcStrategyTest
     }
 
     @Test
+    void calculationAndLimitCheckUseCurrentDetailAfterLock()
+    {
+        when(bizWlCourseDesignMapper.selectBizWlCourseDesignByItemId(1L)).thenReturn(detail("2", "50"));
+        when(bizWlCourseDesignMapper.selectByItemIdForUpdate(1L)).thenReturn(detail("2", "70"));
+        BizWorkloadItem item = item(1L);
+        BigDecimal before = strategy.calculate(item);
+        strategy.afterCalculated(item, before);
+        assertThat(before).isEqualByComparingTo("40");
+        assertThat(item.getIsOverLimit()).isZero();
+
+        item.getParams().put("currentRead", true);
+        BigDecimal current = strategy.calculate(item);
+        strategy.afterCalculated(item, current);
+        assertThat(current).isEqualByComparingTo("56");
+        assertThat(item.getIsOverLimit()).isEqualTo(1);
+    }
+
+    @Test
     @DisplayName("基本公式：J4×R4×0.4 —— 2×50×0.4 = 40.00")
     void shouldComputeBasicFormula()
     {

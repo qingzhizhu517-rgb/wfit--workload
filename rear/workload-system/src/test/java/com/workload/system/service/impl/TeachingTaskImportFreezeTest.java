@@ -36,6 +36,20 @@ class TeachingTaskImportFreezeTest
     @Mock private BizWorkloadItemMapper workloadItemMapper;
 
     @Test
+    void failedSourceInsertDoesNotMarkSemesterChanged()
+    {
+        when(sysUserService.selectUserByUserName("T008")).thenReturn(new SysUser(USER));
+        when(teachingTaskMapper.insertBizTeachingTask(any()))
+                .thenThrow(new ServiceException("导入源记录失败"));
+
+        assertThatThrownBy(() -> service.processSingleRow(validG1(), "IMP-1"))
+                .hasMessage("导入源记录失败");
+        verify(writeGuard).lockDraftOrAbsent(USER, SEMESTER);
+        verify(writeGuard, never()).markChanged(any(), any());
+        verifyNoInteractions(workloadItemMapper);
+    }
+
+    @Test
     void importRowChecksFreezeBeforeRepeatCountAndInsert()
     {
         SysUser user = new SysUser();
@@ -54,6 +68,7 @@ class TeachingTaskImportFreezeTest
         verify(teachingTaskMapper, never()).countSameCourseTask(any(), any(), any(), any());
         verify(teachingTaskMapper, never()).insertBizTeachingTask(any());
         verifyNoInteractions(workloadItemMapper);
+        verify(writeGuard, never()).markChanged(any(), any());
     }
 
     private TeachingTaskImportDTO validG1()

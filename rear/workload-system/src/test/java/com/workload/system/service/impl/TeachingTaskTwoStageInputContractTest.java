@@ -40,6 +40,7 @@ class TeachingTaskTwoStageInputContractTest
     private final BizTeachingTaskMapper tasks = mock(BizTeachingTaskMapper.class);
     private final BizWorkloadItemMapper items = mock(BizWorkloadItemMapper.class);
     private final ISysUserService users = mock(ISysUserService.class);
+    private final WorkloadWriteGuard writeGuard = mock(WorkloadWriteGuard.class);
 
     TeachingTaskTwoStageInputContractTest()
     {
@@ -48,6 +49,7 @@ class TeachingTaskTwoStageInputContractTest
         ReflectionTestUtils.setField(service, "teachingTaskMapper", tasks);
         ReflectionTestUtils.setField(service, "workloadItemMapper", items);
         ReflectionTestUtils.setField(service, "sysUserService", users);
+        ReflectionTestUtils.setField(service, "workloadWriteGuard", writeGuard);
         ReflectionTestUtils.setField(service, "importPreviewStore", mock(ImportPreviewStore.class));
         ReflectionTestUtils.setField(service, "importTokenHasher", new ImportTokenHasher());
         doAnswer(i -> {
@@ -119,7 +121,7 @@ class TeachingTaskTwoStageInputContractTest
         verify(rows).insertBizImportRow(stored.capture());
         assertThat(stored.getValue().getStatus()).isEqualTo("BLOCKED");
         assertThat(stored.getValue().getErrorMessage()).contains(message);
-        verifyNoInteractions(users, tasks, items);
+        verifyNoInteractions(users, tasks, items, writeGuard);
     }
 
     @ParameterizedTest
@@ -139,7 +141,7 @@ class TeachingTaskTwoStageInputContractTest
         assertThat(result.getFailCount()).isEqualTo(1);
         assertThat(stored.getStatus()).isEqualTo("FAILED");
         assertThat(stored.getErrorMessage()).contains(message);
-        verifyNoInteractions(users, tasks, items);
+        verifyNoInteractions(users, tasks, items, writeGuard);
     }
 
     @ParameterizedTest
@@ -179,7 +181,7 @@ class TeachingTaskTwoStageInputContractTest
         assertThat(normalized.path("majorCategory").asText()).isEqualTo("理工类");
         assertThat(raw.path("courseNature").asText()).doesNotContain("必修");
         assertThat(raw.path("majorCategory").asText()).doesNotContain("理工类");
-        verifyNoInteractions(users, tasks, items);
+        verifyNoInteractions(users, tasks, items, writeGuard);
 
         when(users.selectUserByUserName("T008")).thenReturn(new SysUser(8L));
         when(rows.selectByBatchIdAndStatus(50L, "READY")).thenReturn(List.of(stored.getValue()));
@@ -201,7 +203,6 @@ class TeachingTaskTwoStageInputContractTest
         ReflectionTestUtils.setField(service, "wlPracticeMapper", practice);
         ReflectionTestUtils.setField(service, "ruleParamService", rules);
         ReflectionTestUtils.setField(service, "calcStrategyFactory", factory);
-        ReflectionTestUtils.setField(service, "workloadWriteGuard", mock(WorkloadWriteGuard.class));
         ReflectionTestUtils.setField(service, "factorFormulaService", formulas);
         ReflectionTestUtils.setField(service, "snapshotService", snapshots);
         var result = service.confirm(new ImportConfirmRequest(50L, preview.confirmToken(), false));
@@ -225,6 +226,10 @@ class TeachingTaskTwoStageInputContractTest
             assertThat(detail.getValue().getK()).isEqualByComparingTo("1.0");
         }
         verify(snapshots).capture(any(), any(), eq("RULE-2025-2026-1"));
+        var order = inOrder(snapshots, items, writeGuard);
+        order.verify(snapshots).capture(any(), any(), eq("RULE-2025-2026-1"));
+        order.verify(items).updateBizWorkloadItem(any());
+        order.verify(writeGuard).markChanged(8L, "2025-2026-1");
     }
 
     private byte[] workbook(TeachingTaskImportDTO input)

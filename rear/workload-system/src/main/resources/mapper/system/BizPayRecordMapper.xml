@@ -24,7 +24,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         select id, user_id, semester, summary_id, course_hour_pay, other_pay_total, total_pay, status, create_by, create_time, update_by, update_time, remark from biz_pay_record
     </sql>
 
-    <select id="selectBizPayRecordList" parameterType="BizPayRecord" resultMap="BizPayRecordResult">
+    <select id="selectBizPayRecordList" parameterType="BizPayRecord" flushCache="true" useCache="false" resultMap="BizPayRecordResult">
         <include refid="selectBizPayRecordVo"/>
         <where>  
             <if test="userId != null "> and user_id = #{userId}</if>
@@ -35,6 +35,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="totalPay != null "> and total_pay = #{totalPay}</if>
             <if test="status != null "> and status = #{status}</if>
         </where>
+        <if test="params.currentRead == true">for update</if>
     </select>
     
     <select id="selectBizPayRecordById" parameterType="Long" resultMap="BizPayRecordResult">

@@ -36,14 +36,14 @@ public class ThesisCalcStrategy extends AbstractWorkloadCalcStrategy
     @Override
     public BigDecimal calculate(BizWorkloadItem item)
     {
-        BizWlThesis detail = loadDetail(item.getId());
+        BizWlThesis detail = loadDetail(item);
         return scale(mul(num(detail.getR5()), coef(detail.getK5())));
     }
 
     @Override
     public void afterCalculated(BizWorkloadItem item, BigDecimal value)
     {
-        BizWlThesis detail = loadDetail(item.getId());
+        BizWlThesis detail = loadDetail(item);
         String level = StringUtils.hasText(detail.getEducationLevel()) ? detail.getEducationLevel()
                 : item.getEducationLevel();
         BigDecimal r5 = num(detail.getR5());
@@ -60,12 +60,14 @@ public class ThesisCalcStrategy extends AbstractWorkloadCalcStrategy
         item.setIsOverLimit(overLimit ? 1 : 0);
     }
 
-    private BizWlThesis loadDetail(Long itemId)
+    private BizWlThesis loadDetail(BizWorkloadItem item)
     {
-        BizWlThesis detail = bizWlThesisMapper.selectBizWlThesisByItemId(itemId);
+        BizWlThesis detail = Boolean.TRUE.equals(item.getParams().get("currentRead"))
+                ? bizWlThesisMapper.selectByItemIdForUpdate(item.getId())
+                : bizWlThesisMapper.selectBizWlThesisByItemId(item.getId());
         if (detail == null)
         {
-            throw new ServiceException("G5毕业论文明细缺失, itemId=" + itemId);
+            throw new ServiceException("G5毕业论文明细缺失, itemId=" + item.getId());
         }
         return detail;
     }

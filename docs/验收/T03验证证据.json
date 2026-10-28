@@ -1,0 +1,48 @@
+{
+  "verified_date": "2026-10-28",
+  "regular_tests": 491,
+  "mysql_tests": 31,
+  "concurrency_repeat_tests": 6,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "logs": [
+    {
+      "name": "wfit-t03-final-package.log",
+      "sha256": "f5eae3d60723254c420ec065e5e90e6487d06368661935c9afac28b14ffc8cbe"
+    },
+    {
+      "name": "wfit-t03-review-green.log",
+      "sha256": "e9eb51d9955df9f91c3f2b70b5d39cdf59c2901fe4e59851268fd4d0e9ae3d00"
+    },
+    {
+      "name": "wfit-t03-concurrency-repeat.log",
+      "sha256": "e2941f346b8e0878ab605d0c701b39467b4b164a642a8016d342841d1da3c1f8"
+    },
+    {
+      "name": "wfit-t03-review-red.log",
+      "sha256": "e355d41e9739f273481f6c73b0dbc02528ac8e3e45a0602e4e16959db631bea8"
+    },
+    {
+      "name": "wfit-t03-review-source-red.log",
+      "sha256": "6dde27afade9f93617f10da96b39f9883face11394529c85dd824fdb3a04f336"
+    },
+    {
+      "name": "wfit-t03-front-build.log",
+      "sha256": "b9190d955207cd12132f9fbaa5ab00c49a2d8641ca59db6f96e00eea5ab7bcf9"
+    },
+    {
+      "name": "wfit-t03-front-lint.log",
+      "sha256": "a1033187a74937c535e75cb8f55aff68a1cc31c50d6d77e3703cb27c40720487"
+    }
+  ],
+  "startup": {
+    "jar_sha256": "857eaf1eab4774df9aafb285b955621cfc51130643369313bcd65525806570ea",
+    "db_port": 13306,
+    "redis_port": 16379,
+    "app_port": 18084,
+    "passed": true,
+    "http_status": 200,
+    "captcha_enabled": true
+  }
+}

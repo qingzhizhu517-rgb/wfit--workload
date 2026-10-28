@@ -1,6 +1,8 @@
 package com.workload.system.service.impl;
 
 import java.util.List;
+import com.workload.system.domain.BizWorkloadItem;
+import com.workload.system.mapper.BizWorkloadItemMapper;
 import com.workload.common.utils.DateUtils;
 import com.workload.common.exception.ServiceException;
 import com.workload.system.calc.WorkloadWriteGuard;
@@ -25,6 +27,9 @@ public class BizRoleAssignmentServiceImpl implements IBizRoleAssignmentService
 
     @Autowired
     private WorkloadWriteGuard workloadWriteGuard;
+
+    @Autowired
+    private BizWorkloadItemMapper itemMapper;
 
     /**
      * 查询岗位任职
@@ -62,7 +67,9 @@ public class BizRoleAssignmentServiceImpl implements IBizRoleAssignmentService
     {
         workloadWriteGuard.lockDraftOrAbsent(bizRoleAssignment.getUserId(), bizRoleAssignment.getSemester());
         bizRoleAssignment.setCreateTime(DateUtils.getNowDate());
-        return bizRoleAssignmentMapper.insertBizRoleAssignment(bizRoleAssignment);
+        int rows = bizRoleAssignmentMapper.insertBizRoleAssignment(bizRoleAssignment);
+        workloadWriteGuard.markChanged(bizRoleAssignment.getUserId(), bizRoleAssignment.getSemester());
+        return rows;
     }
 
     /**
@@ -79,7 +86,9 @@ public class BizRoleAssignmentServiceImpl implements IBizRoleAssignmentService
         bizRoleAssignment.setUserId(existing.getUserId());
         bizRoleAssignment.setSemester(existing.getSemester());
         bizRoleAssignment.setUpdateTime(DateUtils.getNowDate());
-        return bizRoleAssignmentMapper.updateBizRoleAssignment(bizRoleAssignment);
+        int rows = bizRoleAssignmentMapper.updateBizRoleAssignment(bizRoleAssignment);
+        workloadWriteGuard.markChanged(existing.getUserId(), existing.getSemester());
+        return rows;
     }
 
     /**
@@ -94,7 +103,8 @@ public class BizRoleAssignmentServiceImpl implements IBizRoleAssignmentService
     {
         for (Long id : ids)
         {
-            lockExisting(id);
+            BizRoleAssignment existing = lockExisting(id);
+            workloadWriteGuard.markChanged(existing.getUserId(), existing.getSemester());
         }
         return bizRoleAssignmentMapper.deleteBizRoleAssignmentByIds(ids);
     }
@@ -109,7 +119,8 @@ public class BizRoleAssignmentServiceImpl implements IBizRoleAssignmentService
     @Transactional(rollbackFor = Exception.class)
     public int deleteBizRoleAssignmentById(Long id)
     {
-        lockExisting(id);
+        BizRoleAssignment existing = lockExisting(id);
+        workloadWriteGuard.markChanged(existing.getUserId(), existing.getSemester());
         return bizRoleAssignmentMapper.deleteBizRoleAssignmentById(id);
     }
 
@@ -121,6 +132,13 @@ public class BizRoleAssignmentServiceImpl implements IBizRoleAssignmentService
             throw new ServiceException("岗位减免记录不存在, id=" + id);
         }
         workloadWriteGuard.lockDraftOrAbsent(existing.getUserId(), existing.getSemester());
+        BizWorkloadItem query = new BizWorkloadItem();
+        query.setAssignmentId(id);
+        query.getParams().put("currentRead", true);
+        if (!itemMapper.selectBizWorkloadItemList(query).isEmpty())
+        {
+            throw new ServiceException("岗位记录已关联工作量明细，请先处理关联明细后再修改或删除");
+        }
         return existing;
     }
 }
