@@ -53,7 +53,7 @@ class ThesisCalcStrategyTest
     void setUp()
     {
         // APPROVAL_R5_JUNIOR 默认 15、APPROVAL_R5_BACHELOR 默认 8
-        lenient().when(ruleParamService.get(anyString(), any(BigDecimal.class)))
+        lenient().when(ruleParamService.get(anyString(), any(BigDecimal.class), org.mockito.ArgumentMatchers.eq(java.time.LocalDate.of(2026, 1, 31))))
                 .thenAnswer(inv -> {
                     String code = inv.getArgument(0);
                     if ("APPROVAL_R5_JUNIOR".equals(code))
@@ -182,6 +182,7 @@ class ThesisCalcStrategyTest
     private BizWorkloadItem item(long id)
     {
         BizWorkloadItem item = new BizWorkloadItem();
+        item.setSemester("2025-2026-1");
         item.setId(id);
         return item;
     }

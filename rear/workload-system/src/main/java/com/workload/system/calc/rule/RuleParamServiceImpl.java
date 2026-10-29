@@ -1,88 +1,66 @@
 package com.workload.system.calc.rule;
 
 import java.math.BigDecimal;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.List;
+import java.time.LocalDate;
+import java.util.Objects;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import com.workload.common.core.redis.RedisCache;
 import com.workload.common.exception.ServiceException;
 import com.workload.system.domain.BizWorkloadRule;
 import com.workload.system.mapper.BizWorkloadRuleMapper;
 
-/**
- * 工作量规则参数读取服务实现（Redis 缓存 wl_rule:&lt;code&gt;，写操作失效）
- *
- * @author wflg
- * @date 2026-07-21
- */
 @Service
 public class RuleParamServiceImpl implements RuleParamService
 {
-    /** 缓存 key 前缀 */
     public static final String CACHE_PREFIX = "wl_rule:";
+    @Autowired private BizWorkloadRuleMapper bizWorkloadRuleMapper;
+    @Autowired private RedisCache redisCache;
 
-    @Autowired
-    private BizWorkloadRuleMapper bizWorkloadRuleMapper;
+    @Override public BigDecimal get(String code) { return get(code, LocalDate.now()); }
+    @Override public BigDecimal get(String code, BigDecimal fallback) { return get(code, fallback, LocalDate.now()); }
 
-    @Autowired
-    private RedisCache redisCache;
-
-    @Override
-    public BigDecimal get(String ruleCode)
+    @Override public BigDecimal get(String code, LocalDate asOfDate)
     {
-        BigDecimal value = doGet(ruleCode);
-        if (value == null)
-        {
-            throw new ServiceException("规则参数缺失: " + ruleCode);
-        }
+        BigDecimal value = doGet(code, asOfDate);
+        if (value == null) throw new ServiceException("规则参数缺失: " + code + "，日期 " + asOfDate);
         return value;
     }
-
-    @Override
-    public BigDecimal get(String ruleCode, BigDecimal defaultValue)
+    @Override public BigDecimal get(String code, BigDecimal fallback, LocalDate asOfDate)
     {
-        BigDecimal value = doGet(ruleCode);
-        return value == null ? defaultValue : value;
+        BigDecimal value = doGet(code, asOfDate);
+        return value == null ? fallback : value;
     }
-
-    @Override
-    public void evict(String ruleCode)
+    @Override public void evict(String code)
     {
-        if (ruleCode != null && !ruleCode.isEmpty())
-        {
-            redisCache.deleteObject(CACHE_PREFIX + ruleCode);
-        }
+        if (code == null || code.isEmpty()) return;
+        // 世代键使提交前已在途的旧值回填不可达；旧世代按 TTL 回收，覆盖全部日期。
+        AfterCommit.run(() -> {
+            redisCache.setCacheObject(CACHE_PREFIX + code + ":generation", UUID.randomUUID().toString());
+            redisCache.deleteObject(CACHE_PREFIX + code); // 迁移前兼容键
+        });
     }
-
-    /**
-     * 缓存优先取当期生效值；未命中回库按有效期筛选（多条取 effective_from 最新者）
-     */
-    private BigDecimal doGet(String ruleCode)
+    private BigDecimal doGet(String code, LocalDate asOfDate)
     {
-        String cacheKey = CACHE_PREFIX + ruleCode;
-        BigDecimal cached = redisCache.getCacheObject(cacheKey);
-        if (cached != null)
+        Objects.requireNonNull(asOfDate, "asOfDate");
+        boolean transactional = TransactionSynchronizationManager.isActualTransactionActive();
+        String cacheKey = null;
+        if (!transactional)
         {
-            return cached;
+            String generation = redisCache.getCacheObject(CACHE_PREFIX + code + ":generation");
+            cacheKey = CACHE_PREFIX + code + ":" + (generation == null ? "0" : generation) + ":" + asOfDate;
+            BigDecimal cached = redisCache.getCacheObject(cacheKey);
+            if (cached != null) return cached;
         }
-        BizWorkloadRule query = new BizWorkloadRule();
-        query.setRuleCode(ruleCode);
-        query.setStatus(1);
-        List<BizWorkloadRule> rules = bizWorkloadRuleMapper.selectBizWorkloadRuleList(query);
-        Date now = new Date();
-        BigDecimal value = rules.stream()
-                .filter(r -> r.getEffectiveFrom() == null || !r.getEffectiveFrom().after(now))
-                .filter(r -> r.getEffectiveTo() == null || !r.getEffectiveTo().before(now))
-                .max(Comparator.comparing(BizWorkloadRule::getEffectiveFrom,
-                        Comparator.nullsFirst(Comparator.naturalOrder())))
-                .map(BizWorkloadRule::getRuleValue)
-                .orElse(null);
-        if (value != null)
-        {
-            redisCache.setCacheObject(cacheKey, value);
-        }
+        BizWorkloadRule query = new BizWorkloadRule(); query.setRuleCode(code); query.setStatus(1);
+        BizWorkloadRule row = EffectiveDateResolver.select(bizWorkloadRuleMapper.selectBizWorkloadRuleList(query),
+                asOfDate, BizWorkloadRule::getEffectiveFrom, BizWorkloadRule::getEffectiveTo, code);
+        BigDecimal value = row == null ? null : row.getRuleValue();
+        // 事务快照中的旧值/未提交值永不进入共享缓存。
+        if (!transactional && value != null) redisCache.setCacheObject(cacheKey, value, 24, TimeUnit.HOURS);
         return value;
     }
 }

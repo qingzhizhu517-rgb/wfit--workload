@@ -5,7 +5,6 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -24,6 +23,7 @@ import org.springframework.util.StringUtils;
 import com.workload.common.exception.ServiceException;
 import com.workload.common.utils.DateUtils;
 import com.workload.system.calc.rule.ComplianceChecker;
+import com.workload.system.calc.rule.EffectiveDateResolver;
 import com.workload.system.calc.rule.RuleParamService;
 import com.workload.system.domain.BizPayRate;
 import com.workload.system.domain.BizTeacherProfile;
@@ -64,7 +64,7 @@ public class SummaryCalcServiceImpl implements SummaryCalcService
     private RuleParamService ruleParamService;
 
     @Autowired
-    private SemesterCalendar semesterCalendar;
+    private SemesterCalendar semesterCalendar = new SemesterCalendar();
 
     @Autowired
     private ComplianceChecker complianceChecker;
@@ -85,6 +85,7 @@ public class SummaryCalcServiceImpl implements SummaryCalcService
     @Transactional(rollbackFor = Exception.class)
     public BizWorkloadSummary recalcSummary(Long userId, String semester, boolean persist)
     {
+        semesterCalendar.endOf(semester);
         if (persist)
         {
             writeGuard.lockDraftOrAbsent(userId, semester);
@@ -118,12 +119,12 @@ public class SummaryCalcServiceImpl implements SummaryCalcService
         BigDecimal g8 = sumOf(typeSum, "G8");
         BigDecimal g9 = sumOf(typeSum, "G9");
         BigDecimal g10 = g7.add(g8).add(g9);
-        BigDecimal g11Cap = ruleParamService.get("CAP_G11_SEMESTER", new BigDecimal("180"));
+        BigDecimal g11Cap = ruleParamService.get("CAP_G11_SEMESTER", new BigDecimal("180"), semesterCalendar.endOf(semester));
         BigDecimal g11 = sumOf(typeSum, "G11").min(g11Cap);
         BigDecimal total = g10.add(g11);
 
-        BigDecimal rated = ruleParamService.get("RATED_WORKLOAD", new BigDecimal("180"));
-        BigDecimal cap200 = ruleParamService.get("CAP_200PCT", new BigDecimal("540"));
+        BigDecimal rated = ruleParamService.get("RATED_WORKLOAD", new BigDecimal("180"), semesterCalendar.endOf(semester));
+        BigDecimal cap200 = ruleParamService.get("CAP_200PCT", new BigDecimal("540"), semesterCalendar.endOf(semester));
 
         summary.setNeedsRecalculation(0);
         summary.setAcademicYear(deriveAcademicYear(semester));
@@ -140,7 +141,7 @@ public class SummaryCalcServiceImpl implements SummaryCalcService
         BizTeacherProfile profile = bizTeacherProfileMapper.selectBizTeacherProfileByUserId(userId);
         String title = profile == null ? null : profile.getTitle();
         String nature = profile == null ? "专任" : profile.getTeacherNature();
-        BigDecimal rate = findCurrentRate(title);
+        BigDecimal rate = findRate(title, semesterCalendar.endOf(semester));
         summary.setTitle(title);
         summary.setPayRate(rate);
 
@@ -262,7 +263,7 @@ public class SummaryCalcServiceImpl implements SummaryCalcService
     private void applyBasicTeaching(BizWorkloadSummary summary, BizTeacherProfile profile,
             BigDecimal g10, String semester, boolean threeTheoryCourses)
     {
-        BigDecimal annual = annualStandard(summary.getTitle());
+        BigDecimal annual = annualStandard(summary.getTitle(), semester);
         BigDecimal standard = annual.divide(new BigDecimal("2"), 2, RoundingMode.HALF_UP);
         boolean deemedMet = false;
         if (profile != null && StringUtils.hasText(profile.getSpecialStatus())
@@ -272,10 +273,10 @@ public class SummaryCalcServiceImpl implements SummaryCalcService
             switch (profile.getSpecialStatus())
             {
                 case "产假":
-                    standard = standard.multiply(ruleParamService.get("FACTOR_MATERNITY", new BigDecimal("0.5")));
+                    standard = standard.multiply(ruleParamService.get("FACTOR_MATERNITY", new BigDecimal("0.5"), semesterCalendar.endOf(semester)));
                     break;
                 case "在职读博":
-                    standard = ruleParamService.get("BASIC_TEACH_PHD", new BigDecimal("128"))
+                    standard = ruleParamService.get("BASIC_TEACH_PHD", new BigDecimal("128"), semesterCalendar.endOf(semester))
                             .divide(new BigDecimal("2"), 2, RoundingMode.HALF_UP);
                     break;
                 case "访学":
@@ -324,7 +325,7 @@ public class SummaryCalcServiceImpl implements SummaryCalcService
     /**
      * 职称 -> 年度基本教学量规则值
      */
-    private BigDecimal annualStandard(String title)
+    private BigDecimal annualStandard(String title, String semester)
     {
         String ruleCode;
         if (title != null && title.contains("教授") && !title.contains("副"))
@@ -343,13 +344,13 @@ public class SummaryCalcServiceImpl implements SummaryCalcService
         {
             ruleCode = "BASIC_TEACH_ASSIST";
         }
-        return ruleParamService.get(ruleCode, new BigDecimal("192"));
+        return ruleParamService.get(ruleCode, new BigDecimal("192"), semesterCalendar.endOf(semester));
     }
 
     /**
-     * 取职称当期生效单位酬金；无职称或无费率返回 null
+     * 取职称在核算基准日生效的单位酬金；无职称或无费率返回 null
      */
-    private BigDecimal findCurrentRate(String title)
+    private BigDecimal findRate(String title, LocalDate asOfDate)
     {
         if (!StringUtils.hasText(title))
         {
@@ -359,14 +360,9 @@ public class SummaryCalcServiceImpl implements SummaryCalcService
         query.setTitle(title);
         query.setStatus(1);
         List<BizPayRate> rates = bizPayRateMapper.selectBizPayRateList(query);
-        Date now = new Date();
-        return rates.stream()
-                .filter(r -> r.getEffectiveFrom() == null || !r.getEffectiveFrom().after(now))
-                .filter(r -> r.getEffectiveTo() == null || !r.getEffectiveTo().before(now))
-                .max(Comparator.comparing(BizPayRate::getEffectiveFrom,
-                        Comparator.nullsFirst(Comparator.naturalOrder())))
-                .map(BizPayRate::getRate)
-                .orElse(null);
+        BizPayRate selected = EffectiveDateResolver.select(rates, asOfDate,
+                BizPayRate::getEffectiveFrom, BizPayRate::getEffectiveTo, "职称费率 " + title);
+        return selected == null ? null : selected.getRate();
     }
 
     private BizWorkloadSummary findSummary(Long userId, String semester)

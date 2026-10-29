@@ -1,6 +1,9 @@
 package com.workload.system.service.impl;
 
 import java.util.List;
+import org.springframework.transaction.annotation.Transactional;
+import com.workload.system.calc.strategy.StrategyCache;
+import com.workload.system.calc.rule.AfterCommit;
 import com.workload.common.utils.DateUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -19,6 +22,9 @@ public class BizWorkloadCategoryDictServiceImpl implements IBizWorkloadCategoryD
 {
     @Autowired
     private BizWorkloadCategoryDictMapper bizWorkloadCategoryDictMapper;
+
+    @Autowired
+    private StrategyCache strategyCache;
 
     /**
      * 查询工作量类别字典
@@ -51,10 +57,13 @@ public class BizWorkloadCategoryDictServiceImpl implements IBizWorkloadCategoryD
      * @return 结果
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public int insertBizWorkloadCategoryDict(BizWorkloadCategoryDict bizWorkloadCategoryDict)
     {
         bizWorkloadCategoryDict.setCreateTime(DateUtils.getNowDate());
-        return bizWorkloadCategoryDictMapper.insertBizWorkloadCategoryDict(bizWorkloadCategoryDict);
+        int rows = bizWorkloadCategoryDictMapper.insertBizWorkloadCategoryDict(bizWorkloadCategoryDict);
+        if (rows > 0) AfterCommit.run(() -> strategyCache.evict(bizWorkloadCategoryDict.getTypeCode()));
+        return rows;
     }
 
     /**
@@ -64,10 +73,13 @@ public class BizWorkloadCategoryDictServiceImpl implements IBizWorkloadCategoryD
      * @return 结果
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public int updateBizWorkloadCategoryDict(BizWorkloadCategoryDict bizWorkloadCategoryDict)
     {
         bizWorkloadCategoryDict.setUpdateTime(DateUtils.getNowDate());
-        return bizWorkloadCategoryDictMapper.updateBizWorkloadCategoryDict(bizWorkloadCategoryDict);
+        int rows = bizWorkloadCategoryDictMapper.updateBizWorkloadCategoryDict(bizWorkloadCategoryDict);
+        if (rows > 0) AfterCommit.run(() -> strategyCache.evict(bizWorkloadCategoryDict.getTypeCode()));
+        return rows;
     }
 
     /**
@@ -77,9 +89,12 @@ public class BizWorkloadCategoryDictServiceImpl implements IBizWorkloadCategoryD
      * @return 结果
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public int deleteBizWorkloadCategoryDictByTypeCodes(String[] typeCodes)
     {
-        return bizWorkloadCategoryDictMapper.deleteBizWorkloadCategoryDictByTypeCodes(typeCodes);
+        int rows = bizWorkloadCategoryDictMapper.deleteBizWorkloadCategoryDictByTypeCodes(typeCodes);
+        if (rows > 0) AfterCommit.run(() -> { for (String code : typeCodes) strategyCache.evict(code); });
+        return rows;
     }
 
     /**
@@ -89,8 +104,11 @@ public class BizWorkloadCategoryDictServiceImpl implements IBizWorkloadCategoryD
      * @return 结果
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public int deleteBizWorkloadCategoryDictByTypeCode(String typeCode)
     {
-        return bizWorkloadCategoryDictMapper.deleteBizWorkloadCategoryDictByTypeCode(typeCode);
+        int rows = bizWorkloadCategoryDictMapper.deleteBizWorkloadCategoryDictByTypeCode(typeCode);
+        if (rows > 0) AfterCommit.run(() -> strategyCache.evict(typeCode));
+        return rows;
     }
 }

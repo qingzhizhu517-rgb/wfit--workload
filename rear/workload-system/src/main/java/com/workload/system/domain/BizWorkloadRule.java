@@ -1,7 +1,8 @@
 package com.workload.system.domain;
 
 import java.math.BigDecimal;
-import java.util.Date;
+import java.time.LocalDate;
+import org.springframework.format.annotation.DateTimeFormat;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
@@ -35,11 +36,15 @@ public class BizWorkloadRule extends BaseEntity
 
     /** $column.columnComment */
     @Excel(name = "${comment}", readConverterExp = "$column.readConverterExp()")
-    private Date effectiveFrom;
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+    private LocalDate effectiveFrom;
 
     /** $column.columnComment */
     @Excel(name = "${comment}", readConverterExp = "$column.readConverterExp()")
-    private Date effectiveTo;
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+    private LocalDate effectiveTo;
 
     /** $column.columnComment */
     @Excel(name = "${comment}", readConverterExp = "$column.readConverterExp()")
@@ -85,22 +90,22 @@ public class BizWorkloadRule extends BaseEntity
         return ruleDesc;
     }
 
-    public void setEffectiveFrom(Date effectiveFrom) 
+    public void setEffectiveFrom(LocalDate effectiveFrom)
     {
         this.effectiveFrom = effectiveFrom;
     }
 
-    public Date getEffectiveFrom() 
+    public LocalDate getEffectiveFrom()
     {
         return effectiveFrom;
     }
 
-    public void setEffectiveTo(Date effectiveTo) 
+    public void setEffectiveTo(LocalDate effectiveTo)
     {
         this.effectiveTo = effectiveTo;
     }
 
-    public Date getEffectiveTo() 
+    public LocalDate getEffectiveTo()
     {
         return effectiveTo;
     }

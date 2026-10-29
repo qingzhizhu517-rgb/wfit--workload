@@ -1,6 +1,7 @@
 package com.workload.system.calc.allowance;
 
 import java.math.BigDecimal;
+import com.workload.system.calc.SemesterCalendar;
 import java.math.RoundingMode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -19,6 +20,9 @@ public class AllowanceFStrategy implements AllowanceCalcStrategy
     @Autowired
     private RuleParamService ruleParamService;
 
+    @Autowired
+    private SemesterCalendar semesterCalendar = new SemesterCalendar();
+
     @Override
     public String getFeeType()
     {
@@ -30,9 +34,9 @@ public class AllowanceFStrategy implements AllowanceCalcStrategy
     {
         BigDecimal days = item.getDays() == null ? BigDecimal.ZERO : item.getDays();
         BigDecimal classes = item.getClassCount() == null ? BigDecimal.ZERO : new BigDecimal(item.getClassCount());
-        BigDecimal units = days.multiply(ruleParamService.get("PAY_F_DAY_UNITS", new BigDecimal("6")))
-                .add(classes.multiply(ruleParamService.get("PAY_F_CLASS_UNITS", BigDecimal.ONE)));
-        return units.multiply(ruleParamService.get("PAY_UNIT_FEE", new BigDecimal("30")))
+        BigDecimal units = days.multiply(ruleParamService.get("PAY_F_DAY_UNITS", new BigDecimal("6"), semesterCalendar.endOf(item.getSemester())))
+                .add(classes.multiply(ruleParamService.get("PAY_F_CLASS_UNITS", BigDecimal.ONE, semesterCalendar.endOf(item.getSemester()))));
+        return units.multiply(ruleParamService.get("PAY_UNIT_FEE", new BigDecimal("30"), semesterCalendar.endOf(item.getSemester())))
                 .setScale(2, RoundingMode.HALF_UP);
     }
 }

@@ -1,6 +1,7 @@
 package com.workload.system.calc.strategy;
 
 import java.math.BigDecimal;
+import com.workload.system.calc.SemesterCalendar;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -27,6 +28,9 @@ public class ThesisCalcStrategy extends AbstractWorkloadCalcStrategy
     @Autowired
     private RuleParamService ruleParamService;
 
+    @Autowired
+    private SemesterCalendar semesterCalendar = new SemesterCalendar();
+
     @Override
     public String getTypeCode()
     {
@@ -51,11 +55,11 @@ public class ThesisCalcStrategy extends AbstractWorkloadCalcStrategy
         if (level != null && level.contains("专"))
         {
             // 第十四条5 专科：R5≤15 按实际计，＞15 须报院长批准
-            overLimit = r5.compareTo(ruleParamService.get("APPROVAL_R5_JUNIOR", new BigDecimal("15"))) > 0;
+            overLimit = r5.compareTo(ruleParamService.get("APPROVAL_R5_JUNIOR", new BigDecimal("15"), semesterCalendar.endOf(item.getSemester()))) > 0;
         }
         else
         {
-            overLimit = r5.compareTo(ruleParamService.get("APPROVAL_R5_BACHELOR", new BigDecimal("8"))) > 0;
+            overLimit = r5.compareTo(ruleParamService.get("APPROVAL_R5_BACHELOR", new BigDecimal("8"), semesterCalendar.endOf(item.getSemester()))) > 0;
         }
         item.setIsOverLimit(overLimit ? 1 : 0);
     }

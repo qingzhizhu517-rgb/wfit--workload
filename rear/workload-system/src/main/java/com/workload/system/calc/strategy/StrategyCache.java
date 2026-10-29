@@ -37,7 +37,8 @@ public class StrategyCache {
      * @param loader 策略加载器（当缓存未命中时调用）
      * @return 策略实例，如果无策略则返回 null
      */
-    public WorkloadCalcStrategy get(String typeCode, Supplier<WorkloadCalcStrategy> loader) {
+    public synchronized WorkloadCalcStrategy get(String typeCode, Supplier<WorkloadCalcStrategy> loader) {
+        if (org.springframework.transaction.support.TransactionSynchronizationManager.isActualTransactionActive()) return loader.get();
         WorkloadCalcStrategy cached = cache.get(typeCode);
         if (cached != null) {
             return cached == NULL_PLACEHOLDER ? null : cached;
@@ -57,14 +58,14 @@ public class StrategyCache {
      * 
      * @param typeCode 类别代码
      */
-    public void evict(String typeCode) {
+    public synchronized void evict(String typeCode) {
         cache.remove(typeCode);
     }
     
     /**
      * 清空所有缓存
      */
-    public void clear() {
+    public synchronized void clear() {
         cache.clear();
     }
     

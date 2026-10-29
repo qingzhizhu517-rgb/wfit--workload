@@ -19,6 +19,9 @@ public interface BizWorkloadRuleMapper
      */
     public BizWorkloadRule selectBizWorkloadRuleById(Long id);
 
+    /** 写操作前锁定当前行，保证失效的是实际更新行的新旧编码。 */
+    public BizWorkloadRule selectBizWorkloadRuleByIdForUpdate(Long id);
+
     /**
      * 查询全局核算规则参数列表
      * 

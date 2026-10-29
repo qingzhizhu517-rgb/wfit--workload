@@ -1,6 +1,7 @@
 package com.workload.system.service.impl;
 
 import java.math.BigDecimal;
+import com.workload.system.calc.SemesterCalendar;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -44,7 +45,7 @@ import com.workload.system.service.SnapshotContextCodec;
  *
  * <p>详情读取优先级：若该明细已存在计算快照（{@code selectLatestByItemId} 命中），
  * 因子的取值与来源一律从<strong>已固化的快照</strong>解释，来源标记直接用快照里的 source
- * （如 {@code APPROVED_OVERRIDE}），不用「当前规则」现场重算伪装历史来源；无快照才回落读子表并
+ * （如 {@code APPROVED_OVERRIDE}），不用「学期结束日有效规则」现场重算伪装历史来源；无快照才回落读子表并
  * 显式置 {@code legacy=true / reproducible=false}。快照 JSON 解析失败直接抛出，
  * 不吞异常后伪装可复现。</p>
  */
@@ -67,6 +68,7 @@ public class WorkloadFactorFormulaServiceImpl implements IWorkloadFactorFormulaS
     @Autowired private BizWlConcentratedInternshipMapper concentratedInternshipMapper;
     @Autowired private BizWlManagementMapper managementMapper;
     @Autowired private RuleParamService ruleParamService;
+    @Autowired private SemesterCalendar semesterCalendar = new SemesterCalendar();
     @Autowired private BizWorkloadCalcSnapshotMapper snapshotMapper;
     @Autowired private BizTeachingTaskMapper teachingTaskMapper;
 
@@ -289,10 +291,10 @@ public class WorkloadFactorFormulaServiceImpl implements IWorkloadFactorFormulaS
         add(f, "J4", num(d.getJ4()), IMPORT_VALUE, "课程设计学分", "NORMAL");
         String status = Integer.valueOf(1).equals(item.getIsOverLimit()) ? "WARNING" : "NORMAL";
         add(f, "R4", num(d.getR4()), IMPORT_VALUE, "实际指导人数；超过阈值仅告警，不截断", status);
-        BigDecimal constant = ruleParamService.get("CONST_COURSE_DESIGN", new BigDecimal("0.4"));
-        add(f, "CONST", constant, FORMULA_CONSTANT, "当前规则中的课程设计工作量常量", "NORMAL");
+        BigDecimal constant = ruleParamService.get("CONST_COURSE_DESIGN", new BigDecimal("0.4"), semesterCalendar.endOf(item.getSemester()));
+        add(f, "CONST", constant, FORMULA_CONSTANT, "学期结束日有效规则中的课程设计工作量常量", "NORMAL");
         return formula(item, "G4", "J4 × R4 × " + display(constant),
-                "结果为已落库核算值；R4 按实际人数计算、不截断，超过阈值仅告警；常量展示当前规则，未保存历史规则快照",
+                "结果为已落库核算值；R4 按实际人数计算、不截断，超过阈值仅告警；常量展示学期结束日有效规则，未保存不可变规则快照",
                 false, f);
     }
 
@@ -310,18 +312,18 @@ public class WorkloadFactorFormulaServiceImpl implements IWorkloadFactorFormulaS
     {
         if (d == null) return null;
         List<FactorVo> f = new ArrayList<>();
-        BigDecimal cap = ruleParamService.get("CAP_R6_MAX", new BigDecimal("20"));
+        BigDecimal cap = ruleParamService.get("CAP_R6_MAX", new BigDecimal("20"), semesterCalendar.endOf(item.getSemester()));
         BigDecimal actual = num(d.getR6());
         BigDecimal effective = actual.min(cap);
         boolean capped = actual.compareTo(cap) > 0;
         add(f, "W", num(d.getW()), IMPORT_VALUE, "实习周数", "NORMAL");
         add(f, "R6", actual, IMPORT_VALUE, "实际指导人数", capped ? "CAPPED" : DISPLAY_ONLY);
         add(f, "R6_EFFECTIVE", effective, DERIVED,
-                "由实际人数和当前规则派生的计入人数：min(R6, " + display(cap) + ")", "NORMAL");
-        BigDecimal constant = ruleParamService.get("CONST_COURSE_DESIGN", new BigDecimal("0.4"));
-        add(f, "CONST", constant, FORMULA_CONSTANT, "当前规则中的集中实习工作量常量", "NORMAL");
+                "由实际人数和学期结束日有效规则派生的计入人数：min(R6, " + display(cap) + ")", "NORMAL");
+        BigDecimal constant = ruleParamService.get("CONST_COURSE_DESIGN", new BigDecimal("0.4"), semesterCalendar.endOf(item.getSemester()));
+        add(f, "CONST", constant, FORMULA_CONSTANT, "学期结束日有效规则中的集中实习工作量常量", "NORMAL");
         return formula(item, "G6", "W × min(R6, " + display(cap) + ") × " + display(constant),
-                "结果为已落库核算值；人数上限与常量展示当前规则，未保存历史规则快照", false, f);
+                "结果为已落库核算值；人数上限与常量展示学期结束日有效规则，未保存不可变规则快照", false, f);
     }
 
     private FactorFormulaVo formula(BizWorkloadItem item, String type, String expression,

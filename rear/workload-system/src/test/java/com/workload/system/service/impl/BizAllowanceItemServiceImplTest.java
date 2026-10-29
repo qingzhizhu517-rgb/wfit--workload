@@ -328,7 +328,7 @@ class BizAllowanceItemServiceImplTest
     private AllowanceCalcStrategy realStrategyFor(String type)
     {
         RuleParamService rule = mock(RuleParamService.class);
-        when(rule.get(anyString(), any(BigDecimal.class))).thenAnswer(inv -> inv.getArgument(1));
+        when(rule.get(anyString(), any(BigDecimal.class), org.mockito.ArgumentMatchers.eq(java.time.LocalDate.of(2026, 1, 31)))).thenAnswer(inv -> inv.getArgument(1));
         AllowanceCalcStrategy strategy = switch (type)
         {
             case "A" -> new AllowanceAStrategy();

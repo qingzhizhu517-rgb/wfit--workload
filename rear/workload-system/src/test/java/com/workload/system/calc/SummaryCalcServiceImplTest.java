@@ -252,7 +252,7 @@ class SummaryCalcServiceImplTest
     void setUp()
     {
         // 规则参数一律回落默认值；职称快照为空 → 绩效 0、达标线 BASIC_TEACH_ASSIST=192/2=96
-        lenient().when(ruleParamService.get(anyString(), any(BigDecimal.class)))
+        lenient().when(ruleParamService.get(anyString(), any(BigDecimal.class), org.mockito.ArgumentMatchers.eq(java.time.LocalDate.of(2026, 1, 31))))
                 .thenAnswer(inv -> inv.getArgument(1));
         lenient().when(bizTeacherProfileMapper.selectBizTeacherProfileByUserId(USER))
                 .thenReturn(new BizTeacherProfile());
@@ -497,6 +497,7 @@ class SummaryCalcServiceImplTest
     private BizWorkloadItem item(String type, String workload)
     {
         BizWorkloadItem item = new BizWorkloadItem();
+        item.setSemester("2025-2026-1");
         item.setUserId(USER);
         item.setSemester(SEMESTER);
         item.setItemType(type);

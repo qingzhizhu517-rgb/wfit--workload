@@ -40,7 +40,7 @@ class AllowanceDStrategyTest
     void setUp()
     {
         // 未命中 mock 桩的键回落到默认值（与生产兜底一致）
-        lenient().when(ruleParamService.get(anyString(), any(BigDecimal.class)))
+        lenient().when(ruleParamService.get(anyString(), any(BigDecimal.class), org.mockito.ArgumentMatchers.eq(java.time.LocalDate.of(2026, 1, 31))))
                 .thenAnswer(inv -> inv.getArgument(1));
     }
 
@@ -117,6 +117,7 @@ class AllowanceDStrategyTest
     private BizAllowanceItem item(Long count)
     {
         BizAllowanceItem item = new BizAllowanceItem();
+        item.setSemester("2025-2026-1");
         item.setFeeType("D");
         item.setStudentCount(count);
         return item;

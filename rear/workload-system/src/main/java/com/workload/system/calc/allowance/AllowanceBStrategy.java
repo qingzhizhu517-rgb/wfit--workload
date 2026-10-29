@@ -1,6 +1,7 @@
 package com.workload.system.calc.allowance;
 
 import java.math.BigDecimal;
+import com.workload.system.calc.SemesterCalendar;
 import java.math.RoundingMode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -19,6 +20,9 @@ public class AllowanceBStrategy implements AllowanceCalcStrategy
     @Autowired
     private RuleParamService ruleParamService;
 
+    @Autowired
+    private SemesterCalendar semesterCalendar = new SemesterCalendar();
+
     @Override
     public String getFeeType()
     {
@@ -35,7 +39,7 @@ public class AllowanceBStrategy implements AllowanceCalcStrategy
         // 一旦 PAY_B_CONCENTRATED 规则行被删或停用，集中实习会按分散价少发 1/3
         String ruleCode = concentrated ? "PAY_B_CONCENTRATED" : "PAY_B_DISPERSED";
         BigDecimal fallback = concentrated ? new BigDecimal("15") : new BigDecimal("10");
-        BigDecimal perHead = ruleParamService.get(ruleCode, fallback);
+        BigDecimal perHead = ruleParamService.get(ruleCode, fallback, semesterCalendar.endOf(item.getSemester()));
         return perHead.multiply(new BigDecimal(count)).setScale(2, RoundingMode.HALF_UP);
     }
 }

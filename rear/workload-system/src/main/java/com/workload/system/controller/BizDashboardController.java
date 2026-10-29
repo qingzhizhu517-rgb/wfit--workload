@@ -55,6 +55,9 @@ public class BizDashboardController extends BaseController
     @Autowired
     private RuleParamService ruleParamService;
 
+    @Autowired
+    private com.workload.system.calc.SemesterCalendar semesterCalendar = new com.workload.system.calc.SemesterCalendar();
+
     /**
      * 管理员仪表盘统计
      */
@@ -180,7 +183,8 @@ public class BizDashboardController extends BaseController
 
         stats.put("semester", semester);
         stats.put("hasSummary", !summaries.isEmpty());
-        stats.put("workloadCap", ruleParamService.get("CAP_200PCT", new BigDecimal("540")));
+        stats.put("workloadCap", summaries.isEmpty() ? null : ruleParamService.get("CAP_200PCT",
+                new BigDecimal("540"), semesterCalendar.endOf(summaries.get(0).getSemester())));
 
         // 申诉中明细数
         long appealCount = items.stream().filter(i -> i.getAppealStatus() != null && i.getAppealStatus() == 1).count();

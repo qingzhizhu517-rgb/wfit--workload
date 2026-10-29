@@ -1,6 +1,7 @@
 package com.workload.system.calc.allowance;
 
 import java.math.BigDecimal;
+import com.workload.system.calc.SemesterCalendar;
 import java.math.RoundingMode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -24,6 +25,9 @@ public class AllowanceDStrategy implements AllowanceCalcStrategy
     @Autowired
     private RuleParamService ruleParamService;
 
+    @Autowired
+    private SemesterCalendar semesterCalendar = new SemesterCalendar();
+
     @Override
     public String getFeeType()
     {
@@ -38,23 +42,23 @@ public class AllowanceDStrategy implements AllowanceCalcStrategy
         BigDecimal amount;
         if (count < 20)
         {
-            amount = ruleParamService.get("PAY_D_MARKING_LT20", new BigDecimal("0"));
+            amount = ruleParamService.get("PAY_D_MARKING_LT20", new BigDecimal("0"), semesterCalendar.endOf(item.getSemester()));
         }
         else if (count < 60)
         {
-            amount = ruleParamService.get("PAY_D_MARKING_20_60", new BigDecimal("30"));
+            amount = ruleParamService.get("PAY_D_MARKING_20_60", new BigDecimal("30"), semesterCalendar.endOf(item.getSemester()));
         }
         else if (count < 120)
         {
-            amount = ruleParamService.get("PAY_D_MARKING_60_120", new BigDecimal("80"));
+            amount = ruleParamService.get("PAY_D_MARKING_60_120", new BigDecimal("80"), semesterCalendar.endOf(item.getSemester()));
         }
         else if (count < 200)
         {
-            amount = ruleParamService.get("PAY_D_MARKING_120_200", new BigDecimal("100"));
+            amount = ruleParamService.get("PAY_D_MARKING_120_200", new BigDecimal("100"), semesterCalendar.endOf(item.getSemester()));
         }
         else
         {
-            amount = ruleParamService.get("PAY_D_MARKING_GE200", new BigDecimal("150"));
+            amount = ruleParamService.get("PAY_D_MARKING_GE200", new BigDecimal("150"), semesterCalendar.endOf(item.getSemester()));
         }
         return amount.setScale(2, RoundingMode.HALF_UP);
     }

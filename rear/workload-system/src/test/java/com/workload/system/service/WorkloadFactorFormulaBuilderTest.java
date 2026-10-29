@@ -379,7 +379,7 @@ class WorkloadFactorFormulaBuilderTest
         BizWlCourseDesign d = new BizWlCourseDesign();
         d.setJ4(n("1")); d.setR4(70L);
         when(courseDesignMapper.selectBizWlCourseDesignByItemId(7L)).thenReturn(d);
-        when(ruleParamService.get("CONST_COURSE_DESIGN", n("0.4"))).thenReturn(n("0.5"));
+        when(ruleParamService.get("CONST_COURSE_DESIGN", n("0.4"), java.time.LocalDate.of(2026, 1, 31))).thenReturn(n("0.5"));
 
         FactorFormulaVo result = builder.build(item);
 
@@ -415,8 +415,8 @@ class WorkloadFactorFormulaBuilderTest
         BizWlConcentratedInternship d = new BizWlConcentratedInternship();
         d.setW(n("4")); d.setR6(25L);
         when(concentratedInternshipMapper.selectBizWlConcentratedInternshipByItemId(7L)).thenReturn(d);
-        when(ruleParamService.get("CAP_R6_MAX", n("20"))).thenReturn(n("24"));
-        when(ruleParamService.get("CONST_COURSE_DESIGN", n("0.4"))).thenReturn(n("0.5"));
+        when(ruleParamService.get("CAP_R6_MAX", n("20"), java.time.LocalDate.of(2026, 1, 31))).thenReturn(n("24"));
+        when(ruleParamService.get("CONST_COURSE_DESIGN", n("0.4"), java.time.LocalDate.of(2026, 1, 31))).thenReturn(n("0.5"));
 
         FactorFormulaVo result = builder.build(item);
 
@@ -479,6 +479,7 @@ class WorkloadFactorFormulaBuilderTest
     private BizWorkloadItem item(String type, String source, String workload)
     {
         BizWorkloadItem item = new BizWorkloadItem();
+        item.setSemester("2025-2026-1");
         item.setId(7L);
         item.setItemType(type);
         item.setSourceType(source);

@@ -1,0 +1,714 @@
+{
+  "verified_date": "2026-10-29",
+  "scope": "T05第一切片：日期选值/缓存/有效日期契约；非整个T05完成",
+  "base_commit": "6d98a60",
+  "regular_tests": 570,
+  "mysql_tests": 31,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "jar_sha256": "e01b0d6dcddfa99ae61c4ad44b3ab02804618a5b831eed1fac94855161afa288",
+  "package_tests_skipped": true,
+  "logs": [
+    {
+      "name": "rule-date-red.log",
+      "sha256": "7b85b43297225572857ab32fc68304aac6fb79bee7e36dbaddb33f720d6bfd0c"
+    },
+    {
+      "name": "json-date-red.log",
+      "sha256": "72071fa875ef38f91dce031902598a7dfeb68bfd27e667ff576a9b65ead1c646"
+    },
+    {
+      "name": "rule-locking-red.log",
+      "sha256": "b79d330922e49e01e53aa3de68e0ce2324b55d075a77fc95c517fc4571d6d270"
+    },
+    {
+      "name": "timezone-red.log",
+      "sha256": "f09fae643520e958912e2dd64ca4a5186bdf911aad8186ef693135c8d99dc75f"
+    },
+    {
+      "name": "timezone-focused-green.log",
+      "sha256": "8cc25f6c6875e2391de95c64bd5e214c4462cc562b400252688ef91cb8fe2336"
+    },
+    {
+      "name": "final-570-tests.log",
+      "sha256": "6ad59dcab9a7c13ab86be5bfeaaad687ce7c0c2bf1d4c8d83350f15290e49eda"
+    },
+    {
+      "name": "final-package.log",
+      "sha256": "ac80fbd99c733c8b18f16fb778f52a0728290d2b74b32486514b1a688959b959"
+    },
+    {
+      "name": "final-31-it.log",
+      "sha256": "bbdd813df6f6e548b9adb0d714a0f0ef3cfbeae71a681b7625ebac7739c29ab6"
+    }
+  ],
+  "http": {
+    "historical_red": {
+      "date": "2026-10-29",
+      "baseline": "9438d9a",
+      "host": "127.0.0.1",
+      "db_port": 13306,
+      "db": "wfit_ui_20261028",
+      "app_port": 18084,
+      "rows": [
+        {
+          "semester": "2025-2026-1",
+          "actual": {
+            "id": 108,
+            "semester": "2025-2026-1",
+            "totalWorkload": 240.0,
+            "ratedWorkload": 180.0,
+            "payRate": 33.0,
+            "performancePay": 1980.0,
+            "needsRecalculation": 0
+          },
+          "expected": {
+            "ratedWorkload": 100,
+            "payRate": 11,
+            "performancePay": 1540
+          },
+          "matches": false
+        },
+        {
+          "semester": "2025-2026-2",
+          "actual": {
+            "id": 109,
+            "semester": "2025-2026-2",
+            "totalWorkload": 240.0,
+            "ratedWorkload": 180.0,
+            "payRate": 33.0,
+            "performancePay": 1980.0,
+            "needsRecalculation": 0
+          },
+          "expected": {
+            "ratedWorkload": 150,
+            "payRate": 22,
+            "performancePay": 1980
+          },
+          "matches": false
+        }
+      ],
+      "frozen_before": "id\tuser_id\tsemester\tstatus\ttotal_workload\tperformance_pay\tpay_rate\tneeds_recalculation\tteacher_sign\tacademic_assistant_sign\n106\t1003\t2026-2027-2\t2\t20.00\t0.00\t50.00\t0\tNULL\tjiaowu_test\n",
+      "frozen_before_sha256": "0feadeea154f3b6944d2e530cae98508d4af5eebedec096f07babe925d748016",
+      "frozen_unchanged": true
+    },
+    "date_contract_red": {
+      "date": "2026-10-29",
+      "baseline": "9438d9a",
+      "method": "POST",
+      "path": "/system/workloadRule",
+      "date_fields": {
+        "effectiveFrom": "2025-10-01",
+        "effectiveTo": "2026-01-31"
+      },
+      "response": {
+        "code": 500,
+        "msg": "系统异常，请联系管理员"
+      },
+      "cause": "Jackson3 InvalidFormatException: Date requires application default yyyy-MM-dd HH:mm:ss; entity date fields lack JsonFormat; UI sends YYYY-MM-DD",
+      "fixture_written": false
+    },
+    "timezone_red": {
+      "date": "2026-10-29",
+      "jvm_timezone": "Asia/Tokyo",
+      "app_port": 18085,
+      "db": "127.0.0.1:13306/wfit_ui_20261028",
+      "actual": {
+        "id": 46,
+        "ruleCode": "T05_DATE_CONTRACT",
+        "effectiveFrom": "2025-12-31",
+        "effectiveTo": "2026-01-30"
+      },
+      "expected": {
+        "effectiveFrom": "2026-01-01",
+        "effectiveTo": "2026-01-31"
+      },
+      "scope": "GET only; SQL DATE unchanged; pre-timezone-fix jar"
+    },
+    "final_tokyo": {
+      "date": "2026-10-29",
+      "jvm_timezone": "Asia/Tokyo",
+      "app_port": 18084,
+      "db": "127.0.0.1:13306/wfit_ui_20261028",
+      "date_roundtrips": [
+        {
+          "entity": "workloadRule",
+          "expected_dates": [
+            "2026-01-01",
+            "2026-01-31"
+          ],
+          "actual_dates": [
+            "2026-01-01",
+            "2026-01-31"
+          ],
+          "database_before_sha256": "89e0611a418fce6da79d6788f29b01f2315cd9b8c15d01683f790a98a5b82cfc",
+          "database_after_sha256": "89e0611a418fce6da79d6788f29b01f2315cd9b8c15d01683f790a98a5b82cfc"
+        },
+        {
+          "entity": "payRate",
+          "expected_dates": [
+            "2026-01-01",
+            "2026-01-31"
+          ],
+          "actual_dates": [
+            "2026-01-01",
+            "2026-01-31"
+          ],
+          "database_before_sha256": "227aa34234c6cd3a0108ae1ba1785a64868bd2c3a32e38223a64dd0649cfb292",
+          "database_after_sha256": "227aa34234c6cd3a0108ae1ba1785a64868bd2c3a32e38223a64dd0649cfb292"
+        }
+      ],
+      "historical_summaries": [
+        {
+          "semester": "2025-2026-1",
+          "ratedWorkload": 100.0,
+          "payRate": 11.0,
+          "performancePay": 1540.0
+        },
+        {
+          "semester": "2025-2026-2",
+          "ratedWorkload": 150.0,
+          "payRate": 22.0,
+          "performancePay": 1980.0
+        },
+        {
+          "semester": "2025-2026-1",
+          "ratedWorkload": 100.0,
+          "payRate": 11.0,
+          "performancePay": 1540.0
+        }
+      ],
+      "cap_cache": {
+        "initial": {
+          "2026-2027-2": 540.0,
+          "2025-2026-2": 500.0,
+          "2025-2026-1": 410.0
+        },
+        "updated": {
+          "2026-2027-2": 540.0,
+          "2025-2026-2": 500.0,
+          "2025-2026-1": 411.0
+        },
+        "renamed": {
+          "2026-2027-2": 540.0,
+          "2025-2026-2": 500.0,
+          "2025-2026-1": 540.0
+        },
+        "restored": {
+          "2026-2027-2": 540.0,
+          "2025-2026-2": 500.0,
+          "2025-2026-1": 410.0
+        }
+      },
+      "frozen_before_sha256": "0feadeea154f3b6944d2e530cae98508d4af5eebedec096f07babe925d748016",
+      "frozen_after_sha256": "0feadeea154f3b6944d2e530cae98508d4af5eebedec096f07babe925d748016",
+      "checked_requests": 20,
+      "records": [
+        {
+          "method": "GET",
+          "path": "/system/workloadRule/list?ruleCode=T05_DATE_CONTRACT&effectiveFrom=2026-01-01&effectiveTo=2026-01-31",
+          "fields": [],
+          "code": 200,
+          "message": "查询成功",
+          "expected_success": true
+        },
+        {
+          "method": "GET",
+          "path": "/system/workloadRule/list?ruleCode=T05_DATE_CONTRACT",
+          "fields": [],
+          "code": 200,
+          "message": "查询成功",
+          "expected_success": true
+        },
+        {
+          "method": "PUT",
+          "path": "/system/workloadRule",
+          "fields": [
+            "effectiveFrom",
+            "effectiveTo",
+            "id"
+          ],
+          "code": 200,
+          "message": "操作成功",
+          "expected_success": true
+        },
+        {
+          "method": "GET",
+          "path": "/system/workloadRule/46",
+          "fields": [],
+          "code": 200,
+          "message": "操作成功",
+          "expected_success": true
+        },
+        {
+          "method": "GET",
+          "path": "/system/payRate/list?title=T05_DATE_CONTRACT&effectiveFrom=2026-01-01&effectiveTo=2026-01-31",
+          "fields": [],
+          "code": 200,
+          "message": "查询成功",
+          "expected_success": true
+        },
+        {
+          "method": "GET",
+          "path": "/system/payRate/list?title=T05_DATE_CONTRACT",
+          "fields": [],
+          "code": 200,
+          "message": "查询成功",
+          "expected_success": true
+        },
+        {
+          "method": "PUT",
+          "path": "/system/payRate",
+          "fields": [
+            "effectiveFrom",
+            "effectiveTo",
+            "id"
+          ],
+          "code": 200,
+          "message": "操作成功",
+          "expected_success": true
+        },
+        {
+          "method": "GET",
+          "path": "/system/payRate/8",
+          "fields": [],
+          "code": 200,
+          "message": "操作成功",
+          "expected_success": true
+        },
+        {
+          "method": "POST",
+          "path": "/system/calc/recalcSummary?userId=1002&semester=2025-2026-1",
+          "fields": [],
+          "code": 200,
+          "message": "操作成功",
+          "expected_success": true
+        },
+        {
+          "method": "POST",
+          "path": "/system/calc/recalcSummary?userId=1002&semester=2025-2026-2",
+          "fields": [],
+          "code": 200,
+          "message": "操作成功",
+          "expected_success": true
+        },
+        {
+          "method": "POST",
+          "path": "/system/calc/recalcSummary?userId=1002&semester=2025-2026-1",
+          "fields": [],
+          "code": 200,
+          "message": "操作成功",
+          "expected_success": true
+        },
+        {
+          "method": "GET",
+          "path": "/system/workloadSummary/list?userId=1002&pageSize=100",
+          "fields": [],
+          "code": 200,
+          "message": "查询成功",
+          "expected_success": true
+        },
+        {
+          "method": "GET",
+          "path": "/system/workloadRule/list?ruleCode=CAP_200PCT&pageSize=100",
+          "fields": [],
+          "code": 200,
+          "message": "查询成功",
+          "expected_success": true
+        },
+        {
+          "method": "PUT",
+          "path": "/system/workloadRule",
+          "fields": [
+            "id",
+            "ruleValue"
+          ],
+          "code": 200,
+          "message": "操作成功",
+          "expected_success": true
+        },
+        {
+          "method": "GET",
+          "path": "/system/workloadSummary/list?userId=1002&pageSize=100",
+          "fields": [],
+          "code": 200,
+          "message": "查询成功",
+          "expected_success": true
+        },
+        {
+          "method": "PUT",
+          "path": "/system/workloadRule",
+          "fields": [
+            "id",
+            "ruleCode"
+          ],
+          "code": 200,
+          "message": "操作成功",
+          "expected_success": true
+        },
+        {
+          "method": "GET",
+          "path": "/system/workloadSummary/list?userId=1002&pageSize=100",
+          "fields": [],
+          "code": 200,
+          "message": "查询成功",
+          "expected_success": true
+        },
+        {
+          "method": "PUT",
+          "path": "/system/workloadRule",
+          "fields": [
+            "id",
+            "ruleCode",
+            "ruleValue"
+          ],
+          "code": 200,
+          "message": "操作成功",
+          "expected_success": true
+        },
+        {
+          "method": "GET",
+          "path": "/system/workloadSummary/list?userId=1002&pageSize=100",
+          "fields": [],
+          "code": 200,
+          "message": "查询成功",
+          "expected_success": true
+        },
+        {
+          "method": "POST",
+          "path": "/system/calc/recalcSummary?userId=1003&semester=2026-2027-2",
+          "fields": [],
+          "code": 500,
+          "message": "学期汇总已进入审批流程，数据已冻结",
+          "expected_success": false
+        }
+      ]
+    },
+    "final_utc": {
+      "date": "2026-10-29",
+      "jvm_timezone": "UTC",
+      "app_port": 18085,
+      "db": "127.0.0.1:13306/wfit_ui_20261028",
+      "date_roundtrips": [
+        {
+          "entity": "workloadRule",
+          "expected_dates": [
+            "2026-01-01",
+            "2026-01-31"
+          ],
+          "actual_dates": [
+            "2026-01-01",
+            "2026-01-31"
+          ],
+          "database_before_sha256": "89e0611a418fce6da79d6788f29b01f2315cd9b8c15d01683f790a98a5b82cfc",
+          "database_after_sha256": "89e0611a418fce6da79d6788f29b01f2315cd9b8c15d01683f790a98a5b82cfc"
+        },
+        {
+          "entity": "payRate",
+          "expected_dates": [
+            "2026-01-01",
+            "2026-01-31"
+          ],
+          "actual_dates": [
+            "2026-01-01",
+            "2026-01-31"
+          ],
+          "database_before_sha256": "227aa34234c6cd3a0108ae1ba1785a64868bd2c3a32e38223a64dd0649cfb292",
+          "database_after_sha256": "227aa34234c6cd3a0108ae1ba1785a64868bd2c3a32e38223a64dd0649cfb292"
+        }
+      ],
+      "historical_summaries": [
+        {
+          "semester": "2025-2026-1",
+          "ratedWorkload": 100.0,
+          "payRate": 11.0,
+          "performancePay": 1540.0
+        },
+        {
+          "semester": "2025-2026-2",
+          "ratedWorkload": 150.0,
+          "payRate": 22.0,
+          "performancePay": 1980.0
+        },
+        {
+          "semester": "2025-2026-1",
+          "ratedWorkload": 100.0,
+          "payRate": 11.0,
+          "performancePay": 1540.0
+        }
+      ],
+      "cap_cache": {
+        "initial": {
+          "2026-2027-2": 540.0,
+          "2025-2026-2": 500.0,
+          "2025-2026-1": 410.0
+        },
+        "updated": {
+          "2026-2027-2": 540.0,
+          "2025-2026-2": 500.0,
+          "2025-2026-1": 411.0
+        },
+        "renamed": {
+          "2026-2027-2": 540.0,
+          "2025-2026-2": 500.0,
+          "2025-2026-1": 540.0
+        },
+        "restored": {
+          "2026-2027-2": 540.0,
+          "2025-2026-2": 500.0,
+          "2025-2026-1": 410.0
+        }
+      },
+      "frozen_before_sha256": "0feadeea154f3b6944d2e530cae98508d4af5eebedec096f07babe925d748016",
+      "frozen_after_sha256": "0feadeea154f3b6944d2e530cae98508d4af5eebedec096f07babe925d748016",
+      "checked_requests": 20,
+      "records": [
+        {
+          "method": "GET",
+          "path": "/system/workloadRule/list?ruleCode=T05_DATE_CONTRACT&effectiveFrom=2026-01-01&effectiveTo=2026-01-31",
+          "fields": [],
+          "code": 200,
+          "message": "查询成功",
+          "expected_success": true
+        },
+        {
+          "method": "GET",
+          "path": "/system/workloadRule/list?ruleCode=T05_DATE_CONTRACT",
+          "fields": [],
+          "code": 200,
+          "message": "查询成功",
+          "expected_success": true
+        },
+        {
+          "method": "PUT",
+          "path": "/system/workloadRule",
+          "fields": [
+            "effectiveFrom",
+            "effectiveTo",
+            "id"
+          ],
+          "code": 200,
+          "message": "操作成功",
+          "expected_success": true
+        },
+        {
+          "method": "GET",
+          "path": "/system/workloadRule/46",
+          "fields": [],
+          "code": 200,
+          "message": "操作成功",
+          "expected_success": true
+        },
+        {
+          "method": "GET",
+          "path": "/system/payRate/list?title=T05_DATE_CONTRACT&effectiveFrom=2026-01-01&effectiveTo=2026-01-31",
+          "fields": [],
+          "code": 200,
+          "message": "查询成功",
+          "expected_success": true
+        },
+        {
+          "method": "GET",
+          "path": "/system/payRate/list?title=T05_DATE_CONTRACT",
+          "fields": [],
+          "code": 200,
+          "message": "查询成功",
+          "expected_success": true
+        },
+        {
+          "method": "PUT",
+          "path": "/system/payRate",
+          "fields": [
+            "effectiveFrom",
+            "effectiveTo",
+            "id"
+          ],
+          "code": 200,
+          "message": "操作成功",
+          "expected_success": true
+        },
+        {
+          "method": "GET",
+          "path": "/system/payRate/8",
+          "fields": [],
+          "code": 200,
+          "message": "操作成功",
+          "expected_success": true
+        },
+        {
+          "method": "POST",
+          "path": "/system/calc/recalcSummary?userId=1002&semester=2025-2026-1",
+          "fields": [],
+          "code": 200,
+          "message": "操作成功",
+          "expected_success": true
+        },
+        {
+          "method": "POST",
+          "path": "/system/calc/recalcSummary?userId=1002&semester=2025-2026-2",
+          "fields": [],
+          "code": 200,
+          "message": "操作成功",
+          "expected_success": true
+        },
+        {
+          "method": "POST",
+          "path": "/system/calc/recalcSummary?userId=1002&semester=2025-2026-1",
+          "fields": [],
+          "code": 200,
+          "message": "操作成功",
+          "expected_success": true
+        },
+        {
+          "method": "GET",
+          "path": "/system/workloadSummary/list?userId=1002&pageSize=100",
+          "fields": [],
+          "code": 200,
+          "message": "查询成功",
+          "expected_success": true
+        },
+        {
+          "method": "GET",
+          "path": "/system/workloadRule/list?ruleCode=CAP_200PCT&pageSize=100",
+          "fields": [],
+          "code": 200,
+          "message": "查询成功",
+          "expected_success": true
+        },
+        {
+          "method": "PUT",
+          "path": "/system/workloadRule",
+          "fields": [
+            "id",
+            "ruleValue"
+          ],
+          "code": 200,
+          "message": "操作成功",
+          "expected_success": true
+        },
+        {
+          "method": "GET",
+          "path": "/system/workloadSummary/list?userId=1002&pageSize=100",
+          "fields": [],
+          "code": 200,
+          "message": "查询成功",
+          "expected_success": true
+        },
+        {
+          "method": "PUT",
+          "path": "/system/workloadRule",
+          "fields": [
+            "id",
+            "ruleCode"
+          ],
+          "code": 200,
+          "message": "操作成功",
+          "expected_success": true
+        },
+        {
+          "method": "GET",
+          "path": "/system/workloadSummary/list?userId=1002&pageSize=100",
+          "fields": [],
+          "code": 200,
+          "message": "查询成功",
+          "expected_success": true
+        },
+        {
+          "method": "PUT",
+          "path": "/system/workloadRule",
+          "fields": [
+            "id",
+            "ruleCode",
+            "ruleValue"
+          ],
+          "code": 200,
+          "message": "操作成功",
+          "expected_success": true
+        },
+        {
+          "method": "GET",
+          "path": "/system/workloadSummary/list?userId=1002&pageSize=100",
+          "fields": [],
+          "code": 200,
+          "message": "查询成功",
+          "expected_success": true
+        },
+        {
+          "method": "POST",
+          "path": "/system/calc/recalcSummary?userId=1003&semester=2026-2027-2",
+          "fields": [],
+          "code": 500,
+          "message": "学期汇总已进入审批流程，数据已冻结",
+          "expected_success": false
+        }
+      ]
+    }
+  },
+  "source_files_sha256": {
+    "rear/workload-system/pom.xml": "5eb9f31145fda73f746f4da9f2e89ef70249258df294ea2e12666eb769e2316b",
+    "rear/workload-system/src/main/java/com/workload/system/calc/SemesterCalendar.java": "465fb7641d7b4775fe950585a534a178e851b3b5002ff9a89ca215205095d366",
+    "rear/workload-system/src/main/java/com/workload/system/calc/SummaryCalcServiceImpl.java": "840d83cb0149b8c800df62844f55af7831dd3e3761857267b6edd7d7ed154d68",
+    "rear/workload-system/src/main/java/com/workload/system/calc/allowance/AllowanceAStrategy.java": "ef4653e94bbc0dd1b63771620085dae73f100b49badb1aa5f2066d02e52697f8",
+    "rear/workload-system/src/main/java/com/workload/system/calc/allowance/AllowanceBStrategy.java": "66620db1c485d66915e2bdadaef3372e609a9a9ebc5602f334d52d54973ce0aa",
+    "rear/workload-system/src/main/java/com/workload/system/calc/allowance/AllowanceCStrategy.java": "0a6e820a3e3eb337bbedc211cc3d67b9dbc732b89cc2a3f4edfaba11674b3661",
+    "rear/workload-system/src/main/java/com/workload/system/calc/allowance/AllowanceDStrategy.java": "000739374a670fd7bf96590d3a4dee79930353e3f0ee427aedfe9d50f12fdc18",
+    "rear/workload-system/src/main/java/com/workload/system/calc/allowance/AllowanceEStrategy.java": "8cc88764a6c48c9e29b12b4c1d9385dfd3ebf4f67f2a693474f08e3694bd05eb",
+    "rear/workload-system/src/main/java/com/workload/system/calc/allowance/AllowanceFStrategy.java": "b9407140e6ee599bfa59ea02499fb55808429e0e408c783d30a0bb20c2ab8165",
+    "rear/workload-system/src/main/java/com/workload/system/calc/allowance/AllowanceGStrategy.java": "5222b039da160b23545b2c9350905f82c3e36d47a6654c62375d188d0d869cc1",
+    "rear/workload-system/src/main/java/com/workload/system/calc/rule/AfterCommit.java": "2d1d8f64acab35fabefaac1441293e2beef92d53d8c6f56ad7abecd8339bac12",
+    "rear/workload-system/src/main/java/com/workload/system/calc/rule/EffectiveDateResolver.java": "ef872a898b3ba01ae8da2c4c254a36712fd4ca5a9cadf713f4454c6e555937a3",
+    "rear/workload-system/src/main/java/com/workload/system/calc/rule/RuleParamService.java": "89fdc34138ffe3996e0687da1b9ce5729aefd15e497ae293468e9a0a7e1879a6",
+    "rear/workload-system/src/main/java/com/workload/system/calc/rule/RuleParamServiceImpl.java": "d86ae025678a4d6ca2a16e63c683c80908164d542f3af41e735a45789a485ccb",
+    "rear/workload-system/src/main/java/com/workload/system/calc/strategy/ConcentratedInternshipCalcStrategy.java": "e166656736cfc0836e09984578f9e1e157850d36ae0daf43559ee1ff10ef7124",
+    "rear/workload-system/src/main/java/com/workload/system/calc/strategy/CourseDesignCalcStrategy.java": "15397f4e9247a22812fa613509036c700edba7af14494a28b3516e39f7c58260",
+    "rear/workload-system/src/main/java/com/workload/system/calc/strategy/StrategyCache.java": "756bcef0b3c2dc7515821ffb67963982a553e35c42dcb9d2b278d870155ea8e8",
+    "rear/workload-system/src/main/java/com/workload/system/calc/strategy/ThesisCalcStrategy.java": "ced3200a209f74b06644efeb85c78b812a8cc08a7bef859a750e76d22dedf268",
+    "rear/workload-system/src/main/java/com/workload/system/controller/BizDashboardController.java": "59841704156d7e0270c7c9f3a885c29561fae68cdba982211b70a30aecb103e0",
+    "rear/workload-system/src/main/java/com/workload/system/controller/BizExportController.java": "ae20719553e88b3bfabf1ad715c2ee43666ed2894dabbd59e492085608ca46b3",
+    "rear/workload-system/src/main/java/com/workload/system/controller/BizWorkloadSummaryController.java": "16c24561da0cd01244fa050a3a8ee007682e49c8508dbd8805055ddce4c7513c",
+    "rear/workload-system/src/main/java/com/workload/system/domain/BizPayRate.java": "a23367236fa2fec41e521a557da8de1056f454b22c2d56e05fb6adc72dfc3a41",
+    "rear/workload-system/src/main/java/com/workload/system/domain/BizWorkloadRule.java": "7f96ff381ba4e1e5a1e87612afc1cae40b9a9d153539681f218718c9183715d1",
+    "rear/workload-system/src/main/java/com/workload/system/mapper/BizWorkloadRuleMapper.java": "f686c9c386535ee19b8e9f72d143708f4cd68b39e4bfcb3d76af9fff1307100d",
+    "rear/workload-system/src/main/java/com/workload/system/service/impl/BizWorkloadCategoryDictServiceImpl.java": "b76255d18970be4918e61efda10d2905d3d84418e14f1d557e70882a55fa1fb5",
+    "rear/workload-system/src/main/java/com/workload/system/service/impl/BizWorkloadRuleServiceImpl.java": "b7e0e39d223118f1609cd6e40069b9a2f3b971c97a936961c034cf373c5a3f8f",
+    "rear/workload-system/src/main/java/com/workload/system/service/impl/TeachingTaskImportServiceImpl.java": "cc51ae61f7326273cbe1acf4a1867711734babbdad7cf629d33b0b38e18a3d7f",
+    "rear/workload-system/src/main/java/com/workload/system/service/impl/WorkloadFactorFormulaServiceImpl.java": "a0c487ab223c24714efff776a7bbd1d7db44f5e9d62ff60dcb11f5da20ffe2ee",
+    "rear/workload-system/src/main/resources/mapper/system/BizWorkloadRuleMapper.xml": "1300668d1f27a0baddddeb7b4c05eb74976003e423ea864e726d3b78981a2a34",
+    "rear/workload-system/src/test/java/com/workload/system/calc/CategoryStrategyInvalidationTest.java": "341c9dff39b00f42563885e0a32273fc9779c10b501b0b2050225b547ab8a861",
+    "rear/workload-system/src/test/java/com/workload/system/calc/EffectiveDateJsonContractTest.java": "d319206c0c6df8581f1fe6e6bd96c959250b5983570cf3800209b5c1f0e17b41",
+    "rear/workload-system/src/test/java/com/workload/system/calc/EffectiveDateTimezoneBoundaryTest.java": "510b8b400dfbb8f808b2ae9023af0817768a5bd8c41b0e5a92e65a0676e407a4",
+    "rear/workload-system/src/test/java/com/workload/system/calc/HistoricalSummaryDateTest.java": "52fcdd9f0abfad3d0092ccfa09714f36cb6770080167c8e695cd516ffaf834f0",
+    "rear/workload-system/src/test/java/com/workload/system/calc/RuleCrudLockingReadTest.java": "8285d308f9fe9274969575fe6e95cba6f71f4aeac1eaeeb245549f1052fda23f",
+    "rear/workload-system/src/test/java/com/workload/system/calc/RuleDateCacheTest.java": "4636d9b88fd337ccd539b5f81a6d166bc03aad3d2fde52e0693605390d7117ac",
+    "rear/workload-system/src/test/java/com/workload/system/calc/SemesterDatePropagationTest.java": "cafe4e87a7eaf8dd2449b56c22635400af27afbf9d9911719827cf6e60c846bd",
+    "rear/workload-system/src/test/java/com/workload/system/calc/SemesterRuleDateTest.java": "aa6fb9b39db332cf52485c8ad010ddeda128b92395c45fcdb115e6e53a47967e",
+    "rear/workload-system/src/test/java/com/workload/system/calc/SummaryCalcServiceImplTest.java": "c47a38759105eb5a657042856102886bab5d41b442820bde0a8c19f377145cf3",
+    "rear/workload-system/src/test/java/com/workload/system/calc/allowance/AllowanceAStrategyTest.java": "1add7b2af5022ef6a2207038b6e08b92aa36ac78b496e197820a33bf90fb9483",
+    "rear/workload-system/src/test/java/com/workload/system/calc/allowance/AllowanceDStrategyTest.java": "1e861014d70810563f98961420e2a5a5802460dd41ea46a0d50f254eeddb3dab",
+    "rear/workload-system/src/test/java/com/workload/system/calc/allowance/AllowanceStrategyAcceptanceTest.java": "5bce78a123667c8dcfd9e6304d87f94c028a5c79ed4f3667c6f4b55b3037fec1",
+    "rear/workload-system/src/test/java/com/workload/system/calc/strategy/ConcentratedInternshipCalcStrategyTest.java": "7b694cbf13483b47e52426098da1f1d7f9582de29fea4a8376b193f78ee0daf3",
+    "rear/workload-system/src/test/java/com/workload/system/calc/strategy/CourseDesignCalcStrategyTest.java": "37534312fb8e2f65396846fbcc9d997ab1e3348be5b134b3440495233bd37eb5",
+    "rear/workload-system/src/test/java/com/workload/system/calc/strategy/ThesisCalcStrategyTest.java": "41eaaca174e93910fdcce9b1e89b3a056d6b8ccf3dfc55b9d263365f3b81e69f",
+    "rear/workload-system/src/test/java/com/workload/system/controller/BizExportControllerTest.java": "b040d826a13b18d4d085ece43849fa75e7c8f509b0c9286eec3c7282ba9c4f33",
+    "rear/workload-system/src/test/java/com/workload/system/controller/SemesterCapPresentationTest.java": "eb9100d12512534101a2107e9c442163b0093f69d6a03a28b00d6aca4b1859fc",
+    "rear/workload-system/src/test/java/com/workload/system/integration/WorkloadMysqlFixture.java": "9beaecb3ffcfd142c87a2e22e13a9526117cb663ac4cd0028d5856ee4b50fffa",
+    "rear/workload-system/src/test/java/com/workload/system/service/WorkloadFactorFormulaBuilderTest.java": "30b60a9a53a7334d595a8e7424804aa73db2f55233be9b2d0b32c10783dbbd90",
+    "rear/workload-system/src/test/java/com/workload/system/service/impl/BizAllowanceItemServiceImplTest.java": "e2da32f25866404b4282aeb8b48d7314edf8730bb2630628194c20663bd9b7e2",
+    "rear/workload-system/src/test/java/com/workload/system/service/impl/TeachingTaskInputContractTest.java": "4e2a3402ac662e1282c2a33a16e8aa08d90b670a2a429dbaa4594dff08e3ecfb",
+    "rear/workload-system/src/test/java/com/workload/system/service/impl/TeachingTaskTwoStageInputContractTest.java": "5c135124075bc3d7f10495387ec31b76c61a506c600f6197e8bc832d24a69593"
+  },
+  "original_workspace": {
+    "preserved_files": 43,
+    "changed_files": []
+  },
+  "database_migrations": [],
+  "not_completed": [
+    "不可变规则与费率来源绑定",
+    "快照格式/旧哈希兼容校验",
+    "汇总与酬金不可变结算上下文",
+    "人员性质异常资格阻断",
+    "多实例StrategyCache广播",
+    "MySQL8/空库初始化/远程CI/发布"
+  ]
+}

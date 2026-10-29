@@ -4,6 +4,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
+import com.workload.system.calc.SemesterCalendar;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.ArrayList;
@@ -118,6 +119,9 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
 
     @Autowired
     private RuleParamService ruleParamService;
+
+    @Autowired
+    private SemesterCalendar semesterCalendar = new SemesterCalendar();
 
     @Autowired
     private WorkloadWriteGuard workloadWriteGuard;
@@ -706,6 +710,7 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
             throw new ServiceException("学年学期不能为空");
         }
         // 学期格式必须为 学年-学年-学期号，如 2025-2026-1（学期号 1 秋 / 2 春）
+        semesterCalendar.endOf(dto.getSemester());
         if (!dto.getSemester().matches("^\\d{4}-\\d{4}-[12]$"))
         {
             throw new ServiceException("学期格式非法，应形如 2025-2026-1，当前: " + dto.getSemester());
@@ -1014,7 +1019,7 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
         BizWlTheory detail = new BizWlTheory();
         detail.setItemId(item.getId());
         detail.setJ1(dto.getPlannedHours());
-        detail.setC1(calcC1(repeatOrder)); // 重复系数：按同名课第几次，1.0/0.9/0.8
+        detail.setC1(calcC1(repeatOrder, dto)); // 重复系数：按同名课第几次，1.0/0.9/0.8
         detail.setK1(calcK1(dto)); // 课程类型系数
         detail.setQ1(calcQ1(dto)); // 教学质量系数
         detail.setQ2(calcQ2(dto)); // 课程质量系数
@@ -1053,7 +1058,7 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
         detail.setItemId(item.getId());
         detail.setT(dto.getDays()); // 天数
         detail.setD(calcG3D(dto)); // 指导系数：理工 4.0 / 艺术 3.0 / 文史 2.0
-        detail.setK(calcG3RepeatK(repeatOrder)); // 重复系数：第一轮 1.0，第二轮起 0.9
+        detail.setK(calcG3RepeatK(repeatOrder, dto)); // 重复系数：第一轮 1.0，第二轮起 0.9
         detail.setQ1(calcQ1(dto));
         detail.setQ2(calcQ2(dto));
         detail.setQ3(BigDecimal.ONE);
@@ -1117,17 +1122,17 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
      *
      * @param repeatOrder 同名课第几次（≥1）
      */
-    private BigDecimal calcC1(long repeatOrder)
+    private BigDecimal calcC1(long repeatOrder, TeachingTaskImportDTO dto)
     {
         if (repeatOrder <= 1L)
         {
-            return ruleParamService.get("COEF_REPEAT_1ST", new BigDecimal("1.0"));
+            return ruleParamService.get("COEF_REPEAT_1ST", new BigDecimal("1.0"), semesterCalendar.endOf(dto.getSemester()));
         }
         if (repeatOrder == 2L)
         {
-            return ruleParamService.get("COEF_REPEAT_2ND", new BigDecimal("0.9"));
+            return ruleParamService.get("COEF_REPEAT_2ND", new BigDecimal("0.9"), semesterCalendar.endOf(dto.getSemester()));
         }
-        return ruleParamService.get("COEF_REPEAT_3RD_UP", new BigDecimal("0.8"));
+        return ruleParamService.get("COEF_REPEAT_3RD_UP", new BigDecimal("0.8"), semesterCalendar.endOf(dto.getSemester()));
     }
 
     /**
@@ -1139,13 +1144,13 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
      *
      * @param repeatOrder 同一门实习实训第几轮（≥1）
      */
-    private BigDecimal calcG3RepeatK(long repeatOrder)
+    private BigDecimal calcG3RepeatK(long repeatOrder, TeachingTaskImportDTO dto)
     {
         if (repeatOrder <= 1L)
         {
             return BigDecimal.ONE;
         }
-        return ruleParamService.get("COEF_REPEAT_2ND", new BigDecimal("0.9"));
+        return ruleParamService.get("COEF_REPEAT_2ND", new BigDecimal("0.9"), semesterCalendar.endOf(dto.getSemester()));
     }
 
     /**
@@ -1161,8 +1166,8 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
             return dto.getCourseCoefficient();
         }
         return isLiGong(dto.getMajorCategory())
-                ? ruleParamService.get("COEF_PRACTICE_LG", new BigDecimal("1.0"))
-                : ruleParamService.get("COEF_PRACTICE_OTHER", new BigDecimal("0.9"));
+                ? ruleParamService.get("COEF_PRACTICE_LG", new BigDecimal("1.0"), semesterCalendar.endOf(dto.getSemester()))
+                : ruleParamService.get("COEF_PRACTICE_OTHER", new BigDecimal("0.9"), semesterCalendar.endOf(dto.getSemester()));
     }
 
     /**
@@ -1181,13 +1186,13 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
         String category = dto.getMajorCategory();
         if (isLiGong(category))
         {
-            return ruleParamService.get("COEF_TRAIN_D_LG", new BigDecimal("4.0"));
+            return ruleParamService.get("COEF_TRAIN_D_LG", new BigDecimal("4.0"), semesterCalendar.endOf(dto.getSemester()));
         }
         if (category != null && category.contains("艺术"))
         {
-            return ruleParamService.get("COEF_TRAIN_D_ART", new BigDecimal("3.0"));
+            return ruleParamService.get("COEF_TRAIN_D_ART", new BigDecimal("3.0"), semesterCalendar.endOf(dto.getSemester()));
         }
-        return ruleParamService.get("COEF_TRAIN_D_HUM", new BigDecimal("2.0"));
+        return ruleParamService.get("COEF_TRAIN_D_HUM", new BigDecimal("2.0"), semesterCalendar.endOf(dto.getSemester()));
     }
 
     /**
@@ -1209,7 +1214,7 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
         // 授课层次只有本科/专科两档，非「专科」一律按本科（与 createTeachingTask 默认「本科」一致）
         String level = "专科".equals(dto.getEducationLevel()) ? "C" : "B";
         BigDecimal fallback = defaultK5(discipline, level);
-        return ruleParamService.get("COEF_THESIS_K5_" + discipline + "_" + level, fallback);
+        return ruleParamService.get("COEF_THESIS_K5_" + discipline + "_" + level, fallback, semesterCalendar.endOf(dto.getSemester()));
     }
 
     /** K5 兜底默认值，与 02_biz_seed.sql 的 COEF_THESIS_K5_* 一致，仅在规则被误删时生效 */
@@ -1302,11 +1307,11 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
         int count = dto.getStudentCount() != null ? dto.getStudentCount() : 0;
         if (count >= 151)
         {
-            return ruleParamService.get("COEF_CLASS_151_UP", new BigDecimal("1.2"));
+            return ruleParamService.get("COEF_CLASS_151_UP", new BigDecimal("1.2"), semesterCalendar.endOf(dto.getSemester()));
         }
         if (count >= 120)
         {
-            return ruleParamService.get("COEF_CLASS_120_150", new BigDecimal("1.1"));
+            return ruleParamService.get("COEF_CLASS_120_150", new BigDecimal("1.1"), semesterCalendar.endOf(dto.getSemester()));
         }
         return BigDecimal.ONE;
     }

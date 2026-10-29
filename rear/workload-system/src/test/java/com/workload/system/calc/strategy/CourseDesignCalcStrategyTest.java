@@ -49,7 +49,7 @@ class CourseDesignCalcStrategyTest
     void setUp()
     {
         // lenient：部分用例不触及规则读取
-        lenient().when(ruleParamService.get(anyString(), any(BigDecimal.class)))
+        lenient().when(ruleParamService.get(anyString(), any(BigDecimal.class), org.mockito.ArgumentMatchers.eq(java.time.LocalDate.of(2026, 1, 31))))
                 .thenAnswer(inv -> inv.getArgument(1));
     }
 
@@ -145,6 +145,7 @@ class CourseDesignCalcStrategyTest
     private BizWorkloadItem item(long id)
     {
         BizWorkloadItem item = new BizWorkloadItem();
+        item.setSemester("2025-2026-1");
         item.setId(id);
         return item;
     }

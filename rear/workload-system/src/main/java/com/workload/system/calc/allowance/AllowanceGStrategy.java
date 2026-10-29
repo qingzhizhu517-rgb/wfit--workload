@@ -1,6 +1,7 @@
 package com.workload.system.calc.allowance;
 
 import java.math.BigDecimal;
+import com.workload.system.calc.SemesterCalendar;
 import java.math.RoundingMode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -19,6 +20,9 @@ public class AllowanceGStrategy implements AllowanceCalcStrategy
     @Autowired
     private RuleParamService ruleParamService;
 
+    @Autowired
+    private SemesterCalendar semesterCalendar = new SemesterCalendar();
+
     @Override
     public String getFeeType()
     {
@@ -29,7 +33,7 @@ public class AllowanceGStrategy implements AllowanceCalcStrategy
     public BigDecimal calculate(BizAllowanceItem item)
     {
         BigDecimal units = item.getWorkloadUnits() == null ? BigDecimal.ZERO : item.getWorkloadUnits();
-        return units.multiply(ruleParamService.get("PAY_UNIT_FEE", new BigDecimal("30")))
+        return units.multiply(ruleParamService.get("PAY_UNIT_FEE", new BigDecimal("30"), semesterCalendar.endOf(item.getSemester())))
                 .setScale(2, RoundingMode.HALF_UP);
     }
 }

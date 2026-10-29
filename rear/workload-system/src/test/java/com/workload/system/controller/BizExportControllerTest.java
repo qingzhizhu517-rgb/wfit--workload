@@ -286,7 +286,7 @@ class BizExportControllerTest
                         null, null, null));
 
         when(exportMapper.selectPaySummaryExport(eq("2099-2100-1"), isNull())).thenReturn(rows);
-        when(ruleParamService.get(eq("CAP_200PCT"), any())).thenReturn(new BigDecimal("540"));
+        when(ruleParamService.get(eq("CAP_200PCT"), any(), eq(java.time.LocalDate.of(2100, 1, 31)))).thenReturn(new BigDecimal("540"));
 
         MockHttpServletResponse response = new MockHttpServletResponse();
         try (MockedStatic<DataScopeUtil> scope = mockStatic(DataScopeUtil.class))

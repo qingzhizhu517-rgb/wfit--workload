@@ -53,6 +53,9 @@ public class BizExportController extends BaseController
     private RuleParamService ruleParamService;
 
     @Autowired
+    private com.workload.system.calc.SemesterCalendar semesterCalendar = new com.workload.system.calc.SemesterCalendar();
+
+    @Autowired
     private IAttachment1ExportService attachment1ExportService;
 
     /**
@@ -182,8 +185,8 @@ public class BizExportController extends BaseController
             response.getWriter().write("未找到该学期的汇总数据");
             return;
         }
-        // 封顶线取规则表当前值，勿在 SQL 里写死 540：政策调整只改 biz_workload_rule
-        BigDecimal cap200 = ruleParamService.get("CAP_200PCT", new BigDecimal("540"));
+        // 封顶线取学期结束日有效规则值，勿在 SQL 里写死 540：政策调整只改 biz_workload_rule
+        BigDecimal cap200 = ruleParamService.get("CAP_200PCT", new BigDecimal("540"), semesterCalendar.endOf(semester));
         for (PaySummaryExportDTO dto : exportData)
         {
             fillPayExplain(dto, cap200);

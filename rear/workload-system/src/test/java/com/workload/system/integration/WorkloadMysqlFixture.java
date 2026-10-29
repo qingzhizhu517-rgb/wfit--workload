@@ -79,7 +79,7 @@ class WorkloadMysqlFixture implements AutoCloseable {
         tx = new TransactionTemplate(new DataSourceTransactionManager(ds));
         guard = new WorkloadWriteGuard(mapper(BizWorkloadSummaryMapper.class)); beans.put(WorkloadWriteGuard.class, guard);
         RuleParamService rules = mock(RuleParamService.class);
-        when(rules.get(anyString(), any(BigDecimal.class))).thenAnswer(i -> i.getArgument(1));
+        when(rules.get(anyString(), any(BigDecimal.class), org.mockito.ArgumentMatchers.eq(java.time.LocalDate.of(2026, 1, 31)))).thenAnswer(i -> i.getArgument(1));
         beans.put(RuleParamService.class, rules);
         beans.put(SemesterCalendar.class, new SemesterCalendar());
         beans.put(ComplianceChecker.class, wire(new ComplianceChecker()));

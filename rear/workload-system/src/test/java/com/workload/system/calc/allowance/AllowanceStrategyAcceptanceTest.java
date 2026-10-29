@@ -53,7 +53,7 @@ class AllowanceStrategyAcceptanceTest
     void setUp()
     {
         RuleParamService rule = mock(RuleParamService.class);
-        when(rule.get(anyString(), any(BigDecimal.class)))
+        when(rule.get(anyString(), any(BigDecimal.class), org.mockito.ArgumentMatchers.eq(java.time.LocalDate.of(2026, 1, 31))))
                 .thenAnswer(inv -> inv.getArgument(1));
 
         strategies = new HashMap<>();
@@ -136,6 +136,7 @@ class AllowanceStrategyAcceptanceTest
     private static final class ItemBuilder
     {
         private final BizAllowanceItem item = new BizAllowanceItem();
+        { item.setSemester("2025-2026-1"); }
 
         private ItemBuilder(String feeType)
         {

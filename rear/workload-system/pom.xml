@@ -23,6 +23,13 @@
             <artifactId>workload-common</artifactId>
         </dependency>
 
+        <!-- 与 WebMVC 运行时相同的 Jackson 3 日期契约回归，仅测试可见 -->
+        <dependency>
+            <groupId>tools.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <scope>test</scope>
+        </dependency>
+
         <!-- 测试依赖 -->
         <dependency>
             <groupId>com.mysql</groupId>

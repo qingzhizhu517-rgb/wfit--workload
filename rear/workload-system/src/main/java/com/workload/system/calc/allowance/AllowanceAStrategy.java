@@ -1,6 +1,7 @@
 package com.workload.system.calc.allowance;
 
 import java.math.BigDecimal;
+import com.workload.system.calc.SemesterCalendar;
 import java.math.RoundingMode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -22,6 +23,9 @@ public class AllowanceAStrategy implements AllowanceCalcStrategy
     @Autowired
     private RuleParamService ruleParamService;
 
+    @Autowired
+    private SemesterCalendar semesterCalendar = new SemesterCalendar();
+
     @Override
     public String getFeeType()
     {
@@ -38,11 +42,11 @@ public class AllowanceAStrategy implements AllowanceCalcStrategy
             // <6 人 120 元；6~19 人 260 元（第十五条1(3)）
             if (count < 6)
             {
-                return scale(ruleParamService.get("PAY_A_SELF_LT6", new BigDecimal("120")));
+                return scale(ruleParamService.get("PAY_A_SELF_LT6", new BigDecimal("120"), semesterCalendar.endOf(item.getSemester())));
             }
             if (count < 20)
             {
-                return scale(ruleParamService.get("PAY_A_SELF_6_20", new BigDecimal("260")));
+                return scale(ruleParamService.get("PAY_A_SELF_6_20", new BigDecimal("260"), semesterCalendar.endOf(item.getSemester())));
             }
             // ≥20 人：第十五条1(2) 应单独开班、按基本工作量标准计算，
             // 工作量与酬金走 G1 那条路，本项归零防重复计酬（2026-09-10 按办法原文修正，

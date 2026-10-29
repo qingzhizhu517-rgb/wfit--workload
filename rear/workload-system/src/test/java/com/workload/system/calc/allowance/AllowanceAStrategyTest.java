@@ -47,7 +47,7 @@ class AllowanceAStrategyTest
     @BeforeEach
     void setUp()
     {
-        lenient().when(ruleParamService.get(anyString(), any(BigDecimal.class)))
+        lenient().when(ruleParamService.get(anyString(), any(BigDecimal.class), org.mockito.ArgumentMatchers.eq(java.time.LocalDate.of(2026, 1, 31))))
                 .thenAnswer(inv -> {
                     String code = inv.getArgument(0);
                     if ("PAY_A_SELF_LT6".equals(code))
@@ -113,6 +113,7 @@ class AllowanceAStrategyTest
     void nullCountTreatedAsZero()
     {
         BizAllowanceItem item = new BizAllowanceItem();
+        item.setSemester("2025-2026-1");
         item.setFeeType("A");
         item.setFeeSubtype("自学加辅导");
 
@@ -124,6 +125,7 @@ class AllowanceAStrategyTest
     void followUpUsesManualAmount()
     {
         BizAllowanceItem item = new BizAllowanceItem();
+        item.setSemester("2025-2026-1");
         item.setFeeType("A");
         item.setFeeSubtype("跟班重修");
         item.setAmount(new BigDecimal("300"));
@@ -141,6 +143,7 @@ class AllowanceAStrategyTest
     private BizAllowanceItem selfItem(long count, BigDecimal manualAmount)
     {
         BizAllowanceItem item = new BizAllowanceItem();
+        item.setSemester("2025-2026-1");
         item.setFeeType("A");
         item.setFeeSubtype("自学加辅导");
         item.setStudentCount(count);

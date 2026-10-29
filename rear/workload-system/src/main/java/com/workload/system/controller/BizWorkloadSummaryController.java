@@ -42,6 +42,9 @@ public class BizWorkloadSummaryController extends BaseController
     @Autowired
     private RuleParamService ruleParamService;
 
+    @Autowired
+    private com.workload.system.calc.SemesterCalendar semesterCalendar = new com.workload.system.calc.SemesterCalendar();
+
     /**
      * 查询学期工作量汇总列表
      */
@@ -53,8 +56,8 @@ public class BizWorkloadSummaryController extends BaseController
         bizWorkloadSummary.setUserId(DataScopeUtil.resolveUserId(bizWorkloadSummary.getUserId()));
         startPage();
         List<BizWorkloadSummary> list = bizWorkloadSummaryService.selectBizWorkloadSummaryList(bizWorkloadSummary);
-        BigDecimal workloadCap = ruleParamService.get("CAP_200PCT", new BigDecimal("540"));
-        list.forEach(summary -> summary.setWorkloadCap(workloadCap));
+        list.forEach(summary -> summary.setWorkloadCap(ruleParamService.get("CAP_200PCT",
+                new BigDecimal("540"), semesterCalendar.endOf(summary.getSemester()))));
         return getDataTable(list);
     }
 

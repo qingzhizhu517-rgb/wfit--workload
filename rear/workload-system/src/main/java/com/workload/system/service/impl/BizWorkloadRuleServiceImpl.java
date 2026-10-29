@@ -1,6 +1,9 @@
 package com.workload.system.service.impl;
 
 import java.util.List;
+import java.util.ArrayList;
+import java.util.Arrays;
+import org.springframework.transaction.annotation.Transactional;
 import com.workload.common.utils.DateUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -55,11 +58,12 @@ public class BizWorkloadRuleServiceImpl implements IBizWorkloadRuleService
      * @return 结果
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public int insertBizWorkloadRule(BizWorkloadRule bizWorkloadRule)
     {
         bizWorkloadRule.setCreateTime(DateUtils.getNowDate());
         int rows = bizWorkloadRuleMapper.insertBizWorkloadRule(bizWorkloadRule);
-        ruleParamService.evict(bizWorkloadRule.getRuleCode());
+        if (rows > 0) ruleParamService.evict(bizWorkloadRule.getRuleCode());
         return rows;
     }
 
@@ -70,17 +74,18 @@ public class BizWorkloadRuleServiceImpl implements IBizWorkloadRuleService
      * @return 结果
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public int updateBizWorkloadRule(BizWorkloadRule bizWorkloadRule)
     {
         bizWorkloadRule.setUpdateTime(DateUtils.getNowDate());
         // 先查旧行：ruleCode 可能被改，新旧编码缓存都要失效
-        BizWorkloadRule old = bizWorkloadRuleMapper.selectBizWorkloadRuleById(bizWorkloadRule.getId());
+        BizWorkloadRule old = bizWorkloadRuleMapper.selectBizWorkloadRuleByIdForUpdate(bizWorkloadRule.getId());
         int rows = bizWorkloadRuleMapper.updateBizWorkloadRule(bizWorkloadRule);
-        if (old != null)
+        if (rows > 0 && old != null)
         {
             ruleParamService.evict(old.getRuleCode());
         }
-        ruleParamService.evict(bizWorkloadRule.getRuleCode());
+        if (rows > 0) ruleParamService.evict(bizWorkloadRule.getRuleCode());
         return rows;
     }
 
@@ -91,17 +96,19 @@ public class BizWorkloadRuleServiceImpl implements IBizWorkloadRuleService
      * @return 结果
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public int deleteBizWorkloadRuleByIds(Long[] ids)
     {
-        for (Long id : ids)
+        List<String> codes = new ArrayList<>();
+        Long[] orderedIds = Arrays.stream(ids).distinct().sorted().toArray(Long[]::new);
+        for (Long id : orderedIds)
         {
-            BizWorkloadRule old = bizWorkloadRuleMapper.selectBizWorkloadRuleById(id);
-            if (old != null)
-            {
-                ruleParamService.evict(old.getRuleCode());
-            }
+            BizWorkloadRule old = bizWorkloadRuleMapper.selectBizWorkloadRuleByIdForUpdate(id);
+            if (old != null) codes.add(old.getRuleCode());
         }
-        return bizWorkloadRuleMapper.deleteBizWorkloadRuleByIds(ids);
+        int rows = bizWorkloadRuleMapper.deleteBizWorkloadRuleByIds(orderedIds);
+        if (rows > 0) codes.forEach(ruleParamService::evict);
+        return rows;
     }
 
     /**
@@ -111,13 +118,12 @@ public class BizWorkloadRuleServiceImpl implements IBizWorkloadRuleService
      * @return 结果
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public int deleteBizWorkloadRuleById(Long id)
     {
-        BizWorkloadRule old = bizWorkloadRuleMapper.selectBizWorkloadRuleById(id);
-        if (old != null)
-        {
-            ruleParamService.evict(old.getRuleCode());
-        }
-        return bizWorkloadRuleMapper.deleteBizWorkloadRuleById(id);
+        BizWorkloadRule old = bizWorkloadRuleMapper.selectBizWorkloadRuleByIdForUpdate(id);
+        int rows = bizWorkloadRuleMapper.deleteBizWorkloadRuleById(id);
+        if (rows > 0 && old != null) ruleParamService.evict(old.getRuleCode());
+        return rows;
     }
 }

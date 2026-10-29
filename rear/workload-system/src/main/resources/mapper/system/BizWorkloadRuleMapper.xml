@@ -40,6 +40,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where id = #{id}
     </select>
 
+    <select id="selectBizWorkloadRuleByIdForUpdate" parameterType="Long" resultMap="BizWorkloadRuleResult" flushCache="true">
+        <include refid="selectBizWorkloadRuleVo"/>
+        where id = #{id}
+        for update
+    </select>
+
     <insert id="insertBizWorkloadRule" parameterType="BizWorkloadRule" useGeneratedKeys="true" keyProperty="id">
         insert into biz_workload_rule
         <trim prefix="(" suffix=")" suffixOverrides=",">

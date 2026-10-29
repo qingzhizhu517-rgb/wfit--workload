@@ -39,10 +39,12 @@ public class SemesterCalendar
     {
         try
         {
+            if (semester == null || !semester.matches("\\d{4}-\\d{4}-[12]")) throw new IllegalArgumentException();
             String[] parts = semester.split("-");
             int yearStart = Integer.parseInt(parts[0]);
             int yearEnd = Integer.parseInt(parts[1]);
             int term = Integer.parseInt(parts[2]);
+            if (yearEnd != yearStart + 1) throw new IllegalArgumentException();
             if (term == 1)
             {
                 return new LocalDate[] { MonthDay.parse("--" + autumnStart).atYear(yearStart),
@@ -55,6 +57,13 @@ public class SemesterCalendar
         {
             throw new ServiceException("学期格式无法解析: " + semester + "（期望 2025-2026-1）");
         }
+    }
+
+    public LocalDate endOf(String semester)
+    {
+        LocalDate[] range = rangeOf(semester);
+        if (range[1].isBefore(range[0])) throw new ServiceException("学期校历结束日期早于开始日期: " + semester);
+        return range[1];
     }
 
     public String getAutumnStart()

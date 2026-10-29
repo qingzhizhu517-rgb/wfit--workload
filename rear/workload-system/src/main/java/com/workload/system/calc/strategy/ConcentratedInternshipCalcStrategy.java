@@ -1,6 +1,7 @@
 package com.workload.system.calc.strategy;
 
 import java.math.BigDecimal;
+import com.workload.system.calc.SemesterCalendar;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import com.workload.common.exception.ServiceException;
@@ -25,6 +26,9 @@ public class ConcentratedInternshipCalcStrategy extends AbstractWorkloadCalcStra
     @Autowired
     private RuleParamService ruleParamService;
 
+    @Autowired
+    private SemesterCalendar semesterCalendar = new SemesterCalendar();
+
     @Override
     public String getTypeCode()
     {
@@ -35,9 +39,9 @@ public class ConcentratedInternshipCalcStrategy extends AbstractWorkloadCalcStra
     public BigDecimal calculate(BizWorkloadItem item)
     {
         BizWlConcentratedInternship detail = loadDetail(item);
-        BigDecimal cap = ruleParamService.get("CAP_R6_MAX", new BigDecimal("20"));
+        BigDecimal cap = ruleParamService.get("CAP_R6_MAX", new BigDecimal("20"), semesterCalendar.endOf(item.getSemester()));
         BigDecimal r6 = num(detail.getR6()).min(cap);
-        BigDecimal constant = ruleParamService.get("CONST_COURSE_DESIGN", new BigDecimal("0.4"));
+        BigDecimal constant = ruleParamService.get("CONST_COURSE_DESIGN", new BigDecimal("0.4"), semesterCalendar.endOf(item.getSemester()));
         return scale(mul(num(detail.getW()), r6, constant));
     }
 
@@ -45,7 +49,7 @@ public class ConcentratedInternshipCalcStrategy extends AbstractWorkloadCalcStra
     public void afterCalculated(BizWorkloadItem item, BigDecimal value)
     {
         BizWlConcentratedInternship detail = loadDetail(item);
-        BigDecimal cap = ruleParamService.get("CAP_R6_MAX", new BigDecimal("20"));
+        BigDecimal cap = ruleParamService.get("CAP_R6_MAX", new BigDecimal("20"), semesterCalendar.endOf(item.getSemester()));
         item.setIsOverLimit(num(detail.getR6()).compareTo(cap) > 0 ? 1 : 0);
     }
 
