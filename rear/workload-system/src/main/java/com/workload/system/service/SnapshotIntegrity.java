@@ -64,24 +64,27 @@ public final class SnapshotIntegrity
             String expected = snapshot.getSnapshotHash();
             if (expected == null || !expected.matches("[0-9a-f]{64}"))
                 throw new IllegalArgumentException("内容哈希缺失或格式损坏");
-            boolean matches = context != null && context.formatVersion() == 2
-                    ? expected.equals(hashV2(snapshot))
+            boolean matches = context != null && context.formatVersion() >= 2
+                    ? expected.equals(context.formatVersion() == 3 ? hashV3(snapshot) : hashV2(snapshot))
                     : legacyMatches(snapshot, orderedValues, orderedSources);
             if (!matches) throw new IllegalArgumentException("内容哈希不符，历史证据已变更或缺失");
+            if (context != null && context.formatVersion() == 3) PolicyEvidenceIntegrity.verify(snapshot, context, values, sources);
             return new Verified(orderedValues, orderedSources, context);
         }
         catch (com.workload.common.exception.ServiceException e) { throw e; }
         catch (Exception e) { throw SnapshotIntegrity.failure(e.getMessage()); }
     }
 
-    public static String hashV2(BizWorkloadCalcSnapshot snapshot)
+    public static String hashV2(BizWorkloadCalcSnapshot snapshot) { return hashStructured(snapshot, 2); }
+    public static String hashV3(BizWorkloadCalcSnapshot snapshot) { return hashStructured(snapshot, 3); }
+    private static String hashStructured(BizWorkloadCalcSnapshot snapshot, int formatVersion)
     {
         try
         {
             Context context = SnapshotContextCodec.decode(snapshot.getContextJson());
-            if (context.formatVersion() != 2) throw new IllegalArgumentException("新哈希仅接受格式2");
+            if (context.formatVersion() != formatVersion) throw new IllegalArgumentException("结构化哈希格式不一致");
             ObjectNode payload = JSON.createObjectNode();
-            payload.put("formatVersion", 2);
+            payload.put("formatVersion", formatVersion);
             // 写入和读取均取持久化快照字段；类型只来自 context.formulaType。
             payload.set("itemId", JSON.valueToTree(snapshot.getItemId()));
             payload.set("calculationVersion", JSON.valueToTree(snapshot.getCalculationVersion()));

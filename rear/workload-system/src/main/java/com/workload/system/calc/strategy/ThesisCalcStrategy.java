@@ -1,6 +1,7 @@
 package com.workload.system.calc.strategy;
 
 import java.math.BigDecimal;
+import com.workload.system.calc.rule.CalculationPolicyContext;
 import com.workload.system.calc.SemesterCalendar;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -22,6 +23,10 @@ import com.workload.system.mapper.BizWlThesisMapper;
 @Component("thesisCalcStrategy")
 public class ThesisCalcStrategy extends AbstractWorkloadCalcStrategy
 {
+    private BigDecimal rule(String code, BigDecimal fallback, BizWorkloadItem item, CalculationPolicyContext context) {
+        return context == null ? ruleParamService.get(code, fallback, semesterCalendar.endOf(item.getSemester())) : context.value(code, fallback);
+    }
+
     @Autowired
     private BizWlThesisMapper bizWlThesisMapper;
 
@@ -38,14 +43,20 @@ public class ThesisCalcStrategy extends AbstractWorkloadCalcStrategy
     }
 
     @Override
-    public BigDecimal calculate(BizWorkloadItem item)
+    public BigDecimal calculate(BizWorkloadItem item) { return calculate(item, null); }
+
+    @Override
+    public BigDecimal calculate(BizWorkloadItem item, CalculationPolicyContext context)
     {
         BizWlThesis detail = loadDetail(item);
         return scale(mul(num(detail.getR5()), coef(detail.getK5())));
     }
 
     @Override
-    public void afterCalculated(BizWorkloadItem item, BigDecimal value)
+    public void afterCalculated(BizWorkloadItem item, BigDecimal value) { afterCalculated(item, value, null); }
+
+    @Override
+    public void afterCalculated(BizWorkloadItem item, BigDecimal value, CalculationPolicyContext context)
     {
         BizWlThesis detail = loadDetail(item);
         String level = StringUtils.hasText(detail.getEducationLevel()) ? detail.getEducationLevel()
@@ -55,11 +66,11 @@ public class ThesisCalcStrategy extends AbstractWorkloadCalcStrategy
         if (level != null && level.contains("专"))
         {
             // 第十四条5 专科：R5≤15 按实际计，＞15 须报院长批准
-            overLimit = r5.compareTo(ruleParamService.get("APPROVAL_R5_JUNIOR", new BigDecimal("15"), semesterCalendar.endOf(item.getSemester()))) > 0;
+            overLimit = r5.compareTo(rule("APPROVAL_R5_JUNIOR", new BigDecimal("15"), item, context)) > 0;
         }
         else
         {
-            overLimit = r5.compareTo(ruleParamService.get("APPROVAL_R5_BACHELOR", new BigDecimal("8"), semesterCalendar.endOf(item.getSemester()))) > 0;
+            overLimit = r5.compareTo(rule("APPROVAL_R5_BACHELOR", new BigDecimal("8"), item, context)) > 0;
         }
         item.setIsOverLimit(overLimit ? 1 : 0);
     }

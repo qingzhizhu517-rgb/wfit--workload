@@ -34,6 +34,21 @@ public class RuleParamServiceImpl implements RuleParamService
         BigDecimal value = doGet(code, asOfDate);
         return value == null ? fallback : value;
     }
+    @Override public RuleResolution resolve(String code, LocalDate date, BigDecimal fallback, String purpose)
+    {
+        Objects.requireNonNull(date, "asOfDate");
+        BizWorkloadRule query = new BizWorkloadRule(); query.setRuleCode(code); query.setStatus(1);
+        BizWorkloadRule row = EffectiveDateResolver.select(bizWorkloadRuleMapper.selectBizWorkloadRuleList(query),
+                date, BizWorkloadRule::getEffectiveFrom, BizWorkloadRule::getEffectiveTo, code);
+        if (row != null && row.getRuleValue() != null) {
+            RuleResolution resolution = RuleResolution.database(row,date); resolution.verify(); return resolution;
+        }
+        if (fallback == null) throw new ServiceException("规则参数缺失: " + code + "，日期 " + date);
+        RuleResolution resolution = RuleResolution.fallback(code,date,fallback,purpose,
+                row == null ? "NO_EFFECTIVE_RULE" : "RULE_VALUE_MISSING");
+        resolution.verify(); return resolution;
+    }
+
     @Override public void evict(String code)
     {
         if (code == null || code.isEmpty()) return;

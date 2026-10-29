@@ -11,6 +11,30 @@ import com.fasterxml.jackson.annotation.JsonFormat;
  */
 public class FactorFormulaVo
 {
+    /** Arithmetic reproducibility and policy provenance are independent dimensions. */
+    private String asOfDate;
+    public String getAsOfDate() { return asOfDate; }
+    public void setAsOfDate(String v) { asOfDate = v; }
+    private List<com.workload.system.calc.rule.RuleResolution> policySources;
+    private List<FactorEvidence> factorEvidence;
+    private List<DecisionEvidence> decisionEvidence;
+    private String evidenceStatus = "PARTIAL";
+    private List<String> missingEvidenceReasons = List.of("MISSING_HISTORICAL_SOURCE");
+    public record FactorEvidence(String key, String kind, String boundValue, String table,
+            String field, String ruleRef, String inputKey, String operation, String missingReason) {}
+    public record DecisionEvidence(String key, String ruleRef, String inputKey, String operation,
+            String threshold, boolean result, String educationLevel) {}
+    public List<com.workload.system.calc.rule.RuleResolution> getPolicySources() { return policySources; }
+    public void setPolicySources(List<com.workload.system.calc.rule.RuleResolution> v) { policySources = List.copyOf(v); }
+    public List<FactorEvidence> getFactorEvidence() { return factorEvidence; }
+    public void setFactorEvidence(List<FactorEvidence> v) { factorEvidence = List.copyOf(v); }
+    public List<DecisionEvidence> getDecisionEvidence() { return decisionEvidence; }
+    public void setDecisionEvidence(List<DecisionEvidence> v) { decisionEvidence = List.copyOf(v); }
+    public String getEvidenceStatus() { return evidenceStatus; }
+    public void setEvidenceStatus(String v) { evidenceStatus = v; }
+    public List<String> getMissingEvidenceReasons() { return missingEvidenceReasons; }
+    public void setMissingEvidenceReasons(List<String> v) { missingEvidenceReasons = List.copyOf(v); }
+
     private String formulaType;
     private String expression;
     private BigDecimal result;

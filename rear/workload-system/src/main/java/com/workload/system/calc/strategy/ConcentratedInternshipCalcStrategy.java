@@ -1,6 +1,7 @@
 package com.workload.system.calc.strategy;
 
 import java.math.BigDecimal;
+import com.workload.system.calc.rule.CalculationPolicyContext;
 import com.workload.system.calc.SemesterCalendar;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -20,6 +21,10 @@ import com.workload.system.mapper.BizWlConcentratedInternshipMapper;
 @Component("concentratedInternshipCalcStrategy")
 public class ConcentratedInternshipCalcStrategy extends AbstractWorkloadCalcStrategy
 {
+    private BigDecimal rule(String code, BigDecimal fallback, BizWorkloadItem item, CalculationPolicyContext context) {
+        return context == null ? ruleParamService.get(code, fallback, semesterCalendar.endOf(item.getSemester())) : context.value(code, fallback);
+    }
+
     @Autowired
     private BizWlConcentratedInternshipMapper bizWlConcentratedInternshipMapper;
 
@@ -36,20 +41,26 @@ public class ConcentratedInternshipCalcStrategy extends AbstractWorkloadCalcStra
     }
 
     @Override
-    public BigDecimal calculate(BizWorkloadItem item)
+    public BigDecimal calculate(BizWorkloadItem item) { return calculate(item, null); }
+
+    @Override
+    public BigDecimal calculate(BizWorkloadItem item, CalculationPolicyContext context)
     {
         BizWlConcentratedInternship detail = loadDetail(item);
-        BigDecimal cap = ruleParamService.get("CAP_R6_MAX", new BigDecimal("20"), semesterCalendar.endOf(item.getSemester()));
+        BigDecimal cap = rule("CAP_R6_MAX", new BigDecimal("20"), item, context);
         BigDecimal r6 = num(detail.getR6()).min(cap);
-        BigDecimal constant = ruleParamService.get("CONST_COURSE_DESIGN", new BigDecimal("0.4"), semesterCalendar.endOf(item.getSemester()));
+        BigDecimal constant = rule("CONST_COURSE_DESIGN", new BigDecimal("0.4"), item, context);
         return scale(mul(num(detail.getW()), r6, constant));
     }
 
     @Override
-    public void afterCalculated(BizWorkloadItem item, BigDecimal value)
+    public void afterCalculated(BizWorkloadItem item, BigDecimal value) { afterCalculated(item, value, null); }
+
+    @Override
+    public void afterCalculated(BizWorkloadItem item, BigDecimal value, CalculationPolicyContext context)
     {
         BizWlConcentratedInternship detail = loadDetail(item);
-        BigDecimal cap = ruleParamService.get("CAP_R6_MAX", new BigDecimal("20"), semesterCalendar.endOf(item.getSemester()));
+        BigDecimal cap = rule("CAP_R6_MAX", new BigDecimal("20"), item, context);
         item.setIsOverLimit(num(detail.getR6()).compareTo(cap) > 0 ? 1 : 0);
     }
 

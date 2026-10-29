@@ -4,6 +4,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
+import com.workload.system.calc.rule.CalculationPolicyContext;
 import com.workload.system.calc.SemesterCalendar;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -212,23 +213,24 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
         workloadItemMapper.insertBizWorkloadItem(item);
 
         // 6. 创建类别明细并计算（重复系数按 repeatOrder 取值）
-        BigDecimal calculated = createDetailAndCalc(dto, item, repeatOrder);
+        CalculationPolicyContext context = new CalculationPolicyContext(semesterCalendar.endOf(dto.getSemester()), ruleParamService);
+        BigDecimal calculated = createDetailAndCalc(dto, item, repeatOrder, context);
 
         // 7. 触发策略后置回调：G5/G6 据此在 item 上置 is_over_limit 超标标记。
         // 漏调的后果是「是否超限」要等到下一次重算才落库，刚导完看列表和附件1 全显示未超限。
-        calcStrategyFactory.get(dto.getWorkloadType().toUpperCase()).afterCalculated(item, calculated);
+        calcStrategyFactory.get(dto.getWorkloadType().toUpperCase()).afterCalculated(item, calculated, context);
         item.setCalculatedWorkload(calculated);
 
         // 8. 固化不可变计算快照，与回写落在同一行导入事务：导入即产生可追溯的因子/来源/规则版本快照，
         // 而不必等下一次重算。快照 INSERT 与主表 UPDATE 同事务，任一失败整行回滚。
         // 用 buildFresh：导入首次固化快照必须反映当前子表真值，不做快照 overlay。
-        FactorFormulaVo formula = factorFormulaService.buildFresh(item);
+        FactorFormulaVo formula = factorFormulaService.buildFresh(item, context);
         if (formula == null)
         {
             throw new ServiceException("无法构建计算公式，明细子表可能缺失, itemId=" + item.getId());
         }
         item.setCalculationVersion(snapshotService.capture(item, formula,
-                "RULE-" + dto.getSemester()).getCalculationVersion());
+                context.policySetHash()).getCalculationVersion());
         item.setLastCalculatedAt(new Date());
 
         // 9. 回写计算结果（连同回调置上的 is_over_limit、快照版本/时间一并落库，共用同一条 UPDATE）
@@ -988,24 +990,24 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
     /**
      * 创建类别明细并调用策略计算
      */
-    private BigDecimal createDetailAndCalc(TeachingTaskImportDTO dto, BizWorkloadItem item, long repeatOrder)
+    private BigDecimal createDetailAndCalc(TeachingTaskImportDTO dto, BizWorkloadItem item, long repeatOrder, CalculationPolicyContext context)
     {
         String type = dto.getWorkloadType().toUpperCase();
 
         switch (type)
         {
             case "G1":
-                return createG1Detail(dto, item, repeatOrder);
+                return createG1Detail(dto, item, repeatOrder, context);
             case "G2":
-                return createG2Detail(dto, item);
+                return createG2Detail(dto, item, context);
             case "G3":
-                return createG3Detail(dto, item, repeatOrder);
+                return createG3Detail(dto, item, repeatOrder, context);
             case "G4":
-                return createG4Detail(dto, item);
+                return createG4Detail(dto, item, context);
             case "G5":
-                return createG5Detail(dto, item);
+                return createG5Detail(dto, item, context);
             case "G6":
-                return createG6Detail(dto, item);
+                return createG6Detail(dto, item, context);
             default:
                 throw new ServiceException("不支持的工作量类别: " + type);
         }
@@ -1014,7 +1016,7 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
     /**
      * G1 理论课：J1 × C1 × K1 × Q1 × Q2 × Q3 × N
      */
-    private BigDecimal createG1Detail(TeachingTaskImportDTO dto, BizWorkloadItem item, long repeatOrder)
+    private BigDecimal createG1Detail(TeachingTaskImportDTO dto, BizWorkloadItem item, long repeatOrder, CalculationPolicyContext context)
     {
         BizWlTheory detail = new BizWlTheory();
         detail.setItemId(item.getId());
@@ -1028,13 +1030,13 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
         wlTheoryMapper.insertBizWlTheory(detail);
 
         // 策略计算（G1 策略必配；未配/配错时 CalcStrategyFactory 抛异常，由外层记为该行错误）
-        return calcStrategyFactory.get("G1").calculate(item);
+        return calcStrategyFactory.get("G1").calculate(item, context);
     }
 
     /**
      * G2 实践课：J2 × K × C2 × Q1 × Q2
      */
-    private BigDecimal createG2Detail(TeachingTaskImportDTO dto, BizWorkloadItem item)
+    private BigDecimal createG2Detail(TeachingTaskImportDTO dto, BizWorkloadItem item, CalculationPolicyContext context)
     {
         BizWlPractice detail = new BizWlPractice();
         detail.setItemId(item.getId());
@@ -1046,13 +1048,13 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
         detail.setQ3(BigDecimal.ONE);
         wlPracticeMapper.insertBizWlPractice(detail);
 
-        return calcStrategyFactory.get("G2").calculate(item);
+        return calcStrategyFactory.get("G2").calculate(item, context);
     }
 
     /**
      * G3 实习实训：T × D × K × Q1 × Q2
      */
-    private BigDecimal createG3Detail(TeachingTaskImportDTO dto, BizWorkloadItem item, long repeatOrder)
+    private BigDecimal createG3Detail(TeachingTaskImportDTO dto, BizWorkloadItem item, long repeatOrder, CalculationPolicyContext context)
     {
         BizWlInternshipTraining detail = new BizWlInternshipTraining();
         detail.setItemId(item.getId());
@@ -1064,13 +1066,13 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
         detail.setQ3(BigDecimal.ONE);
         wlInternshipTrainingMapper.insertBizWlInternshipTraining(detail);
 
-        return calcStrategyFactory.get("G3").calculate(item);
+        return calcStrategyFactory.get("G3").calculate(item, context);
     }
 
     /**
      * G4 课程设计：J4 × R4 × 0.4
      */
-    private BigDecimal createG4Detail(TeachingTaskImportDTO dto, BizWorkloadItem item)
+    private BigDecimal createG4Detail(TeachingTaskImportDTO dto, BizWorkloadItem item, CalculationPolicyContext context)
     {
         BizWlCourseDesign detail = new BizWlCourseDesign();
         detail.setItemId(item.getId());
@@ -1078,13 +1080,13 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
         detail.setR4(dto.getStudentCount() != null ? dto.getStudentCount().longValue() : 0L);
         wlCourseDesignMapper.insertBizWlCourseDesign(detail);
 
-        return calcStrategyFactory.get("G4").calculate(item);
+        return calcStrategyFactory.get("G4").calculate(item, context);
     }
 
     /**
      * G5 毕业论文：R5 × K5
      */
-    private BigDecimal createG5Detail(TeachingTaskImportDTO dto, BizWorkloadItem item)
+    private BigDecimal createG5Detail(TeachingTaskImportDTO dto, BizWorkloadItem item, CalculationPolicyContext context)
     {
         BizWlThesis detail = new BizWlThesis();
         detail.setItemId(item.getId());
@@ -1094,13 +1096,13 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
         detail.setDisciplineCategory(isLiGong(dto.getMajorCategory()) ? "SCITECH" : "LIBERAL_ARTS");
         wlThesisMapper.insertBizWlThesis(detail);
 
-        return calcStrategyFactory.get("G5").calculate(item);
+        return calcStrategyFactory.get("G5").calculate(item, context);
     }
 
     /**
      * G6 集中实习：W × R6 × 0.4
      */
-    private BigDecimal createG6Detail(TeachingTaskImportDTO dto, BizWorkloadItem item)
+    private BigDecimal createG6Detail(TeachingTaskImportDTO dto, BizWorkloadItem item, CalculationPolicyContext context)
     {
         BizWlConcentratedInternship detail = new BizWlConcentratedInternship();
         detail.setItemId(item.getId());
@@ -1108,7 +1110,7 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
         detail.setR6(dto.getStudentCount() != null ? dto.getStudentCount().longValue() : 0L);
         wlConcentratedInternshipMapper.insertBizWlConcentratedInternship(detail);
 
-        return calcStrategyFactory.get("G6").calculate(item);
+        return calcStrategyFactory.get("G6").calculate(item, context);
     }
 
     // --- 系数计算辅助方法 ---

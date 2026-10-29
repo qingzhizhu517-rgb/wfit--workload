@@ -6,7 +6,7 @@
 
 - [x] 日期选值/缓存/LocalDate契约：570常规、31IT、双时区40HTTP。
 - [x] v2完整性：新canonical hash，旧v0/v1严格兼容，Controller明确50017，真实MySQL和HTTP证明。
-- [ ] A：实际规则解析对象与显式计算上下文、G4/G5/G6来源、明细v3。
+- [x] A：实际规则解析对象与显式计算上下文、G4/G5/G6来源、明细v3。
 - [ ] B：新导入/人工修改/系数批准的实际因子来源；其他酬金实际计算证据。
 - [ ] C：汇总/酬金只追加结算证据，资格与费率完整性、审批门禁、历史展示/导出。
 
@@ -57,3 +57,5 @@ WorkloadCalc当前recalcAll/run在Summary已算Pay后又算一次，加入结算
 所有DDL先审清单和后置契约，副本重复执行演练；schema变更只13306隔离实例，原3306不动。当前MySQL9.0.1，不冒称MySQL8。所有测试Maven串行，JDK17；MyBatis SESSION缓存不改成STATEMENT。运行jar在package前核对PID后停止，保留日志，避免原地覆盖活跃jar。
 
 worker完成后send_message不会触发新回合，修复/续作需followup_task。HANDOFF.md保持当前真实进展与进程配置。
+
+用户补充（2026-10-29）：正式启用学期暂不指定，先完成隔离验收。C正式配置应保持空，QA专用配置与业务生效分开记录。

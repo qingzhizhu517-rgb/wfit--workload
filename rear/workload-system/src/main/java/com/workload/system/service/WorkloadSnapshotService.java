@@ -89,7 +89,7 @@ public class WorkloadSnapshotService
         snapshot.setContextJson(contextJson);
         snapshot.setRuleVersion(ruleVersion);
         snapshot.setResult(result);
-        snapshot.setSnapshotHash(SnapshotIntegrity.hashV2(snapshot));
+        snapshot.setSnapshotHash(formula.getPolicySources() == null ? SnapshotIntegrity.hashV2(snapshot) : SnapshotIntegrity.hashV3(snapshot));
         SnapshotIntegrity.verify(snapshot);
         snapshot.setCreatedBy(currentUser());
         snapshot.setCreatedAt(new Date());

@@ -167,6 +167,8 @@ class WorkloadFactorFormulaBuilderTest
                 .containsExactly("J4", "R4", "CONST");
         assertThat(result.getFactors().get(2).getValue()).isEqualTo(n("0.4"));
         assertThat(result.getFactors().get(2).getRuleVersion()).isEqualTo("historical-v1");
+        assertThat(result.getEvidenceStatus()).isEqualTo("PARTIAL");
+        assertThat(result.getMissingEvidenceReasons()).contains("MISSING_HISTORICAL_SOURCE");
         assertThat(result.getSourceTask()).isNull();
         assertThat(result.getDescription()).contains("未保存", "源数据");
         verifyNoInteractions(ruleParamService, courseDesignMapper, teachingTaskMapper);
@@ -246,20 +248,20 @@ class WorkloadFactorFormulaBuilderTest
     }
 
     @Test
-    void freshFormulaCarriesApprovedFactorReference()
+    void equalFreshFactorCannotClaimUnrecordedApprovalReference()
     {
         BizWlTheory detail = new BizWlTheory();
         detail.setQ2(n("1.5"));
         when(theoryMapper.selectBizWlTheoryByItemId(7L)).thenReturn(detail);
         com.workload.system.domain.BizCoefficientAdjustment approved = new com.workload.system.domain.BizCoefficientAdjustment();
         approved.setId(81L); approved.setFactorCode("Q2"); approved.setRequestedValue(n("1.50"));
-        when(adjustmentMapper.selectCoefficientAdjustmentList(any())).thenReturn(java.util.List.of(approved));
+        org.mockito.Mockito.lenient().when(adjustmentMapper.selectCoefficientAdjustmentList(any())).thenReturn(java.util.List.of(approved));
         FactorFormulaVo result = builder.buildFresh(item("G1", "IMPORT", "48"));
         FactorFormulaVo.FactorVo q2 = result.getFactors().stream().filter(f -> "Q2".equals(f.getKey())).findFirst().orElseThrow();
-        assertThat(q2.getSource()).isEqualTo("APPROVED_OVERRIDE");
-        assertThat(q2.getSourceRef()).isEqualTo("coefficient-adjustment:81");
-        verify(adjustmentMapper).selectCoefficientAdjustmentList(org.mockito.ArgumentMatchers.argThat(filter ->
-                filter.getItemId().equals(7L) && filter.getCategory().equals("G1") && filter.getStatus() == 1));
+        assertThat(q2.getSource()).isEqualTo("MISSING_HISTORICAL_SOURCE");
+        assertThat(q2.getSourceRef()).isNull();
+        assertThat(result.getEvidenceStatus()).isEqualTo("PARTIAL");
+        verifyNoInteractions(adjustmentMapper);
     }
 
     @Test
@@ -271,7 +273,7 @@ class WorkloadFactorFormulaBuilderTest
         latest.setId(82L); latest.setFactorCode("Q2"); latest.setRequestedValue(n("1.8"));
         com.workload.system.domain.BizCoefficientAdjustment older = new com.workload.system.domain.BizCoefficientAdjustment();
         older.setId(81L); older.setFactorCode("Q2"); older.setRequestedValue(n("1.5"));
-        when(adjustmentMapper.selectCoefficientAdjustmentList(any())).thenReturn(java.util.List.of(latest, older));
+        org.mockito.Mockito.lenient().when(adjustmentMapper.selectCoefficientAdjustmentList(any())).thenReturn(java.util.List.of(latest, older));
 
         FactorFormulaVo result = builder.buildFresh(item("G1", "IMPORT", "48"));
         FactorFormulaVo.FactorVo q2 = result.getFactors().stream().filter(f -> "Q2".equals(f.getKey())).findFirst().orElseThrow();
@@ -324,7 +326,7 @@ class WorkloadFactorFormulaBuilderTest
     /**
      * capture 路径回归：buildFresh 只按当前子表构造，绝不 overlay 旧快照。
      * 即便存在含 Q2=1.50/APPROVED_OVERRIDE 的旧快照，buildFresh 仍返回子表原值
-     * （Q2=1、source=RULE_DEFAULT），且不查询快照——否则新快照会冻进旧因子。
+     * （Q2=1、source=MISSING_HISTORICAL_SOURCE），且不查询快照——否则新快照会冻进旧因子。
      */
     @Test
     void buildFreshIgnoresPriorSnapshotForCapture()
@@ -338,14 +340,14 @@ class WorkloadFactorFormulaBuilderTest
         FactorFormulaVo vo = builder.buildFresh(item);
 
         assertThat(vo).isNotNull();
-        // Q2 取子表原值 1，来源为 RULE_DEFAULT，不被旧快照的 1.50/APPROVED_OVERRIDE 覆盖
+        // Q2 取子表原值 1，原始政策来源缺失，不被旧快照的 1.50/APPROVED_OVERRIDE 覆盖
         assertThat(vo.getFactors()).filteredOn(f -> "Q2".equals(f.getKey()))
                 .extracting(f -> ((BigDecimal) f.getValue()))
                 .first().asInstanceOf(org.assertj.core.api.InstanceOfAssertFactories.BIG_DECIMAL)
                 .isEqualByComparingTo("1");
         assertThat(vo.getFactors()).filteredOn(f -> "Q2".equals(f.getKey()))
                 .extracting(FactorFormulaVo.FactorVo::getSource)
-                .containsExactly("RULE_DEFAULT");
+                .containsExactly("MISSING_HISTORICAL_SOURCE");
         // buildFresh 绝不查询快照
         verify(snapshotMapper, never()).selectLatestByItemId(any());
     }

@@ -1,6 +1,7 @@
 package com.workload.system.calc.strategy;
 
 import java.math.BigDecimal;
+import com.workload.system.calc.rule.CalculationPolicyContext;
 import com.workload.system.calc.SemesterCalendar;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -23,6 +24,10 @@ import com.workload.system.mapper.BizWlCourseDesignMapper;
 @Component("courseDesignCalcStrategy")
 public class CourseDesignCalcStrategy extends AbstractWorkloadCalcStrategy
 {
+    private BigDecimal rule(String code, BigDecimal fallback, BizWorkloadItem item, CalculationPolicyContext context) {
+        return context == null ? ruleParamService.get(code, fallback, semesterCalendar.endOf(item.getSemester())) : context.value(code, fallback);
+    }
+
     @Autowired
     private BizWlCourseDesignMapper bizWlCourseDesignMapper;
 
@@ -39,21 +44,27 @@ public class CourseDesignCalcStrategy extends AbstractWorkloadCalcStrategy
     }
 
     @Override
-    public BigDecimal calculate(BizWorkloadItem item)
+    public BigDecimal calculate(BizWorkloadItem item) { return calculate(item, null); }
+
+    @Override
+    public BigDecimal calculate(BizWorkloadItem item, CalculationPolicyContext context)
     {
         BizWlCourseDesign detail = loadDetail(item);
-        BigDecimal constant = ruleParamService.get("CONST_COURSE_DESIGN", new BigDecimal("0.4"), semesterCalendar.endOf(item.getSemester()));
+        BigDecimal constant = rule("CONST_COURSE_DESIGN", new BigDecimal("0.4"), item, context);
         // 第十四条4 未写「超出部分不计算」，R4 按实际人数计（2026-09-10 按办法原文修正，
         // 原 min(R4, CAP_R4_MAX) 截断会擅自减少教师工作量）
         return scale(mul(num(detail.getJ4()), num(detail.getR4()), constant));
     }
 
     @Override
-    public void afterCalculated(BizWorkloadItem item, BigDecimal value)
+    public void afterCalculated(BizWorkloadItem item, BigDecimal value) { afterCalculated(item, value, null); }
+
+    @Override
+    public void afterCalculated(BizWorkloadItem item, BigDecimal value, CalculationPolicyContext context)
     {
         BizWlCourseDesign detail = loadDetail(item);
         // CAP_R4_MAX 由截断上限改为告警阈值：超 60 人仅置超标标记，不减量
-        BigDecimal warnThreshold = ruleParamService.get("CAP_R4_MAX", new BigDecimal("60"), semesterCalendar.endOf(item.getSemester()));
+        BigDecimal warnThreshold = rule("CAP_R4_MAX", new BigDecimal("60"), item, context);
         item.setIsOverLimit(num(detail.getR4()).compareTo(warnThreshold) > 0 ? 1 : 0);
     }
 

@@ -19,4 +19,7 @@ public interface IWorkloadFactorFormulaService
      * 不被上一版快照污染。
      */
     FactorFormulaVo buildFresh(BizWorkloadItem item);
+
+    /** Actual calculation context, shared with strategy and callback. */
+    FactorFormulaVo buildFresh(BizWorkloadItem item, com.workload.system.calc.rule.CalculationPolicyContext context);
 }

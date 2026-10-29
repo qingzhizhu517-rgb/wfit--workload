@@ -1,6 +1,8 @@
 package com.workload.system.service.impl;
 
 import java.math.BigDecimal;
+import com.workload.system.calc.rule.CalculationPolicyContext;
+import com.workload.system.calc.rule.PolicyHash;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
@@ -99,9 +101,9 @@ class TeachingTaskInputContractTest
         CalcStrategyFactory factory = mock(CalcStrategyFactory.class);
         WorkloadCalcStrategy strategy = mock(WorkloadCalcStrategy.class);
         when(factory.get(anyString())).thenReturn(strategy);
-        when(strategy.calculate(any())).thenReturn(BigDecimal.ONE);
+        when(strategy.calculate(any(), any(CalculationPolicyContext.class))).thenReturn(BigDecimal.ONE);
         IWorkloadFactorFormulaService formulas = mock(IWorkloadFactorFormulaService.class);
-        when(formulas.buildFresh(any())).thenReturn(mock(FactorFormulaVo.class));
+        when(formulas.buildFresh(any(), any(CalculationPolicyContext.class))).thenReturn(mock(FactorFormulaVo.class));
         WorkloadSnapshotService snapshots = mock(WorkloadSnapshotService.class);
         BizWorkloadCalcSnapshot snapshot = new BizWorkloadCalcSnapshot();
         snapshot.setCalculationVersion(1L);

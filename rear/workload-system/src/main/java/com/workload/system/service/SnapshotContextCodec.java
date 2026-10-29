@@ -10,6 +10,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.workload.common.exception.ServiceException;
 import com.workload.system.domain.vo.FactorFormulaVo;
+import com.workload.system.domain.vo.FactorFormulaVo.FactorEvidence;
+import com.workload.system.domain.vo.FactorFormulaVo.DecisionEvidence;
+import com.workload.system.calc.rule.RuleResolution;
 import com.workload.system.domain.vo.FactorFormulaVo.FactorVo;
 import com.workload.system.domain.vo.FactorFormulaVo.SourceTaskVo;
 
@@ -24,7 +27,9 @@ public final class SnapshotContextCodec
             String ruleCode, String ruleVersion, String sourceRef) {}
 
     public record Context(int formatVersion, String formulaType, String description,
-            boolean reproducible, SourceTaskVo sourceTask, List<FactorContext> factors) {}
+            boolean reproducible, SourceTaskVo sourceTask, List<FactorContext> factors,
+            List<RuleResolution> policySources, List<FactorEvidence> factorEvidence,
+            List<DecisionEvidence> decisionEvidence, String evidenceStatus, List<String> missingEvidenceReasons, String asOfDate) {}
 
     public static String encode(FactorFormulaVo formula)
     {
@@ -37,8 +42,16 @@ public final class SnapshotContextCodec
                             f.getRuleCode(), f.getRuleVersion(), f.getSourceRef())).toList();
         try
         {
-            return JSON.writeValueAsString(new Context(2, formula.getFormulaType(), formula.getDescription(),
-                    formula.isReproducible(), formula.getSourceTask(), factors));
+            if (formula.getPolicySources() != null)
+                return JSON.writeValueAsString(new Context(3, formula.getFormulaType(), formula.getDescription(),
+                        formula.isReproducible(), formula.getSourceTask(), factors, formula.getPolicySources(),
+                        formula.getFactorEvidence(), formula.getDecisionEvidence(), formula.getEvidenceStatus(), formula.getMissingEvidenceReasons(), formula.getAsOfDate()));
+            // Keep the original v2 fields and insertion order byte-for-byte, including historical v1 fixtures.
+            Map<String,Object> legacy = new java.util.LinkedHashMap<>();
+            legacy.put("formatVersion",2); legacy.put("formulaType",formula.getFormulaType());
+            legacy.put("description",formula.getDescription()); legacy.put("reproducible",formula.isReproducible());
+            legacy.put("sourceTask",formula.getSourceTask()); legacy.put("factors",factors);
+            return JSON.writeValueAsString(legacy);
         }
         catch (JsonProcessingException e)
         {
@@ -54,8 +67,11 @@ public final class SnapshotContextCodec
             com.fasterxml.jackson.databind.JsonNode version = node == null ? null : node.get("formatVersion");
             if (version == null || !version.isIntegralNumber() || !version.canConvertToInt())
                 throw new IllegalArgumentException("格式版本必须是显式整数");
+            if (version.intValue() < 3 && java.util.List.of("policySources", "factorEvidence", "decisionEvidence", "evidenceStatus", "missingEvidenceReasons", "asOfDate")
+                    .stream().anyMatch(node::has))
+                throw new IllegalArgumentException("历史格式不允许政策来源扩展字段");
             Context context = SnapshotIntegrity.json().treeToValue(node, Context.class);
-            if (context == null || (context.formatVersion() != 1 && context.formatVersion() != 2)
+            if (context == null || (context.formatVersion() != 1 && context.formatVersion() != 2 && context.formatVersion() != 3)
                     || context.formulaType() == null || context.formulaType().isBlank() || context.factors() == null)
                 throw new IllegalArgumentException("不支持或不完整的上下文格式");
             java.util.Set<String> keys = new java.util.HashSet<>();
@@ -94,6 +110,12 @@ public final class SnapshotContextCodec
                     persisted.getResult(), context.description(),
                     context.reproducible() && persisted.isReproducible(), factors);
             restored.setSourceTask(context.sourceTask());
+            if (context.formatVersion() == 3) {
+                restored.setAsOfDate(context.asOfDate());
+                restored.setPolicySources(context.policySources()); restored.setFactorEvidence(context.factorEvidence());
+                restored.setDecisionEvidence(context.decisionEvidence()); restored.setEvidenceStatus(context.evidenceStatus());
+                restored.setMissingEvidenceReasons(context.missingEvidenceReasons());
+            } // v1/v2 retain explicit PARTIAL / MISSING_HISTORICAL_SOURCE defaults; never consult current rules.
             return restored;
         }
         catch (Exception e)

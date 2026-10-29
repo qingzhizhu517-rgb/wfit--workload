@@ -34,6 +34,13 @@ public interface RuleParamService
     /** 指定核算基准日；仅在该日期无有效规则时使用显式默认值。 */
     BigDecimal get(String ruleCode, BigDecimal defaultValue, LocalDate asOfDate);
 
+    /** Actual row evidence, deliberately separate from the scalar cache namespace. */
+    RuleResolution resolve(String code, LocalDate date, BigDecimal fallback, String fallbackPurpose);
+
+    default RuleResolution resolve(String code, LocalDate date) {
+        return resolve(code, date, null, null);
+    }
+
     /**
      * 使指定规则编码缓存失效
      *

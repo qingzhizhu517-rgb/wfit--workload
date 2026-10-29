@@ -1,19 +1,19 @@
 package com.workload.system.service.impl;
 
 import java.math.BigDecimal;
+import com.workload.system.calc.rule.*;
+import com.workload.system.domain.vo.FactorFormulaVo.FactorEvidence;
+import com.workload.system.domain.vo.FactorFormulaVo.DecisionEvidence;
 import com.workload.system.calc.SemesterCalendar;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.HashSet;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.workload.common.exception.ServiceException;
 import com.workload.system.calc.rule.RuleParamService;
 import com.workload.system.domain.BizTeachingTask;
-import com.workload.system.domain.BizCoefficientAdjustment;
-import com.workload.system.mapper.BizCoefficientAdjustmentMapper;
 import com.workload.system.domain.BizWlConcentratedInternship;
 import com.workload.system.domain.BizWlCourseDesign;
 import com.workload.system.domain.BizWlInternshipTraining;
@@ -71,7 +71,6 @@ public class WorkloadFactorFormulaServiceImpl implements IWorkloadFactorFormulaS
     @Autowired private BizWorkloadCalcSnapshotMapper snapshotMapper;
     @Autowired private BizTeachingTaskMapper teachingTaskMapper;
 
-    @Autowired private BizCoefficientAdjustmentMapper adjustmentMapper;
 
     @Override
     public FactorFormulaVo build(BizWorkloadItem item)
@@ -96,7 +95,10 @@ public class WorkloadFactorFormulaServiceImpl implements IWorkloadFactorFormulaS
     }
 
     @Override
-    public FactorFormulaVo buildFresh(BizWorkloadItem item)
+    public FactorFormulaVo buildFresh(BizWorkloadItem item) { return buildFresh(item, null); }
+
+    @Override
+    public FactorFormulaVo buildFresh(BizWorkloadItem item, CalculationPolicyContext context)
     {
         if (item == null || item.getItemType() == null) return null;
         FactorFormulaVo vo = switch (item.getItemType())
@@ -104,43 +106,20 @@ public class WorkloadFactorFormulaServiceImpl implements IWorkloadFactorFormulaS
             case "G1" -> buildG1(item, (Boolean.TRUE.equals(item.getParams().get("currentRead")) ? theoryMapper.selectByItemIdForUpdate(item.getId()) : theoryMapper.selectBizWlTheoryByItemId(item.getId())));
             case "G2" -> buildG2(item, (Boolean.TRUE.equals(item.getParams().get("currentRead")) ? practiceMapper.selectByItemIdForUpdate(item.getId()) : practiceMapper.selectBizWlPracticeByItemId(item.getId())));
             case "G3" -> buildG3(item, (Boolean.TRUE.equals(item.getParams().get("currentRead")) ? internshipTrainingMapper.selectByItemIdForUpdate(item.getId()) : internshipTrainingMapper.selectBizWlInternshipTrainingByItemId(item.getId())));
-            case "G4" -> buildG4(item, (Boolean.TRUE.equals(item.getParams().get("currentRead")) ? courseDesignMapper.selectByItemIdForUpdate(item.getId()) : courseDesignMapper.selectBizWlCourseDesignByItemId(item.getId())));
-            case "G5" -> buildG5(item, (Boolean.TRUE.equals(item.getParams().get("currentRead")) ? thesisMapper.selectByItemIdForUpdate(item.getId()) : thesisMapper.selectBizWlThesisByItemId(item.getId())));
-            case "G6" -> buildG6(item, (Boolean.TRUE.equals(item.getParams().get("currentRead")) ? concentratedInternshipMapper.selectByItemIdForUpdate(item.getId()) : concentratedInternshipMapper.selectBizWlConcentratedInternshipByItemId(item.getId())));
+            case "G4" -> buildG4(item, (Boolean.TRUE.equals(item.getParams().get("currentRead")) ? courseDesignMapper.selectByItemIdForUpdate(item.getId()) : courseDesignMapper.selectBizWlCourseDesignByItemId(item.getId())), context);
+            case "G5" -> buildG5(item, (Boolean.TRUE.equals(item.getParams().get("currentRead")) ? thesisMapper.selectByItemIdForUpdate(item.getId()) : thesisMapper.selectBizWlThesisByItemId(item.getId())), context);
+            case "G6" -> buildG6(item, (Boolean.TRUE.equals(item.getParams().get("currentRead")) ? concentratedInternshipMapper.selectByItemIdForUpdate(item.getId()) : concentratedInternshipMapper.selectBizWlConcentratedInternshipByItemId(item.getId())), context);
             case "G11" -> buildG11(item, (Boolean.TRUE.equals(item.getParams().get("currentRead")) ? managementMapper.selectByItemIdForUpdate(item.getId()) : managementMapper.selectBizWlManagementByItemId(item.getId())));
             default -> null;
         };
         if (vo == null) return null;
         // 源数据（教学任务）只读快照始终按当前任务表构造，与是否 overlay 无关。
         vo.setSourceTask(buildSourceTask(item));
-        attachApprovedSources(item, vo);
+        if (context == null) {
+            // Materialized coefficients do not retain the rule/approval that originally produced them.
+            vo.getFactors().stream().filter(f -> RULE_DEFAULT.equals(f.getSource())).forEach(f -> f.setSource("MISSING_HISTORICAL_SOURCE"));
+        } else attachPolicyEvidence(item, vo, context);
         return vo;
-    }
-
-    /** 只把当前仍生效的最新批准值记为审批来源，不把恰好相等的旧批文重新套用。 */
-    private void attachApprovedSources(BizWorkloadItem item, FactorFormulaVo vo)
-    {
-        if (item.getId() == null || (!"G1".equals(item.getItemType()) && !"G2".equals(item.getItemType()))) return;
-        BizCoefficientAdjustment filter = new BizCoefficientAdjustment();
-        filter.setItemId(item.getId());
-        filter.setCategory(item.getItemType());
-        filter.setStatus(BizCoefficientAdjustment.STATUS_APPROVED);
-        // Mapper按id降序；同一因子只看最新批准申请，后续更改了值就不再冒充该审批结果。
-        Set<String> seen = new HashSet<>();
-        filter.getParams().put("currentRead", item.getParams().get("currentRead"));
-        for (BizCoefficientAdjustment approved : adjustmentMapper.selectCoefficientAdjustmentList(filter))
-        {
-            if (!seen.add(approved.getFactorCode())) continue;
-            for (FactorVo factor : vo.getFactors())
-            {
-                if (factor.getKey().equals(approved.getFactorCode()) && factor.getValue() instanceof BigDecimal value
-                        && approved.getRequestedValue() != null && value.compareTo(approved.getRequestedValue()) == 0)
-                {
-                    factor.setSource("APPROVED_OVERRIDE");
-                    factor.setSourceRef("coefficient-adjustment:" + approved.getId());
-                }
-            }
-        }
     }
 
     /**
@@ -273,46 +252,56 @@ public class WorkloadFactorFormulaServiceImpl implements IWorkloadFactorFormulaS
         return formula(item, "G3", "T × D × K × Q1 × Q2", "Q3 仅展示，不参与工作量计算", true, f);
     }
 
-    private FactorFormulaVo buildG4(BizWorkloadItem item, BizWlCourseDesign d)
+    private FactorFormulaVo buildG4(BizWorkloadItem item, BizWlCourseDesign d, CalculationPolicyContext context)
     {
         if (d == null) return null;
         List<FactorVo> f = new ArrayList<>();
         add(f, "J4", num(d.getJ4()), IMPORT_VALUE, "课程设计学分", "NORMAL");
         String status = Integer.valueOf(1).equals(item.getIsOverLimit()) ? "WARNING" : "NORMAL";
         add(f, "R4", num(d.getR4()), IMPORT_VALUE, "实际指导人数；超过阈值仅告警，不截断", status);
-        BigDecimal constant = ruleParamService.get("CONST_COURSE_DESIGN", new BigDecimal("0.4"), semesterCalendar.endOf(item.getSemester()));
-        add(f, "CONST", constant, FORMULA_CONSTANT, "学期结束日有效规则中的课程设计工作量常量", "NORMAL");
+        BigDecimal constant = rule(item, context, "CONST_COURSE_DESIGN", "0.4");
+        add(f, "CONST", constant, FORMULA_CONSTANT, context == null ? "学期结束日有效规则中的课程设计工作量常量" : "本次计算实际规则常量", "NORMAL");
         return formula(item, "G4", "J4 × R4 × " + display(constant),
-                "结果为已落库核算值；R4 按实际人数计算、不截断，超过阈值仅告警；常量展示学期结束日有效规则，未保存不可变规则快照",
-                false, f);
+                context == null ? "结果为已落库核算值；R4 按实际人数计算、不截断，超过阈值仅告警；常量展示学期结束日有效规则，未保存不可变规则快照"
+                        : "公式常量和告警阈值均为本次实际政策；按实际人数计算，超过阈值仅告警",
+                context != null, f);
     }
 
-    private FactorFormulaVo buildG5(BizWorkloadItem item, BizWlThesis d)
+    private FactorFormulaVo buildG5(BizWorkloadItem item, BizWlThesis d, CalculationPolicyContext context)
     {
         if (d == null) return null;
         List<FactorVo> f = new ArrayList<>();
         String status = Integer.valueOf(1).equals(item.getIsOverLimit()) ? "APPROVAL_REQUIRED" : "NORMAL";
         add(f, "R5", num(d.getR5()), IMPORT_VALUE, "实际指导人数；超过申报阈值须报批但不封顶", status);
         add(f, "K5", coef(d.getK5()), RULE_DEFAULT, "毕业论文指导系数", "NORMAL");
-        return formula(item, "G5", "R5 × K5", "按实际人数计算、未封顶；超过申报阈值仅须报批", true, f);
+        FactorFormulaVo vo = formula(item, "G5", "R5 × K5", "按实际人数计算、未封顶；超过申报阈值仅须报批", true, f);
+        if (context != null) {
+            String level = org.springframework.util.StringUtils.hasText(d.getEducationLevel()) ? d.getEducationLevel() : item.getEducationLevel();
+            String code = level != null && level.contains("专") ? "APPROVAL_R5_JUNIOR" : "APPROVAL_R5_BACHELOR";
+            RuleResolution r = context.resolve(code, new BigDecimal(code.endsWith("JUNIOR") ? "15" : "8"));
+            vo.setDecisionEvidence(List.of(new DecisionEvidence("G5_APPROVAL", r.resolutionHash(), "R5", d.getR5()==null ? "GT_NULL_AS_ZERO" : "GT", r.content().value(),
+                    (d.getR5()==null ? BigDecimal.ZERO : new BigDecimal(d.getR5().toString())).compareTo(r.value()) > 0, level)));
+        }
+        return vo;
     }
 
-    private FactorFormulaVo buildG6(BizWorkloadItem item, BizWlConcentratedInternship d)
+    private FactorFormulaVo buildG6(BizWorkloadItem item, BizWlConcentratedInternship d, CalculationPolicyContext context)
     {
         if (d == null) return null;
         List<FactorVo> f = new ArrayList<>();
-        BigDecimal cap = ruleParamService.get("CAP_R6_MAX", new BigDecimal("20"), semesterCalendar.endOf(item.getSemester()));
+        BigDecimal cap = rule(item, context, "CAP_R6_MAX", "20");
         BigDecimal actual = num(d.getR6());
-        BigDecimal effective = actual.min(cap);
-        boolean capped = actual.compareTo(cap) > 0;
+        BigDecimal effective = (actual==null ? BigDecimal.ZERO : actual).min(cap);
+        boolean capped = (actual==null ? BigDecimal.ZERO : actual).compareTo(cap) > 0;
         add(f, "W", num(d.getW()), IMPORT_VALUE, "实习周数", "NORMAL");
         add(f, "R6", actual, IMPORT_VALUE, "实际指导人数", capped ? "CAPPED" : DISPLAY_ONLY);
         add(f, "R6_EFFECTIVE", effective, DERIVED,
                 "由实际人数和学期结束日有效规则派生的计入人数：min(R6, " + display(cap) + ")", "NORMAL");
-        BigDecimal constant = ruleParamService.get("CONST_COURSE_DESIGN", new BigDecimal("0.4"), semesterCalendar.endOf(item.getSemester()));
-        add(f, "CONST", constant, FORMULA_CONSTANT, "学期结束日有效规则中的集中实习工作量常量", "NORMAL");
+        BigDecimal constant = rule(item, context, "CONST_COURSE_DESIGN", "0.4");
+        add(f, "CONST", constant, FORMULA_CONSTANT, context == null ? "学期结束日有效规则中的集中实习工作量常量" : "本次计算实际规则常量", "NORMAL");
         return formula(item, "G6", "W × min(R6, " + display(cap) + ") × " + display(constant),
-                "结果为已落库核算值；人数上限与常量展示学期结束日有效规则，未保存不可变规则快照", false, f);
+                context == null ? "结果为已落库核算值；人数上限与常量展示学期结束日有效规则，未保存不可变规则快照"
+                        : "人数上限、常量及超限决策均为本次实际政策", context != null, f);
     }
 
     private FactorFormulaVo formula(BizWorkloadItem item, String type, String expression,
@@ -324,6 +313,58 @@ public class WorkloadFactorFormulaServiceImpl implements IWorkloadFactorFormulaS
         String resolvedDescription = complete ? description : description + "；存在缺失因子，无法可靠复算";
         return new FactorFormulaVo(type, expression, item.getCalculatedWorkload(),
                 resolvedDescription, reproducible && complete, factors);
+    }
+
+    private BigDecimal rule(BizWorkloadItem item, CalculationPolicyContext context, String code, String fallback) {
+        return context == null ? ruleParamService.get(code,new BigDecimal(fallback),semesterCalendar.endOf(item.getSemester()))
+                : context.value(code,new BigDecimal(fallback));
+    }
+
+    private void attachPolicyEvidence(BizWorkloadItem item, FactorFormulaVo vo, CalculationPolicyContext context) {
+        String type = item.getItemType();
+        List<FactorEvidence> evidence = new ArrayList<>();
+        List<DecisionEvidence> decisions = vo.getDecisionEvidence() == null ? new ArrayList<>() : new ArrayList<>(vo.getDecisionEvidence());
+        List<String> missing = new ArrayList<>();
+        for (FactorVo factor : vo.getFactors()) {
+            String key = factor.getKey();
+            String value = factor.getValue() == null ? null : factor.getValue() instanceof BigDecimal b ? b.toPlainString() : factor.getValue().toString();
+            if (("G4".equals(type) && Set.of("J4","R4").contains(key)) || ("G6".equals(type) && Set.of("W","R6").contains(key))
+                    || ("G5".equals(type) && "R5".equals(key))) {
+                String table = "G4".equals(type) ? "biz_wl_course_design" : "G6".equals(type) ? "biz_wl_concentrated_internship" : "biz_wl_thesis";
+                if (value == null) {
+                    String reason="MISSING_RECORDED_INPUT:"+key;
+                    evidence.add(new FactorEvidence(key,"MISSING_HISTORICAL_SOURCE",null,table,key,null,null,null,reason));
+                    factor.setSource("MISSING_HISTORICAL_SOURCE"); missing.add(reason); vo.setReproducible(false);
+                } else {
+                    evidence.add(new FactorEvidence(key,"RECORDED_INPUT",value,table,key,null,null,null,null));
+                    factor.setSource("RECORDED_INPUT"); factor.setSourceRef(table+":"+item.getId()+":"+key);
+                }
+            } else if (("G4".equals(type) || "G6".equals(type)) && "CONST".equals(key)) {
+                RuleResolution r=context.resolve("CONST_COURSE_DESIGN",new BigDecimal("0.4"));
+                evidence.add(new FactorEvidence(key,"POLICY_RULE",value,null,null,r.resolutionHash(),null,null,null));
+                factor.setSource(r.sourceKind()); factor.setRuleCode(r.requestedCode()); factor.setRuleVersion(r.contentHash()); factor.setSourceRef(r.resolutionHash());
+            } else if ("G6".equals(type) && "R6_EFFECTIVE".equals(key)) {
+                RuleResolution r=context.resolve("CAP_R6_MAX",new BigDecimal("20"));
+                evidence.add(new FactorEvidence(key,"DERIVED",value,null,null,r.resolutionHash(),"R6","MIN",null));
+                factor.setSourceRef(r.resolutionHash());
+            } else if (DISPLAY_ONLY.equals(factor.getStatus())) {
+                evidence.add(new FactorEvidence(key,"DISPLAY_ONLY",value,null,null,null,null,null,null));
+            } else {
+                String reason="MISSING_HISTORICAL_SOURCE:"+key;
+                evidence.add(new FactorEvidence(key,"MISSING_HISTORICAL_SOURCE",value,null,null,null,null,null,reason));
+                missing.add(reason); factor.setSource("MISSING_HISTORICAL_SOURCE"); factor.setRuleCode(null); factor.setRuleVersion(null); factor.setSourceRef(null);
+            }
+        }
+        if ("G4".equals(type) || "G6".equals(type)) {
+            String code="G4".equals(type)?"CAP_R4_MAX":"CAP_R6_MAX", key="G4".equals(type)?"R4":"R6";
+            RuleResolution r=context.resolve(code,new BigDecimal("G4".equals(type)?"60":"20"));
+            Object input=vo.getFactors().stream().filter(f -> key.equals(f.getKey())).findFirst().orElseThrow().getValue();
+            decisions.add(new DecisionEvidence(type+"_LIMIT",r.resolutionHash(),key,input==null ? "GT_NULL_AS_ZERO" : "GT",r.content().value(),(input==null ? BigDecimal.ZERO : new BigDecimal(input.toString())).compareTo(r.value())>0,null));
+        }
+        if (context.sources().isEmpty()) missing.add("NO_CAPTURED_POLICY_SOURCE");
+        vo.setAsOfDate(context.asOfDate().toString());
+        vo.setPolicySources(context.sources()); vo.setFactorEvidence(evidence); vo.setDecisionEvidence(decisions);
+        vo.setEvidenceStatus(missing.isEmpty()?"COMPLETE":"PARTIAL"); vo.setMissingEvidenceReasons(missing);
     }
 
     private BigDecimal coef(BigDecimal value) { return value; }

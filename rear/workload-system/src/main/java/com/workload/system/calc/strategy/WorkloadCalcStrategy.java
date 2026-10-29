@@ -1,6 +1,7 @@
 package com.workload.system.calc.strategy;
 
 import java.math.BigDecimal;
+import com.workload.system.calc.rule.CalculationPolicyContext;
 import com.workload.system.domain.BizWorkloadItem;
 
 /**
@@ -25,6 +26,12 @@ public interface WorkloadCalcStrategy
      * @return 核算工作量
      */
     public BigDecimal calculate(BizWorkloadItem item);
+
+    default BigDecimal calculate(BizWorkloadItem item, CalculationPolicyContext context) { return calculate(item); }
+
+    default void afterCalculated(BizWorkloadItem item, BigDecimal value, CalculationPolicyContext context) {
+        afterCalculated(item, value);
+    }
 
     /**
      * 计算完成后的回调（如 G5/G6 置 is_over_limit 超标标记），默认空实现

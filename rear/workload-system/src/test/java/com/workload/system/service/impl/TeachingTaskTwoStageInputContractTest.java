@@ -1,8 +1,12 @@
 package com.workload.system.service.impl;
 
+import static org.mockito.ArgumentMatchers.same;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
+import com.workload.system.calc.rule.CalculationPolicyContext;
+import com.workload.system.calc.rule.PolicyHash;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -190,9 +194,9 @@ class TeachingTaskTwoStageInputContractTest
         CalcStrategyFactory factory = mock(CalcStrategyFactory.class);
         WorkloadCalcStrategy strategy = mock(WorkloadCalcStrategy.class);
         when(factory.get(type)).thenReturn(strategy);
-        when(strategy.calculate(any())).thenReturn(BigDecimal.ONE);
+        when(strategy.calculate(any(), any(CalculationPolicyContext.class))).thenReturn(BigDecimal.ONE);
         IWorkloadFactorFormulaService formulas = mock(IWorkloadFactorFormulaService.class);
-        when(formulas.buildFresh(any())).thenReturn(mock(FactorFormulaVo.class));
+        when(formulas.buildFresh(any(), any(CalculationPolicyContext.class))).thenReturn(mock(FactorFormulaVo.class));
         WorkloadSnapshotService snapshots = mock(WorkloadSnapshotService.class);
         BizWorkloadCalcSnapshot snapshot = new BizWorkloadCalcSnapshot();
         snapshot.setCalculationVersion(1L);
@@ -225,9 +229,14 @@ class TeachingTaskTwoStageInputContractTest
             verify(practice).insertBizWlPractice(detail.capture());
             assertThat(detail.getValue().getK()).isEqualByComparingTo("1.0");
         }
-        verify(snapshots).capture(any(), any(), eq("RULE-2025-2026-1"));
+        ArgumentCaptor<CalculationPolicyContext> context=ArgumentCaptor.forClass(CalculationPolicyContext.class);
+        verify(strategy).calculate(any(), context.capture());
+        verify(strategy).afterCalculated(any(), eq(BigDecimal.ONE), same(context.getValue()));
+        verify(formulas).buildFresh(any(), same(context.getValue()));
+        assertThat(context.getValue().asOfDate()).isEqualTo(java.time.LocalDate.of(2026,1,31));
+        verify(snapshots).capture(any(), any(), eq(PolicyHash.hash(List.of())));
         var order = inOrder(snapshots, items, writeGuard);
-        order.verify(snapshots).capture(any(), any(), eq("RULE-2025-2026-1"));
+        order.verify(snapshots).capture(any(), any(), eq(PolicyHash.hash(List.of())));
         order.verify(items).updateBizWorkloadItem(any());
         order.verify(writeGuard).markChanged(8L, "2025-2026-1");
     }

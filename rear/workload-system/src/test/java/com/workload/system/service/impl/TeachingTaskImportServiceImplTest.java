@@ -1,5 +1,7 @@
 package com.workload.system.service.impl;
 
+import com.workload.system.calc.rule.CalculationPolicyContext;
+
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
@@ -54,11 +56,11 @@ class TeachingTaskImportServiceImplTest
         dto.setCourseCoefficient(java.math.BigDecimal.ONE);
 
         Method method = TeachingTaskImportServiceImpl.class
-                .getDeclaredMethod("createG5Detail", TeachingTaskImportDTO.class, BizWorkloadItem.class);
+                .getDeclaredMethod("createG5Detail", TeachingTaskImportDTO.class, BizWorkloadItem.class, CalculationPolicyContext.class);
         method.setAccessible(true);
         BizWorkloadItem item = new BizWorkloadItem();
         item.setId(7L);
-        method.invoke(service, dto, item);
+        method.invoke(service, dto, item, new CalculationPolicyContext(java.time.LocalDate.of(2026,1,31), (code,date,fallback,purpose) -> { throw new AssertionError("显式覆盖值无需政策"); }));
 
         ArgumentCaptor<BizWlThesis> captor = ArgumentCaptor.forClass(BizWlThesis.class);
         verify(thesisMapper).insertBizWlThesis(captor.capture());

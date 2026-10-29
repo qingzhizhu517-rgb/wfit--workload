@@ -1,0 +1,322 @@
+{
+  "verified_date": "2026-10-29",
+  "base_commit": "0d8a2bf",
+  "scope": "T05 A: 实际规则内容/同次context/明细v3，不含B/C",
+  "regular_tests": 629,
+  "mysql_tests": 46,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "mysql_breakdown": {
+    "SnapshotIntegrityIT": 15,
+    "SourceChangeConsistencyIT": 11,
+    "CoefficientApprovalTransactionIT": 14,
+    "WorkloadConcurrencyIT": 6
+  },
+  "logs": [
+    {
+      "name": "01-red.log",
+      "sha256": "ba90b0089b6598532540079545cb1b419890f3c6df552dcc296f9b8cb0756e91"
+    },
+    {
+      "name": "03-v3-red.log",
+      "sha256": "48c6bbfbef8aac213fdada1745563a9719c67186e634e08a8c86f875fb553a76"
+    },
+    {
+      "name": "05-context-red.log",
+      "sha256": "f96382d474a79340d250ea7794afb128263903049c856ddf39ab6278a94883ba"
+    },
+    {
+      "name": "09-binding-red.log",
+      "sha256": "438ad07e8519cc43875ebfb1f386ffbb257cb01a1ff5c7d3247b8854edca99cc"
+    },
+    {
+      "name": "10-binding-red.log",
+      "sha256": "0d3bbfb9f6b11f8802045633c19fe7d4013c6caf90b72cac19d885bf0926722c"
+    },
+    {
+      "name": "13-wiring-red.log",
+      "sha256": "80920377080604a617ee2848a03c612ed6030130795363170aaa75e82640bc62"
+    },
+    {
+      "name": "14-semantic-red-wiring-green.log",
+      "sha256": "40b225ceb010c7d21a2efe4b85af9b1aa44630b857c0e6bdf03584dd0ed3e7d6"
+    },
+    {
+      "name": "15-missing-red.log",
+      "sha256": "17c00e5a992f0f8a6f20f209b184c8cd341628ff79cdd0978157f03ba0f6e995"
+    },
+    {
+      "name": "17-legacy-format-red.log",
+      "sha256": "67cc696a4241e0fe5b0f9f68847c33c319de05d2524c128df2c34f6a427d71ad"
+    },
+    {
+      "name": "19-input-binding-red.log",
+      "sha256": "68600e6b2692631f3b9c634299464dc084b473e46343dcffcbf74bd6bac68d78"
+    },
+    {
+      "name": "20-empty-policy-date-red.log",
+      "sha256": "33f3e9fb087d6be4a701025efd1bcea1a8d76c608d5f3d91287714ed98846944"
+    },
+    {
+      "name": "23-evidence-kind-red.log",
+      "sha256": "58ddffc293c1701f26365051e1b13a25666436753db0561199b3b4cc05cd1dae"
+    },
+    {
+      "name": "25-whole-factor-red.log",
+      "sha256": "df0904d0c930771a8329b940a78ac1c8be06718ddc119632caecd4b9b0c78339"
+    },
+    {
+      "name": "26-full-final.log",
+      "sha256": "8f369b2c5baecbcb9cf8d10891e117b25f059183538ade41b5a418d07c899f55"
+    },
+    {
+      "name": "27-it-final.log",
+      "sha256": "1f3c5769cf262b84d39d83756762887ce44ec67df178cdf6c62831e038759e91"
+    },
+    {
+      "name": "package-final.log",
+      "sha256": "7cb2c167f75ea2f43be613d509bb431f0c8df36ef76e4d6799622bb92210bc7e"
+    }
+  ],
+  "http": {
+    "date": "2026-10-29",
+    "db": "127.0.0.1:13306/wfit_ui_20261028",
+    "app_port": 18084,
+    "item_id": 610,
+    "snapshot_id": 2,
+    "format_version": 3,
+    "rule_version": "4f4d5efa49eb3798a41130d7c6ea6e37e1f7d69307a8ce34aaba26d14e68aa21",
+    "result": 16,
+    "source_rule_fixture_id": 49,
+    "policy_sources": [
+      {
+        "sourceKind": "DB_RULE",
+        "requestedCode": "CAP_R4_MAX",
+        "asOfDate": "2092-01-31",
+        "fallbackPurpose": null,
+        "missingReason": null,
+        "content": {
+          "id": 17,
+          "code": "CAP_R4_MAX",
+          "value": "60.00",
+          "effectiveFrom": "2025-09-01",
+          "effectiveTo": null,
+          "description": "课程设计指导人数上限",
+          "status": 1
+        },
+        "contentHash": "4224c73499ff167ca0090585630e7cf54019de3e5636c757ced378d2784b8bcb"
+      },
+      {
+        "sourceKind": "DB_RULE",
+        "requestedCode": "CONST_COURSE_DESIGN",
+        "asOfDate": "2092-01-31",
+        "fallbackPurpose": null,
+        "missingReason": null,
+        "content": {
+          "id": 49,
+          "code": "CONST_COURSE_DESIGN",
+          "value": "0.40",
+          "effectiveFrom": "2090-01-01",
+          "effectiveTo": "2095-01-01",
+          "description": "T05 policy A immutable source fixture",
+          "status": 1
+        },
+        "contentHash": "d98c2ab8aa2da635d98f68914b23fe8d78d9e2b5283c223421ce35a78b0acb91"
+      }
+    ],
+    "evidence_status": "COMPLETE",
+    "factor_evidence": [
+      {
+        "key": "J4",
+        "kind": "RECORDED_INPUT",
+        "boundValue": "2.00",
+        "table": "biz_wl_course_design",
+        "field": "J4",
+        "ruleRef": null,
+        "inputKey": null,
+        "operation": null,
+        "missingReason": null
+      },
+      {
+        "key": "R4",
+        "kind": "RECORDED_INPUT",
+        "boundValue": "20",
+        "table": "biz_wl_course_design",
+        "field": "R4",
+        "ruleRef": null,
+        "inputKey": null,
+        "operation": null,
+        "missingReason": null
+      },
+      {
+        "key": "CONST",
+        "kind": "POLICY_RULE",
+        "boundValue": "0.40",
+        "table": null,
+        "field": null,
+        "ruleRef": "375a692f1ecaa3afd0b185a317b30b64acfb0421a5b72fa721cb799e34367c1f",
+        "inputKey": null,
+        "operation": null,
+        "missingReason": null
+      }
+    ],
+    "decision_evidence": [
+      {
+        "key": "G4_LIMIT",
+        "ruleRef": "fdfd16f48ea868a7c97ee6898e5c3744e212fcb5a92f4fc957e5f1f0783b69f4",
+        "inputKey": "R4",
+        "operation": "GT",
+        "threshold": "60.00",
+        "result": false,
+        "educationLevel": null
+      }
+    ],
+    "source_mutation_independent": true,
+    "snapshot_before_sha256": "7bbb7fa36ffad8eec978905ae6204f6157f9d3cd8ab17b7d34addaa9289e2fc1",
+    "snapshot_after_sha256": "7bbb7fa36ffad8eec978905ae6204f6157f9d3cd8ab17b7d34addaa9289e2fc1",
+    "legacy_evidence_status": "PARTIAL",
+    "legacy_missing_reasons": [
+      "MISSING_HISTORICAL_SOURCE"
+    ],
+    "checked_requests": 10,
+    "records": [
+      {
+        "path": "/system/workloadItem/list?userId=1002&semester=2091-2092-1",
+        "method": "GET",
+        "fields": [],
+        "code": 200,
+        "message": "查询成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/workloadRule/list?ruleCode=CONST_COURSE_DESIGN&pageSize=100",
+        "method": "GET",
+        "fields": [],
+        "code": 200,
+        "message": "查询成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/workloadRule",
+        "method": "POST",
+        "fields": [
+          "effectiveFrom",
+          "effectiveTo",
+          "ruleCode",
+          "ruleDesc",
+          "ruleValue",
+          "status"
+        ],
+        "code": 200,
+        "message": "操作成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/workloadRule/list?ruleCode=CONST_COURSE_DESIGN&pageSize=100",
+        "method": "GET",
+        "fields": [],
+        "code": 200,
+        "message": "查询成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/calc/recalcItem/610",
+        "method": "POST",
+        "fields": [],
+        "code": 200,
+        "message": "操作成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/workloadItem/610",
+        "method": "GET",
+        "fields": [],
+        "code": 200,
+        "message": "操作成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/workloadRule",
+        "method": "PUT",
+        "fields": [
+          "id",
+          "ruleCode",
+          "ruleDesc",
+          "ruleValue"
+        ],
+        "code": 200,
+        "message": "操作成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/workloadItem/610",
+        "method": "GET",
+        "fields": [],
+        "code": 200,
+        "message": "操作成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/workloadRule",
+        "method": "PUT",
+        "fields": [
+          "effectiveFrom",
+          "effectiveTo",
+          "id",
+          "ruleCode",
+          "ruleDesc",
+          "ruleValue",
+          "status"
+        ],
+        "code": 200,
+        "message": "操作成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/workloadItem/501",
+        "method": "GET",
+        "fields": [],
+        "code": 200,
+        "message": "操作成功",
+        "expected_code": 200
+      }
+    ]
+  },
+  "source_files_sha256": {
+    "rear/workload-system/src/main/java/com/workload/system/calc/WorkloadCalcServiceImpl.java": "2a28dd574fe87b1717e2199ecb94c4c3b78262297e63abf513fd2abb4e767ea4",
+    "rear/workload-system/src/main/java/com/workload/system/calc/rule/CalculationPolicyContext.java": "add084aed7cb63fef6d364c92f784fa9ffe5e16dd22e57a1a5c04e09fd17cfd4",
+    "rear/workload-system/src/main/java/com/workload/system/calc/rule/PolicyHash.java": "72434e4d88cf7601a6109b7948dcf055d429f3f02bef18991f7c885364033992",
+    "rear/workload-system/src/main/java/com/workload/system/calc/rule/RuleContent.java": "99c0aefa71227ac11984b0e4b490648bfa41dc9c91c892d8740551653fd4f4e3",
+    "rear/workload-system/src/main/java/com/workload/system/calc/rule/RuleParamService.java": "4060d3dfb1101b66f3deb3c9672ebbd9dc51581c64c672cd22bc187ed1f5967a",
+    "rear/workload-system/src/main/java/com/workload/system/calc/rule/RuleParamServiceImpl.java": "2549a0759af78be2d29f5a2aa69aaf1514e64e2480719b6f09b91a9b7061e2a9",
+    "rear/workload-system/src/main/java/com/workload/system/calc/rule/RuleResolution.java": "0c1180f33f83fa6a41ec5a272df19a77954a8c45d3e99ee731f437554746707b",
+    "rear/workload-system/src/main/java/com/workload/system/calc/strategy/ConcentratedInternshipCalcStrategy.java": "7cd0caabbb4f6d5173123fe49ca581886274fe9ab2dd063f403439bda1398e82",
+    "rear/workload-system/src/main/java/com/workload/system/calc/strategy/CourseDesignCalcStrategy.java": "ad54f70c78489c524b30b1d28055197a3d3ab465df555a611f86f11e3e881821",
+    "rear/workload-system/src/main/java/com/workload/system/calc/strategy/ThesisCalcStrategy.java": "aa9f89f71fc8daab72896dbd4f767172fada9afa0c1e2b2d1bfb4941b5501d20",
+    "rear/workload-system/src/main/java/com/workload/system/calc/strategy/WorkloadCalcStrategy.java": "8578e530169061b7cebb99c432a4abb28d83f093f85410511bb40c627f7cd5b1",
+    "rear/workload-system/src/main/java/com/workload/system/domain/vo/FactorFormulaVo.java": "be5b013e3bf26dc5978d339f90f1626f39d4e87ace07245ab3939e8506580c3a",
+    "rear/workload-system/src/main/java/com/workload/system/service/IWorkloadFactorFormulaService.java": "612927f979969a4d4defb697740b4b0dee156427756031778e71722f22daf1ac",
+    "rear/workload-system/src/main/java/com/workload/system/service/PolicyEvidenceIntegrity.java": "1f1ece4e65fde0c8e2fa5a54d7e26145700af34c66a6ea6b8f41c83de0b04c00",
+    "rear/workload-system/src/main/java/com/workload/system/service/SnapshotContextCodec.java": "5087f680601f078b92c302733ec10c875a68424c0d84d05284032b8d173d3234",
+    "rear/workload-system/src/main/java/com/workload/system/service/SnapshotIntegrity.java": "4eccee60166b9b70ab0e84f030156320fcff290d1316195c8f4d8180ea57487f",
+    "rear/workload-system/src/main/java/com/workload/system/service/WorkloadSnapshotService.java": "1a5af59c9b26ae92582c8a7f6cc14269636b553809797f461888492bc62363ab",
+    "rear/workload-system/src/main/java/com/workload/system/service/impl/TeachingTaskImportServiceImpl.java": "bf6ccb9e01624bf640506c8189994292470c7c868a6a9b032b23e4545f255bdc",
+    "rear/workload-system/src/main/java/com/workload/system/service/impl/WorkloadFactorFormulaServiceImpl.java": "6d7bc3470af980565f3f4d8ec2d01347f68f621c391ef63f5b72e124434ba92c",
+    "rear/workload-system/src/test/java/com/workload/system/calc/PolicyCalculationContextTest.java": "db7d3a8f0a9aeaef0fda4da6a2297181d160c77fb5c3ed1475a8986226182aa6",
+    "rear/workload-system/src/test/java/com/workload/system/calc/PolicyResolutionTest.java": "528f3dbeca4b2fa75e74d01ed5534bc448b5b85430c3c5db5af45bd92141c623",
+    "rear/workload-system/src/test/java/com/workload/system/calc/PolicyStrategyWiringTest.java": "59d79d51a0f4cd00160e5392870f13aedcc440f72cdfd6a142deea36d2db5840",
+    "rear/workload-system/src/test/java/com/workload/system/calc/WorkloadCalcServiceImplTest.java": "e5d13925ea36591243e2ac8577c31f78ac70f89dbfb1a7e6e81bf8ec65fb5027",
+    "rear/workload-system/src/test/java/com/workload/system/integration/SnapshotIntegrityIT.java": "0605716022e4efa2637c8da7459d7a1c5b9dee8c903196dab3d0f03e42a3b1a5",
+    "rear/workload-system/src/test/java/com/workload/system/service/PolicySnapshotV3Test.java": "acb0d0f56187f7592c6e5509a51280db4767861a616b7abfd035c3371adb1bb4",
+    "rear/workload-system/src/test/java/com/workload/system/service/WorkloadFactorFormulaBuilderTest.java": "f44efba484fb095577778a3eda1fd89738be6350a0483c7eaa10745bdc20a7a6",
+    "rear/workload-system/src/test/java/com/workload/system/service/impl/TeachingTaskImportServiceImplTest.java": "55fed13c2f1cc222cc853bc9ba7e26421883d04760ee2dcd609216b280265db1",
+    "rear/workload-system/src/test/java/com/workload/system/service/impl/TeachingTaskInputContractTest.java": "7fda03aa6b842598016cff9c50f9e9445176712c28c9c5976d1e1a4af812bb0c",
+    "rear/workload-system/src/test/java/com/workload/system/service/impl/TeachingTaskTwoStageInputContractTest.java": "bc3bdd2d2195d9df54a7f6f68a375bf72f7c918a6551d9077e8aa610bb77ce8f"
+  },
+  "jar_sha256": "7a8727e8af62b2457aaf05faa978f34ed5301fdf4fccf2af04b46022c4b0ddcf",
+  "database_migrations": [],
+  "formal_effective_semester": null,
+  "user_decision": "暂不指定，先完成隔离验收",
+  "original_preserved_files": 43
+}

@@ -1,5 +1,7 @@
 package com.workload.system.calc;
 
+import static org.mockito.ArgumentMatchers.same;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -16,6 +18,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
+import com.workload.system.calc.rule.CalculationPolicyContext;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -99,8 +102,8 @@ class WorkloadCalcServiceImplTest
         current.setItemType("G1"); current.setStatus(0); current.setCalculationVersion(5L);
         when(itemMapper.selectByIdForUpdate(ITEM_ID)).thenReturn(current);
         when(calcStrategyFactory.get("G1")).thenReturn(strategy);
-        when(strategy.calculate(current)).thenReturn(new BigDecimal("52.80"));
-        when(factorFormulaService.buildFresh(current)).thenReturn(aFormula());
+        when(strategy.calculate(eq(current), any(CalculationPolicyContext.class))).thenReturn(new BigDecimal("52.80"));
+        when(factorFormulaService.buildFresh(eq(current), any(CalculationPolicyContext.class))).thenReturn(aFormula());
         when(snapshotService.capture(eq(current), any(), anyString())).thenReturn(aSnapshot(6L));
         when(itemMapper.updateCalculationIfEditable(current, 1, 0)).thenReturn(1);
 
@@ -110,7 +113,12 @@ class WorkloadCalcServiceImplTest
         order.verify(itemMapper).selectBizWorkloadItemById(ITEM_ID);
         order.verify(writeGuard).lockDraftOrAbsent(USER, SEMESTER);
         order.verify(itemMapper).selectByIdForUpdate(ITEM_ID);
-        order.verify(strategy).calculate(current);
+        org.mockito.ArgumentCaptor<CalculationPolicyContext> context = org.mockito.ArgumentCaptor.forClass(CalculationPolicyContext.class);
+        order.verify(strategy).calculate(eq(current), context.capture());
+        verify(strategy).afterCalculated(eq(current), eq(new BigDecimal("52.80")), same(context.getValue()));
+        verify(factorFormulaService).buildFresh(eq(current), same(context.getValue()));
+        assertThat(context.getValue().asOfDate()).isEqualTo(java.time.LocalDate.of(2026,1,31));
+        verify(snapshotService).capture(eq(current), any(), eq(context.getValue().policySetHash()));
         order.verify(itemMapper).updateCalculationIfEditable(current, 1, 0);
         order.verify(writeGuard).markChanged(USER, SEMESTER);
         assertThat(current.getParams()).containsEntry("currentRead", true);
@@ -178,8 +186,8 @@ class WorkloadCalcServiceImplTest
         BizWorkloadItem item = givenDraftItemWithoutSummary();
         item.setItemType("G1");
         when(calcStrategyFactory.get("G1")).thenReturn(strategy);
-        when(strategy.calculate(item)).thenReturn(new BigDecimal("52.80"));
-        when(factorFormulaService.buildFresh(item)).thenReturn(aFormula());
+        when(strategy.calculate(eq(item), any(CalculationPolicyContext.class))).thenReturn(new BigDecimal("52.80"));
+        when(factorFormulaService.buildFresh(eq(item), any(CalculationPolicyContext.class))).thenReturn(aFormula());
         when(snapshotService.capture(eq(item), any(), anyString())).thenReturn(aSnapshot(1L));
         when(itemMapper.updateCalculationIfEditable(any(), eq(1), eq(0))).thenReturn(0);
 
@@ -195,8 +203,8 @@ class WorkloadCalcServiceImplTest
         BizWorkloadItem item = givenDraftItemWithoutSummary();
         item.setItemType("G1");
         when(calcStrategyFactory.get("G1")).thenReturn(strategy);
-        when(strategy.calculate(item)).thenReturn(new BigDecimal("52.80"));
-        when(factorFormulaService.buildFresh(item)).thenReturn(aFormula());
+        when(strategy.calculate(eq(item), any(CalculationPolicyContext.class))).thenReturn(new BigDecimal("52.80"));
+        when(factorFormulaService.buildFresh(eq(item), any(CalculationPolicyContext.class))).thenReturn(aFormula());
         when(snapshotService.capture(eq(item), any(), anyString())).thenReturn(aSnapshot(1L));
         when(itemMapper.updateCalculationIfEditable(any(), eq(1), eq(0))).thenReturn(1);
 
@@ -211,8 +219,8 @@ class WorkloadCalcServiceImplTest
         BizWorkloadItem item = givenDraftItemWithoutSummary();
         item.setItemType("G1");
         when(calcStrategyFactory.get("G1")).thenReturn(strategy);
-        when(strategy.calculate(item)).thenReturn(new BigDecimal("52.80"));
-        when(factorFormulaService.buildFresh(item)).thenReturn(aFormula());
+        when(strategy.calculate(eq(item), any(CalculationPolicyContext.class))).thenReturn(new BigDecimal("52.80"));
+        when(factorFormulaService.buildFresh(eq(item), any(CalculationPolicyContext.class))).thenReturn(aFormula());
         when(snapshotService.capture(eq(item), any(), anyString())).thenReturn(aSnapshot(7L));
         when(itemMapper.updateCalculationIfEditable(any(), eq(1), eq(0))).thenReturn(1);
 
@@ -231,8 +239,8 @@ class WorkloadCalcServiceImplTest
         BizWorkloadItem item = givenDraftItemWithoutSummary();
         item.setItemType("G1");
         when(calcStrategyFactory.get("G1")).thenReturn(strategy);
-        when(strategy.calculate(item)).thenReturn(new BigDecimal("52.80"));
-        when(factorFormulaService.buildFresh(item)).thenReturn(null);
+        when(strategy.calculate(eq(item), any(CalculationPolicyContext.class))).thenReturn(new BigDecimal("52.80"));
+        when(factorFormulaService.buildFresh(eq(item), any(CalculationPolicyContext.class))).thenReturn(null);
 
         assertThatThrownBy(() -> service.recalcItem(ITEM_ID))
                 .isInstanceOf(ServiceException.class)

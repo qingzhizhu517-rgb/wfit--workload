@@ -1,6 +1,8 @@
 package com.workload.system.calc;
 
 import java.math.BigDecimal;
+import com.workload.system.calc.rule.CalculationPolicyContext;
+import com.workload.system.calc.rule.RuleParamService;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -70,6 +72,8 @@ public class WorkloadCalcServiceImpl implements WorkloadCalcService
 
     @Autowired
     private WorkloadSnapshotService snapshotService;
+    @Autowired private RuleParamService ruleParamService;
+    @Autowired private SemesterCalendar semesterCalendar = new SemesterCalendar();
 
     @Autowired
     private WorkloadWriteGuard writeGuard;
@@ -101,19 +105,20 @@ public class WorkloadCalcServiceImpl implements WorkloadCalcService
             // G8/G9 等无策略类别：金额直录，不重算，也不落快照
             return item.getCalculatedWorkload();
         }
-        BigDecimal value = strategy.calculate(item);
+        CalculationPolicyContext context = new CalculationPolicyContext(semesterCalendar.endOf(item.getSemester()), ruleParamService);
+        BigDecimal value = strategy.calculate(item, context);
         item.setCalculatedWorkload(value);
-        strategy.afterCalculated(item, value);
+        strategy.afterCalculated(item, value, context);
 
         // 计算 → 构建新鲜公式因子 → 固化不可变快照 → 原子条件更新主表（同事务）。
         // 必须用 buildFresh（按当前子表构造，不做快照 overlay），否则会把上一版快照因子
         // 冻进新快照，污染可追溯性。条件更新影响行数不为 1 时抛错回滚，快照 INSERT 随之回滚。
-        FactorFormulaVo formula = factorFormulaService.buildFresh(item);
+        FactorFormulaVo formula = factorFormulaService.buildFresh(item, context);
         if (formula == null)
         {
             throw new ServiceException("无法构建计算公式，明细子表可能缺失, id=" + itemId);
         }
-        Long version = snapshotService.capture(item, formula, ruleVersionOf(item)).getCalculationVersion();
+        Long version = snapshotService.capture(item, formula, context.policySetHash()).getCalculationVersion();
         item.setCalculationVersion(version);
         item.setLastCalculatedAt(DateUtils.getNowDate());
         item.setUpdateTime(item.getLastCalculatedAt());
@@ -125,13 +130,6 @@ public class WorkloadCalcServiceImpl implements WorkloadCalcService
         }
         writeGuard.markChanged(item.getUserId(), item.getSemester());
         return value;
-    }
-
-    /** 规则版本标识：按学期固定，便于历史学期按当时规则复现。 */
-    private String ruleVersionOf(BizWorkloadItem item)
-    {
-        String semester = item.getSemester();
-        return "RULE-" + (semester == null || semester.isBlank() ? "UNKNOWN" : semester);
     }
 
     @Override
