@@ -106,6 +106,20 @@ class BizWorkloadItemControllerTest
     }
 
     @Test
+    void mustExposeIntegrityFailureInsteadOfReturningSuccessWithoutFormula()
+    {
+        BizWorkloadItem item = new BizWorkloadItem(); item.setId(9L); item.setUserId(2002L); item.setItemType("G1");
+        when(workloadItemService.selectBizWorkloadItemById(9L)).thenReturn(item);
+        ServiceException failure = com.workload.system.service.SnapshotIntegrity.failure("内容哈希不符");
+        when(factorFormulaService.build(item)).thenThrow(failure);
+        try (MockedStatic<DataScopeUtil> scope = mockStatic(DataScopeUtil.class))
+        {
+            assertThatThrownBy(() -> controller.getInfo(9L)).isSameAs(failure);
+            assertThat(failure.getCode()).isEqualTo(50017);
+        }
+    }
+
+    @Test
     void mustAuthorizeParentBeforeQueryingAnyDetailTable()
     {
         BizWorkloadItem item = new BizWorkloadItem();

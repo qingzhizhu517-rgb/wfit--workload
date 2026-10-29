@@ -50,7 +50,7 @@ class WorkloadMysqlFixture implements AutoCloseable {
 
     WorkloadMysqlFixture() throws Exception {
         String url = System.getenv("WFIT_TEST_DB_URL");
-        assertThat(url).as("必须显式配置隔离实例，禁止默认端口3306").startsWith("jdbc:mysql://127.0.0.1:").doesNotContain(":3306/");
+        assertThat(url).as("必须显式配置隔离实例，禁止默认端口3306").startsWith("jdbc:mysql://127.0.0.1:13306/").doesNotContain(":3306/");
         String user = System.getenv("WFIT_TEST_DB_USER"), password = System.getenv("WFIT_TEST_DB_PASSWORD");
         admin = new JdbcTemplate(new DriverManagerDataSource(url, user, password));
         admin.execute("CREATE DATABASE `" + schema + "` CHARACTER SET utf8mb4");

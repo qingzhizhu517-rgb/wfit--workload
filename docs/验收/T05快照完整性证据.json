@@ -1,0 +1,154 @@
+{
+  "verified_date": "2026-10-29",
+  "base_commit": "f049a4e",
+  "scope": "T05快照完整性第二切片，未完成不可变政策来源/结算证据",
+  "regular_tests": 610,
+  "mysql_tests": 40,
+  "mysql_breakdown": {
+    "SnapshotIntegrityIT": 9,
+    "SourceChangeConsistencyIT": 11,
+    "CoefficientApprovalTransactionIT": 14,
+    "WorkloadConcurrencyIT": 6
+  },
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "logs": [
+    {
+      "name": "red.log",
+      "sha256": "693f7840a92d83d76b7895a56980ea148f4dd117b8f9a19a1f5569e166ef925e"
+    },
+    {
+      "name": "precision-red.log",
+      "sha256": "f20969f6d8571d4a33e9403b8e8966cdf7e6fbf11c50b1250b049027b04a1eb7"
+    },
+    {
+      "name": "version-red.log",
+      "sha256": "a9e54eecc1583c1093d388c85fd41e9bc1d5c0fafc40b91984f8c3fd7aa05c5a"
+    },
+    {
+      "name": "strict-red.log",
+      "sha256": "abf305e31798aa4a8e6ec06cd83cb4783502aed6ba092583b8376f8eff01b9b3"
+    },
+    {
+      "name": "full-final.log",
+      "sha256": "f80d031ef1e40738d57b6b1215925704723bbbbd45afbfba2b2f4c4aeb2f5b36"
+    },
+    {
+      "name": "mysql-final.log",
+      "sha256": "bc4f7bfee553ef069e244bfb9ea751704e4e7624fae70f281ed3a587d854e4a4"
+    },
+    {
+      "name": "concurrency-final.log",
+      "sha256": "75c910f2a40a2b0e44150df05ab1f19f58292caef802b8a42d8189c4047c54f2"
+    },
+    {
+      "name": "wfit-t05-integrity-package.log",
+      "sha256": "b07fb258c94eee993818549f9c1c3a2e6b454417102cad80c62fe8491c8bd0a1"
+    }
+  ],
+  "jar_sha256": "980d7c45233989d7856f35a0045349de5ed96e8a354edd90a71f3d987176babf",
+  "source_files_sha256": {
+    "rear/workload-system/src/main/java/com/workload/system/controller/BizWorkloadItemController.java": "44b418d5e90f9ad64d0e4ef99c45be2e1966ae9ef3e5266fb77b1e91a2364f92",
+    "rear/workload-system/src/main/java/com/workload/system/service/SnapshotContextCodec.java": "eb2f25f21c2da1279188be7af9afcb3d7a0fa4c37f5c1462c1d93ee014043f50",
+    "rear/workload-system/src/main/java/com/workload/system/service/SnapshotIntegrity.java": "064376c9bbef8f83da195725a17ece175d8cf10581ccee362a80487c7cdd60a4",
+    "rear/workload-system/src/main/java/com/workload/system/service/WorkloadSnapshotService.java": "7189c4de3cf5e4891e4e5f28065c271737ea0cc553b203c793577df4badb4241",
+    "rear/workload-system/src/main/java/com/workload/system/service/impl/WorkloadFactorFormulaServiceImpl.java": "20ecff96f706e17e7240730a2b1c842daa144e63b20d1131be6fbe738adbbd83",
+    "rear/workload-system/src/test/java/com/workload/system/controller/BizWorkloadItemControllerTest.java": "a1dfdeb04936c0d56a5fc4a7b9e1a37fc61e4b63252ec416becd2cc394fe7a07",
+    "rear/workload-system/src/test/java/com/workload/system/integration/SnapshotIntegrityIT.java": "e82f9bcc3d7bbfbe687edcda111f54e1ad376e79d8b8438ee720335ff85c0fa0",
+    "rear/workload-system/src/test/java/com/workload/system/integration/WorkloadMysqlFixture.java": "bedf58fd5a98dfca299251ef471ec62814943e0fe977e597d0127d6ad946e650",
+    "rear/workload-system/src/test/java/com/workload/system/service/SnapshotHashTestFixture.java": "7d4ccea9634182f82f2419642378f4005f4725d700c774f2c703ffc22bd98d93",
+    "rear/workload-system/src/test/java/com/workload/system/service/SnapshotIntegrityTest.java": "4c75a1f41d848cfdc26e5e0de6e47c15d513c0f5ec59c5f0afc9712eb9b9b6b2",
+    "rear/workload-system/src/test/java/com/workload/system/service/WorkloadFactorFormulaBuilderTest.java": "d20773e57be62302266dff73865307f3099f04bfec9c64c65ccef9697f2219ca",
+    "rear/workload-system/src/test/java/com/workload/system/service/WorkloadSnapshotServiceTest.java": "fe7a1c0710496267b123c94dc27f29629868b439644a820d918d8134e77fdce0"
+  },
+  "http": {
+    "date": "2026-10-29",
+    "db": "127.0.0.1:13306/wfit_ui_20261028",
+    "app_port": 18084,
+    "semester": "2091-2092-1",
+    "item_id": 610,
+    "snapshot_id": 1,
+    "format_version": 2,
+    "result": 16,
+    "hash": "b83358d4495fa06676ca7fd91db5dcfb7a054be8b55667ba5fd06566f62d8ee1",
+    "tamper_tests": 2,
+    "restored_before_sha256": "01bc639e82ca3d92626f1824d5750c8e2c654f074e3cda5766e63eccf35b30a1",
+    "restored_after_sha256": "01bc639e82ca3d92626f1824d5750c8e2c654f074e3cda5766e63eccf35b30a1",
+    "checked_requests": 8,
+    "records": [
+      {
+        "path": "/system/workloadItem/list?userId=1002&semester=2091-2092-1",
+        "method": "GET",
+        "fields": [],
+        "code": 200,
+        "message": "查询成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/workloadItem/list?userId=1002&semester=2091-2092-1",
+        "method": "GET",
+        "fields": [],
+        "code": 200,
+        "message": "查询成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/wlCourseDesign",
+        "method": "POST",
+        "fields": [
+          "J4",
+          "R4",
+          "itemId"
+        ],
+        "code": 200,
+        "message": "操作成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/workloadItem/610",
+        "method": "GET",
+        "fields": [],
+        "code": 200,
+        "message": "操作成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/workloadItem/610",
+        "method": "GET",
+        "fields": [],
+        "code": 50017,
+        "message": "计算快照完整性校验失败：内容哈希不符，历史证据已变更或缺失",
+        "expected_code": 50017
+      },
+      {
+        "path": "/system/workloadItem/610",
+        "method": "GET",
+        "fields": [],
+        "code": 200,
+        "message": "操作成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/workloadItem/610",
+        "method": "GET",
+        "fields": [],
+        "code": 50017,
+        "message": "计算快照完整性校验失败：读取快照上下文失败：不支持或不完整的上下文格式",
+        "expected_code": 50017
+      },
+      {
+        "path": "/system/workloadItem/610",
+        "method": "GET",
+        "fields": [],
+        "code": 200,
+        "message": "操作成功",
+        "expected_code": 200
+      }
+    ]
+  },
+  "setup_notes": [
+    "初始化手工G4主明细需要calculatedWorkload=0；计算子表JSON字段为大写J4/R4。首次夹具请求未符合契约，纠正后继续，无生产代码修改。"
+  ],
+  "database_migrations": []
+}

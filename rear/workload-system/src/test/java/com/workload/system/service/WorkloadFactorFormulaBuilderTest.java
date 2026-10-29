@@ -89,6 +89,38 @@ class WorkloadFactorFormulaBuilderTest
                 .extracting(FactorFormulaVo.FactorVo::getValue).containsExactly(n("1.5"));
     }
 
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"result", "formula", "source", "context"})
+    void tamperedCapturedSnapshotMustFailBeforeReturningHistoricalFormula(String field)
+    {
+        BizWorkloadItem item = item("G1", "IMPORT", "40");
+        FactorFormulaVo formula = new FactorFormulaVo("G1", "Q2", n("1.5"), "evidence",
+                java.util.List.of(new FactorFormulaVo.FactorVo("Q2", n("1.5"), "IMPORT_VALUE", "quality", "NORMAL")));
+        BizWorkloadCalcSnapshot snapshot = new com.workload.system.service.WorkloadSnapshotService(snapshotMapper).capture(item, formula, "v1");
+        item.setCalculationVersion(snapshot.getCalculationVersion());
+        switch (field) {
+            case "result" -> snapshot.setResult(n("2"));
+            case "formula" -> snapshot.setFormulaExpression("Q2 × 2");
+            case "source" -> snapshot.setSourceJson("{\"Q2\":\"FORGED\"}");
+            case "context" -> snapshot.setContextJson(snapshot.getContextJson().replace("evidence", "forged"));
+        }
+        when(snapshotMapper.selectLatestByItemId(7L)).thenReturn(snapshot);
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> builder.build(item))
+                .isInstanceOf(com.workload.common.exception.ServiceException.class).hasMessageContaining("完整性");
+        verifyNoInteractions(ruleParamService, theoryMapper, teachingTaskMapper);
+    }
+
+    @Test
+    void snapshotVersionAheadOfItemCannotBeDisguisedAsLegacyCurrentData()
+    {
+        BizWorkloadItem item = item("G1", "IMPORT", "40"); item.setCalculationVersion(3L);
+        BizWorkloadCalcSnapshot snapshot = snapshotWithQ2("1", "RULE_DEFAULT"); snapshot.setCalculationVersion(4L);
+        when(snapshotMapper.selectLatestByItemId(7L)).thenReturn(snapshot);
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> builder.build(item))
+                .isInstanceOf(com.workload.common.exception.ServiceException.class).hasMessageContaining("版本");
+        verifyNoInteractions(ruleParamService, theoryMapper, teachingTaskMapper);
+    }
+
     @Test
     void detailUsesPersistedSnapshotSources()
     {
@@ -100,7 +132,7 @@ class WorkloadFactorFormulaBuilderTest
         assertThat(vo).isNotNull();
         assertThat(vo.isLegacy()).isFalse();
         assertThat(vo.getSnapshotVersion()).isEqualTo(3L);
-        assertThat(vo.getSnapshotHash()).isEqualTo("hash-abc");
+        assertThat(vo.getSnapshotHash()).isEqualTo(snapshotWithQ2("1.50", "APPROVED_OVERRIDE").getSnapshotHash());
         assertThat(vo.getCalculatedAt()).isNotNull();
         assertThat(vo.getFactors()).filteredOn(f -> "Q2".equals(f.getKey()))
                 .extracting(FactorFormulaVo.FactorVo::getSource)
@@ -123,6 +155,7 @@ class WorkloadFactorFormulaBuilderTest
         snapshot.setRuleVersion("historical-v1");
         snapshot.setFactorJson("{\"J4\":\"2\",\"R4\":\"50\",\"CONST\":\"0.4\"}");
         snapshot.setSourceJson("{\"J4\":\"IMPORT_VALUE\",\"R4\":\"IMPORT_VALUE\",\"CONST\":\"FORMULA_CONSTANT\"}");
+        signLegacy(snapshot);
         when(snapshotMapper.selectLatestByItemId(7L)).thenReturn(snapshot);
 
         FactorFormulaVo result = builder.build(item);
@@ -154,8 +187,8 @@ class WorkloadFactorFormulaBuilderTest
     void missingHistoricalFactorValueIsNotReproducible()
     {
         BizWorkloadCalcSnapshot snapshot = snapshotWithQ2("1", "RULE_DEFAULT");
-        snapshot.setFactorJson("{\"J1\":null}");
-        snapshot.setSourceJson("{\"J1\":\"IMPORT_VALUE\"}");
+        snapshot.setFactorJson(snapshot.getFactorJson().replace("\"J1\":\"32\"", "\"J1\":null"));
+        signLegacy(snapshot);
         when(snapshotMapper.selectLatestByItemId(7L)).thenReturn(snapshot);
 
         assertThat(builder.build(item("G1", "IMPORT", "40")).isReproducible()).isFalse();
@@ -322,7 +355,6 @@ class WorkloadFactorFormulaBuilderTest
         BizWorkloadCalcSnapshot s = new BizWorkloadCalcSnapshot();
         s.setItemId(7L);
         s.setCalculationVersion(3L);
-        s.setSnapshotHash("hash-abc");
         s.setCreatedAt(new Date());
         s.setFormulaExpression("J1 × C1 × K1 × Q1 × Q2 × N");
         s.setResult(n("57.60"));
@@ -331,7 +363,13 @@ class WorkloadFactorFormulaBuilderTest
         s.setSourceJson("{\"J1\":\"IMPORT_VALUE\",\"C1\":\"RULE_DEFAULT\",\"K1\":\"RULE_DEFAULT\","
                 + "\"Q1\":\"RULE_DEFAULT\",\"Q2\":\"" + q2Source
                 + "\",\"N\":\"RULE_DEFAULT\",\"Q3\":\"DISPLAY_ONLY\"}");
+        signLegacy(s);
         return s;
+    }
+
+    private void signLegacy(BizWorkloadCalcSnapshot s)
+    {
+        s.setSnapshotHash(com.workload.system.service.SnapshotHashTestFixture.legacyHash(s));
     }
 
     @Test

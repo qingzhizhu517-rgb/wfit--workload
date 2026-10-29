@@ -9,8 +9,6 @@ import java.util.Set;
 import java.util.HashSet;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.workload.common.exception.ServiceException;
 import com.workload.system.calc.rule.RuleParamService;
 import com.workload.system.domain.BizTeachingTask;
@@ -39,6 +37,7 @@ import com.workload.system.mapper.BizWlTheoryMapper;
 import com.workload.system.mapper.BizWlThesisMapper;
 import com.workload.system.service.IWorkloadFactorFormulaService;
 import com.workload.system.service.SnapshotContextCodec;
+import com.workload.system.service.SnapshotIntegrity;
 
 /**
  * 查询 G1-G6、G11 明细并构造可追溯的公式说明。
@@ -74,14 +73,16 @@ public class WorkloadFactorFormulaServiceImpl implements IWorkloadFactorFormulaS
 
     @Autowired private BizCoefficientAdjustmentMapper adjustmentMapper;
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
-
     @Override
     public FactorFormulaVo build(BizWorkloadItem item)
     {
         if (item == null || item.getItemType() == null) return null;
         BizWorkloadCalcSnapshot snapshot = item.getId() == null ? null
                 : snapshotMapper.selectLatestByItemId(item.getId());
+        if (snapshot != null && (!java.util.Objects.equals(snapshot.getItemId(), item.getId())
+                || snapshot.getCalculationVersion() == null || snapshot.getCalculationVersion() < 1
+                || (item.getCalculationVersion() != null && snapshot.getCalculationVersion() > item.getCalculationVersion())))
+            throw SnapshotIntegrity.failure("快照明细标识或计算版本不一致");
         if (snapshot != null && (item.getCalculationVersion() == null
                 || java.util.Objects.equals(snapshot.getCalculationVersion(), item.getCalculationVersion())))
             return fromSnapshot(item, snapshot);
@@ -148,8 +149,13 @@ public class WorkloadFactorFormulaServiceImpl implements IWorkloadFactorFormulaS
      */
     private FactorFormulaVo fromSnapshot(BizWorkloadItem item, BizWorkloadCalcSnapshot snapshot)
     {
-        Map<String, String> values = parseMap(snapshot.getFactorJson());
-        Map<String, String> sources = parseMap(snapshot.getSourceJson());
+        if (!java.util.Objects.equals(item.getId(), snapshot.getItemId()))
+            throw SnapshotIntegrity.failure("快照明细标识不一致");
+        SnapshotIntegrity.Verified verified = SnapshotIntegrity.verify(snapshot);
+        if (verified.context() != null && !item.getItemType().equals(verified.context().formulaType()))
+            throw SnapshotIntegrity.failure("快照公式类型与明细不一致");
+        Map<String, String> values = verified.values();
+        Map<String, String> sources = verified.sources();
         if (snapshot.getFormulaExpression() == null || snapshot.getFormulaExpression().isBlank()
                 || snapshot.getResult() == null || values == null || values.isEmpty()
                 || sources == null || !sources.keySet().equals(values.keySet()))
@@ -181,23 +187,6 @@ public class WorkloadFactorFormulaServiceImpl implements IWorkloadFactorFormulaS
         vo.setSnapshotHash(snapshot.getSnapshotHash());
         vo.setCalculatedAt(snapshot.getCreatedAt());
         return vo;
-    }
-
-    private Map<String, String> parseMap(String json)
-    {
-        if (json == null || json.isBlank())
-        {
-            return java.util.Collections.emptyMap();
-        }
-        try
-        {
-            return objectMapper.readValue(json, new TypeReference<Map<String, String>>() {});
-        }
-        catch (Exception e)
-        {
-            // 快照存在但解析失败：显式失败，不得静默回落成「可复现」的假象
-            throw new ServiceException("计算快照解析失败，无法可靠解释因子来源：" + e.getMessage());
-        }
     }
 
     private Object parseNumericOrRaw(String raw)

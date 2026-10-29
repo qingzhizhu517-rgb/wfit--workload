@@ -135,6 +135,7 @@ public class BizWorkloadItemController extends BaseController
         }
         catch (RuntimeException e)
         {
+            if (com.workload.system.service.SnapshotIntegrity.isFailure(e)) throw e;
             // 公式说明是兼容增强字段；子表或规则缓存故障不得阻断原详情和编辑能力
             log.warn("工作量公式说明加载失败, itemId={}", id, e);
         }

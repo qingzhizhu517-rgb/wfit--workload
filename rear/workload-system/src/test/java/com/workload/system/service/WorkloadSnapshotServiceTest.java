@@ -52,6 +52,53 @@ class WorkloadSnapshotServiceTest
     }
 
     @Test
+    void newSnapshotsDeclareVersionTwo()
+    {
+        assertThat(service.capture(item(), g1Formula(), "v1").getContextJson())
+                .contains("\"formatVersion\":2");
+    }
+
+    @Test
+    void resultScaleDoesNotChangeCanonicalHash()
+    {
+        FactorFormulaVo formula = g1Formula();
+        formula = new FactorFormulaVo("G1", formula.getExpression(), new BigDecimal("52.8"), formula.getDescription(), formula.getFactors());
+        String first = service.capture(item(), formula, "v1").getSnapshotHash();
+        formula = g1Formula();
+        assertThat(service.capture(item(), formula, "v1").getSnapshotHash()).isEqualTo(first);
+    }
+
+    @Test
+    void captureRejectsResultThatMysqlWouldRound()
+    {
+        FactorFormulaVo f = g1Formula();
+        FactorFormulaVo invalid = new FactorFormulaVo("G1", f.getExpression(), new BigDecimal("52.801"), f.getDescription(), f.getFactors());
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.capture(item(), invalid, "v1"))
+                .hasMessageContaining("DECIMAL");
+        org.mockito.Mockito.verify(snapshotMapper, org.mockito.Mockito.never()).insertBizWorkloadCalcSnapshot(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void nullFactorEntryCannotBeSilentlyDiscardedFromNewEvidence()
+    {
+        FactorFormulaVo f = g1Formula();
+        FactorFormulaVo invalid = new FactorFormulaVo("G1", f.getExpression(), f.getResult(), f.getDescription(),
+                java.util.Arrays.asList(f.getFactors().get(0), null));
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.capture(item(), invalid, "v1"))
+                .hasMessageContaining("因子");
+    }
+
+    @Test
+    void canonicalStructureAvoidsNewlineFieldBoundaryCollisions()
+    {
+        FactorFormulaVo f = g1Formula();
+        FactorFormulaVo first = new FactorFormulaVo("G1", "A\nB", f.getResult(), "same", f.getFactors());
+        FactorFormulaVo second = new FactorFormulaVo("G1", "A", f.getResult(), "same", f.getFactors());
+        assertThat(service.capture(item(), first, "C").getSnapshotHash())
+                .isNotEqualTo(service.capture(item(), second, "B\nC").getSnapshotHash());
+    }
+
+    @Test
     void nextSnapshotVersionExceedsInvalidatedItemVersion()
     {
         when(snapshotMapper.selectMaxVersionByItemId(ITEM_ID)).thenReturn(3L);

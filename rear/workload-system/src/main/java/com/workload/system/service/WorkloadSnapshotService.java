@@ -1,9 +1,6 @@
 package com.workload.system.service;
 
 import java.math.BigDecimal;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -68,8 +65,19 @@ public class WorkloadSnapshotService
         String sourceJson = serialize(buildOrderedMap(formula.getFactors(), false));
         String formulaExpression = normalizeExpression(formula.getExpression());
         BigDecimal result = formula.getResult();
+        if (result != null)
+        {
+            try
+            {
+                BigDecimal stored = result.setScale(2, java.math.RoundingMode.UNNECESSARY);
+                if (stored.precision() > 10) throw new ArithmeticException("超出精度");
+            }
+            catch (ArithmeticException e)
+            {
+                throw SnapshotIntegrity.failure("结果不能无损存入 DECIMAL(10,2)");
+            }
+        }
         String contextJson = SnapshotContextCodec.encode(formula);
-        String snapshotHash = sha256(factorJson, sourceJson, formulaExpression, ruleVersion, result, contextJson);
 
         BizWorkloadCalcSnapshot snapshot = new BizWorkloadCalcSnapshot();
         snapshot.setItemId(item.getId());
@@ -81,7 +89,8 @@ public class WorkloadSnapshotService
         snapshot.setContextJson(contextJson);
         snapshot.setRuleVersion(ruleVersion);
         snapshot.setResult(result);
-        snapshot.setSnapshotHash(snapshotHash);
+        snapshot.setSnapshotHash(SnapshotIntegrity.hashV2(snapshot));
+        SnapshotIntegrity.verify(snapshot);
         snapshot.setCreatedBy(currentUser());
         snapshot.setCreatedAt(new Date());
 
@@ -149,36 +158,6 @@ public class WorkloadSnapshotService
             return expression;
         }
         return expression.replaceAll("\\s*[*×＊·]\\s*", " × ").trim();
-    }
-
-    /** 覆盖规范化后的 factorJson+sourceJson+formula+ruleVersion+result，生成稳定 SHA-256。 */
-    private String sha256(String factorJson, String sourceJson, String formulaExpression,
-            String ruleVersion, BigDecimal result, String contextJson)
-    {
-        StringBuilder payload = new StringBuilder();
-        payload.append(factorJson == null ? "" : factorJson).append('\n');
-        payload.append(sourceJson == null ? "" : sourceJson).append('\n');
-        payload.append(formulaExpression == null ? "" : formulaExpression).append('\n');
-        payload.append(ruleVersion == null ? "" : ruleVersion).append('\n');
-        payload.append(result == null ? "" : result.toPlainString());
-        payload.append('\n').append(contextJson);
-
-        try
-        {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(payload.toString().getBytes(StandardCharsets.UTF_8));
-            StringBuilder hex = new StringBuilder(hash.length * 2);
-            for (byte b : hash)
-            {
-                hex.append(Character.forDigit((b >> 4) & 0xF, 16));
-                hex.append(Character.forDigit(b & 0xF, 16));
-            }
-            return hex.toString();
-        }
-        catch (NoSuchAlgorithmException e)
-        {
-            throw new ServiceException("生成计算快照哈希失败：" + e.getMessage());
-        }
     }
 
     /** 安全获取当前用户名；无安全上下文（如系统任务/单测）时回落为 system。 */

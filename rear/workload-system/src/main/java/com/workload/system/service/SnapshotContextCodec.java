@@ -28,13 +28,16 @@ public final class SnapshotContextCodec
 
     public static String encode(FactorFormulaVo formula)
     {
+        if (formula.getFactors() != null && formula.getFactors().stream()
+                .anyMatch(f -> f == null || f.getKey() == null || f.getKey().isBlank()))
+            throw SnapshotIntegrity.failure("缺失因子或因子标识，无法固化上下文");
         List<FactorContext> factors = formula.getFactors() == null ? List.of()
-                : formula.getFactors().stream().filter(f -> f != null && f.getKey() != null)
+                : formula.getFactors().stream()
                     .map(f -> new FactorContext(f.getKey(), f.getDescription(), f.getStatus(),
                             f.getRuleCode(), f.getRuleVersion(), f.getSourceRef())).toList();
         try
         {
-            return JSON.writeValueAsString(new Context(1, formula.getFormulaType(), formula.getDescription(),
+            return JSON.writeValueAsString(new Context(2, formula.getFormulaType(), formula.getDescription(),
                     formula.isReproducible(), formula.getSourceTask(), factors));
         }
         catch (JsonProcessingException e)
@@ -43,16 +46,35 @@ public final class SnapshotContextCodec
         }
     }
 
+    public static Context decode(String json)
+    {
+        try
+        {
+            com.fasterxml.jackson.databind.JsonNode node = SnapshotIntegrity.json().readTree(json);
+            com.fasterxml.jackson.databind.JsonNode version = node == null ? null : node.get("formatVersion");
+            if (version == null || !version.isIntegralNumber() || !version.canConvertToInt())
+                throw new IllegalArgumentException("格式版本必须是显式整数");
+            Context context = SnapshotIntegrity.json().treeToValue(node, Context.class);
+            if (context == null || (context.formatVersion() != 1 && context.formatVersion() != 2)
+                    || context.formulaType() == null || context.formulaType().isBlank() || context.factors() == null)
+                throw new IllegalArgumentException("不支持或不完整的上下文格式");
+            java.util.Set<String> keys = new java.util.HashSet<>();
+            for (FactorContext factor : context.factors())
+                if (factor == null || factor.key() == null || factor.key().isBlank() || !keys.add(factor.key()))
+                    throw new IllegalArgumentException("重复或缺失上下文因子");
+            return context;
+        }
+        catch (Exception e)
+        {
+            throw SnapshotIntegrity.failure("读取快照上下文失败：" + e.getMessage());
+        }
+    }
+
     public static FactorFormulaVo restore(String json, FactorFormulaVo persisted)
     {
         try
         {
-            Context context = JSON.readValue(json, Context.class);
-            if (context == null || context.formatVersion() != 1 || context.formulaType() == null
-                    || context.factors() == null)
-            {
-                throw new IllegalArgumentException("不支持或不完整的上下文格式");
-            }
+            Context context = decode(json);
             Map<String, FactorVo> values = persisted.getFactors().stream()
                     .collect(Collectors.toMap(FactorVo::getKey, Function.identity()));
             List<FactorVo> factors = new ArrayList<>();
@@ -76,7 +98,7 @@ public final class SnapshotContextCodec
         }
         catch (Exception e)
         {
-            throw new ServiceException("读取快照上下文失败：" + e.getMessage());
+            throw SnapshotIntegrity.failure("读取快照上下文失败：" + e.getMessage());
         }
     }
 }
