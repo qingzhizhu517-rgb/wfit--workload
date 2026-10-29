@@ -76,11 +76,11 @@ P0：阻塞安全整合或共享环境使用；P1：一期功能/验收必要项
 
 **涉及文件：** `calc/WorkloadWriteGuard.java`、`calc/WorkloadCalcServiceImpl.java`、`calc/PayCalcServiceImpl.java`，`service/impl/{BizWorkloadItemServiceImpl,BizWorkloadSummaryServiceImpl,BizPayRecordServiceImpl,BizAuditServiceImpl,CoefficientAdjustmentServiceImpl,TeachingTaskImportServiceImpl}.java`及对应Mapper XML；以上位于`rear/workload-system/src/main/java/com/workload/system/`。测试复用`src/test/java/com/workload/system/integration/CoefficientApprovalTransactionIT.java`，新增`WorkloadConcurrencyIT.java`与`SourceChangeConsistencyIT.java`于同integration目录。
 
-- [ ] 建立“源任务/子表/G8G9/G11/系数/汇总/酬金 × 草稿/待审/完结”的写入口矩阵，覆盖CRUD、导入确认、生成器、旧兼容端点与批处理。
-- [ ] 在隔离数据库复现源变更/子表删除后汇总是否陈旧；如存在缺口，采用统一数据版本/需重算标识或原子重算，阻止陈旧结果提交，不改变已完结记录。
-- [ ] 用两个物理连接和显式同步屏障测试“系数批准vs汇总提交”“核算vs审核完结”“两个确认同一版本”“首次生成汇总vs另一写入”。断言只允许一个合法结果或明确冲突，不能出现混合因子、重复快照或部分提交。
-- [ ] 真实接入完整核算服务重跑失败回滚；保留现有14项临时表IT作为窄回归，不能用替身覆盖宣称整链通过。
-- [ ] 验证所有角色不能通过通用编辑篡改计算列、归属、签字；冻结记录批删全批回滚。清理前端无效解锁和手改结果入口。
+- [x] 建立“源任务/子表/G8G9/G11/系数/汇总/酬金 × 草稿/待审/完结”的写入口矩阵，覆盖CRUD、导入确认、生成器、旧兼容端点与批处理。
+- [x] 在隔离数据库复现源变更/子表删除后汇总是否陈旧；如存在缺口，采用统一数据版本/需重算标识或原子重算，阻止陈旧结果提交，不改变已完结记录。
+- [x] 用两个物理连接和显式同步屏障测试“系数批准vs汇总提交”“核算vs审核完结”“两个确认同一版本”“首次生成汇总vs另一写入”。断言只允许一个合法结果或明确冲突，不能出现混合因子、重复快照或部分提交。
+- [x] 真实接入完整核算服务重跑失败回滚；保留现有14项临时表IT作为窄回归，不能用替身覆盖宣称整链通过。
+- [x] 验证所有角色不能通过通用编辑篡改计算列、归属、签字；冻结记录批删全批回滚。清理前端无效解锁和手改结果入口。
 
 **验收：** 待审/完结不静默改数，核对时版本一致；源变更后的汇总新鲜度可见且可执行约束；多连接测试重复运行稳定。只修复已复现缺口，避免借此重构整个计算引擎。
 

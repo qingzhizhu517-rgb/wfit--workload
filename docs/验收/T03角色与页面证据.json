@@ -1,0 +1,780 @@
+{
+  "date": "2026-10-29",
+  "db_host": "127.0.0.1",
+  "db_port": 13306,
+  "db_name": "wfit_ui_20261028",
+  "app_port": 18084,
+  "semester": "2026-2027-2",
+  "summary_id": 106,
+  "dirty_summary_id": 107,
+  "records": [
+    {
+      "role": "teacher",
+      "method": "POST",
+      "path": "/system/workloadItem",
+      "fields": [
+        "calculatedWorkload",
+        "deanApprovalStatus",
+        "description",
+        "itemType",
+        "semester",
+        "sourceType",
+        "status",
+        "taskId",
+        "userId"
+      ],
+      "code": 200,
+      "message": "操作成功",
+      "expected_success": true
+    },
+    {
+      "role": "teacher",
+      "method": "GET",
+      "path": "/system/workloadItem/list?semester=2026-2027-2",
+      "fields": [],
+      "code": 200,
+      "message": "查询成功",
+      "expected_success": true
+    },
+    {
+      "role": "teacher",
+      "method": "GET",
+      "path": "/system/workloadItem/501",
+      "fields": [],
+      "code": 500,
+      "message": "工作量明细不存在",
+      "expected_success": false
+    },
+    {
+      "role": "teacher",
+      "method": "PUT",
+      "path": "/system/workloadItem",
+      "fields": [
+        "id",
+        "status"
+      ],
+      "code": 403,
+      "message": "没有权限，请联系管理员授权",
+      "expected_success": false
+    },
+    {
+      "role": "teacher",
+      "method": "POST",
+      "path": "/system/workloadItem/605/confirm",
+      "fields": [
+        "expectedVersion",
+        "expectedWorkload"
+      ],
+      "code": 403,
+      "message": "没有权限，请联系管理员授权",
+      "expected_success": false
+    },
+    {
+      "role": "leader",
+      "method": "POST",
+      "path": "/system/workloadItem/605/confirm",
+      "fields": [
+        "expectedVersion",
+        "expectedWorkload"
+      ],
+      "code": 403,
+      "message": "没有权限，请联系管理员授权",
+      "expected_success": false
+    },
+    {
+      "role": "admin",
+      "method": "POST",
+      "path": "/system/calc/recalcSummary?userId=1003&semester=2026-2027-2",
+      "fields": [],
+      "code": 200,
+      "message": "操作成功",
+      "expected_success": true
+    },
+    {
+      "role": "admin",
+      "method": "PUT",
+      "path": "/system/workloadItem",
+      "fields": [
+        "calculatedWorkload",
+        "deanApprovalStatus",
+        "id",
+        "remark",
+        "status"
+      ],
+      "code": 200,
+      "message": "操作成功",
+      "expected_success": true
+    },
+    {
+      "role": "admin",
+      "method": "GET",
+      "path": "/system/workloadItem/605",
+      "fields": [],
+      "code": 200,
+      "message": "操作成功",
+      "expected_success": true
+    },
+    {
+      "role": "admin",
+      "method": "PUT",
+      "path": "/system/workloadSummary",
+      "fields": [
+        "id",
+        "remark",
+        "semester",
+        "status",
+        "teacherSign",
+        "totalWorkload",
+        "userId"
+      ],
+      "code": 500,
+      "message": "汇总归属不可修改，请对目标教师与学期重新核算",
+      "expected_success": false
+    },
+    {
+      "role": "admin",
+      "method": "PUT",
+      "path": "/system/workloadSummary",
+      "fields": [
+        "id",
+        "remark",
+        "status",
+        "teacherSign",
+        "totalWorkload"
+      ],
+      "code": 200,
+      "message": "操作成功",
+      "expected_success": true
+    },
+    {
+      "role": "admin",
+      "method": "GET",
+      "path": "/system/workloadSummary/106",
+      "fields": [],
+      "code": 200,
+      "message": "操作成功",
+      "expected_success": true
+    },
+    {
+      "role": "jiaowu",
+      "method": "PUT",
+      "path": "/system/workloadItem",
+      "fields": [
+        "calculatedWorkload",
+        "deanApprovalStatus",
+        "id",
+        "remark",
+        "status"
+      ],
+      "code": 200,
+      "message": "操作成功",
+      "expected_success": true
+    },
+    {
+      "role": "admin",
+      "method": "GET",
+      "path": "/system/workloadItem/605",
+      "fields": [],
+      "code": 200,
+      "message": "操作成功",
+      "expected_success": true
+    },
+    {
+      "role": "jiaowu",
+      "method": "PUT",
+      "path": "/system/workloadSummary",
+      "fields": [
+        "id",
+        "remark",
+        "semester",
+        "status",
+        "teacherSign",
+        "totalWorkload",
+        "userId"
+      ],
+      "code": 500,
+      "message": "汇总归属不可修改，请对目标教师与学期重新核算",
+      "expected_success": false
+    },
+    {
+      "role": "jiaowu",
+      "method": "PUT",
+      "path": "/system/workloadSummary",
+      "fields": [
+        "id",
+        "remark",
+        "status",
+        "teacherSign",
+        "totalWorkload"
+      ],
+      "code": 200,
+      "message": "操作成功",
+      "expected_success": true
+    },
+    {
+      "role": "admin",
+      "method": "GET",
+      "path": "/system/workloadSummary/106",
+      "fields": [],
+      "code": 200,
+      "message": "操作成功",
+      "expected_success": true
+    },
+    {
+      "role": "teacher",
+      "method": "POST",
+      "path": "/system/audit/submit?id=106",
+      "fields": [],
+      "code": 409,
+      "message": "源数据已变更，请重新核算汇总和酬金后再提交或审核",
+      "expected_success": false
+    },
+    {
+      "role": "admin",
+      "method": "POST",
+      "path": "/system/calc/recalcPay?userId=1003&semester=2026-2027-2",
+      "fields": [],
+      "code": 500,
+      "message": "源数据已变更，请先重新核算汇总和酬金",
+      "expected_success": false
+    },
+    {
+      "role": "teacher",
+      "method": "PUT",
+      "path": "/system/workloadSummary",
+      "fields": [
+        "id",
+        "status",
+        "totalWorkload"
+      ],
+      "code": 403,
+      "message": "没有权限，请联系管理员授权",
+      "expected_success": false
+    },
+    {
+      "role": "teacher",
+      "method": "POST",
+      "path": "/system/audit/approve?id=106",
+      "fields": [],
+      "code": 403,
+      "message": "没有权限，请联系管理员授权",
+      "expected_success": false
+    },
+    {
+      "role": "leader",
+      "method": "PUT",
+      "path": "/system/workloadSummary",
+      "fields": [
+        "id",
+        "status",
+        "totalWorkload"
+      ],
+      "code": 403,
+      "message": "没有权限，请联系管理员授权",
+      "expected_success": false
+    },
+    {
+      "role": "leader",
+      "method": "POST",
+      "path": "/system/audit/approve?id=106",
+      "fields": [],
+      "code": 403,
+      "message": "没有权限，请联系管理员授权",
+      "expected_success": false
+    },
+    {
+      "role": "teacher",
+      "method": "GET",
+      "path": "/system/workloadSummary/101",
+      "fields": [],
+      "code": 500,
+      "message": "无权访问他人数据",
+      "expected_success": false
+    },
+    {
+      "role": "teacher",
+      "method": "GET",
+      "path": "/system/workloadSummary/list?userId=3",
+      "fields": [],
+      "code": 200,
+      "message": "查询成功",
+      "expected_success": true
+    },
+    {
+      "role": "teacher",
+      "method": "GET",
+      "path": "/system/workloadSummary/list?userId=3",
+      "fields": [],
+      "code": 200,
+      "message": "查询成功",
+      "expected_success": true
+    },
+    {
+      "role": "jiaowu",
+      "method": "POST",
+      "path": "/system/workloadItem/605/confirm",
+      "fields": [
+        "expectedVersion",
+        "expectedWorkload"
+      ],
+      "code": 200,
+      "message": "操作成功",
+      "expected_success": true
+    },
+    {
+      "role": "jiaowu",
+      "method": "POST",
+      "path": "/system/workloadItem/605/confirm",
+      "fields": [
+        "expectedVersion",
+        "expectedWorkload"
+      ],
+      "code": 500,
+      "message": "明细已核对，禁止修改或删除",
+      "expected_success": false
+    },
+    {
+      "role": "admin",
+      "method": "POST",
+      "path": "/system/calc/recalcSummary?userId=1003&semester=2026-2027-2",
+      "fields": [],
+      "code": 200,
+      "message": "操作成功",
+      "expected_success": true
+    },
+    {
+      "role": "admin",
+      "method": "GET",
+      "path": "/system/payRecord/list?userId=1003&semester=2026-2027-2",
+      "fields": [],
+      "code": 200,
+      "message": "查询成功",
+      "expected_success": true
+    },
+    {
+      "role": "admin",
+      "method": "PUT",
+      "path": "/system/payRecord",
+      "fields": [
+        "courseHourPay",
+        "id",
+        "remark",
+        "status",
+        "totalPay",
+        "userId"
+      ],
+      "code": 500,
+      "message": "酬金记录归属不可修改，请通过核算生成对应学期记录",
+      "expected_success": false
+    },
+    {
+      "role": "admin",
+      "method": "PUT",
+      "path": "/system/payRecord",
+      "fields": [
+        "courseHourPay",
+        "id",
+        "remark",
+        "status",
+        "totalPay"
+      ],
+      "code": 200,
+      "message": "操作成功",
+      "expected_success": true
+    },
+    {
+      "role": "admin",
+      "method": "GET",
+      "path": "/system/payRecord/2",
+      "fields": [],
+      "code": 200,
+      "message": "操作成功",
+      "expected_success": true
+    },
+    {
+      "role": "jiaowu",
+      "method": "PUT",
+      "path": "/system/payRecord",
+      "fields": [
+        "courseHourPay",
+        "id",
+        "remark",
+        "status",
+        "totalPay",
+        "userId"
+      ],
+      "code": 500,
+      "message": "酬金记录归属不可修改，请通过核算生成对应学期记录",
+      "expected_success": false
+    },
+    {
+      "role": "jiaowu",
+      "method": "PUT",
+      "path": "/system/payRecord",
+      "fields": [
+        "courseHourPay",
+        "id",
+        "remark",
+        "status",
+        "totalPay"
+      ],
+      "code": 200,
+      "message": "操作成功",
+      "expected_success": true
+    },
+    {
+      "role": "admin",
+      "method": "GET",
+      "path": "/system/payRecord/2",
+      "fields": [],
+      "code": 200,
+      "message": "操作成功",
+      "expected_success": true
+    },
+    {
+      "role": "teacher",
+      "method": "POST",
+      "path": "/system/audit/submit?id=106",
+      "fields": [],
+      "code": 200,
+      "message": "操作成功",
+      "expected_success": true
+    },
+    {
+      "role": "admin",
+      "method": "PUT",
+      "path": "/system/workloadSummary",
+      "fields": [
+        "id",
+        "remark"
+      ],
+      "code": 500,
+      "message": "学期汇总已进入审批流程，数据已冻结",
+      "expected_success": false
+    },
+    {
+      "role": "admin",
+      "method": "POST",
+      "path": "/system/workloadItem",
+      "fields": [
+        "calculatedWorkload",
+        "itemType",
+        "semester",
+        "userId"
+      ],
+      "code": 500,
+      "message": "学期汇总已进入审批流程，数据已冻结",
+      "expected_success": false
+    },
+    {
+      "role": "jiaowu",
+      "method": "PUT",
+      "path": "/system/workloadSummary",
+      "fields": [
+        "id",
+        "remark"
+      ],
+      "code": 500,
+      "message": "学期汇总已进入审批流程，数据已冻结",
+      "expected_success": false
+    },
+    {
+      "role": "jiaowu",
+      "method": "POST",
+      "path": "/system/workloadItem",
+      "fields": [
+        "calculatedWorkload",
+        "itemType",
+        "semester",
+        "userId"
+      ],
+      "code": 500,
+      "message": "学期汇总已进入审批流程，数据已冻结",
+      "expected_success": false
+    },
+    {
+      "role": "teacher",
+      "method": "POST",
+      "path": "/system/audit/teacherConfirm?id=106",
+      "fields": [],
+      "code": 200,
+      "message": "操作成功",
+      "expected_success": true
+    },
+    {
+      "role": "jiaowu",
+      "method": "POST",
+      "path": "/system/audit/reject?id=106&reason=T03-reject",
+      "fields": [],
+      "code": 200,
+      "message": "操作成功",
+      "expected_success": true
+    },
+    {
+      "role": "admin",
+      "method": "GET",
+      "path": "/system/workloadSummary/106",
+      "fields": [],
+      "code": 200,
+      "message": "操作成功",
+      "expected_success": true
+    },
+    {
+      "role": "teacher",
+      "method": "POST",
+      "path": "/system/audit/submit?id=106",
+      "fields": [],
+      "code": 200,
+      "message": "操作成功",
+      "expected_success": true
+    },
+    {
+      "role": "jiaowu",
+      "method": "POST",
+      "path": "/system/audit/approve?id=106",
+      "fields": [],
+      "code": 200,
+      "message": "操作成功",
+      "expected_success": true
+    },
+    {
+      "role": "admin",
+      "method": "POST",
+      "path": "/system/audit/unlock?id=106",
+      "fields": [],
+      "code": 409,
+      "message": "已完结汇总永久锁定，不允许解锁",
+      "expected_success": false
+    },
+    {
+      "role": "admin",
+      "method": "PUT",
+      "path": "/system/workloadSummary",
+      "fields": [
+        "id",
+        "remark"
+      ],
+      "code": 500,
+      "message": "该汇总已完结永久锁定，禁止修改",
+      "expected_success": false
+    },
+    {
+      "role": "jiaowu",
+      "method": "POST",
+      "path": "/system/audit/unlock?id=106",
+      "fields": [],
+      "code": 403,
+      "message": "没有权限，请联系管理员授权",
+      "expected_success": false
+    },
+    {
+      "role": "jiaowu",
+      "method": "PUT",
+      "path": "/system/workloadSummary",
+      "fields": [
+        "id",
+        "remark"
+      ],
+      "code": 500,
+      "message": "该汇总已完结永久锁定，禁止修改",
+      "expected_success": false
+    },
+    {
+      "role": "teacher",
+      "method": "POST",
+      "path": "/system/audit/unlock?id=106",
+      "fields": [],
+      "code": 403,
+      "message": "没有权限，请联系管理员授权",
+      "expected_success": false
+    },
+    {
+      "role": "teacher",
+      "method": "PUT",
+      "path": "/system/workloadSummary",
+      "fields": [
+        "id",
+        "remark"
+      ],
+      "code": 403,
+      "message": "没有权限，请联系管理员授权",
+      "expected_success": false
+    },
+    {
+      "role": "leader",
+      "method": "POST",
+      "path": "/system/audit/unlock?id=106",
+      "fields": [],
+      "code": 403,
+      "message": "没有权限，请联系管理员授权",
+      "expected_success": false
+    },
+    {
+      "role": "leader",
+      "method": "PUT",
+      "path": "/system/workloadSummary",
+      "fields": [
+        "id",
+        "remark"
+      ],
+      "code": 403,
+      "message": "没有权限，请联系管理员授权",
+      "expected_success": false
+    },
+    {
+      "role": "admin",
+      "method": "POST",
+      "path": "/system/calc/recalcSummary?userId=1003&semester=2026-2027-2",
+      "fields": [],
+      "code": 500,
+      "message": "学期汇总已进入审批流程，数据已冻结",
+      "expected_success": false
+    },
+    {
+      "role": "admin",
+      "method": "DELETE",
+      "path": "/system/payRecord/2",
+      "fields": [],
+      "code": 500,
+      "message": "学期汇总已进入审批流程，数据已冻结",
+      "expected_success": false
+    },
+    {
+      "role": "admin",
+      "method": "POST",
+      "path": "/system/workloadItem",
+      "fields": [
+        "calculatedWorkload",
+        "description",
+        "itemType",
+        "semester",
+        "userId"
+      ],
+      "code": 200,
+      "message": "操作成功",
+      "expected_success": true
+    },
+    {
+      "role": "admin",
+      "method": "POST",
+      "path": "/system/calc/recalcSummary?userId=1002&semester=2026-2027-2",
+      "fields": [],
+      "code": 500,
+      "message": "教师档案不存在，无法重算",
+      "expected_success": false,
+      "fixture_note": "缺少教务测试账号教师档案，补充QA夹具后继续"
+    },
+    {
+      "role": "admin",
+      "method": "DELETE",
+      "path": "/system/workloadItem/606,605",
+      "code": 500,
+      "message": "学期汇总已进入审批流程，数据已冻结",
+      "expected_success": false,
+      "database_before_sha256": "2a9e2b60e5533a13a9411d6132132a6cf583ca515a9ba8fc8d4f5f339e723fed",
+      "database_after_sha256": "2a9e2b60e5533a13a9411d6132132a6cf583ca515a9ba8fc8d4f5f339e723fed",
+      "unchanged": true
+    },
+    {
+      "role": "jiaowu",
+      "method": "DELETE",
+      "path": "/system/workloadItem/606,605",
+      "code": 500,
+      "message": "学期汇总已进入审批流程，数据已冻结",
+      "expected_success": false,
+      "database_before_sha256": "2a9e2b60e5533a13a9411d6132132a6cf583ca515a9ba8fc8d4f5f339e723fed",
+      "database_after_sha256": "2a9e2b60e5533a13a9411d6132132a6cf583ca515a9ba8fc8d4f5f339e723fed",
+      "unchanged": true
+    },
+    {
+      "role": "admin",
+      "method": "PUT",
+      "path": "/system/workloadItem",
+      "fields": [
+        "calculatedWorkload",
+        "deanApprovalStatus",
+        "id",
+        "status",
+        "userId"
+      ],
+      "code": 200,
+      "message": "操作成功",
+      "expected_success": true,
+      "database_before_sha256": "c446da3c4ea039478580894347d0bea920b77f005a42cfbeea05acf57053e155",
+      "database_after_sha256": "c446da3c4ea039478580894347d0bea920b77f005a42cfbeea05acf57053e155",
+      "unchanged": true,
+      "note": "通用入口过滤明细userId/计算列/状态，未改变归属"
+    },
+    {
+      "role": "jiaowu",
+      "method": "PUT",
+      "path": "/system/workloadItem",
+      "fields": [
+        "calculatedWorkload",
+        "deanApprovalStatus",
+        "id",
+        "status",
+        "userId"
+      ],
+      "code": 200,
+      "message": "操作成功",
+      "expected_success": true,
+      "database_before_sha256": "c446da3c4ea039478580894347d0bea920b77f005a42cfbeea05acf57053e155",
+      "database_after_sha256": "c446da3c4ea039478580894347d0bea920b77f005a42cfbeea05acf57053e155",
+      "unchanged": true,
+      "note": "通用入口过滤明细userId/计算列/状态，未改变归属"
+    }
+  ],
+  "database_after": "id\tuser_id\tsemester\tstatus\ttotal_workload\tneeds_recalculation\tteacher_sign\tacademic_assistant_sign\n106\t1003\t2026-2027-2\t2\t20.00\t0\tNULL\tjiaowu_test\n107\t1002\t2026-2027-2\t0\t5.00\t1\tNULL\tNULL\naction\tfrom_status\tto_status\toperator_name\nsubmit\t0\t1\tteacher_test\nteacherConfirm\t1\t1\tteacher_test\nreject\t1\t0\tjiaowu_test\nsubmit\t0\t1\tteacher_test\napprove\t1\t2\tjiaowu_test\n",
+  "checked_requests": 62,
+  "baseline_commit": "9438d9a",
+  "browser": {
+    "date": "2026-10-29",
+    "frontend": "http://127.0.0.1:13000",
+    "backend": "http://127.0.0.1:18084",
+    "roles": [
+      "biz_admin",
+      "teacher"
+    ],
+    "checks": {
+      "manager_dirty_badge": true,
+      "manager_dirty_submit_disabled": true,
+      "manager_dirty_drawer_warning": true,
+      "finished_no_unlock_action": true,
+      "teacher_own_data_only": true,
+      "teacher_dirty_submit_disabled": true,
+      "teacher_dirty_drawer_warning": true
+    },
+    "limitations": [
+      "未验收四角色全部页面",
+      "完结更多菜单仍含重算/删除，后端拒绝；无需扩展为全UI清理"
+    ],
+    "screenshots": [
+      {
+        "file": "T03截图/ui-dirty-drawer.png",
+        "sha256": "0088a57765a84630fee5b36c8880222a06e3cf8e19bbf476c01b2a4e48f3e93b"
+      },
+      {
+        "file": "T03截图/ui-teacher-dirty.png",
+        "sha256": "75fab5ca37a0ff7de2a0adb4e46ddb3bd733f5386227cbb60121b8a196fdedc0"
+      }
+    ],
+    "teacher_sample": {
+      "semester": "2026-2027-1",
+      "summary_id": 105,
+      "state": "draft_dirty",
+      "origin": "首次试跑保留样本"
+    }
+  },
+  "original_workspace": {
+    "preserved_files": 43,
+    "changed_files": 0
+  },
+  "fixture_notes": [
+    "2026-2027-1保留首次试跑样本；2026-2027-2正式完成审批流程。",
+    "教务测试账号无教师档案导致最后一条UI样本核算被拒绝；仅向QA克隆新增讲师/专任测试档案后恢复。",
+    "试跑曾将保护归属的预期写成成功并忽略；现场接口实际拒绝迁移，调整验收为拒绝且归属不变。",
+    "测试账号使用真实角色权限，未修改sys_role_menu扩大权限。"
+  ],
+  "database_verification": "id\tuser_id\tsemester\titem_type\tstatus\tcalculated_workload\n501\t3\t2025-2026-1\tG1\t0\t0.00\nid\tuser_id\tsemester\tstatus\ttotal_workload\tneeds_recalculation\tteacher_sign\tacademic_assistant_sign\n101\t3\t2025-2026-1\t0\t236.80\t1\tNULL\tNULL\n105\t1003\t2026-2027-1\t0\t20.00\t1\tNULL\tNULL\n106\t1003\t2026-2027-2\t2\t20.00\t0\tNULL\tjiaowu_test\n107\t1002\t2026-2027-2\t0\t5.00\t1\tNULL\tNULL\n"
+}
