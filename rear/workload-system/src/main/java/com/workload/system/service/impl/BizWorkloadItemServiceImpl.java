@@ -120,7 +120,9 @@ public class BizWorkloadItemServiceImpl implements IBizWorkloadItemService
         }
         created.setCreateTime(DateUtils.getNowDate());
         writeGuard.markChanged(owner, created.getSemester());
-        return bizWorkloadItemMapper.insertBizWorkloadItem(created);
+        int rows=bizWorkloadItemMapper.insertBizWorkloadItem(created);
+        recordManualWorkload(created, created.getCalculatedWorkload());
+        return rows;
     }
 
     /**
@@ -144,7 +146,18 @@ public class BizWorkloadItemServiceImpl implements IBizWorkloadItemService
         }
         writeGuard.markChanged(existing.getUserId(), existing.getSemester());
         bizWorkloadItem.setUpdateTime(DateUtils.getNowDate());
-        return bizWorkloadItemMapper.updateBizWorkloadItem(bizWorkloadItem);
+        int rows=bizWorkloadItemMapper.updateBizWorkloadItem(bizWorkloadItem);
+        if (bizWorkloadItem.getCalculatedWorkload()!=null) recordManualWorkload(existing,bizWorkloadItem.getCalculatedWorkload());
+        return rows;
+    }
+
+    private void recordManualWorkload(BizWorkloadItem item, java.math.BigDecimal amount) {
+        if(!java.util.Set.of("G8","G9").contains(item.getItemType()) || amount==null) return;
+        com.workload.system.calc.rule.FactorProvenance.requireDecimal2(amount);
+        java.util.Map<String,String> refs=new java.util.TreeMap<>(com.workload.system.calc.WorkloadCalcServiceImpl.sourceActor());refs.put("itemId",item.getId().toString());
+        var proof=com.workload.system.calc.rule.FactorProvenance.create(item.getItemType(),"WORKLOAD",amount,"MANUAL_INPUT","FACTOR","EXPLICIT_VALUE_V1",
+                java.util.Map.of("value",amount.toPlainString()),java.util.List.of(),refs);
+        bizWorkloadItemMapper.updateFactorProvenance(item.getId(),com.workload.system.calc.rule.FactorProvenance.encode(item.getId(),item.getItemType(),java.util.Map.of("WORKLOAD",proof)));
     }
 
     /**

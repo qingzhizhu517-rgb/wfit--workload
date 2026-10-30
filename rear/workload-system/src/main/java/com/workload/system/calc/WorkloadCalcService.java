@@ -12,6 +12,10 @@ import java.util.Map;
  */
 public interface WorkloadCalcService
 {
+    /** Internal server-side lifecycle; supplied non-null factor fields replace old provenance even at equal values. */
+    void recordManualFactors(Long itemId, Object suppliedDetail);
+    void recordApprovedFactor(com.workload.system.domain.BizCoefficientAdjustment approved);
+
     /**
      * 重算单条明细工作量并回写 calculated_workload（已核对/汇总已锁定拒绝）
      *

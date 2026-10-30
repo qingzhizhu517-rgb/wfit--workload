@@ -62,6 +62,7 @@ public class BizWlTheoryServiceImpl implements IBizWlTheoryService
         workloadCalcService.assertEditable(bizWlTheory.getItemId());
         bizWlTheory.setCreateTime(DateUtils.getNowDate());
         int rows = bizWlTheoryMapper.insertBizWlTheory(bizWlTheory);
+        workloadCalcService.recordManualFactors(bizWlTheory.getItemId(), bizWlTheory);
         workloadCalcService.recalcItem(bizWlTheory.getItemId());
         return rows;
     }
@@ -79,6 +80,7 @@ public class BizWlTheoryServiceImpl implements IBizWlTheoryService
         workloadCalcService.assertEditable(bizWlTheory.getItemId());
         bizWlTheory.setUpdateTime(DateUtils.getNowDate());
         int rows = bizWlTheoryMapper.updateBizWlTheory(bizWlTheory);
+        workloadCalcService.recordManualFactors(bizWlTheory.getItemId(), bizWlTheory);
         workloadCalcService.recalcItem(bizWlTheory.getItemId());
         return rows;
     }

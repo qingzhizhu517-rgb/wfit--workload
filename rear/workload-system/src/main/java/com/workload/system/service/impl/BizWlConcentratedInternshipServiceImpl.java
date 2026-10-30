@@ -62,6 +62,7 @@ public class BizWlConcentratedInternshipServiceImpl implements IBizWlConcentrate
         workloadCalcService.assertEditable(bizWlConcentratedInternship.getItemId());
         bizWlConcentratedInternship.setCreateTime(DateUtils.getNowDate());
         int rows = bizWlConcentratedInternshipMapper.insertBizWlConcentratedInternship(bizWlConcentratedInternship);
+        workloadCalcService.recordManualFactors(bizWlConcentratedInternship.getItemId(), bizWlConcentratedInternship);
         workloadCalcService.recalcItem(bizWlConcentratedInternship.getItemId());
         return rows;
     }
@@ -79,6 +80,7 @@ public class BizWlConcentratedInternshipServiceImpl implements IBizWlConcentrate
         workloadCalcService.assertEditable(bizWlConcentratedInternship.getItemId());
         bizWlConcentratedInternship.setUpdateTime(DateUtils.getNowDate());
         int rows = bizWlConcentratedInternshipMapper.updateBizWlConcentratedInternship(bizWlConcentratedInternship);
+        workloadCalcService.recordManualFactors(bizWlConcentratedInternship.getItemId(), bizWlConcentratedInternship);
         workloadCalcService.recalcItem(bizWlConcentratedInternship.getItemId());
         return rows;
     }

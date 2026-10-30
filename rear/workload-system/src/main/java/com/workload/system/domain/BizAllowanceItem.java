@@ -14,6 +14,13 @@ import com.workload.common.core.domain.BaseEntity;
  */
 public class BizAllowanceItem extends BaseEntity
 {
+    @com.fasterxml.jackson.annotation.JsonProperty(access = com.fasterxml.jackson.annotation.JsonProperty.Access.READ_ONLY)
+    private String calculationEvidenceJson;
+    public String getCalculationEvidenceMissingReason() { return calculationEvidenceJson==null ? "MISSING_HISTORICAL_SOURCE" : null; }
+    public String getCalculationEvidenceStatus() { return calculationEvidenceJson==null ? "PARTIAL" : "COMPLETE"; }
+    public String getCalculationEvidenceJson() { return calculationEvidenceJson; }
+    public void setCalculationEvidenceJson(String value) { calculationEvidenceJson = value; }
+
     private static final long serialVersionUID = 1L;
 
     /** $column.columnComment */

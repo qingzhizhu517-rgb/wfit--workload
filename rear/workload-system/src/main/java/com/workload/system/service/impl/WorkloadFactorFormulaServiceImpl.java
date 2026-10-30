@@ -362,8 +362,30 @@ public class WorkloadFactorFormulaServiceImpl implements IWorkloadFactorFormulaS
             decisions.add(new DecisionEvidence(type+"_LIMIT",r.resolutionHash(),key,input==null ? "GT_NULL_AS_ZERO" : "GT",r.content().value(),(input==null ? BigDecimal.ZERO : new BigDecimal(input.toString())).compareTo(r.value())>0,null));
         }
         if (context.sources().isEmpty()) missing.add("NO_CAPTURED_POLICY_SOURCE");
+        if (item.getFactorProvenanceJson()!=null) {
+            Map<String,com.workload.system.calc.rule.FactorProvenance.Proof> saved=com.workload.system.calc.rule.FactorProvenance.read(item.getFactorProvenanceJson(),item.getId(),type);
+            List<com.workload.system.calc.rule.FactorProvenance.Proof> used=new ArrayList<>();
+            for(int index=0;index<evidence.size();index++) {
+                FactorEvidence old=evidence.get(index);
+                var proof=saved.get(old.key());
+                if(proof!=null && com.workload.system.calc.rule.FactorProvenance.same(old.boundValue(),proof.value())) {
+                    used.add(proof);
+                    evidence.set(index,new FactorEvidence(old.key(),"PERSISTED_SOURCE",old.boundValue(),null,null,proof.hash(),null,null,null));
+                    FactorVo factor=vo.getFactors().get(index);
+                    factor.setSource(proof.kind()); factor.setSourceRef(proof.hash()); factor.setRuleCode(null); factor.setRuleVersion(proof.hash());
+                    missing.remove("MISSING_HISTORICAL_SOURCE:"+old.key()); missing.remove("MISSING_RECORDED_INPUT:"+old.key());
+                }
+            }
+            used.sort(java.util.Comparator.comparing(com.workload.system.calc.rule.FactorProvenance.Proof::key));
+            vo.setPersistedFactorSources(used);
+            if(!used.isEmpty()) missing.remove("NO_CAPTURED_POLICY_SOURCE");
+        }
         vo.setAsOfDate(context.asOfDate().toString());
-        vo.setPolicySources(context.sources()); vo.setFactorEvidence(evidence); vo.setDecisionEvidence(decisions);
+        if(vo.getPersistedFactorSources()!=null) {
+            Set<String> required=switch(type) {case "G4"->Set.of("CONST_COURSE_DESIGN","CAP_R4_MAX");case "G5"->Set.of("APPROVAL_R5_JUNIOR","APPROVAL_R5_BACHELOR");case "G6"->Set.of("CONST_COURSE_DESIGN","CAP_R6_MAX");default->Set.of();};
+            vo.setPolicySources(context.sources().stream().filter(r -> required.contains(r.requestedCode())).toList());
+        } else vo.setPolicySources(context.sources());
+        vo.setFactorEvidence(evidence); vo.setDecisionEvidence(decisions);
         vo.setEvidenceStatus(missing.isEmpty()?"COMPLETE":"PARTIAL"); vo.setMissingEvidenceReasons(missing);
     }
 

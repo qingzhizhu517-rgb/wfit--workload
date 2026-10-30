@@ -1,0 +1,413 @@
+{
+  "verified_date": "2026-10-30",
+  "base_commit": "52ba320",
+  "scope": "T05 B: 导入/维护/批准实际因子来源format4及A-G其他酬金实算证据；不含C结算快照",
+  "regular_tests": 672,
+  "mysql_tests": 103,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "mysql_breakdown": {
+    "SnapshotIntegrityIT": 15,
+    "SourceChangeConsistencyIT": 11,
+    "CoefficientApprovalTransactionIT": 14,
+    "WorkloadConcurrencyIT": 6,
+    "FactorProvenanceIT": 57
+  },
+  "reviews": {
+    "spec": "PASS, final shared input normalization checked",
+    "quality": "PASS, exact strings and pre-DTO raw/normalized types checked",
+    "review_maven": "not run; test evidence supplied separately"
+  },
+  "logs": [
+    {
+      "name": "b-red.log",
+      "sha256": "642fa91a318264e9006707c979325379a2ff09299745a1689f6676fe7948a1e7"
+    },
+    {
+      "name": "proof-role-red.log",
+      "sha256": "0e04148d5f9d35c9d5914906624b3a02a9005bbb8df71e2cc9c4f189b1c17b66"
+    },
+    {
+      "name": "b-input-binding-red.log",
+      "sha256": "d81ffc150635cbf00d7eeb18fc88b6dbff91aaf7fea5608740ad36a70c841f7f"
+    },
+    {
+      "name": "b-raw-normalization-red.log",
+      "sha256": "775b2e16cffa92b551bcda7256b086aaedf82c2b5831d4b170dc20aeb7ab95d2"
+    },
+    {
+      "name": "b-persisted-amount-red.log",
+      "sha256": "0e146aac7bdbc8fe66048ce71aaa26feb38fa2ec6ccbbae72ee28502a93b617f"
+    },
+    {
+      "name": "b-input-types-red.log",
+      "sha256": "4f0facabc8e986d6c428833acc954883dd24024a8b5c8c0d07ea2964ebe2ebae"
+    },
+    {
+      "name": "b-input-coercion-red.log",
+      "sha256": "866088ecbcf3b645736a5d733e304aaf531db440c9ae0b10541db49c35c0db28"
+    },
+    {
+      "name": "b-unit-final5.log",
+      "sha256": "e66735ec6d1552059838bf80cefa6889706db9621460dc9eecd1d65010feefc0"
+    },
+    {
+      "name": "b-it-combined-final4.log",
+      "sha256": "caa40882683eb5a84e5dd488f7fcde3c5aa35f3fc0f4ea8620a5ac588be1edf9"
+    },
+    {
+      "name": "package-final.log",
+      "sha256": "59b209a9e88bf7d6499eb6774d2b643f2ed5b6fb87c5f31f048dbf3fb5d29952"
+    },
+    {
+      "name": "http-finish.log",
+      "sha256": "b72d04231ad1d17935f1e254a07060d089e578201d7b4370e396f4f3872a4b8b"
+    }
+  ],
+  "jar_sha256": "79d997d62961b0b755963363f86188517ba522fcf91400d609edd4a53f5aa6a5",
+  "source_sha256": {
+    "rear/scripts/check-migrations.py": "cce26c92fdb04f9368eb44038d28379fb8b6c034878da84b6ea58cf219162784",
+    "rear/sql/01_biz_schema.sql": "e763459a4ea2eb2a1fb3e5ae249154e015787f5e69c6b94763e5dfcea712695c",
+    "rear/sql/33_factor_provenance.sql": "389a7e9a2d3429f9e5ed1fe2fe5c67e675908fb938ba7832354f10429eda4dff",
+    "rear/sql/MIGRATIONS.md": "5e032335a68a0a499af93bc8fcf2caedee3b5f00476dfad762503054d2396017",
+    "rear/workload-system/src/main/java/com/workload/system/calc/ManagementItemGeneratorImpl.java": "af10b5eb786f7a96be81af6bdd71da4111ace0f2da6161a896f98855248a0554",
+    "rear/workload-system/src/main/java/com/workload/system/calc/WorkloadCalcService.java": "5a636b245605d60d266a2eef7219da1b145537daa525685a6213c8b1ce581e2f",
+    "rear/workload-system/src/main/java/com/workload/system/calc/WorkloadCalcServiceImpl.java": "ae140c2b2d37bf80a8ae40a6a429440d5b624e30cea29b815ec871892509d8d5",
+    "rear/workload-system/src/main/java/com/workload/system/calc/allowance/AllowanceCalcStrategy.java": "69d6e8c4c46a4297a0e47dc40e2e39fae9985a22f5c405845397b581654ea31f",
+    "rear/workload-system/src/main/java/com/workload/system/calc/allowance/AllowanceEvidence.java": "4c8198cee82c2452123ad78910446c9f7c7835f6e4d7dec93d4151014ff64c35",
+    "rear/workload-system/src/main/java/com/workload/system/calc/rule/CalculationPolicyContext.java": "1d2e1afce97205797e7c1075d5fd4f4c08b8486840bff7099ad3dabc37c163dc",
+    "rear/workload-system/src/main/java/com/workload/system/calc/rule/FactorProvenance.java": "08c1c1b81331f3852da23ecbbc3c0fe0a7991f8b168bd07d3b3f2240b7e2ce3e",
+    "rear/workload-system/src/main/java/com/workload/system/calc/rule/TeachingTaskInputNormalizer.java": "04918adeae5410ebf1716c5fc14b2e9b867145f4ad8a3904ca8a7ec6cab1d30d",
+    "rear/workload-system/src/main/java/com/workload/system/domain/BizAllowanceItem.java": "495a3c68a30058986cec77589d04992ca21d97ee9873a17bff09c05e3d0fd809",
+    "rear/workload-system/src/main/java/com/workload/system/domain/BizWorkloadItem.java": "74b07933221e090e2f19d67bfcc5704bd928107668590876cac8af23cbce901b",
+    "rear/workload-system/src/main/java/com/workload/system/domain/dto/TeachingTaskImportDTO.java": "fd5d183db45b8f748f6e1666c04ecb3bd593ab42e4afdd610eaa3f8cf775c6ba",
+    "rear/workload-system/src/main/java/com/workload/system/domain/vo/FactorFormulaVo.java": "ee6fa9d4f9284ed786a7413d18aaf17cf5c1708a1ad1065503d645a8c115f1a0",
+    "rear/workload-system/src/main/java/com/workload/system/mapper/BizAllowanceItemMapper.java": "792ad2e6e6e8b3277af447c85f0045fd8d033234526fe378dcb53a0a8f589270",
+    "rear/workload-system/src/main/java/com/workload/system/mapper/BizWorkloadItemMapper.java": "a314e5f373671c78a0ac383020010b8c4535f0d740006c91ef3f95b6aefd5d31",
+    "rear/workload-system/src/main/java/com/workload/system/service/PersistedPolicyEvidenceIntegrity.java": "d4b9b0b3a3af581393330c00934324dfc404b0808c3818b1ccd1d5995e41a40a",
+    "rear/workload-system/src/main/java/com/workload/system/service/SnapshotContextCodec.java": "6beeab30a3217618ad8be52fe6e5260a2f4265daf4dc2a3603762713f5e07e47",
+    "rear/workload-system/src/main/java/com/workload/system/service/SnapshotIntegrity.java": "29962bf70437b45a9a66d054999fd39951772ea68989de29464212ae29169cd2",
+    "rear/workload-system/src/main/java/com/workload/system/service/WorkloadSnapshotService.java": "251fd7de8fd0f295fd9501aa428ed0bb8029ec8dda934aca197ab80f881f61e8",
+    "rear/workload-system/src/main/java/com/workload/system/service/impl/BizAllowanceItemServiceImpl.java": "7b965459e129d6a3a9cb58f9040c713e7f9b3a6ba3e9e9dab90b349060de6392",
+    "rear/workload-system/src/main/java/com/workload/system/service/impl/BizWlConcentratedInternshipServiceImpl.java": "bc190d8e06f31173001db6b230bfa0def90523b156cc36ff4844c10b1bee1ea3",
+    "rear/workload-system/src/main/java/com/workload/system/service/impl/BizWlCourseDesignServiceImpl.java": "ee31e59b359d62045407fdacad78c5a1a8f273c7c37d5081bd34af0fc3808764",
+    "rear/workload-system/src/main/java/com/workload/system/service/impl/BizWlInternshipTrainingServiceImpl.java": "9dce3463eada1655febc7f96d24e1414393c648ef72c52fac9acea19582d48d1",
+    "rear/workload-system/src/main/java/com/workload/system/service/impl/BizWlManagementServiceImpl.java": "e7f4f68a45e7789e3e7436ef92a5518cd11f05ca7c0ceb11912810d68147531b",
+    "rear/workload-system/src/main/java/com/workload/system/service/impl/BizWlPracticeServiceImpl.java": "a733f5f4c4923fe2fadd40c73dabbe2a59f2271641a57b540a6275e2e6b5952d",
+    "rear/workload-system/src/main/java/com/workload/system/service/impl/BizWlTheoryServiceImpl.java": "80424248c8fcda50b4317e3a8b0753174471d69790f60ea7635a3d09b74a953b",
+    "rear/workload-system/src/main/java/com/workload/system/service/impl/BizWlThesisServiceImpl.java": "f6ed5b7346c9fe70b3f87363f4e04d8ac64f7e46769ebdc24a1af18400ec28e0",
+    "rear/workload-system/src/main/java/com/workload/system/service/impl/BizWorkloadItemServiceImpl.java": "6bb33a8736a824b0f428e2c01e7efe5d8d1576147be1e9d41d5ac9dd3829b8f4",
+    "rear/workload-system/src/main/java/com/workload/system/service/impl/CoefficientAdjustmentServiceImpl.java": "53f130429d10951b58b3556ebb6b6fe3cf01d08c990d48cd2b47ae785b611ce4",
+    "rear/workload-system/src/main/java/com/workload/system/service/impl/TeachingTaskImportServiceImpl.java": "98de5aed55b2f5bdf8bad0ffa2dc11a7fe251716ab111e0c990a9348e352ab73",
+    "rear/workload-system/src/main/java/com/workload/system/service/impl/WorkloadFactorFormulaServiceImpl.java": "07f1c65c171f4c86a5d465a9766b9fac8fdf324dced72a6f144cd75de840ee8d",
+    "rear/workload-system/src/main/resources/mapper/system/BizAllowanceItemMapper.xml": "714ad335a4753fc5436a4696b293629e39dd5f43c3fa944bbfe5b77409235abc",
+    "rear/workload-system/src/main/resources/mapper/system/BizWorkloadItemMapper.xml": "ddb0c5c7fd6643d256ebabb7683aaa76bf9c30e26a2b4aa44b15db1cc295f35e",
+    "rear/workload-system/src/test/java/com/workload/system/calc/SemesterDatePropagationTest.java": "5ace07e2c7984235050f0683dec05b0e4c2ff69ba35f1db97dc97fc91884b318",
+    "rear/workload-system/src/test/java/com/workload/system/integration/FactorProvenanceIT.java": "6dfaccccdc68c37b5a51faef5dc14df7b54ef8b345631bebf9e313314965003c",
+    "rear/workload-system/src/test/java/com/workload/system/integration/WorkloadMysqlFixture.java": "a1e9c6a4fa106ff998d8449d13a2a8e3391ca1758664276672fd2ffee14bd56d",
+    "rear/workload-system/src/test/java/com/workload/system/service/AllowanceEvidenceContentTest.java": "65e9d6c195d86104ea2d8156e193450ddb6d03d979c5e6413490b1c100c79648",
+    "rear/workload-system/src/test/java/com/workload/system/service/FactorProvenanceLifecycleTest.java": "ef837e0334da9c3935867828d1350f9e82a61615c9228102ffe98b8345cb0446",
+    "rear/workload-system/src/test/java/com/workload/system/service/FactorProvenanceProofTest.java": "3dd047895f7757efa923c7988be2bb5a24f2921cef45a46ca0d5cf17ccfe69de",
+    "rear/workload-system/src/test/java/com/workload/system/service/impl/BizAllowanceItemServiceImplTest.java": "314da9fe78a494043f32da94cbc3d64af323ec6bd2ce7233682852906a90003e",
+    "rear/workload-system/src/test/java/com/workload/system/service/impl/BizWorkloadItemWriteTest.java": "6dc55644224d170d4c49bb8d1fe3d9da19c4304db2796b8d9d10381fef500a71",
+    "rear/workload-system/src/test/java/com/workload/system/service/impl/TeachingTaskImportServiceImplTest.java": "d1bdf538b87c6bd8820ee91a83d0965bdf7f0c9660cf286b0b488122c1517e1b",
+    "rear/workload-system/src/test/java/com/workload/system/service/impl/TeachingTaskInputContractTest.java": "ad38b0d77fe364a7bbcf215ee61a0503f3d933b8404c3845724cc511ce07434d",
+    "rear/workload-system/src/test/java/com/workload/system/service/impl/TeachingTaskTwoStageInputContractTest.java": "f6c44dc5f991689507f190970d2caa19c8f77580d8fb74d46ef46e5e1ff03844"
+  },
+  "migration_proof": "33迁移演练证据.json",
+  "server_version": "MySQL 9.0.1",
+  "original_43_file_hashes_unchanged": true,
+  "original_db_tested_or_migrated": false,
+  "formal_start_semester": null,
+  "http": {
+    "date": "2026-10-30",
+    "db": "127.0.0.1:13306/wfit_ui_20261028",
+    "app_port": 18084,
+    "term": "2097-2098-1",
+    "item_id": 611,
+    "batch_id": 1,
+    "format_version": 4,
+    "import_complete": true,
+    "raw_course_code": "0001729",
+    "source_rule_fixture_id": 50,
+    "source_mutation_independent": true,
+    "notes_preserve_source": true,
+    "same_value_manual_replaces_rule_and_approval": true,
+    "approved_application_id": 1,
+    "approved_content_hash": "e323ecfc96954290c562ae2d54248d5704e39e3ec528e44fba6b011b7afbb2f5",
+    "server_actor": "1001:admin_test",
+    "allowance_id": 1,
+    "allowance_first_amount": 150.0,
+    "allowance_switch_branch": "A_MANUAL",
+    "allowance_switch_amount": 37.5,
+    "legacy_status": "PARTIAL",
+    "xlsx_sha256": "93dbedca80ad0c863f27e53c0290291f356d5342b60575a4317be605bb5db344",
+    "requests": 22,
+    "records": [
+      {
+        "path": "/system/workloadItem/list?userId=1003&semester=2097-2098-1",
+        "method": "GET",
+        "actor": "admin_test",
+        "fields": [],
+        "code": 200,
+        "message": "查询成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/workloadRule",
+        "method": "POST",
+        "actor": "admin_test",
+        "fields": [
+          "effectiveFrom",
+          "effectiveTo",
+          "ruleCode",
+          "ruleDesc",
+          "ruleValue",
+          "status"
+        ],
+        "code": 200,
+        "message": "操作成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/workloadRule/list?ruleCode=COEF_REPEAT_1ST&pageSize=100",
+        "method": "GET",
+        "actor": "admin_test",
+        "fields": [],
+        "code": 200,
+        "message": "查询成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/teachingTask/importTemplate?version=V2",
+        "method": "POST",
+        "http_status": 200,
+        "xlsx": true
+      },
+      {
+        "path": "/system/teachingTask/importPreview",
+        "method": "POST",
+        "code": 200,
+        "ready": 1,
+        "blocked": 0,
+        "batch_id": 1
+      },
+      {
+        "path": "/system/teachingTask/importConfirm",
+        "method": "POST",
+        "actor": "admin_test",
+        "fields": [
+          "batchId",
+          "confirmToken",
+          "updateSupport"
+        ],
+        "code": 200,
+        "message": "导入完成",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/workloadItem/list?userId=1003&semester=2097-2098-1",
+        "method": "GET",
+        "actor": "admin_test",
+        "fields": [],
+        "code": 200,
+        "message": "查询成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/workloadItem/611",
+        "method": "GET",
+        "actor": "admin_test",
+        "fields": [],
+        "code": 200,
+        "message": "操作成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/workloadRule",
+        "method": "PUT",
+        "actor": "admin_test",
+        "fields": [
+          "id",
+          "ruleCode",
+          "ruleDesc",
+          "ruleValue"
+        ],
+        "code": 200,
+        "message": "操作成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/workloadItem/611",
+        "method": "GET",
+        "actor": "admin_test",
+        "fields": [],
+        "code": 200,
+        "message": "操作成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/calc/recalcItem/611",
+        "method": "POST",
+        "actor": "admin_test",
+        "fields": [],
+        "code": 200,
+        "message": "操作成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/workloadRule",
+        "method": "PUT",
+        "actor": "admin_test",
+        "fields": [
+          "effectiveFrom",
+          "effectiveTo",
+          "id",
+          "ruleCode",
+          "ruleDesc",
+          "ruleValue",
+          "status"
+        ],
+        "code": 200,
+        "message": "操作成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/wlTheory",
+        "method": "PUT",
+        "actor": "admin_test",
+        "fields": [
+          "itemId",
+          "remark"
+        ],
+        "code": 200,
+        "message": "操作成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/wlTheory",
+        "method": "PUT",
+        "actor": "admin_test",
+        "fields": [
+          "C1",
+          "createBy",
+          "itemId",
+          "updateBy"
+        ],
+        "code": 200,
+        "message": "操作成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/coefficientAdjustment",
+        "method": "POST",
+        "actor": "teacher_test",
+        "fields": [
+          "attachmentUrl",
+          "category",
+          "factorCode",
+          "itemId",
+          "oldValue",
+          "reason",
+          "requestedValue"
+        ],
+        "code": 200,
+        "message": "操作成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/coefficientAdjustment/1/approve",
+        "method": "POST",
+        "actor": "admin_test",
+        "fields": [
+          "reviewReason"
+        ],
+        "code": 200,
+        "message": "操作成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/wlTheory",
+        "method": "PUT",
+        "actor": "admin_test",
+        "fields": [
+          "C1",
+          "itemId"
+        ],
+        "code": 200,
+        "message": "操作成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/allowanceItem",
+        "method": "POST",
+        "actor": "admin_test",
+        "fields": [
+          "amount",
+          "calculationEvidenceJson",
+          "createBy",
+          "durationHours",
+          "feeType",
+          "remark",
+          "semester",
+          "userId"
+        ],
+        "code": 200,
+        "message": "操作成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/allowanceItem/list?userId=1003&semester=2097-2098-1",
+        "method": "GET",
+        "actor": "admin_test",
+        "fields": [],
+        "code": 200,
+        "message": "查询成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/allowanceItem",
+        "method": "PUT",
+        "actor": "admin_test",
+        "fields": [
+          "amount",
+          "calculationEvidenceJson",
+          "feeType",
+          "id"
+        ],
+        "code": 200,
+        "message": "操作成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/allowanceItem/1",
+        "method": "GET",
+        "actor": "admin_test",
+        "fields": [],
+        "code": 200,
+        "message": "操作成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/workloadItem/501",
+        "method": "GET",
+        "actor": "admin_test",
+        "fields": [],
+        "code": 200,
+        "message": "操作成功",
+        "expected_code": 200
+      }
+    ]
+  },
+  "qa_notes": [
+    "第一次HTTP脚本将服务端actor预期误写为纯数字，实际格式为userId:username；修正验收断言后从保留夹具续跑，未修改产品代码。",
+    "两阶段确认令牌/认证token和原始日志只保留私有目录；本证据不含令牌值。"
+  ],
+  "limitations": [
+    "尚未完成C汇总结算版本/资格及历史展示导出",
+    "本次无前端修改或新增浏览器验收",
+    "未验证MySQL8、空库及远程CI",
+    "哈希不是管理员不可重签的签名"
+  ]
+}

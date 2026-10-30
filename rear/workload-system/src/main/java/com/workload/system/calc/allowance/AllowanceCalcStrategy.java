@@ -25,4 +25,8 @@ public interface AllowanceCalcStrategy
      * @return 金额
      */
     public BigDecimal calculate(BizAllowanceItem item);
+    default BigDecimal calculate(BizAllowanceItem item, com.workload.system.calc.rule.CalculationPolicyContext context) {
+        if(!getFeeType().equals(item.getFeeType())) throw new IllegalArgumentException("酬金策略类别不符");
+        return AllowanceEvidence.calculate(item,context);
+    }
 }

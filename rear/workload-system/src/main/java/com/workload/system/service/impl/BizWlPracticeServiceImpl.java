@@ -62,6 +62,7 @@ public class BizWlPracticeServiceImpl implements IBizWlPracticeService
         workloadCalcService.assertEditable(bizWlPractice.getItemId());
         bizWlPractice.setCreateTime(DateUtils.getNowDate());
         int rows = bizWlPracticeMapper.insertBizWlPractice(bizWlPractice);
+        workloadCalcService.recordManualFactors(bizWlPractice.getItemId(), bizWlPractice);
         workloadCalcService.recalcItem(bizWlPractice.getItemId());
         return rows;
     }
@@ -79,6 +80,7 @@ public class BizWlPracticeServiceImpl implements IBizWlPracticeService
         workloadCalcService.assertEditable(bizWlPractice.getItemId());
         bizWlPractice.setUpdateTime(DateUtils.getNowDate());
         int rows = bizWlPracticeMapper.updateBizWlPractice(bizWlPractice);
+        workloadCalcService.recordManualFactors(bizWlPractice.getItemId(), bizWlPractice);
         workloadCalcService.recalcItem(bizWlPractice.getItemId());
         return rows;
     }

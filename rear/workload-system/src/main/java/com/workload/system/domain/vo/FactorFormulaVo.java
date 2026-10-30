@@ -12,6 +12,9 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 public class FactorFormulaVo
 {
     /** Arithmetic reproducibility and policy provenance are independent dimensions. */
+    private java.util.List<com.workload.system.calc.rule.FactorProvenance.Proof> persistedFactorSources;
+    public java.util.List<com.workload.system.calc.rule.FactorProvenance.Proof> getPersistedFactorSources() { return persistedFactorSources; }
+    public void setPersistedFactorSources(java.util.List<com.workload.system.calc.rule.FactorProvenance.Proof> value) { persistedFactorSources=java.util.List.copyOf(value); }
     private String asOfDate;
     public String getAsOfDate() { return asOfDate; }
     public void setAsOfDate(String v) { asOfDate = v; }

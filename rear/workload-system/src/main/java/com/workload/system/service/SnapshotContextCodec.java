@@ -29,7 +29,7 @@ public final class SnapshotContextCodec
     public record Context(int formatVersion, String formulaType, String description,
             boolean reproducible, SourceTaskVo sourceTask, List<FactorContext> factors,
             List<RuleResolution> policySources, List<FactorEvidence> factorEvidence,
-            List<DecisionEvidence> decisionEvidence, String evidenceStatus, List<String> missingEvidenceReasons, String asOfDate) {}
+            List<DecisionEvidence> decisionEvidence, String evidenceStatus, List<String> missingEvidenceReasons, String asOfDate, List<com.workload.system.calc.rule.FactorProvenance.Proof> persistedFactorSources) {}
 
     public static String encode(FactorFormulaVo formula)
     {
@@ -43,9 +43,14 @@ public final class SnapshotContextCodec
         try
         {
             if (formula.getPolicySources() != null)
-                return JSON.writeValueAsString(new Context(3, formula.getFormulaType(), formula.getDescription(),
+            {
+                Context context=new Context(formula.getPersistedFactorSources()==null ? 3 : 4, formula.getFormulaType(), formula.getDescription(),
                         formula.isReproducible(), formula.getSourceTask(), factors, formula.getPolicySources(),
-                        formula.getFactorEvidence(), formula.getDecisionEvidence(), formula.getEvidenceStatus(), formula.getMissingEvidenceReasons(), formula.getAsOfDate()));
+                        formula.getFactorEvidence(), formula.getDecisionEvidence(), formula.getEvidenceStatus(), formula.getMissingEvidenceReasons(), formula.getAsOfDate(),formula.getPersistedFactorSources());
+                com.fasterxml.jackson.databind.node.ObjectNode tree=JSON.valueToTree(context);
+                if(context.formatVersion()==3) tree.remove("persistedFactorSources");
+                return JSON.writeValueAsString(tree);
+            }
             // Keep the original v2 fields and insertion order byte-for-byte, including historical v1 fixtures.
             Map<String,Object> legacy = new java.util.LinkedHashMap<>();
             legacy.put("formatVersion",2); legacy.put("formulaType",formula.getFormulaType());
@@ -70,8 +75,9 @@ public final class SnapshotContextCodec
             if (version.intValue() < 3 && java.util.List.of("policySources", "factorEvidence", "decisionEvidence", "evidenceStatus", "missingEvidenceReasons", "asOfDate")
                     .stream().anyMatch(node::has))
                 throw new IllegalArgumentException("历史格式不允许政策来源扩展字段");
+            if(version.intValue()<4 && node.has("persistedFactorSources")) throw new IllegalArgumentException("旧格式不允许持久化来源树");
             Context context = SnapshotIntegrity.json().treeToValue(node, Context.class);
-            if (context == null || (context.formatVersion() != 1 && context.formatVersion() != 2 && context.formatVersion() != 3)
+            if (context == null || (context.formatVersion() != 1 && context.formatVersion() != 2 && context.formatVersion() != 3 && context.formatVersion() != 4)
                     || context.formulaType() == null || context.formulaType().isBlank() || context.factors() == null)
                 throw new IllegalArgumentException("不支持或不完整的上下文格式");
             java.util.Set<String> keys = new java.util.HashSet<>();
@@ -110,7 +116,8 @@ public final class SnapshotContextCodec
                     persisted.getResult(), context.description(),
                     context.reproducible() && persisted.isReproducible(), factors);
             restored.setSourceTask(context.sourceTask());
-            if (context.formatVersion() == 3) {
+            if (context.formatVersion() >= 3) {
+                if(context.formatVersion()==4) restored.setPersistedFactorSources(context.persistedFactorSources());
                 restored.setAsOfDate(context.asOfDate());
                 restored.setPolicySources(context.policySources()); restored.setFactorEvidence(context.factorEvidence());
                 restored.setDecisionEvidence(context.decisionEvidence()); restored.setEvidenceStatus(context.evidenceStatus());

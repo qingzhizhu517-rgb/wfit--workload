@@ -62,6 +62,7 @@ public class BizWlCourseDesignServiceImpl implements IBizWlCourseDesignService
         workloadCalcService.assertEditable(bizWlCourseDesign.getItemId());
         bizWlCourseDesign.setCreateTime(DateUtils.getNowDate());
         int rows = bizWlCourseDesignMapper.insertBizWlCourseDesign(bizWlCourseDesign);
+        workloadCalcService.recordManualFactors(bizWlCourseDesign.getItemId(), bizWlCourseDesign);
         workloadCalcService.recalcItem(bizWlCourseDesign.getItemId());
         return rows;
     }
@@ -79,6 +80,7 @@ public class BizWlCourseDesignServiceImpl implements IBizWlCourseDesignService
         workloadCalcService.assertEditable(bizWlCourseDesign.getItemId());
         bizWlCourseDesign.setUpdateTime(DateUtils.getNowDate());
         int rows = bizWlCourseDesignMapper.updateBizWlCourseDesign(bizWlCourseDesign);
+        workloadCalcService.recordManualFactors(bizWlCourseDesign.getItemId(), bizWlCourseDesign);
         workloadCalcService.recalcItem(bizWlCourseDesign.getItemId());
         return rows;
     }

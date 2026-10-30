@@ -37,6 +37,8 @@ public class BizAllowanceItemServiceImpl implements IBizAllowanceItemService
 
     @Autowired
     private WorkloadWriteGuard writeGuard;
+    @Autowired private com.workload.system.calc.rule.RuleParamService ruleParamService;
+    @Autowired private com.workload.system.calc.SemesterCalendar semesterCalendar=new com.workload.system.calc.SemesterCalendar();
 
     /**
      * 查询其他酬金明细
@@ -47,7 +49,9 @@ public class BizAllowanceItemServiceImpl implements IBizAllowanceItemService
     @Override
     public BizAllowanceItem selectBizAllowanceItemById(Long id)
     {
-        return bizAllowanceItemMapper.selectBizAllowanceItemById(id);
+        BizAllowanceItem item=bizAllowanceItemMapper.selectBizAllowanceItemById(id);
+        if(item!=null) com.workload.system.calc.allowance.AllowanceEvidence.verifyFor(item);
+        return item;
     }
 
     /**
@@ -59,7 +63,8 @@ public class BizAllowanceItemServiceImpl implements IBizAllowanceItemService
     @Override
     public List<BizAllowanceItem> selectBizAllowanceItemList(BizAllowanceItem bizAllowanceItem)
     {
-        return bizAllowanceItemMapper.selectBizAllowanceItemList(bizAllowanceItem);
+        List<BizAllowanceItem> items=bizAllowanceItemMapper.selectBizAllowanceItemList(bizAllowanceItem);
+        items.forEach(com.workload.system.calc.allowance.AllowanceEvidence::verifyFor);return items;
     }
 
     /**
@@ -77,6 +82,8 @@ public class BizAllowanceItemServiceImpl implements IBizAllowanceItemService
         recalcAmount(bizAllowanceItem);
         bizAllowanceItem.setCreateTime(DateUtils.getNowDate());
         int rows = bizAllowanceItemMapper.insertBizAllowanceItem(bizAllowanceItem);
+        if(bizAllowanceItem.getCalculationEvidenceJson()!=null) com.workload.system.calc.allowance.AllowanceEvidence.bindInserted(bizAllowanceItem,bizAllowanceItemMapper.selectBizAllowanceItemById(bizAllowanceItem.getId()));
+        bizAllowanceItemMapper.updateCalculationEvidence(bizAllowanceItem.getId(),bizAllowanceItem.getCalculationEvidenceJson());
         writeGuard.markChanged(bizAllowanceItem.getUserId(), bizAllowanceItem.getSemester());
         return rows;
     }
@@ -97,12 +104,17 @@ public class BizAllowanceItemServiceImpl implements IBizAllowanceItemService
             throw new ServiceException("其他酬金明细不存在, id=" + bizAllowanceItem.getId());
         }
         writeGuard.lockDraftOrAbsent(old.getUserId(), old.getSemester());
+        old=bizAllowanceItemMapper.selectByIdForUpdate(old.getId());
+        if(old==null) throw new ServiceException("其他酬金明细已删除，请刷新后重试");
         payCalcService.assertAllowanceEditable(old.getUserId(), old.getSemester());
         bizAllowanceItem.setUserId(old.getUserId());
         bizAllowanceItem.setSemester(old.getSemester());
+        mergeCalculationInputs(bizAllowanceItem,old);
         recalcAmount(bizAllowanceItem);
         bizAllowanceItem.setUpdateTime(DateUtils.getNowDate());
         int rows = requireWritten(bizAllowanceItemMapper.updateIfSummaryDraft(bizAllowanceItem));
+        if(bizAllowanceItem.getCalculationEvidenceJson()!=null) com.workload.system.calc.allowance.AllowanceEvidence.bindInserted(bizAllowanceItem,bizAllowanceItemMapper.selectBizAllowanceItemById(bizAllowanceItem.getId()));
+        bizAllowanceItemMapper.updateCalculationEvidence(bizAllowanceItem.getId(),bizAllowanceItem.getCalculationEvidenceJson());
         writeGuard.markChanged(old.getUserId(), old.getSemester());
         return rows;
     }
@@ -151,6 +163,17 @@ public class BizAllowanceItemServiceImpl implements IBizAllowanceItemService
         return rows;
     }
 
+    private void mergeCalculationInputs(BizAllowanceItem item,BizAllowanceItem old) {
+        if(item.getFeeType()==null) item.setFeeType(old.getFeeType());
+        if(item.getFeeSubtype()==null && item.getFeeType().equals(old.getFeeType())) item.setFeeSubtype(old.getFeeSubtype());
+        if(item.getStudentCount()==null) item.setStudentCount(old.getStudentCount());
+        if(item.getDurationHours()==null) item.setDurationHours(old.getDurationHours());
+        if(item.getDays()==null) item.setDays(old.getDays());
+        if(item.getClassCount()==null) item.setClassCount(old.getClassCount());
+        if(item.getWorkloadUnits()==null) item.setWorkloadUnits(old.getWorkloadUnits());
+        if(item.getAmount()==null) item.setAmount(old.getAmount());
+    }
+
     private int requireWritten(int rows)
     {
         if (rows != 1)
@@ -170,7 +193,8 @@ public class BizAllowanceItemServiceImpl implements IBizAllowanceItemService
         {
             throw new ServiceException("酬金类型未启用: " + item.getFeeType());
         }
-        item.setAmount(strategy.calculate(item));
+        item.setCalculationEvidenceJson(null);
+        item.setAmount(strategy.calculate(item,new com.workload.system.calc.rule.CalculationPolicyContext(semesterCalendar.endOf(item.getSemester()),ruleParamService).withSelectionEvidence(com.workload.system.calc.rule.FactorProvenance.selection(semesterCalendar,item.getSemester()))));
         // 第十五条1(2)：≥20 人应单独开班走 G1（理论课）路线，本项归零。
         // 静默归零教师无从判断是漏报还是规则如此，故落 remark 告警
         // （2026-09-10 统一原则：截断与降级必须告警）

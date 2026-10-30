@@ -91,6 +91,62 @@ public class WorkloadCalcServiceImpl implements WorkloadCalcService
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    public void recordManualFactors(Long itemId, Object suppliedDetail) {
+        BizWorkloadItem item=bizWorkloadItemMapper.selectByIdForUpdate(itemId);
+        if(item==null) throw new ServiceException("工作量明细不存在");
+        Map<String,String> fields=switch(item.getItemType()) {
+            case "G1" -> Map.of("J1","J1","C1","C1","K1","K1","Q1","Q1","Q2","Q2","N","N","Q3","Q3");
+            case "G2" -> Map.of("J2","J2","K","K","C2","C2","Q1","Q1","Q2","Q2","Q3","Q3");
+            case "G3" -> Map.of("T","T","D","D","K","K","Q1","Q1","Q2","Q2","Q3","Q3");
+            case "G4" -> Map.of("J4","J4","R4","R4");
+            case "G5" -> Map.of("R5","R5","K5","K5");
+            case "G6" -> Map.of("W","W","R6","R6");
+            case "G11" -> Map.of("岗位减免","ProratedAmount");
+            default -> throw new ServiceException("不支持的手工因子类别");
+        };
+        var proofs=new java.util.TreeMap<>(com.workload.system.calc.rule.FactorProvenance.read(item.getFactorProvenanceJson(),itemId,item.getItemType()));
+        Map<String,String> actor=new java.util.TreeMap<>(sourceActor());actor.put("itemId",itemId.toString());
+        boolean changed=false;
+        for(var field:fields.entrySet()) {
+            Object value;
+            try { value=suppliedDetail.getClass().getMethod("get"+field.getValue()).invoke(suppliedDetail); }
+            catch(ReflectiveOperationException e) { throw new ServiceException("因子输入与明细类别不一致"); }
+            if(value==null) continue;
+            if(value instanceof java.math.BigDecimal b) com.workload.system.calc.rule.FactorProvenance.requireDecimal2(b);
+            changed=true;
+            proofs.put(field.getKey(),com.workload.system.calc.rule.FactorProvenance.create(item.getItemType(),field.getKey(),value,"MANUAL_INPUT","Q3".equals(field.getKey())?"DISPLAY_ONLY":"FACTOR",
+                    "EXPLICIT_VALUE_V1",Map.of("value",com.workload.system.calc.rule.FactorProvenance.plain(value)),List.of(),actor));
+        }
+        if(changed) bizWorkloadItemMapper.updateFactorProvenance(itemId,com.workload.system.calc.rule.FactorProvenance.encode(itemId,item.getItemType(),proofs));
+    }
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void recordApprovedFactor(com.workload.system.domain.BizCoefficientAdjustment approved) {
+        if(!Integer.valueOf(1).equals(approved.getStatus()) || approved.getReviewerId()==null || approved.getReviewedAt()==null)
+            throw new ServiceException("批准来源缺少实际审核信息");
+        BizWorkloadItem item=bizWorkloadItemMapper.selectByIdForUpdate(approved.getItemId());
+        if(item==null || !item.getItemType().equals(approved.getCategory())) throw new ServiceException("批准来源类别不符");
+        var proofs=new java.util.TreeMap<>(com.workload.system.calc.rule.FactorProvenance.read(item.getFactorProvenanceJson(),item.getId(),item.getItemType()));
+        Map<String,String> refs=new java.util.TreeMap<>();
+        refs.put("itemId",item.getId().toString());
+        refs.put("approvalJson",com.workload.system.calc.rule.FactorProvenance.approvalJson(approved));
+        refs.put("approvalContentHash",com.workload.system.calc.rule.PolicyHash.hash(com.workload.system.calc.rule.FactorProvenance.approvalContent(approved)));
+        refs.put("applicationId",approved.getId().toString());refs.put("factor",approved.getFactorCode());
+        refs.put("approvedValue",approved.getRequestedValue().toPlainString()); refs.put("actor",approved.getReviewerId().toString());
+        refs.put("recordedAt",approved.getReviewedAt().toInstant().toString());refs.put("baseVersion",approved.getBaseCalculationVersion().toString());
+        proofs.put(approved.getFactorCode(),com.workload.system.calc.rule.FactorProvenance.create(item.getItemType(),approved.getFactorCode(),approved.getRequestedValue(),"APPROVED_OVERRIDE","FACTOR","EXPLICIT_VALUE_V1",
+                Map.of("value",approved.getRequestedValue().toPlainString()),List.of(),refs));
+        bizWorkloadItemMapper.updateFactorProvenance(item.getId(),com.workload.system.calc.rule.FactorProvenance.encode(item.getId(),item.getItemType(),proofs));
+    }
+    public static Map<String,String> sourceActor() {
+        String actor;
+        try { actor=com.workload.common.utils.SecurityUtils.getUserId()+":"+com.workload.common.utils.SecurityUtils.getUsername(); }
+        catch(Exception e) { actor="system"; }
+        return Map.of("actor",actor,"recordedAt",java.time.Instant.now().toString());
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
     public BigDecimal recalcItem(Long itemId)
     {
         BizWorkloadItem item = bizWorkloadItemMapper.selectBizWorkloadItemById(itemId);
@@ -185,6 +241,7 @@ public class WorkloadCalcServiceImpl implements WorkloadCalcService
         }
         item = lockEditable(item);
         bizWorkloadItemMapper.invalidateCalculation(itemId);
+        bizWorkloadItemMapper.updateFactorProvenance(itemId,null);
         writeGuard.markChanged(item.getUserId(), item.getSemester());
     }
 

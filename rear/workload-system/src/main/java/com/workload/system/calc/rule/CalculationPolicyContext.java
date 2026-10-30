@@ -9,6 +9,13 @@ public final class CalculationPolicyContext {
     @FunctionalInterface public interface Resolver {
         RuleResolution resolve(String code, LocalDate date, BigDecimal fallback, String purpose);
     }
+    private Map<String,String> selectionEvidence;
+    public CalculationPolicyContext withSelectionEvidence(Map<String,String> selection) {
+        FactorProvenance.verifySelection(selection);
+        if(!asOfDate.toString().equals(selection.get("asOfDate"))) throw new IllegalArgumentException("选择日不一致");
+        selectionEvidence=Map.copyOf(selection);return this;
+    }
+    public Map<String,String> selectionEvidence() { return selectionEvidence; }
     private final LocalDate asOfDate;
     private final Resolver resolver;
     private final Map<String, RuleResolution> resolved=new TreeMap<>();

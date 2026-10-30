@@ -190,7 +190,7 @@ class TeachingTaskTwoStageInputContractTest
         when(users.selectUserByUserName("T008")).thenReturn(new SysUser(8L));
         when(rows.selectByBatchIdAndStatus(50L, "READY")).thenReturn(List.of(stored.getValue()));
         RuleParamService rules = mock(RuleParamService.class);
-        when(rules.get(anyString(), any(BigDecimal.class), org.mockito.ArgumentMatchers.eq(java.time.LocalDate.of(2026, 1, 31)))).thenAnswer(i -> i.getArgument(1));
+        when(rules.resolve(anyString(), org.mockito.ArgumentMatchers.eq(java.time.LocalDate.of(2026, 1, 31)), any(BigDecimal.class), anyString())).thenAnswer(i -> com.workload.system.calc.rule.RuleResolution.fallback(i.getArgument(0), i.getArgument(1), i.getArgument(2), i.getArgument(3), "NO_EFFECTIVE_RULE"));
         CalcStrategyFactory factory = mock(CalcStrategyFactory.class);
         WorkloadCalcStrategy strategy = mock(WorkloadCalcStrategy.class);
         when(factory.get(type)).thenReturn(strategy);
@@ -234,9 +234,9 @@ class TeachingTaskTwoStageInputContractTest
         verify(strategy).afterCalculated(any(), eq(BigDecimal.ONE), same(context.getValue()));
         verify(formulas).buildFresh(any(), same(context.getValue()));
         assertThat(context.getValue().asOfDate()).isEqualTo(java.time.LocalDate.of(2026,1,31));
-        verify(snapshots).capture(any(), any(), eq(PolicyHash.hash(List.of())));
+        verify(snapshots).capture(any(), any(), eq(context.getValue().policySetHash()));
         var order = inOrder(snapshots, items, writeGuard);
-        order.verify(snapshots).capture(any(), any(), eq(PolicyHash.hash(List.of())));
+        order.verify(snapshots).capture(any(), any(), eq(context.getValue().policySetHash()));
         order.verify(items).updateBizWorkloadItem(any());
         order.verify(writeGuard).markChanged(8L, "2025-2026-1");
     }

@@ -185,6 +185,7 @@ class BizWorkloadItemWriteTest
         BizWorkloadItem input = item(); input.setStatus(1); input.setSourceType("AUTO");
         input.setUserId(999L); input.setCalculationVersion(99L); input.setDeanApprovalStatus(1);
         input.setTaskId(55L); input.setAssignmentId(66L);
+        org.mockito.Mockito.doAnswer(inv->{((BizWorkloadItem)inv.getArgument(0)).setId(88L);return 1;}).when(bizWorkloadItemMapper).insertBizWorkloadItem(any());
         service.insertBizWorkloadItem(input);
         var saved = ArgumentCaptor.forClass(BizWorkloadItem.class);
         verify(bizWorkloadItemMapper).insertBizWorkloadItem(saved.capture());

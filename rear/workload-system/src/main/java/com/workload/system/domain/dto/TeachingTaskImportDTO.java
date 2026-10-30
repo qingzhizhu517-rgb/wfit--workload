@@ -14,6 +14,23 @@ import com.alibaba.excel.annotation.write.style.ColumnWidth;
  */
 public class TeachingTaskImportDTO
 {
+    @com.alibaba.excel.annotation.ExcelIgnore
+    @com.fasterxml.jackson.annotation.JsonIgnore private String rawImportJson;
+    @com.alibaba.excel.annotation.ExcelIgnore
+    @com.fasterxml.jackson.annotation.JsonIgnore private Long importRowId;
+    @com.alibaba.excel.annotation.ExcelIgnore
+    @com.fasterxml.jackson.annotation.JsonIgnore private String importSourceHash;
+    @com.alibaba.excel.annotation.ExcelIgnore
+    @com.fasterxml.jackson.annotation.JsonIgnore private String importTemplateVersion;
+    public String getImportTemplateVersion() { return importTemplateVersion; }
+    public void setImportTemplateVersion(String v) { importTemplateVersion=v; }
+    public String getRawImportJson() { return rawImportJson; }
+    public void setRawImportJson(String v) { rawImportJson=v; }
+    public Long getImportRowId() { return importRowId; }
+    public void setImportRowId(Long v) { importRowId=v; }
+    public String getImportSourceHash() { return importSourceHash; }
+    public void setImportSourceHash(String v) { importSourceHash=v; }
+
     @ExcelProperty("学年学期")
     @ColumnWidth(18)
     private String semester;

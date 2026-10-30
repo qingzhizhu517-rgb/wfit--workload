@@ -46,7 +46,8 @@ def main():
         'biz_teaching_task': 'input_planned_hours input_days input_weeks input_credits quantity_type',
         'biz_import_row': 'id batch_id row_no raw_json normalized_json status error_code '
                           'error_message target_id create_by create_time update_by update_time remark',
-        'biz_workload_item': 'calculation_version last_calculated_at',
+        'biz_workload_item': 'calculation_version last_calculated_at factor_provenance_json',
+        'biz_allowance_item': 'calculation_evidence_json',
         'biz_workload_calc_snapshot': 'item_id calculation_version snapshot_hash context_json',
         'biz_coefficient_adjustment': 'id item_id status',
         'biz_workload_summary': 'needs_recalculation',
@@ -57,6 +58,10 @@ def main():
             checks[f'column:{table}.{column}'] = (table, column) in present
     checks['context:nullable_longtext'] = present.get(
         ('biz_workload_calc_snapshot', 'context_json')) == ('longtext', 'YES')
+    for table, column in [('biz_workload_item', 'factor_provenance_json'),
+                          ('biz_allowance_item', 'calculation_evidence_json')]:
+        checks[f'provenance:{table}.{column}:nullable_longtext'] = (
+            present.get((table, column)) == ('longtext', 'YES'))
     freshness = present.get(('biz_workload_summary', 'needs_recalculation'), ('', ''))
     checks['freshness:non_null_flag'] = (
         freshness[0].split('(')[0] == 'tinyint' and freshness[1] == 'NO')

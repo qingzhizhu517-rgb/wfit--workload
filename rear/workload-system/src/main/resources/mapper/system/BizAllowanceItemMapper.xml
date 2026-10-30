@@ -5,6 +5,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 <mapper namespace="com.workload.system.mapper.BizAllowanceItemMapper">
     
     <resultMap type="BizAllowanceItem" id="BizAllowanceItemResult">
+        <result property="calculationEvidenceJson" column="calculation_evidence_json"/>
         <result property="id"    column="id"    />
         <result property="payRecordId"    column="pay_record_id"    />
         <result property="userId"    column="user_id"    />
@@ -28,7 +29,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectBizAllowanceItemVo">
-        select id, pay_record_id, user_id, semester, fee_type, fee_subtype, student_count, duration_hours, days, class_count, workload_units, lecture_name, ext, amount, status, create_by, create_time, update_by, update_time, remark from biz_allowance_item
+        select calculation_evidence_json, id, pay_record_id, user_id, semester, fee_type, fee_subtype, student_count, duration_hours, days, class_count, workload_units, lecture_name, ext, amount, status, create_by, create_time, update_by, update_time, remark from biz_allowance_item
     </sql>
 
     <select id="selectBizAllowanceItemList" parameterType="BizAllowanceItem" flushCache="true" useCache="false" resultMap="BizAllowanceItemResult">
@@ -143,7 +144,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         update biz_allowance_item a
         <set>
             <if test="feeType != null and feeType != ''">a.fee_type = #{feeType},</if>
-            <if test="feeSubtype != null">a.fee_subtype = #{feeSubtype},</if>
+            a.fee_subtype = #{feeSubtype},
             <if test="studentCount != null">a.student_count = #{studentCount},</if>
             <if test="durationHours != null">a.duration_hours = #{durationHours},</if>
             <if test="days != null">a.days = #{days},</if>
@@ -172,4 +173,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 and ifnull(s.status, 0) != 0
           )
     </delete>
+    <select id="selectByIdForUpdate" resultMap="BizAllowanceItemResult" flushCache="true" useCache="false"><include refid="selectBizAllowanceItemVo"/> where id=#{id} for update</select>
+    <update id="updateCalculationEvidence">update biz_allowance_item set calculation_evidence_json=#{json} where id=#{id}</update>
 </mapper>

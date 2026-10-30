@@ -78,11 +78,12 @@ class BizAllowanceItemServiceImplTest
     @Test
     void concurrentFreezeRejectsUpdateMiss()
     {
+        when(bizAllowanceItemMapper.selectByIdForUpdate(7L)).thenAnswer(inv->bizAllowanceItemMapper.selectBizAllowanceItemById(7L));
         BizAllowanceItem old = selfItem(15L);old.setId(7L);
         when(bizAllowanceItemMapper.selectBizAllowanceItemById(7L)).thenReturn(old);
         AllowanceCalcStrategy strategy = mock(AllowanceCalcStrategy.class);
         when(allowanceStrategyFactory.get("A")).thenReturn(strategy);
-        when(strategy.calculate(any())).thenReturn(new BigDecimal("260"));
+        when(strategy.calculate(any(), any(com.workload.system.calc.rule.CalculationPolicyContext.class))).thenReturn(new BigDecimal("260"));
         assertThatThrownBy(() -> service.updateBizAllowanceItem(old)).hasMessageContaining("状态已变化");
         verify(bizAllowanceItemMapper, never()).updateBizAllowanceItem(any());
     }
@@ -121,7 +122,7 @@ class BizAllowanceItemServiceImplTest
     void geTwentyWritesZeroAndWarning()
     {
         AllowanceCalcStrategy strategy = mock(AllowanceCalcStrategy.class);
-        when(strategy.calculate(any())).thenReturn(BigDecimal.ZERO);
+        when(strategy.calculate(any(), any(com.workload.system.calc.rule.CalculationPolicyContext.class))).thenReturn(BigDecimal.ZERO);
         when(allowanceStrategyFactory.get("A")).thenReturn(strategy);
 
         BizAllowanceItem item = selfItem(25L);
@@ -139,7 +140,7 @@ class BizAllowanceItemServiceImplTest
     void belowTwentyNoZeroWarning()
     {
         AllowanceCalcStrategy strategy = mock(AllowanceCalcStrategy.class);
-        when(strategy.calculate(any())).thenReturn(new BigDecimal("260"));
+        when(strategy.calculate(any(), any(com.workload.system.calc.rule.CalculationPolicyContext.class))).thenReturn(new BigDecimal("260"));
         when(allowanceStrategyFactory.get("A")).thenReturn(strategy);
 
         BizAllowanceItem item = selfItem(15L);
@@ -154,8 +155,9 @@ class BizAllowanceItemServiceImplTest
     @DisplayName("A 自学辅导从 25 人改为 15 人 → 清除此前系统生成的归零告警")
     void belowTwentyClearsPreviousSystemWarning()
     {
+        when(bizAllowanceItemMapper.selectByIdForUpdate(7L)).thenAnswer(inv->bizAllowanceItemMapper.selectBizAllowanceItemById(7L));
         AllowanceCalcStrategy strategy = mock(AllowanceCalcStrategy.class);
-        when(strategy.calculate(any())).thenReturn(new BigDecimal("260"));
+        when(strategy.calculate(any(), any(com.workload.system.calc.rule.CalculationPolicyContext.class))).thenReturn(new BigDecimal("260"));
         when(allowanceStrategyFactory.get("A")).thenReturn(strategy);
 
         BizAllowanceItem item = selfItem(15L);
@@ -173,6 +175,7 @@ class BizAllowanceItemServiceImplTest
     @DisplayName("修改时按存量归属校验，伪造草稿归属不能绕过待审冻结")
     void updateChecksPersistedOwnershipBeforeRequestOwnership()
     {
+        when(bizAllowanceItemMapper.selectByIdForUpdate(7L)).thenAnswer(inv->bizAllowanceItemMapper.selectBizAllowanceItemById(7L));
         BizAllowanceItem old = selfItem(15L);
         old.setId(7L);
         old.setUserId(9L);
@@ -209,9 +212,10 @@ class BizAllowanceItemServiceImplTest
     @DisplayName("修改时保留存量 userId 和 semester，禁止迁移归属")
     void updatePreservesPersistedOwnership()
     {
+        when(bizAllowanceItemMapper.selectByIdForUpdate(7L)).thenAnswer(inv->bizAllowanceItemMapper.selectBizAllowanceItemById(7L));
         when(bizAllowanceItemMapper.updateIfSummaryDraft(any())).thenReturn(1);
         AllowanceCalcStrategy strategy = mock(AllowanceCalcStrategy.class);
-        when(strategy.calculate(any())).thenReturn(new BigDecimal("260"));
+        when(strategy.calculate(any(), any(com.workload.system.calc.rule.CalculationPolicyContext.class))).thenReturn(new BigDecimal("260"));
         when(allowanceStrategyFactory.get("A")).thenReturn(strategy);
         BizAllowanceItem old = selfItem(15L);
         old.setId(7L);
@@ -262,9 +266,13 @@ class BizAllowanceItemServiceImplTest
     void insertPersistsStrategyAmountAndStatusForEachType(String type, BizAllowanceItem item,
             String expectedAmount)
     {
+        RuleParamService rules=mock(RuleParamService.class);
+        when(rules.resolve(anyString(),any(java.time.LocalDate.class),any(BigDecimal.class),anyString())).thenAnswer(inv -> com.workload.system.calc.rule.RuleResolution.fallback(inv.getArgument(0),inv.getArgument(1),inv.getArgument(2),inv.getArgument(3),"NO_EFFECTIVE_RULE"));
+        ReflectionTestUtils.setField(service,"ruleParamService",rules);
         AllowanceCalcStrategy strategy = realStrategyFor(type);
         when(allowanceStrategyFactory.get(type)).thenReturn(strategy);
-        when(bizAllowanceItemMapper.insertBizAllowanceItem(item)).thenReturn(1);
+        when(bizAllowanceItemMapper.insertBizAllowanceItem(item)).thenAnswer(inv->{item.setId(42L);return 1;});
+        when(bizAllowanceItemMapper.selectBizAllowanceItemById(42L)).thenReturn(item);
 
         service.insertBizAllowanceItem(item);
 
@@ -328,7 +336,7 @@ class BizAllowanceItemServiceImplTest
     private AllowanceCalcStrategy realStrategyFor(String type)
     {
         RuleParamService rule = mock(RuleParamService.class);
-        when(rule.get(anyString(), any(BigDecimal.class), org.mockito.ArgumentMatchers.eq(java.time.LocalDate.of(2026, 1, 31)))).thenAnswer(inv -> inv.getArgument(1));
+
         AllowanceCalcStrategy strategy = switch (type)
         {
             case "A" -> new AllowanceAStrategy();

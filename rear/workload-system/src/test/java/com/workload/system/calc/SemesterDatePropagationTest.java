@@ -62,13 +62,23 @@ class SemesterDatePropagationTest {
         verify(r).get("专科".equals(level)?"APPROVAL_R5_JUNIOR":"APPROVAL_R5_BACHELOR",new BigDecimal("专科".equals(level)?"15":"8"),END);
         assertThat(item.getIsOverLimit()).isEqualTo(1);
     }
-    @Test void importDerivedRulesAllUseDtoSemesterEnd() {
-        var service=new TeachingTaskImportServiceImpl();var r=rules();ReflectionTestUtils.setField(service,"ruleParamService",r);ReflectionTestUtils.setField(service,"semesterCalendar",calendar());
-        var dto=new TeachingTaskImportDTO();dto.setSemester(SEM);dto.setStudentCount(151);dto.setEducationLevel("本科");dto.setMajorCategory("理工");
-        ReflectionTestUtils.invokeMethod(service,"calcC1",1L,dto);ReflectionTestUtils.invokeMethod(service,"calcC1",2L,dto);ReflectionTestUtils.invokeMethod(service,"calcC1",3L,dto);
-        ReflectionTestUtils.invokeMethod(service,"calcG3RepeatK",2L,dto);ReflectionTestUtils.invokeMethod(service,"calcG2K",dto);ReflectionTestUtils.invokeMethod(service,"calcG3D",dto);
-        ReflectionTestUtils.invokeMethod(service,"calcG5K5",dto);ReflectionTestUtils.invokeMethod(service,"calcN",dto);
-        verify(r,times(8)).get(anyString(),any(BigDecimal.class),eq(END));verify(r,never()).get(anyString(),any(BigDecimal.class));
+    @Test void importDerivedRulesAllUseDtoSemesterEnd() throws Exception {
+        var service=new TeachingTaskImportServiceImpl();var r=mock(RuleParamService.class);
+        when(r.resolve(anyString(),eq(END),any(BigDecimal.class),anyString())).thenAnswer(i -> RuleResolution.fallback(i.getArgument(0),i.getArgument(1),i.getArgument(2),i.getArgument(3),"NO_EFFECTIVE_RULE"));
+        var context=new CalculationPolicyContext(END,r);
+        var dto=new TeachingTaskImportDTO();dto.setSemester(SEM);dto.setStudentCount(151);dto.setEducationLevel("本科");dto.setMajorCategory("理工");TeachingTaskInputNormalizer.normalize(dto);
+        invokeDerived(service,dto,context,"G1","C1",1L);invokeDerived(service,dto,context,"G1","C1",2L);invokeDerived(service,dto,context,"G1","C1",3L);
+        invokeDerived(service,dto,context,"G3","K",2L);invokeDerived(service,dto,context,"G2","K",1L);invokeDerived(service,dto,context,"G3","D",1L);
+        invokeDerived(service,dto,context,"G5","K5",1L);invokeDerived(service,dto,context,"G1","N",1L);
+        verify(r,times(7)).resolve(anyString(),eq(END),any(BigDecimal.class),anyString());verify(r,never()).get(anyString(),any(BigDecimal.class));
+        assertThat(context.sources()).hasSize(7).allMatch(source->source.asOfDate().equals(END.toString()));
+    }
+    private void invokeDerived(TeachingTaskImportServiceImpl service,TeachingTaskImportDTO dto,CalculationPolicyContext context,String type,String key,long repeat) throws Exception {
+        dto.setWorkloadType(type);var i=item();i.setItemType(type);var refs=new TreeMap<>(FactorProvenance.selection(calendar(),SEM));var json=new com.fasterxml.jackson.databind.ObjectMapper();
+        refs.put("itemId","1");refs.put("batch","IMP");refs.put("templateVersion","V2");refs.put("inputTransformVersion",TeachingTaskInputNormalizer.VERSION);refs.put("inputTransformContent",TeachingTaskInputNormalizer.CONTENT);
+        refs.put("rawInputJson",json.writeValueAsString(dto));refs.put("normalizedInputJson",json.writeValueAsString(dto));i.getParams().put("importReferences",refs);
+        ReflectionTestUtils.invokeMethod(service,"derive",dto,i,key,repeat,context);
+        assertThat(FactorProvenance.read(i.getFactorProvenanceJson(),1L,type)).containsKey(key);
     }
     private BizWorkloadItem item() {var i=new BizWorkloadItem();i.setId(1L);i.setSemester(SEM);return i;}
 }

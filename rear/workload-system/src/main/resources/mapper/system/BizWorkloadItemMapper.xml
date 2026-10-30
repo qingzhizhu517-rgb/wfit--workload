@@ -5,6 +5,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 <mapper namespace="com.workload.system.mapper.BizWorkloadItemMapper">
 
     <resultMap type="BizWorkloadItem" id="BizWorkloadItemResult">
+        <result property="factorProvenanceJson" column="factor_provenance_json"/>
         <result property="id"    column="id"    />
         <result property="userId"    column="user_id"    />
         <result property="semester"    column="semester"    />
@@ -37,7 +38,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectBizWorkloadItemVo">
-        select id, user_id, semester, academic_year, item_type, source_type, task_id, assignment_id, role_type, course_name, education_level, major_category, calculated_workload, description, is_over_limit, dean_approval_status, dean_approval_by, dean_approval_time, appeal_status, appeal_reason, appeal_reply, status, calculation_version, last_calculated_at, create_by, create_time, update_by, update_time, remark from biz_workload_item
+        select factor_provenance_json, id, user_id, semester, academic_year, item_type, source_type, task_id, assignment_id, role_type, course_name, education_level, major_category, calculated_workload, description, is_over_limit, dean_approval_status, dean_approval_by, dean_approval_time, appeal_status, appeal_reason, appeal_reply, status, calculation_version, last_calculated_at, create_by, create_time, update_by, update_time, remark from biz_workload_item
     </sql>
 
     <select id="selectBizWorkloadItemList" parameterType="BizWorkloadItem" resultMap="BizWorkloadItemResult">
@@ -232,4 +233,5 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             calculation_version=ifnull(calculation_version,0)+1, last_calculated_at=null, update_time=now()
         where id=#{id}
     </update>
+    <update id="updateFactorProvenance">update biz_workload_item set factor_provenance_json=#{json} where id=#{id}</update>
 </mapper>

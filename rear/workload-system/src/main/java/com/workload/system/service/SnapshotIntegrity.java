@@ -65,10 +65,11 @@ public final class SnapshotIntegrity
             if (expected == null || !expected.matches("[0-9a-f]{64}"))
                 throw new IllegalArgumentException("内容哈希缺失或格式损坏");
             boolean matches = context != null && context.formatVersion() >= 2
-                    ? expected.equals(context.formatVersion() == 3 ? hashV3(snapshot) : hashV2(snapshot))
+                    ? expected.equals(context.formatVersion() == 4 ? hashV4(snapshot) : context.formatVersion() == 3 ? hashV3(snapshot) : hashV2(snapshot))
                     : legacyMatches(snapshot, orderedValues, orderedSources);
             if (!matches) throw new IllegalArgumentException("内容哈希不符，历史证据已变更或缺失");
             if (context != null && context.formatVersion() == 3) PolicyEvidenceIntegrity.verify(snapshot, context, values, sources);
+            if (context != null && context.formatVersion() == 4) PersistedPolicyEvidenceIntegrity.verify(snapshot, context, values, sources);
             return new Verified(orderedValues, orderedSources, context);
         }
         catch (com.workload.common.exception.ServiceException e) { throw e; }
@@ -76,6 +77,7 @@ public final class SnapshotIntegrity
     }
 
     public static String hashV2(BizWorkloadCalcSnapshot snapshot) { return hashStructured(snapshot, 2); }
+    public static String hashV4(BizWorkloadCalcSnapshot snapshot) { return hashStructured(snapshot, 4); }
     public static String hashV3(BizWorkloadCalcSnapshot snapshot) { return hashStructured(snapshot, 3); }
     private static String hashStructured(BizWorkloadCalcSnapshot snapshot, int formatVersion)
     {

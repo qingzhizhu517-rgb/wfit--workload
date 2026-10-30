@@ -11,6 +11,9 @@ import com.workload.system.domain.BizAllowanceItem;
  */
 public interface BizAllowanceItemMapper
 {
+    BizAllowanceItem selectByIdForUpdate(Long id);
+    int updateCalculationEvidence(@org.apache.ibatis.annotations.Param("id") Long id, @org.apache.ibatis.annotations.Param("json") String json);
+
     int updateIfSummaryDraft(BizAllowanceItem item);
 
     int deleteByIdIfSummaryDraft(Long id);

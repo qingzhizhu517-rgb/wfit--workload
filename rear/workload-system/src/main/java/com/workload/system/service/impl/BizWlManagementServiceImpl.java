@@ -62,6 +62,7 @@ public class BizWlManagementServiceImpl implements IBizWlManagementService
         workloadCalcService.assertEditable(bizWlManagement.getItemId());
         bizWlManagement.setCreateTime(DateUtils.getNowDate());
         int rows = bizWlManagementMapper.insertBizWlManagement(bizWlManagement);
+        workloadCalcService.recordManualFactors(bizWlManagement.getItemId(), bizWlManagement);
         workloadCalcService.recalcItem(bizWlManagement.getItemId());
         return rows;
     }
@@ -79,6 +80,7 @@ public class BizWlManagementServiceImpl implements IBizWlManagementService
         workloadCalcService.assertEditable(bizWlManagement.getItemId());
         bizWlManagement.setUpdateTime(DateUtils.getNowDate());
         int rows = bizWlManagementMapper.updateBizWlManagement(bizWlManagement);
+        workloadCalcService.recordManualFactors(bizWlManagement.getItemId(), bizWlManagement);
         workloadCalcService.recalcItem(bizWlManagement.getItemId());
         return rows;
     }

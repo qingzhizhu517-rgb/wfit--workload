@@ -73,6 +73,7 @@ public class CoefficientAdjustmentServiceImpl implements ICoefficientAdjustmentS
         {
             throw new ServiceException("申请系数值必须大于 0");
         }
+        com.workload.system.calc.rule.FactorProvenance.requireDecimal2(request.getRequestedValue());
         // 3) 理由非空
         if (!StringUtils.hasText(request.getReason()))
         {
@@ -128,6 +129,7 @@ public class CoefficientAdjustmentServiceImpl implements ICoefficientAdjustmentS
         // 从 item 读不到版本则记 0
         adjustment.setBaseCalculationVersion(
                 item.getCalculationVersion() != null ? item.getCalculationVersion() : 0L);
+        adjustment.setCreateBy(SecurityUtils.getUsername());
         adjustment.setCreateTime(DateUtils.getNowDate());
 
         adjustmentMapper.insertCoefficientAdjustment(adjustment);
@@ -157,6 +159,7 @@ public class CoefficientAdjustmentServiceImpl implements ICoefficientAdjustmentS
             throw new ServiceException("申请状态已变更或计算版本已更新，通过失败（并发冲突）");
         }
         // d. 读回新因子和已批准来源，落新快照并原子更新主表版本。
+        workloadCalcService.recordApprovedFactor(adjustmentMapper.selectCoefficientAdjustmentById(id));
         workloadCalcService.recalcItem(adjustment.getItemId());
     }
 

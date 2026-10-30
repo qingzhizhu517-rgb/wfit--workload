@@ -53,13 +53,17 @@ class TeachingTaskImportServiceImplTest
         TeachingTaskImportDTO dto = new TeachingTaskImportDTO();
         dto.setMajorCategory("理工科");
         dto.setEducationLevel("本科");
-        dto.setCourseCoefficient(java.math.BigDecimal.ONE);
+        dto.setCourseCoefficient(java.math.BigDecimal.ONE);dto.setStudentCount(5);dto.setSemester("2025-2026-1");
+        com.workload.system.calc.rule.TeachingTaskInputNormalizer.normalize(dto);
 
         Method method = TeachingTaskImportServiceImpl.class
                 .getDeclaredMethod("createG5Detail", TeachingTaskImportDTO.class, BizWorkloadItem.class, CalculationPolicyContext.class);
         method.setAccessible(true);
         BizWorkloadItem item = new BizWorkloadItem();
-        item.setId(7L);
+        item.setId(7L); item.setItemType("G5");
+        var refs=new java.util.TreeMap<String,String>(com.workload.system.calc.rule.FactorProvenance.selection(new com.workload.system.calc.SemesterCalendar(),"2025-2026-1"));
+        refs.put("itemId","7");refs.put("batch","IMP");refs.put("rawInputJson",new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(dto));refs.put("templateVersion","V2");refs.put("inputTransformVersion","TEACHING_TASK_INPUT_V1");refs.put("inputTransformContent",com.workload.system.calc.rule.TeachingTaskInputNormalizer.CONTENT);refs.put("normalizedInputJson",new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(dto));
+        item.getParams().put("importReferences",refs);
         method.invoke(service, dto, item, new CalculationPolicyContext(java.time.LocalDate.of(2026,1,31), (code,date,fallback,purpose) -> { throw new AssertionError("显式覆盖值无需政策"); }));
 
         ArgumentCaptor<BizWlThesis> captor = ArgumentCaptor.forClass(BizWlThesis.class);

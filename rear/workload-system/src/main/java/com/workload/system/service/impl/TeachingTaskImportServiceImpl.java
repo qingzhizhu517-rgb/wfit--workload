@@ -5,6 +5,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import com.workload.system.calc.rule.CalculationPolicyContext;
+import com.workload.system.calc.rule.FactorProvenance;
+import com.workload.system.calc.rule.RuleResolution;
+import java.util.Map;
+import java.util.TreeMap;
 import com.workload.system.calc.SemesterCalendar;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -186,6 +190,7 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
     @Transactional(rollbackFor = Exception.class)
     public BigDecimal processSingleRow(TeachingTaskImportDTO dto, String batchNo, String templateType)
     {
+        String rawInput = dto.getRawImportJson() == null ? toJson(dto) : dto.getRawImportJson();
         // 同一个规范化输入用于校验、任务落库和系数派生。
         normalizeRow(dto);
         // 1. 校验必填字段
@@ -211,10 +216,24 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
         // 5. 创建工作量明细主表
         BizWorkloadItem item = createWorkloadItem(dto, user.getUserId(), task.getId());
         workloadItemMapper.insertBizWorkloadItem(item);
+        Map<String,String> importRefs = new TreeMap<>();
+        importRefs.put("batch", batchNo);
+        importRefs.put("itemId",FactorProvenance.plain(item.getId()));
+        importRefs.putAll(FactorProvenance.selection(semesterCalendar,dto.getSemester()));
+        importRefs.put("rawInputJson", rawInput);
+        importRefs.put("normalizedInputJson", toJson(dto));
+        importRefs.put("templateVersion",dto.getImportTemplateVersion()==null?"V2":dto.getImportTemplateVersion());
+        importRefs.put("inputTransformVersion",com.workload.system.calc.rule.TeachingTaskInputNormalizer.VERSION);
+        importRefs.put("inputTransformContent",com.workload.system.calc.rule.TeachingTaskInputNormalizer.CONTENT);
+        if (dto.getImportRowId() != null) importRefs.put("rowId", dto.getImportRowId().toString());
+        if (dto.getImportSourceHash() != null) importRefs.put("sourceHash", dto.getImportSourceHash());
+        item.getParams().put("importReferences", importRefs);
 
         // 6. 创建类别明细并计算（重复系数按 repeatOrder 取值）
         CalculationPolicyContext context = new CalculationPolicyContext(semesterCalendar.endOf(dto.getSemester()), ruleParamService);
         BigDecimal calculated = createDetailAndCalc(dto, item, repeatOrder, context);
+
+        workloadItemMapper.updateFactorProvenance(item.getId(), item.getFactorProvenanceJson());
 
         // 7. 触发策略后置回调：G5/G6 据此在 item 上置 is_over_limit 超标标记。
         // 漏调的后果是「是否超限」要等到下一次重算才落库，刚导完看列表和附件1 全显示未超限。
@@ -439,6 +458,10 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
                 }
                 // 分类闸门读批次 template_category：确认阶段仍按批次类别校验行类别，
                 // 保留 guard/快照/afterCalculated
+                dto.setImportTemplateVersion(normalizeTemplateVersion(batch.getTemplateVersion()));
+                dto.setRawImportJson(row.getRawJson());
+                dto.setImportRowId(row.getId());
+                dto.setImportSourceHash(batch.getSourceHash());
                 proxy.processSingleRow(dto, batchNo, category);
                 row.setStatus("IMPORTED");
                 row.setUpdateTime(new Date());
@@ -514,46 +537,7 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
      */
     private TeachingTaskImportDTO convertV1(TeachingTaskImportV1DTO v1)
     {
-        TeachingTaskImportDTO dto = new TeachingTaskImportDTO();
-        dto.setSemester(v1.getSemester());
-        dto.setUserCode(v1.getUserCode());
-        dto.setUserName(v1.getUserName());
-        dto.setCourseName(v1.getCourseName());
-        dto.setCourseCode(v1.getCourseCode());
-        dto.setWorkloadType(v1.getWorkloadType());
-        dto.setEducationLevel(v1.getEducationLevel());
-        dto.setMajorCategory(v1.getMajorCategory());
-        dto.setCourseNature(v1.getCourseNature());
-        dto.setCourseLevel(v1.getCourseLevel());
-        dto.setCourseRole(v1.getCourseRole());
-        dto.setTeachingEval(v1.getTeachingEval());
-        dto.setStudentCount(v1.getStudentCount());
-        dto.setCourseCoefficient(v1.getCourseCoefficient());
-        dto.setClassName(v1.getClassName());
-        dto.setRepeatOrder(v1.getRepeatOrder());
-
-        String type = v1.getWorkloadType() == null ? "" : v1.getWorkloadType().trim().toUpperCase();
-        BigDecimal base = v1.getBaseValue();
-        switch (type)
-        {
-            case "G1":
-            case "G2":
-                dto.setPlannedHours(base);
-                break;
-            case "G3":
-                dto.setDays(base);
-                break;
-            case "G6":
-                dto.setWeeks(base);
-                break;
-            case "G4":
-                dto.setCredits(base);
-                break;
-            default:
-                // G5 只用选课人数，基数列无语义；其余非法类别留待 validateRow 拒绝
-                break;
-        }
-        return dto;
+        return com.workload.system.calc.rule.TeachingTaskInputNormalizer.convertV1(v1);
     }
 
     /** 归一化模板版本：null/空 → V2；其余转大写后必须为 V1/V2。 */
@@ -694,12 +678,7 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
     /** 规范化可选默认值，预检、确认和直接导入共用同一输入。 */
     private void normalizeRow(TeachingTaskImportDTO dto)
     {
-        if (dto == null)
-        {
-            throw new ServiceException("导入行不能为空");
-        }
-        dto.setCourseNature(defaultStr(dto.getCourseNature(), "必修").trim());
-        dto.setMajorCategory(defaultStr(dto.getMajorCategory(), "理工类").trim());
+        com.workload.system.calc.rule.TeachingTaskInputNormalizer.normalize(dto);
     }
 
     /**
@@ -745,6 +724,7 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
         {
             throw new ServiceException("选课/指导人数必须为正整数");
         }
+        if(dto.getCourseCoefficient()!=null && dto.getCourseCoefficient().stripTrailingZeros().scale()>2) throw new ServiceException("课程系数最多保留2位小数");
         if (dto.getCourseCoefficient() != null && dto.getCourseCoefficient().signum() <= 0)
         {
             throw new ServiceException("课程系数必须大于 0");
@@ -1020,13 +1000,13 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
     {
         BizWlTheory detail = new BizWlTheory();
         detail.setItemId(item.getId());
-        detail.setJ1(dto.getPlannedHours());
-        detail.setC1(calcC1(repeatOrder, dto)); // 重复系数：按同名课第几次，1.0/0.9/0.8
-        detail.setK1(calcK1(dto)); // 课程类型系数
-        detail.setQ1(calcQ1(dto)); // 教学质量系数
-        detail.setQ2(calcQ2(dto)); // 课程质量系数
-        detail.setQ3(BigDecimal.ONE); // 全外文系数默认 1.0
-        detail.setN(calcN(dto));   // 合堂系数
+        detail.setJ1(importInput(dto, item, "J1", dto.getPlannedHours()));
+        detail.setC1(derive(dto, item, "C1", repeatOrder, context)); // 重复系数：按同名课第几次，1.0/0.9/0.8
+        detail.setK1(derive(dto, item, "K1", repeatOrder, context)); // 课程类型系数
+        detail.setQ1(derive(dto, item, "Q1", 1L, context)); // 教学质量系数
+        detail.setQ2(derive(dto, item, "Q2", 1L, context)); // 课程质量系数
+        detail.setQ3(derive(dto, item, "Q3", 1L, context)); // 全外文系数默认 1.0
+        detail.setN(derive(dto, item, "N", repeatOrder, context));   // 合堂系数
         wlTheoryMapper.insertBizWlTheory(detail);
 
         // 策略计算（G1 策略必配；未配/配错时 CalcStrategyFactory 抛异常，由外层记为该行错误）
@@ -1040,12 +1020,12 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
     {
         BizWlPractice detail = new BizWlPractice();
         detail.setItemId(item.getId());
-        detail.setJ2(dto.getPlannedHours());
-        detail.setK(calcG2K(dto)); // 专业大类系数：理工 1.0 / 其他 0.9
-        detail.setC2(new BigDecimal("0.9")); // 实践课重复系数固定 0.9
-        detail.setQ1(calcQ1(dto));
-        detail.setQ2(calcQ2(dto));
-        detail.setQ3(BigDecimal.ONE);
+        detail.setJ2(importInput(dto, item, "J2", dto.getPlannedHours()));
+        detail.setK(derive(dto, item, "K", 1L, context)); // 专业大类系数：理工 1.0 / 其他 0.9
+        detail.setC2(derive(dto, item, "C2", 1L, context)); // 实践课重复系数固定 0.9
+        detail.setQ1(derive(dto, item, "Q1", 1L, context));
+        detail.setQ2(derive(dto, item, "Q2", 1L, context));
+        detail.setQ3(derive(dto, item, "Q3", 1L, context));
         wlPracticeMapper.insertBizWlPractice(detail);
 
         return calcStrategyFactory.get("G2").calculate(item, context);
@@ -1058,12 +1038,12 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
     {
         BizWlInternshipTraining detail = new BizWlInternshipTraining();
         detail.setItemId(item.getId());
-        detail.setT(dto.getDays()); // 天数
-        detail.setD(calcG3D(dto)); // 指导系数：理工 4.0 / 艺术 3.0 / 文史 2.0
-        detail.setK(calcG3RepeatK(repeatOrder, dto)); // 重复系数：第一轮 1.0，第二轮起 0.9
-        detail.setQ1(calcQ1(dto));
-        detail.setQ2(calcQ2(dto));
-        detail.setQ3(BigDecimal.ONE);
+        detail.setT(importInput(dto, item, "T", dto.getDays())); // 天数
+        detail.setD(derive(dto, item, "D", repeatOrder, context)); // 指导系数：理工 4.0 / 艺术 3.0 / 文史 2.0
+        detail.setK(derive(dto, item, "K", repeatOrder, context)); // 重复系数：第一轮 1.0，第二轮起 0.9
+        detail.setQ1(derive(dto, item, "Q1", 1L, context));
+        detail.setQ2(derive(dto, item, "Q2", 1L, context));
+        detail.setQ3(derive(dto, item, "Q3", 1L, context));
         wlInternshipTrainingMapper.insertBizWlInternshipTraining(detail);
 
         return calcStrategyFactory.get("G3").calculate(item, context);
@@ -1076,8 +1056,8 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
     {
         BizWlCourseDesign detail = new BizWlCourseDesign();
         detail.setItemId(item.getId());
-        detail.setJ4(dto.getCredits()); // 学分
-        detail.setR4(dto.getStudentCount() != null ? dto.getStudentCount().longValue() : 0L);
+        detail.setJ4(importInput(dto,item,"J4",dto.getCredits())); // 学分
+        detail.setR4(importInput(dto,item,"R4",new BigDecimal(dto.getStudentCount())).longValueExact());
         wlCourseDesignMapper.insertBizWlCourseDesign(detail);
 
         return calcStrategyFactory.get("G4").calculate(item, context);
@@ -1090,9 +1070,9 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
     {
         BizWlThesis detail = new BizWlThesis();
         detail.setItemId(item.getId());
-        detail.setR5(dto.getStudentCount() != null ? dto.getStudentCount().longValue() : 0L);
-        detail.setK5(calcG5K5(dto)); // K5：理工本 9 / 理工专 5 / 文史本 6 / 文史专 4
-        // 学科门类随 K5 同口径落库（附件1 X/Y 双列分列用；艺术/其他按文史，同 calcG5K5 归档）
+        detail.setR5(importInput(dto,item,"R5",new BigDecimal(dto.getStudentCount())).longValueExact());
+        detail.setK5(derive(dto, item, "K5", 1L, context)); // K5：理工本 9 / 理工专 5 / 文史本 6 / 文史专 4
+        // 学科门类随 K5 同口径落库（附件1 X/Y 双列分列用；艺术/其他按文史，与实际 K5 派生分支一致）
         detail.setDisciplineCategory(isLiGong(dto.getMajorCategory()) ? "SCITECH" : "LIBERAL_ARTS");
         wlThesisMapper.insertBizWlThesis(detail);
 
@@ -1106,217 +1086,68 @@ public class TeachingTaskImportServiceImpl implements ITeachingTaskImportService
     {
         BizWlConcentratedInternship detail = new BizWlConcentratedInternship();
         detail.setItemId(item.getId());
-        detail.setW(dto.getWeeks()); // 周数
-        detail.setR6(dto.getStudentCount() != null ? dto.getStudentCount().longValue() : 0L);
+        detail.setW(importInput(dto,item,"W",dto.getWeeks())); // 周数
+        detail.setR6(importInput(dto,item,"R6",new BigDecimal(dto.getStudentCount())).longValueExact());
         wlConcentratedInternshipMapper.insertBizWlConcentratedInternship(detail);
 
         return calcStrategyFactory.get("G6").calculate(item, context);
     }
 
-    // --- 系数计算辅助方法 ---
-
-    /**
-     * G1 理论课重复系数 C1：第一次 1.0，第二次 0.9，第三次及以后 0.8。
-     * <p>
-     * 取值走 {@code biz_workload_rule} 的 COEF_REPEAT_1ST / 2ND / 3RD_UP，
-     * 政策调整改库即可，不必改代码。默认值与 02_biz_seed.sql 种子一致，
-     * 仅在规则被误删时兜底，避免整批导入因缺一条参数而全数失败。
-     *
-     * @param repeatOrder 同名课第几次（≥1）
-     */
-    private BigDecimal calcC1(long repeatOrder, TeachingTaskImportDTO dto)
-    {
-        if (repeatOrder <= 1L)
-        {
-            return ruleParamService.get("COEF_REPEAT_1ST", new BigDecimal("1.0"), semesterCalendar.endOf(dto.getSemester()));
-        }
-        if (repeatOrder == 2L)
-        {
-            return ruleParamService.get("COEF_REPEAT_2ND", new BigDecimal("0.9"), semesterCalendar.endOf(dto.getSemester()));
-        }
-        return ruleParamService.get("COEF_REPEAT_3RD_UP", new BigDecimal("0.8"), semesterCalendar.endOf(dto.getSemester()));
+    private Map<String,String> importInputs(TeachingTaskImportDTO dto, long repeatOrder) {
+        Map<String,String> inputs = new TreeMap<>();
+        objectMapper.convertValue(dto, new com.fasterxml.jackson.core.type.TypeReference<Map<String,Object>>() {})
+                .forEach((k,v) -> inputs.put(k, FactorProvenance.plain(v)));
+        inputs.put("resolvedRepeatOrder", Long.toString(repeatOrder));
+        return inputs;
     }
-
-    /**
-     * G3 实习实训重复系数 K：第一轮 1.0，第二轮及以后 0.9。
-     * <p>
-     * 与 G1 的 C1 不同，{@code else/工作量.md:67-68} 对 G3 只规定两档
-     * （"从第二轮次重复系数K＝0.9"），没有第三轮 0.8 的说法，
-     * 故第三轮及以后继续沿用 0.9，不套用 COEF_REPEAT_3RD_UP。
-     *
-     * @param repeatOrder 同一门实习实训第几轮（≥1）
-     */
-    private BigDecimal calcG3RepeatK(long repeatOrder, TeachingTaskImportDTO dto)
-    {
-        if (repeatOrder <= 1L)
-        {
-            return BigDecimal.ONE;
-        }
-        return ruleParamService.get("COEF_REPEAT_2ND", new BigDecimal("0.9"), semesterCalendar.endOf(dto.getSemester()));
+    @SuppressWarnings("unchecked")
+    private Map<String,String> importRefs(BizWorkloadItem item) {
+        Object refs = item.getParams().get("importReferences");
+        if(refs==null) throw new ServiceException("缺少导入来源上下文");
+        return (Map<String,String>)refs;
     }
-
-    /**
-     * G2 实践课专业大类系数 K：理工类 1.0，其他专业 0.9（{@code else/工作量.md:57}）。
-     * <p>
-     * Excel「课程系数」列填了就以它为准（教务按个案覆盖），留空才按专业大类自动取值。
-     * 此前留空一律落 1.0，等于把文史/艺术/其他专业的实践课都按理工计，多算 11%。
-     */
-    private BigDecimal calcG2K(TeachingTaskImportDTO dto)
-    {
-        if (dto.getCourseCoefficient() != null)
-        {
-            return dto.getCourseCoefficient();
-        }
-        return isLiGong(dto.getMajorCategory())
-                ? ruleParamService.get("COEF_PRACTICE_LG", new BigDecimal("1.0"), semesterCalendar.endOf(dto.getSemester()))
-                : ruleParamService.get("COEF_PRACTICE_OTHER", new BigDecimal("0.9"), semesterCalendar.endOf(dto.getSemester()));
+    private void saveFactor(BizWorkloadItem item, FactorProvenance.Proof proof) {
+        FactorProvenance.requireDecimal2(new BigDecimal(proof.value()));
+        Map<String,FactorProvenance.Proof> factors = new TreeMap<>(FactorProvenance.read(item.getFactorProvenanceJson(),item.getId(),item.getItemType()));
+        factors.put(proof.key(),proof);
+        item.setFactorProvenanceJson(FactorProvenance.encode(item.getId(),item.getItemType(),factors));
     }
-
-    /**
-     * G3 实习实训指导系数 D：理工类 4.0，艺术类 3.0，文史类 2.0（{@code else/工作量.md:66}）。
-     * <p>
-     * 「单位指导 D=2.0」无法从导入列区分（模板没有「指导方式」列），只能由教务在
-     * 「课程系数」列显式填 2.0 覆盖；本方法只负责按专业大类自动取值。
-     * 专业大类为「其他」时按文史类取 2.0——文档未单列该档，取最低档避免多算。
-     */
-    private BigDecimal calcG3D(TeachingTaskImportDTO dto)
-    {
-        if (dto.getCourseCoefficient() != null)
-        {
-            return dto.getCourseCoefficient();
-        }
-        String category = dto.getMajorCategory();
-        if (isLiGong(category))
-        {
-            return ruleParamService.get("COEF_TRAIN_D_LG", new BigDecimal("4.0"), semesterCalendar.endOf(dto.getSemester()));
-        }
-        if (category != null && category.contains("艺术"))
-        {
-            return ruleParamService.get("COEF_TRAIN_D_ART", new BigDecimal("3.0"), semesterCalendar.endOf(dto.getSemester()));
-        }
-        return ruleParamService.get("COEF_TRAIN_D_HUM", new BigDecimal("2.0"), semesterCalendar.endOf(dto.getSemester()));
+    private BigDecimal importInput(TeachingTaskImportDTO dto, BizWorkloadItem item, String key, BigDecimal value) {
+        Map<String,String> inputs=importInputs(dto,1L); inputs.remove("resolvedRepeatOrder"); inputs.put("value",FactorProvenance.plain(value));
+        saveFactor(item,FactorProvenance.create(item.getItemType(),key,value,"IMPORT_INPUT","FACTOR","EXPLICIT_VALUE_V1",inputs,List.of(),importRefs(item)));
+        return value;
     }
-
-    /**
-     * G5 毕业论文指导系数 K5：理工本 9 / 理工专 5 / 文史本 6 / 文史专 4
-     * （{@code else/工作量.md:79-83}，取值见 {@code biz_workload_rule.COEF_THESIS_K5_*}）。
-     * <p>
-     * 艺术类按文史类取值——文档的 K5 只分理工/文史两支，艺术类归属待专业目录确认
-     * （见 CLAUDE.md 待办 #5）；「其他」同理归文史，取低档避免多算。
-     * <p>
-     * 此前留空一律落 9（理工本科档），文史专科因此按 9 而非 4 计，多算 125%。
-     */
-    private BigDecimal calcG5K5(TeachingTaskImportDTO dto)
-    {
-        if (dto.getCourseCoefficient() != null)
-        {
-            return dto.getCourseCoefficient();
-        }
-        String discipline = isLiGong(dto.getMajorCategory()) ? "LG" : "HU";
-        // 授课层次只有本科/专科两档，非「专科」一律按本科（与 createTeachingTask 默认「本科」一致）
-        String level = "专科".equals(dto.getEducationLevel()) ? "C" : "B";
-        BigDecimal fallback = defaultK5(discipline, level);
-        return ruleParamService.get("COEF_THESIS_K5_" + discipline + "_" + level, fallback, semesterCalendar.endOf(dto.getSemester()));
-    }
-
-    /** K5 兜底默认值，与 02_biz_seed.sql 的 COEF_THESIS_K5_* 一致，仅在规则被误删时生效 */
-    private BigDecimal defaultK5(String discipline, String level)
-    {
-        if ("LG".equals(discipline))
-        {
-            return "C".equals(level) ? new BigDecimal("5") : new BigDecimal("9");
-        }
-        return "C".equals(level) ? new BigDecimal("4") : new BigDecimal("6");
-    }
-
-    /**
-     * 专业大类是否理工类。库中实际取值为 理工类/文史类/艺术类/其他，
-     * 用 contains 而非 equals，容忍「理工」「理工科」等写法差异。
-     */
-    private boolean isLiGong(String majorCategory)
-    {
-        return majorCategory != null && majorCategory.contains("理工");
-    }
-
-    /**
-     * K1 课程类型系数：必修 1.1，选修 1.0
-     */
-    private BigDecimal calcK1(TeachingTaskImportDTO dto)
-    {
-        if ("必修".equals(dto.getCourseNature()))
-        {
-            return new BigDecimal("1.1");
-        }
-        return new BigDecimal("1.0");
-    }
-
-    /**
-     * Q1 教学质量系数：优秀/良好 1.0，不合格 0.8
-     */
-    private BigDecimal calcQ1(TeachingTaskImportDTO dto)
-    {
-        if ("不合格".equals(dto.getTeachingEval()))
-        {
-            return new BigDecimal("0.8");
-        }
-        return new BigDecimal("1.0");
-    }
-
-    /**
-     * Q2 课程质量系数
-     * 省级一流主持人 1.5，团队前3 1.2
-     * 校级精品主持人 1.2，团队前3 1.1
-     * 其他 1.0
-     */
-    private BigDecimal calcQ2(TeachingTaskImportDTO dto)
-    {
-        String level = dto.getCourseLevel();
-        String role = dto.getCourseRole();
-
-        if ("省级一流".equals(level))
-        {
-            if ("主持人".equals(role))
-            {
-                return new BigDecimal("1.5");
-            }
-            if ("团队前3".equals(role))
-            {
-                return new BigDecimal("1.2");
+    private BigDecimal derive(TeachingTaskImportDTO dto,BizWorkloadItem item,String key,long repeatOrder,CalculationPolicyContext context) {
+        String category=item.getItemType();
+        Map<String,String> inputs=importInputs(dto,repeatOrder);
+        if(!("G1:C1".equals(category+":"+key) || "G3:K".equals(category+":"+key))) inputs.remove("resolvedRepeatOrder");
+        boolean override=dto.getCourseCoefficient()!=null && ("G2:K".equals(category+":"+key) || "G3:D".equals(category+":"+key) || "G5:K5".equals(category+":"+key));
+        BigDecimal value; String kind; List<RuleResolution> rules=List.of(); String branch;
+        if(override) {
+            value=dto.getCourseCoefficient(); kind="IMPORT_OVERRIDE"; branch="EXPLICIT_VALUE_V1"; inputs.put("value",value.toPlainString());
+        } else {
+            branch=category+"_"+key+"_V1";
+            String code=FactorProvenance.expectedCode(category,key,inputs);
+            if(code==null) { value=new BigDecimal(FactorProvenance.codeValue(category,key,inputs)); kind="CODE_POLICY"; }
+            else {
+                String fallback=switch(code) {
+                    case "COEF_REPEAT_1ST", "COEF_PRACTICE_LG" -> "1.0";
+                    case "COEF_REPEAT_2ND", "COEF_PRACTICE_OTHER" -> "0.9";
+                    case "COEF_REPEAT_3RD_UP" -> "0.8";
+                    case "COEF_CLASS_151_UP" -> "1.2"; case "COEF_CLASS_120_150" -> "1.1";
+                    case "COEF_TRAIN_D_LG", "COEF_THESIS_K5_HU_C" -> "4";
+                    case "COEF_TRAIN_D_ART" -> "3"; case "COEF_TRAIN_D_HUM" -> "2";
+                    case "COEF_THESIS_K5_LG_B" -> "9"; case "COEF_THESIS_K5_LG_C" -> "5"; case "COEF_THESIS_K5_HU_B" -> "6";
+                    default -> throw new IllegalArgumentException("未识别导入政策 "+code);
+                };
+                RuleResolution r=context.resolve(code,new BigDecimal(fallback)); value=r.value(); kind=r.sourceKind(); rules=List.of(r);
             }
         }
-        if ("校级精品".equals(level))
-        {
-            if ("主持人".equals(role))
-            {
-                return new BigDecimal("1.2");
-            }
-            if ("团队前3".equals(role))
-            {
-                return new BigDecimal("1.1");
-            }
-        }
-        return new BigDecimal("1.0");
+        saveFactor(item,FactorProvenance.create(category,key,value,kind,"Q3".equals(key)?"DISPLAY_ONLY":"FACTOR",branch,inputs,rules,importRefs(item)));
+        return value;
     }
 
-    /**
-     * N 合堂系数：120-150 人 1.1，151 人及以上 1.2，否则 1.0。
-     * <p>
-     * 取值走 {@code biz_workload_rule} 的 COEF_CLASS_120_150 / COEF_CLASS_151_UP，
-     * 与 C1 一致改库即可生效；人数档位阈值仍在代码里（规则表只存系数值，不存区间）。
-     */
-    private BigDecimal calcN(TeachingTaskImportDTO dto)
-    {
-        int count = dto.getStudentCount() != null ? dto.getStudentCount() : 0;
-        if (count >= 151)
-        {
-            return ruleParamService.get("COEF_CLASS_151_UP", new BigDecimal("1.2"), semesterCalendar.endOf(dto.getSemester()));
-        }
-        if (count >= 120)
-        {
-            return ruleParamService.get("COEF_CLASS_120_150", new BigDecimal("1.1"), semesterCalendar.endOf(dto.getSemester()));
-        }
-        return BigDecimal.ONE;
-    }
+    private boolean isLiGong(String majorCategory) { return majorCategory != null && majorCategory.contains("理工"); }
 
     // --- 工具方法 ---
 

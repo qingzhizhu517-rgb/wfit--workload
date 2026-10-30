@@ -87,9 +87,9 @@ public class WorkloadSnapshotService
         snapshot.setFactorJson(factorJson);
         snapshot.setSourceJson(sourceJson);
         snapshot.setContextJson(contextJson);
-        snapshot.setRuleVersion(ruleVersion);
+        snapshot.setRuleVersion(formula.getPersistedFactorSources()==null ? ruleVersion : PersistedPolicyEvidenceIntegrity.policyHash(formula.getPolicySources(),formula.getPersistedFactorSources()));
         snapshot.setResult(result);
-        snapshot.setSnapshotHash(formula.getPolicySources() == null ? SnapshotIntegrity.hashV2(snapshot) : SnapshotIntegrity.hashV3(snapshot));
+        snapshot.setSnapshotHash(formula.getPersistedFactorSources()!=null ? SnapshotIntegrity.hashV4(snapshot) : formula.getPolicySources() == null ? SnapshotIntegrity.hashV2(snapshot) : SnapshotIntegrity.hashV3(snapshot));
         SnapshotIntegrity.verify(snapshot);
         snapshot.setCreatedBy(currentUser());
         snapshot.setCreatedAt(new Date());

@@ -12,6 +12,8 @@ import com.workload.system.domain.BizWorkloadItem;
  */
 public interface BizWorkloadItemMapper
 {
+    int updateFactorProvenance(@Param("id") Long id, @Param("json") String json);
+
     BizWorkloadItem selectByIdForUpdate(Long id);
     int invalidateCalculation(Long id);
 

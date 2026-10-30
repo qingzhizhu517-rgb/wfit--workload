@@ -19,6 +19,11 @@ import com.workload.system.domain.vo.FactorFormulaVo;
  */
 public class BizWorkloadItem extends BaseEntity
 {
+    @com.fasterxml.jackson.annotation.JsonProperty(access = com.fasterxml.jackson.annotation.JsonProperty.Access.READ_ONLY)
+    private String factorProvenanceJson;
+    public String getFactorProvenanceJson() { return factorProvenanceJson; }
+    public void setFactorProvenanceJson(String value) { factorProvenanceJson = value; }
+
     private static final long serialVersionUID = 1L;
 
     /**

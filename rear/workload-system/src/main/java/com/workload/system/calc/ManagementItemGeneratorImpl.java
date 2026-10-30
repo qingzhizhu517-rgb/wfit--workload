@@ -128,6 +128,14 @@ public class ManagementItemGeneratorImpl implements ManagementItemGenerator
                 throw new ServiceException("G11明细或汇总状态已变化，请刷新后重试");
             }
         }
+        java.util.Map<String,String> refs=new java.util.TreeMap<>(WorkloadCalcServiceImpl.sourceActor());
+        refs.put("itemId",item.getId().toString());
+        refs.put("assignmentId",assignment.getId().toString()); refs.put("semester",semester);
+        refs.put("batch",assignment.getSourceBatchId());
+        refs.put("batchStatus",assignment.getSourceBatchId()==null?"MISSING_RECORDED_BATCH":"RECORDED");
+        var proof=com.workload.system.calc.rule.FactorProvenance.create("G11","岗位减免",amount,"REGISTRY_INPUT","FACTOR","EXPLICIT_VALUE_V1",
+                java.util.Map.of("value",amount.toPlainString(),"roleType",assignment.getRoleType()),java.util.List.of(),refs);
+        itemMapper.updateFactorProvenance(item.getId(),com.workload.system.calc.rule.FactorProvenance.encode(item.getId(),"G11",java.util.Map.of("岗位减免",proof)));
         workloadCalcService.recalcItem(item.getId());
         return true;
     }
