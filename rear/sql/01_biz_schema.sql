@@ -337,6 +337,7 @@ CREATE TABLE biz_wl_management (
 -- ========== 汇总层 ==========
 DROP TABLE IF EXISTS biz_workload_summary;
 CREATE TABLE biz_workload_summary (
+  settlement_snapshot_id BIGINT NULL COMMENT '服务器结算证据指针',
   id                       BIGINT(20)    NOT NULL AUTO_INCREMENT,
   user_id                  BIGINT(20)    NOT NULL,
   semester                 VARCHAR(20)   NOT NULL,
@@ -375,6 +376,7 @@ CREATE TABLE biz_workload_summary (
 -- ========== 酬金层 ==========
 DROP TABLE IF EXISTS biz_pay_record;
 CREATE TABLE biz_pay_record (
+  settlement_snapshot_id BIGINT NULL COMMENT '服务器结算证据指针',
   id              BIGINT(20)    NOT NULL AUTO_INCREMENT,
   user_id         BIGINT(20)    NOT NULL,
   semester        VARCHAR(20)   NOT NULL,
@@ -415,3 +417,18 @@ CREATE TABLE biz_allowance_item (
   KEY idx_pay_record (pay_record_id),
   KEY idx_user_sem (user_id, semester)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='其他酬金明细';
+
+-- Structure only: no historical amounts, workflow state or evidence is rewritten.
+CREATE TABLE IF NOT EXISTS biz_workload_settlement_snapshot (
+ id BIGINT NOT NULL AUTO_INCREMENT,
+ summary_id BIGINT NOT NULL,
+ user_id BIGINT NOT NULL,
+ semester VARCHAR(20) NOT NULL,
+ settlement_version BIGINT NOT NULL,
+ format_version INT NOT NULL,
+ payload_json LONGTEXT NOT NULL,
+ hash CHAR(64) NOT NULL,
+ created_by VARCHAR(64) NOT NULL,
+ created_at DATETIME NOT NULL,
+ PRIMARY KEY(id), UNIQUE KEY uk_summary_settlement_version(summary_id,settlement_version)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='只追加学期结算证据';

@@ -17,6 +17,39 @@ import com.workload.common.core.domain.BaseEntity;
 public class BizWorkloadSummary extends BaseEntity
 {
     private static final long serialVersionUID = 1L;
+    private Long settlementSnapshotId;
+    public Long getSettlementSnapshotId(){return settlementSnapshotId;}
+    @com.fasterxml.jackson.annotation.JsonProperty(access=com.fasterxml.jackson.annotation.JsonProperty.Access.READ_ONLY)
+    public void setSettlementSnapshotId(Long value){settlementSnapshotId=value;}
+    private String settlementEvidenceStatus;
+    public String getSettlementEvidenceStatus(){return settlementEvidenceStatus;}
+    @com.fasterxml.jackson.annotation.JsonProperty(access=com.fasterxml.jackson.annotation.JsonProperty.Access.READ_ONLY)
+    public void setSettlementEvidenceStatus(String value){settlementEvidenceStatus=value;}
+    private String settlementMode;
+    public String getSettlementMode(){return settlementMode;}
+    @com.fasterxml.jackson.annotation.JsonProperty(access=com.fasterxml.jackson.annotation.JsonProperty.Access.READ_ONLY)
+    public void setSettlementMode(String value){settlementMode=value;}
+    private String teacherNature;
+    public String getTeacherNature(){return teacherNature;}
+    @com.fasterxml.jackson.annotation.JsonProperty(access=com.fasterxml.jackson.annotation.JsonProperty.Access.READ_ONLY)
+    public void setTeacherNature(String value){teacherNature=value;}
+    private String eligibilityReason;
+    public String getEligibilityReason(){return eligibilityReason;}
+    @com.fasterxml.jackson.annotation.JsonProperty(access=com.fasterxml.jackson.annotation.JsonProperty.Access.READ_ONLY)
+    public void setEligibilityReason(String value){eligibilityReason=value;}
+    private String settlementMissingReason;
+    public String getSettlementMissingReason(){return settlementMissingReason;}
+    @com.fasterxml.jackson.annotation.JsonProperty(access=com.fasterxml.jackson.annotation.JsonProperty.Access.READ_ONLY)
+    public void setSettlementMissingReason(String value){settlementMissingReason=value;}
+    private Boolean settlementRequired;
+    public Boolean getSettlementRequired(){return settlementRequired;}
+    @com.fasterxml.jackson.annotation.JsonProperty(access=com.fasterxml.jackson.annotation.JsonProperty.Access.READ_ONLY)
+    public void setSettlementRequired(Boolean value){settlementRequired=value;}
+    private Boolean settlementSubmittable;
+    public Boolean getSettlementSubmittable(){return settlementSubmittable;}
+    @com.fasterxml.jackson.annotation.JsonProperty(access=com.fasterxml.jackson.annotation.JsonProperty.Access.READ_ONLY)
+    public void setSettlementSubmittable(Boolean value){settlementSubmittable=value;}
+
 
     /** $column.columnComment */
     private Long id;

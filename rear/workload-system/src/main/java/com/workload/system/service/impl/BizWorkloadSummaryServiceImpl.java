@@ -21,6 +21,8 @@ import com.workload.system.service.IBizWorkloadSummaryService;
 @Service
 public class BizWorkloadSummaryServiceImpl implements IBizWorkloadSummaryService
 {
+    @Autowired private com.workload.system.calc.SettlementSnapshotService settlementSnapshots;
+
     @Autowired
     private BizWorkloadSummaryMapper bizWorkloadSummaryMapper;
 
@@ -34,9 +36,12 @@ public class BizWorkloadSummaryServiceImpl implements IBizWorkloadSummaryService
      * @return 学期工作量汇总
      */
     @Override
+    @Transactional(readOnly = true)
     public BizWorkloadSummary selectBizWorkloadSummaryById(Long id)
     {
-        return bizWorkloadSummaryMapper.selectBizWorkloadSummaryById(id);
+        var result=bizWorkloadSummaryMapper.selectBizWorkloadSummaryById(id);
+        if(settlementSnapshots!=null) settlementSnapshots.decorate(result);
+        return result;
     }
 
     /**
@@ -46,9 +51,12 @@ public class BizWorkloadSummaryServiceImpl implements IBizWorkloadSummaryService
      * @return 学期工作量汇总
      */
     @Override
+    @Transactional(readOnly = true)
     public List<BizWorkloadSummary> selectBizWorkloadSummaryList(BizWorkloadSummary bizWorkloadSummary)
     {
-        return bizWorkloadSummaryMapper.selectBizWorkloadSummaryList(bizWorkloadSummary);
+        var list=bizWorkloadSummaryMapper.selectBizWorkloadSummaryList(bizWorkloadSummary);
+        if(settlementSnapshots!=null) list.forEach(settlementSnapshots::decorate);
+        return list;
     }
 
     /**
@@ -98,7 +106,10 @@ public class BizWorkloadSummaryServiceImpl implements IBizWorkloadSummaryService
     public int deleteBizWorkloadSummaryByIds(Long[] ids)
     {
         if (ids == null || ids.length == 0) return 0;
-        for (Long id : ids) requireEditable(id);
+        for (Long id : ids){
+            var existing=requireEditable(id);
+            if(settlementSnapshots!=null)settlementSnapshots.assertSummaryDeletionAllowed(existing);
+        }
         return bizWorkloadSummaryMapper.deleteBizWorkloadSummaryByIds(ids);
     }
 
@@ -112,7 +123,8 @@ public class BizWorkloadSummaryServiceImpl implements IBizWorkloadSummaryService
     @Transactional(rollbackFor = Exception.class)
     public int deleteBizWorkloadSummaryById(Long id)
     {
-        requireEditable(id);
+        var existing=requireEditable(id);
+        if(settlementSnapshots!=null)settlementSnapshots.assertSummaryDeletionAllowed(existing);
         return bizWorkloadSummaryMapper.deleteBizWorkloadSummaryById(id);
     }
 
@@ -120,13 +132,16 @@ public class BizWorkloadSummaryServiceImpl implements IBizWorkloadSummaryService
      * 按教师+学期查询汇总
      */
     @Override
+    @Transactional(readOnly = true)
     public BizWorkloadSummary selectBizWorkloadSummaryByUserAndSemester(Long userId, String semester)
     {
         BizWorkloadSummary query = new BizWorkloadSummary();
         query.setUserId(userId);
         query.setSemester(semester);
         List<BizWorkloadSummary> list = bizWorkloadSummaryMapper.selectBizWorkloadSummaryList(query);
-        return (list != null && !list.isEmpty()) ? list.get(0) : null;
+        var result=(list != null && !list.isEmpty()) ? list.get(0) : null;
+        if(settlementSnapshots!=null) settlementSnapshots.decorate(result);
+        return result;
     }
     private BizWorkloadSummary requireEditable(Long id)
     {

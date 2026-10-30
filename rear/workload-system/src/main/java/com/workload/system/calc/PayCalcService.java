@@ -18,6 +18,8 @@ public interface PayCalcService
      * @return 酬金记录
      */
     public BizPayRecord recalcPay(Long userId, String semester);
+    BizPayRecord recalcPayWithEvidence(Long userId,String semester,SettlementEvidence.SummaryEvidence evidence);
+    BizPayRecord currentPay(Long userId,String semester);
 
     /**
      * 其他酬金可编辑护栏：学期汇总已锁定（酬金定稿）时抛 ServiceException

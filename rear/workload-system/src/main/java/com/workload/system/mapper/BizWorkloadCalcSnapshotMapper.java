@@ -35,6 +35,9 @@ public interface BizWorkloadCalcSnapshotMapper
      */
     BizWorkloadCalcSnapshot selectLatestByItemId(Long itemId);
 
+    /** Current read after period/item locking; never use an older RR snapshot. */
+    BizWorkloadCalcSnapshot selectLatestByItemIdCurrent(Long itemId);
+
     /**
      * 查询指定明细的全部快照，按版本升序。
      *

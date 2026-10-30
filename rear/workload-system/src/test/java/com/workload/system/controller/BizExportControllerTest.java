@@ -286,7 +286,13 @@ class BizExportControllerTest
                         null, null, null));
 
         when(exportMapper.selectPaySummaryExport(eq("2099-2100-1"), isNull())).thenReturn(rows);
-        when(ruleParamService.get(eq("CAP_200PCT"), any(), eq(java.time.LocalDate.of(2100, 1, 31)))).thenReturn(new BigDecimal("540"));
+        var summaries=org.mockito.Mockito.mock(com.workload.system.service.IBizWorkloadSummaryService.class);
+        org.springframework.test.util.ReflectionTestUtils.setField(controller,"summaries",summaries);
+        for(int index=0;index<rows.size();index++) {
+            var dto=rows.get(index);dto.setSummaryId((long)index+1);
+            var saved=new com.workload.system.domain.BizWorkloadSummary();saved.setWorkloadCap(new BigDecimal("540"));saved.setTeacherNature(dto.getTeacherNature());
+            when(summaries.selectBizWorkloadSummaryById(dto.getSummaryId())).thenReturn(saved);
+        }
 
         MockHttpServletResponse response = new MockHttpServletResponse();
         try (MockedStatic<DataScopeUtil> scope = mockStatic(DataScopeUtil.class))

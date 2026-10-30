@@ -61,6 +61,8 @@ public class BizAuditServiceImpl implements BizAuditService
     /** 错误码：审批状态冲突 */
     private static final int CODE_STATUS_CONFLICT = HttpStatus.CONFLICT;
 
+    @Autowired private com.workload.system.calc.SettlementSnapshotService settlementSnapshots;
+
     @Autowired
     private BizWorkloadSummaryMapper bizWorkloadSummaryMapper;
 
@@ -92,6 +94,7 @@ public class BizAuditServiceImpl implements BizAuditService
         assertFresh(summary);
         assertItemsReviewed(summary);
         assertNoPendingCoefficients(summary);
+        if(settlementSnapshots != null) settlementSnapshots.assertSubmittable(summary);
 
         String username = SecurityUtils.getUsername();
         int rows = bizWorkloadSummaryMapper.updateStatusIf(id, WorkloadSummaryStatus.DRAFT, WorkloadSummaryStatus.PENDING_AUDIT, username);
@@ -108,6 +111,7 @@ public class BizAuditServiceImpl implements BizAuditService
         assertFresh(summary);
         assertItemsReviewed(summary);
         assertNoPendingCoefficients(summary);
+        if(settlementSnapshots != null) settlementSnapshots.assertSubmittable(summary);
 
         String username = SecurityUtils.getUsername();
         // 教务处审核通过即终态：置已完结(2)，同时写 academic_assistant_sign 与 lock_time

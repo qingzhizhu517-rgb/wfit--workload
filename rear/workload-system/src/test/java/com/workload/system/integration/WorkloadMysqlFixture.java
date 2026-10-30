@@ -68,10 +68,14 @@ class WorkloadMysqlFixture implements AutoCloseable {
             String lockDdl = admin.queryForObject("SHOW CREATE TABLE biz_workload_period_lock", (rs,n) -> rs.getString(2));
             jdbc.execute(lockDdl);
         }
+        for(String table:List.of("biz_workload_summary","biz_pay_record")) {
+            if(jdbc.queryForList("SHOW COLUMNS FROM "+table+" LIKE 'settlement_snapshot_id'").isEmpty()) jdbc.execute("ALTER TABLE "+table+" ADD COLUMN settlement_snapshot_id BIGINT NULL");
+        }
+        jdbc.execute("CREATE TABLE IF NOT EXISTS biz_workload_settlement_snapshot(id BIGINT AUTO_INCREMENT PRIMARY KEY,summary_id BIGINT NOT NULL,user_id BIGINT NOT NULL,semester VARCHAR(20) NOT NULL,settlement_version BIGINT NOT NULL,format_version INT NOT NULL,payload_json LONGTEXT NOT NULL,hash CHAR(64) NOT NULL,created_by VARCHAR(64) NOT NULL,created_at DATETIME NOT NULL,UNIQUE KEY uk_summary_settlement_version(summary_id,settlement_version))");
         Configuration config = new Configuration(new Environment("isolated-mysql", new SpringManagedTransactionFactory(), ds));
         config.getTypeAliasRegistry().registerAliases("com.workload.system.domain");
         // Default SESSION cache matches production; lock reads must flush stale entries.
-        for (String name : List.of("BizWorkloadItemMapper", "BizWlTheoryMapper", "BizWlPracticeMapper", "BizWlInternshipTrainingMapper", "BizWlCourseDesignMapper", "BizWlThesisMapper", "BizWlConcentratedInternshipMapper", "BizWlManagementMapper", "BizWorkloadSummaryMapper", "BizCoefficientAdjustmentMapper", "BizWorkloadCalcSnapshotMapper", "BizTeacherProfileMapper", "BizTeachingTaskMapper", "BizWorkloadCategoryDictMapper", "BizPayRateMapper", "BizPayRecordMapper", "BizAllowanceItemMapper", "BizRoleAssignmentMapper", "BizAuditLogMapper", "BizImportBatchMapper", "BizImportRowMapper")) {
+        for (String name : List.of("BizWorkloadItemMapper", "BizWlTheoryMapper", "BizWlPracticeMapper", "BizWlInternshipTrainingMapper", "BizWlCourseDesignMapper", "BizWlThesisMapper", "BizWlConcentratedInternshipMapper", "BizWlManagementMapper", "BizWorkloadSummaryMapper", "BizWorkloadSettlementSnapshotMapper", "BizCoefficientAdjustmentMapper", "BizWorkloadCalcSnapshotMapper", "BizTeacherProfileMapper", "BizTeachingTaskMapper", "BizWorkloadCategoryDictMapper", "BizPayRateMapper", "BizPayRecordMapper", "BizAllowanceItemMapper", "BizRoleAssignmentMapper", "BizAuditLogMapper", "BizImportBatchMapper", "BizImportRowMapper")) {
             String resource = "mapper/system/" + name + ".xml";
             try (var in = getClass().getClassLoader().getResourceAsStream(resource)) { new XMLMapperBuilder(in, config, resource, config.getSqlFragments()).parse(); }
         }
@@ -84,6 +88,7 @@ class WorkloadMysqlFixture implements AutoCloseable {
                 .thenAnswer(i -> RuleResolution.fallback(i.getArgument(0),i.getArgument(1),i.getArgument(2),i.getArgument(3),"NO_EFFECTIVE_RULE"));
         beans.put(RuleParamService.class, rules);
         beans.put(SemesterCalendar.class, new SemesterCalendar());
+        beans.put(SettlementScope.class,new SettlementScope());
         beans.put(ComplianceChecker.class, wire(new ComplianceChecker()));
         TheoryCalcStrategy strategy = wire(new TheoryCalcStrategy());
         CalcStrategyFactory factory = new CalcStrategyFactory();

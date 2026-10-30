@@ -259,7 +259,7 @@ public class WorkloadCalcServiceImpl implements WorkloadCalcService
         // recalcSummary/recalcPay 为跨 Bean 调用，其 @Transactional(REQUIRED) 加入本事务
         int itemCount = recalcItems(userId, semester);
         BizWorkloadSummary summary = summaryCalcService.recalcSummary(userId, semester, true);
-        BizPayRecord payRecord = payCalcService.recalcPay(userId, semester);
+        BizPayRecord payRecord = payCalcService.currentPay(userId, semester);
         Map<String, Object> data = new HashMap<>();
         data.put("recalcItemCount", itemCount);
         data.put("summary", summary);
@@ -362,7 +362,7 @@ public class WorkloadCalcServiceImpl implements WorkloadCalcService
         result.addStage(CalculationRunResult.STAGE_RECALC_SUMMARY, true, 1, "已重算汇总");
 
         // 阶段 5：重算酬金（落库）
-        BizPayRecord payRecord = payCalcService.recalcPay(userId, semester);
+        BizPayRecord payRecord = payCalcService.currentPay(userId, semester);
         result.setPayRecord(payRecord);
         result.addStage(CalculationRunResult.STAGE_RECALC_PAY, true, 1, "已重算酬金");
 

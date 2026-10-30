@@ -454,15 +454,27 @@
         </template>
       </el-table-column>
       <el-table-column
-        label="核算状态"
+        label="核算 / 结算依据"
         align="center"
-        width="105"
+        width="145"
       >
         <template #default="scope">
           <biz-tag
             :value="scope.row.needsRecalculation"
             :map="recalculationMap"
           />
+          <el-tooltip
+            :content="settlementHint(scope.row)"
+            placement="top"
+          >
+            <el-tag
+              :type="settlementTagType(scope.row)"
+              size="small"
+              class="mt5"
+            >
+              {{ settlementLabel(scope.row) }}
+            </el-tag>
+          </el-tooltip>
         </template>
       </el-table-column>
       <el-table-column
@@ -489,7 +501,7 @@
             link
             type="success"
             icon="Promotion"
-            :disabled="scope.row.needsRecalculation === 1"
+            :disabled="scope.row.needsRecalculation === 1 || settlementSubmitBlocked(scope.row)"
             @click="handleSubmit(scope.row)"
           >
             提交
@@ -512,7 +524,7 @@
               link
               type="success"
               icon="Promotion"
-              :disabled="scope.row.needsRecalculation === 1"
+              :disabled="scope.row.needsRecalculation === 1 || settlementSubmitBlocked(scope.row)"
               @click="handleSubmit(scope.row)"
             >
               提交
@@ -567,6 +579,7 @@
                     v-hasPermi="['system:workloadSummary:remove']"
                     command="delete"
                     icon="Delete"
+                    :disabled="!!scope.row.settlementSnapshotId"
                     divided
                   >
                     删除
@@ -594,6 +607,15 @@
       :size="detailDrawerSize"
     >
       <el-alert
+        v-if="detailRow"
+        :title="settlementLabel(detailRow)"
+        :description="settlementHint(detailRow)"
+        :type="settlementTagType(detailRow)"
+        show-icon
+        :closable="false"
+        class="mb8"
+      />
+      <el-alert
         v-if="detailRow?.needsRecalculation === 1"
         title="来源数据已变化，请由教务重新核算汇总后再提交审核。"
         type="warning"
@@ -616,6 +638,15 @@
         </el-descriptions-item>
         <el-descriptions-item label="职称快照">
           {{ detailRow.title || '-' }}
+        </el-descriptions-item>
+        <el-descriptions-item label="结算快照">
+          {{ detailRow.settlementSnapshotId ?? '历史依据缺失' }}
+        </el-descriptions-item>
+        <el-descriptions-item label="人员性质快照">
+          {{ detailRow.teacherNature || '历史字段缺失' }}
+        </el-descriptions-item>
+        <el-descriptions-item label="绩效封顶值快照">
+          {{ detailRow.workloadCap ?? '历史阈值缺失' }}
         </el-descriptions-item>
         <el-descriptions-item label="单位酬金快照">
           {{ detailRow.payRate ?? '-' }} 元
@@ -721,6 +752,15 @@
         </el-form-item>
       </el-form>
       <template v-if="previewData">
+        <el-alert
+          v-if="previewData.summary?.settlementEvidenceStatus === 'PREVIEW_INELIGIBLE'"
+          title="本次预览未满足绩效结算条件"
+          :description="previewData.summary.eligibilityReason"
+          type="warning"
+          show-icon
+          :closable="false"
+          class="mb12"
+        />
         <el-alert
           v-if="previewData.unconfirmedCount > 0"
           type="warning"
@@ -926,6 +966,7 @@
 
 <script setup name="WorkloadSummary">
 import TeacherOverview from '@/components/TeacherOverview'
+import { settlementLabel, settlementTagType, settlementHint, settlementSubmitBlocked } from '@/utils/settlementEvidence'
 import { listWorkloadSummary, delWorkloadSummary } from '@/api/system/workloadSummary'
 import { recalcSummary, previewSummary, genG11, runCalc, runCalcBatch } from '@/api/system/calc'
 import { exportPersonalWorkload, exportPaySummary, exportAttachment1, exportAttachment1Batch } from '@/api/system/export'
@@ -1429,6 +1470,10 @@ function handleSubmit(row) {
     proxy.$modal.msgWarning('来源数据已变化，请先重新核算汇总')
     return
   }
+  if (settlementSubmitBlocked(row)) {
+    proxy.$modal.msgWarning(settlementHint(row))
+    return
+  }
   proxy.$modal.confirm(`确认提交「${userLabel(row.userId)}」${row.semester} 的工作量汇总审核？`).then(() => {
     return auditSubmit(row.id)
   }).then(() => {
@@ -1487,9 +1532,16 @@ function handleMoreCmd(cmd, row) {
 function handleBatchSubmit() {
   proxy.$modal.confirm(`确认批量提交选中的 ${ids.value.length} 条汇总记录审核？`).then(() => {
     return auditBatchSubmit(ids.value)
-  }).then(() => {
+  }).then((res) => {
     getList()
-    proxy.$modal.msgSuccess('批量提交成功')
+    const receipt = res.data || {}
+    const message = `已提交 ${receipt.successCount ?? 0} 条，失败 ${receipt.failCount ?? 0} 条`
+    if (receipt.failCount > 0) {
+      const reasons = (receipt.failDetails || []).map(item => `汇总 ${item.id}：${item.reason}`).join('；')
+      proxy.$modal.alertWarning(`${message}。${reasons}`)
+    } else {
+      proxy.$modal.msgSuccess(message)
+    }
   }).catch(() => {})
 }
 

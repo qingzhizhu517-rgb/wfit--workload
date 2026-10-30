@@ -1,0 +1,919 @@
+{
+  "verified_date": "2026-10-30",
+  "base_commit": "0cb44d3",
+  "scope": "T05 C技术实现及隔离验收；正式启用学期未指定",
+  "regular_tests": 739,
+  "mysql_tests": 164,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "mysql_breakdown": {
+    "SettlementSnapshotIT": 61,
+    "FactorProvenanceIT": 57,
+    "SnapshotIntegrityIT": 15,
+    "SourceChangeConsistencyIT": 11,
+    "CoefficientApprovalTransactionIT": 14,
+    "WorkloadConcurrencyIT": 6
+  },
+  "reviews": {
+    "spec": "PASS after complete-tree, deactivation/pointer, lock-order and presentation fixes",
+    "quality": "PASS after deletion lifecycle and missing primitive/creator fields fixes",
+    "overview_followup": "PASS for null cap shared gauge; actual browser then confirmed",
+    "reviewers_ran_maven": false
+  },
+  "formal_start_semester": null,
+  "runtime_qa_semesters": [
+    "2097-2098-1",
+    "2097-2098-2"
+  ],
+  "mode": "ISOLATED_VERIFICATION_ONLY",
+  "server": {
+    "database": "127.0.0.1:13306/wfit_ui_20261028",
+    "mysql_version": "9.0.1",
+    "backend_port": 18084,
+    "frontend_port": 13000,
+    "redis_port": 16379,
+    "redis_database": 2,
+    "jvm_timezone": "Asia/Tokyo",
+    "qa_backend_frontend_stopped": true
+  },
+  "logs": [
+    {
+      "name": "03-behavior-red.log",
+      "sha256": "af091b42f4165ec28c8288d0e64c341833f2d5a2f90624e1d32a13a294dc9768"
+    },
+    {
+      "name": "09-strict-source-red.log",
+      "sha256": "029036e4c6dff57f2cef966dbbd4d0508584e2787c80e133405ae3b284b348ae"
+    },
+    {
+      "name": "14-expanded-it.log",
+      "sha256": "d3d19e5a3f4b98ea041091325d0c31ce27ab6379ef7342ef2a1155971e3577b6"
+    },
+    {
+      "name": "19-cap-red.log",
+      "sha256": "8ce61c1144384ae7d2fa94c00f02af5ff99ce72e1571ac6d847de307517a6707"
+    },
+    {
+      "name": "20-scope-display-red.log",
+      "sha256": "13cd392c7298203827c1501459123d1228f5ddc6d9efaca9aeebf13aed9f8a5f"
+    },
+    {
+      "name": "22-format-shape-red.log",
+      "sha256": "af4cde8b791d064c605b8617f57c73242b9002c55eb1e436130e20b5b3b77f30"
+    },
+    {
+      "name": "25-review-tree-red.log",
+      "sha256": "b9850577a8e7a329e295072915042019dda6e7700222f7a285f65bdeecffb115"
+    },
+    {
+      "name": "26-review-scope-export-red.log",
+      "sha256": "8c2002ae83079c254fd0d3638bd0c9cb0b1829bec9018b0a4558dc1c7f373edb"
+    },
+    {
+      "name": "29-review-lock-order-red.log",
+      "sha256": "f2e80586ca6e04b6dd7cccdebe1b7193828d08bf10fe649139405579d6c2c7d9"
+    },
+    {
+      "name": "32-review-boolean-red.log",
+      "sha256": "215d985632500e91a7ea9ae00b530f325ade11c96d844f07b40d3bfeee5053af"
+    },
+    {
+      "name": "33-review-delete-red.log",
+      "sha256": "0ce28b80298cad2828bd9e2024d132ad12719ffd6d7738f83edaf3250d208018"
+    },
+    {
+      "name": "34-lifecycle-full-final.log",
+      "sha256": "d8011742f536ce5923f3020b4e03a9fd655e8a282a2305a3dad3adcf2a003bd8"
+    },
+    {
+      "name": "35-lifecycle-all-mysql-final.log",
+      "sha256": "d2015a694ae5ecc8ecebde5de8a6069e8003b6c5028cfecbaf3bbe996d6dbdb7"
+    },
+    {
+      "name": "package-final.log",
+      "sha256": "b0e4846535085480b541ceda97f802800340786a2222088ec6ffe73927cbb750"
+    },
+    {
+      "name": "http-final.log",
+      "sha256": "5eac1bf253163500b79beefa05d2e06368c4063b44b470059a66aa18a8f08606"
+    }
+  ],
+  "frontend": {
+    "node": "24.16.0",
+    "npm": "11.13.0",
+    "business_regression_tests": 4,
+    "tooling_tests": 5,
+    "build": "PASS",
+    "lint_new": 0,
+    "lint_removed": 15,
+    "full_lint_errors": 3246,
+    "full_lint_warnings": 86,
+    "full_lint_passed": false,
+    "logs": [
+      {
+        "name": "wfit-t05-settlement-front-unit-final2.log",
+        "sha256": "f56f6687b92c2eb34c24553483c04ca6a2ef7ddd4572a15e9c823008004de9e8"
+      },
+      {
+        "name": "wfit-t05-settlement-front-tooling-final2.log",
+        "sha256": "98c82875ff43181a7d68aa33acf1ef71a5171f21a2fe72eb80dd1277cc418b05"
+      },
+      {
+        "name": "wfit-t05-settlement-front-lint-overview.log",
+        "sha256": "c87eae13f27e7bf91d6f83277a881d6f820b7fb9972ce353c3a9148963693d44"
+      },
+      {
+        "name": "wfit-t05-settlement-front-build-final2.log",
+        "sha256": "c39dc58e7815846395814dfdfd5c5d8e5a044569cb30b88f520841a85cc61c1f"
+      }
+    ]
+  },
+  "jar_sha256": "a7b04c3423100d1aedd3ec6aba8f194ffaf25ecdafc835974f6fc59b3c55656b",
+  "frontend_index_sha256": "a257105d8b8cf7e201818ee8608d942f4b50be68010da1575cee6aa9c5751f90",
+  "source_sha256": {
+    "front/RuoYi-Vue3/src/components/TeacherOverview/index.vue": "de2de484383dbb2866b7fa4a6be192ff0d3c1e18650a7d72a7feda5fa35324e9",
+    "front/RuoYi-Vue3/src/utils/settlementEvidence.js": "ec2cda3f230a57cac319de725ca0d4f0adb5d004784d4c39e69866cce04f88db",
+    "front/RuoYi-Vue3/src/views/dashboard/TeacherDashboard.vue": "85b1c2bb5afc225c63b6da049940d6dfcf4f0b235a2931102477b83b611f3fda",
+    "front/RuoYi-Vue3/src/views/system/payRecord/index.vue": "5890b5c48f8b53d5ee4c26a26c638b2fa8e4ca771f28fd020a5ffd0d3c751c9f",
+    "front/RuoYi-Vue3/src/views/system/workloadSummary/index.vue": "ecf3694219cd791107a65b903d5625dd8a448c24a2fefab908073d345338c6ea",
+    "rear/scripts/check-migrations.py": "c1c17a62d79c2104fdb6170fb06158ec10297df945f1bec87a5a2162ad06023e",
+    "rear/sql/01_biz_schema.sql": "bb1219fbe8f37985c79935cb12eadafb1815312aef7e4ea5ac55993c67a10e41",
+    "rear/sql/34_settlement_snapshot.sql": "1ce51db2a0684d288d072480817b98af826d50e0d4aa1bd6bd241672d814c6f4",
+    "rear/sql/MIGRATIONS.md": "4e21eb574d32a0ed33c52b576ff51aa9664082f061358a73b77474b30373f1b0",
+    "rear/workload-admin/src/main/resources/application.yml": "b9fe23faccacb5655db374d0f144dd32cf504615d8d0f0d6d3268bf0e34188e9",
+    "rear/workload-system/src/main/java/com/workload/system/calc/PayCalcService.java": "e987716bfe1079fa2f4a04bb77a94c58bf55106f6e56038acf532e170dcfb095",
+    "rear/workload-system/src/main/java/com/workload/system/calc/PayCalcServiceImpl.java": "fd0e14e4f3fa0c62c563c07dfd3746664626e43187d79bd83497992662d4df1e",
+    "rear/workload-system/src/main/java/com/workload/system/calc/SettlementEvidence.java": "4d37e008f0ba2c47cfde88d0ecd802f729e3808d5fd662afaee9dc8f834712cb",
+    "rear/workload-system/src/main/java/com/workload/system/calc/SettlementScope.java": "0145e0a58b2729abb2a19e0787cd73b2a425438a61ba2e2fbc3890ba2beae27e",
+    "rear/workload-system/src/main/java/com/workload/system/calc/SettlementSnapshotService.java": "6b1760e5bb6b3e7fd3fdc0e304ec6449903ca53be987597cb49d9fa7e7b20db5",
+    "rear/workload-system/src/main/java/com/workload/system/calc/SummaryCalcServiceImpl.java": "04d0a07ce61b74673fbcd650cf8c8645b08f5df94c62a7b327316f4807af0f4a",
+    "rear/workload-system/src/main/java/com/workload/system/calc/WorkloadCalcServiceImpl.java": "bcb472d9c8ca518b02091438efb9bad7eb448efa43929e3eafa702c202db3dc4",
+    "rear/workload-system/src/main/java/com/workload/system/controller/BizDashboardController.java": "f26f5fad3589f346d1eed91c1ee94629b9a39214766cea784ca1f14fd477eac7",
+    "rear/workload-system/src/main/java/com/workload/system/controller/BizExportController.java": "dc59a0e47a7f13dce4e24f85549f2cbc21a3b3dcab4f254754c688f1b33d6875",
+    "rear/workload-system/src/main/java/com/workload/system/controller/BizWorkloadSummaryController.java": "66a96df268c59cc68cfe82434f51aba8d8e0bd212743190a32d16091b37e3ab1",
+    "rear/workload-system/src/main/java/com/workload/system/domain/BizPayRecord.java": "802568e431e715991f0a9468fcf1040a6d7c770783832da63712f7a7bc902b1b",
+    "rear/workload-system/src/main/java/com/workload/system/domain/BizWorkloadSettlementSnapshot.java": "1afbe97f2205a275957c56b17d8aa908bc1029f64cb68c01554ce0bdb141a5da",
+    "rear/workload-system/src/main/java/com/workload/system/domain/BizWorkloadSummary.java": "202eda18f890848cbecd8d52bb594a7141474e98880aba153f16c70f5025a9c9",
+    "rear/workload-system/src/main/java/com/workload/system/domain/dto/PaySummaryExportDTO.java": "f3ec8fc29992eb28708eec33aa8fd4cfbb45737302dc7be8868e84cf5afb2702",
+    "rear/workload-system/src/main/java/com/workload/system/mapper/BizPayRecordMapper.java": "98263dccd85e5954cabe60043617db74feeb5ebedca0f35e2dff56dc0222c5cb",
+    "rear/workload-system/src/main/java/com/workload/system/mapper/BizWorkloadCalcSnapshotMapper.java": "1ac62c631bc8d6a9388d45977c2509294016d72582531d68278f19fca891d01e",
+    "rear/workload-system/src/main/java/com/workload/system/mapper/BizWorkloadSettlementSnapshotMapper.java": "f081dd08efc47b24c64cd00bb077c424f43f3fdf2b49d8dbb6d3077501a998fe",
+    "rear/workload-system/src/main/java/com/workload/system/mapper/BizWorkloadSummaryMapper.java": "eb85da0b4544dea146d05675d2581c7e3c98b9a76e5a0dbe6392307f40f9eeb6",
+    "rear/workload-system/src/main/java/com/workload/system/service/impl/BizAllowanceItemServiceImpl.java": "0a9a06fc8f55d76b238c3aaa165e1a14513ec0cede31eefc5f63551a69634c7d",
+    "rear/workload-system/src/main/java/com/workload/system/service/impl/BizAuditServiceImpl.java": "2af61412cd74364e406ff28a059c0c5f5679a48f3879aa1229c4558347647918",
+    "rear/workload-system/src/main/java/com/workload/system/service/impl/BizPayRecordServiceImpl.java": "340f7d3e0ca6936458b43e070942a4dedbbcdc5a5a4d07cd568fcea95c50bdc8",
+    "rear/workload-system/src/main/java/com/workload/system/service/impl/BizTeacherProfileServiceImpl.java": "0d27f92628b4988f1b5ca44d50fe71cddc01d1dcca978868336a7bc357f708c6",
+    "rear/workload-system/src/main/java/com/workload/system/service/impl/BizWorkloadSummaryServiceImpl.java": "8c0dca23ba55ed5ca3eb0dce186b14eaf566a45d82610c2f4459c26b6caa682c",
+    "rear/workload-system/src/main/java/com/workload/system/service/impl/TeacherProfileImportServiceImpl.java": "72be7d26db9976a40c17854cfb1214005132dc94cd025ea693881e6e2fc26514",
+    "rear/workload-system/src/main/resources/mapper/system/BizExportMapper.xml": "2368832d3e76c13f91e9476dbbdeec7aa0d8c3259b6b4497f5bcdc92f526ba95",
+    "rear/workload-system/src/main/resources/mapper/system/BizPayRecordMapper.xml": "f1d1fa0a00b5bca08de628e24dd3c72a8e0247be81bb95b60d53441cf387b49b",
+    "rear/workload-system/src/main/resources/mapper/system/BizWorkloadCalcSnapshotMapper.xml": "09f310d521d912fe81e9d638ea67d9d50efce580d934580177bf7e687e0e2767",
+    "rear/workload-system/src/main/resources/mapper/system/BizWorkloadSettlementSnapshotMapper.xml": "e05b53446d223f0855d5bcf35bbc54bece722fcdf1a16e1bac46d4164fe30352",
+    "rear/workload-system/src/main/resources/mapper/system/BizWorkloadSummaryMapper.xml": "7a8258c3428034f510fa1d3a9c0bba8673733d474e390dded891280311a82af0",
+    "rear/workload-system/src/test/java/com/workload/system/calc/SettlementEvidenceTest.java": "9b3de6e612b8291f43ee878291bbe17155854d1acc97a298ac80b85ddf5decf1",
+    "rear/workload-system/src/test/java/com/workload/system/calc/SettlementPresentationTest.java": "c619e8a64327dbad3e2c4bf5dac5b394adb1a34e7cf265f4efe4a6da5043469e",
+    "rear/workload-system/src/test/java/com/workload/system/calc/SettlementTestData.java": "6c11f39588bf7f2a015dbd1a2042577680ba5765b46562e5b54e3fcefc09a60d",
+    "rear/workload-system/src/test/java/com/workload/system/calc/SettlementTreeCompletenessTest.java": "b9582b6fb8589190cba8e639ab7c351c0bc6562ec89929dfd2ffebada6407ff8",
+    "rear/workload-system/src/test/java/com/workload/system/calc/SummaryCalcServiceImplTest.java": "9999cb472f567292f54d3f6d33c88714afe79e5d7dd117ff3918018cb218dac6",
+    "rear/workload-system/src/test/java/com/workload/system/calc/WorkloadCalcServiceImplTest.java": "8be12cb6dcdf321921043178f96d223ad39a15ee0bf6798e70ecf7be68c78843",
+    "rear/workload-system/src/test/java/com/workload/system/controller/BizExportControllerTest.java": "9e10edbd33b4c914bdb5e2b804fffc27e77ef2621ad6ca6f255443f8249ffc40",
+    "rear/workload-system/src/test/java/com/workload/system/controller/SemesterCapPresentationTest.java": "fa8e3e3a306b2878fb0fc23735f0139a01abb916e8283d0b38a1db3444f6a5e4",
+    "rear/workload-system/src/test/java/com/workload/system/integration/SettlementSnapshotIT.java": "3cc8b0e36561fb7ad52852212e6b47b9bd3dc2ed6c9159452f14a9822be72b14",
+    "rear/workload-system/src/test/java/com/workload/system/integration/WorkloadMysqlFixture.java": "b552af644204c675c09a017d1c4855cff24bf0580866d1903850b4e2f35ee0ac"
+  },
+  "migration_proof": "34迁移演练证据.json",
+  "original_43_files_unchanged": true,
+  "original_database_tested_or_migrated": false,
+  "http": {
+    "date": "2026-10-30",
+    "db": "127.0.0.1:13306/wfit_ui_20261028",
+    "mode": "ISOLATED_VERIFICATION_ONLY",
+    "formal_start_semester": null,
+    "semesters": [
+      "2097-2098-1",
+      "2097-2098-2"
+    ],
+    "finished_summary_id": 110,
+    "stale_summary_id": 111,
+    "first_snapshot_id": 1,
+    "latest_finished_snapshot_id": 3,
+    "saved_summary_hash": "291ff57750e74889bd08c16a491e16a31ee5a62e85384af42f103638c7adfb6b",
+    "first_performance": 170,
+    "first_total_pay": 208,
+    "source_mutation_independent": true,
+    "unknown_nature_and_missing_rate_rejected": true,
+    "preview_readonly": true,
+    "allowance_stale_then_independent_pay": true,
+    "one_run_one_version": true,
+    "protected_deletes_rejected": true,
+    "pending_pointer_clear_rejected_code": 50017,
+    "finished_permanent_lock": true,
+    "legacy_finished_unchanged": {
+      "biz_workload_summary": {
+        "rows": 1,
+        "sha256": "944f8d05c2fba63e42765d7e8de09d41e8990811ccb9264fa4bf8573940983ec"
+      },
+      "biz_pay_record": {
+        "rows": 1,
+        "sha256": "a014c4ebf0871bca469235848dc58648accccac47b4523a00edd1d60520ae176"
+      },
+      "biz_workload_item": {
+        "rows": 1,
+        "sha256": "f0e7ea81ef62cdd093048ae849a4e82a81e40680892e6f8952906a7b18b73694"
+      },
+      "biz_workload_calc_snapshot": {
+        "rows": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "biz_audit_log": {
+        "rows": 5,
+        "sha256": "b171d6fa78aca37b8766f4d4fee041856b3dad52b536cb91736e5ee97f0be8ec"
+      }
+    },
+    "legacy_status": "HISTORICAL_MISSING",
+    "exports": [
+      {
+        "semester": "2097-2098-1",
+        "sha256": "87e19e11cdded3b5b8b5bd76a7386d23c1f00c2354550b4b711399f18ff34043",
+        "historical_missing_explicit": false
+      },
+      {
+        "semester": "2026-2027-2",
+        "sha256": "4fcf61d0f7ae47689ec08294335d25c8b9af01142a7acfcd8f2e64755297470a",
+        "historical_missing_explicit": true
+      }
+    ],
+    "checked_requests": 48,
+    "records": [
+      {
+        "path": "/system/calc/preview?userId=1003&semester=2097-2098-1",
+        "method": "GET",
+        "actor": "admin_test",
+        "fields": [],
+        "code": 200,
+        "message": "操作成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/workloadRule",
+        "method": "POST",
+        "actor": "admin_test",
+        "fields": [
+          "effectiveFrom",
+          "effectiveTo",
+          "ruleCode",
+          "ruleDesc",
+          "ruleValue",
+          "status"
+        ],
+        "code": 200,
+        "message": "操作成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/workloadRule/list?ruleCode=RATED_WORKLOAD&pageSize=100",
+        "method": "GET",
+        "actor": "admin_test",
+        "fields": [],
+        "code": 200,
+        "message": "查询成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/workloadRule",
+        "method": "POST",
+        "actor": "admin_test",
+        "fields": [
+          "effectiveFrom",
+          "effectiveTo",
+          "ruleCode",
+          "ruleDesc",
+          "ruleValue",
+          "status"
+        ],
+        "code": 200,
+        "message": "操作成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/workloadRule/list?ruleCode=CAP_200PCT&pageSize=100",
+        "method": "GET",
+        "actor": "admin_test",
+        "fields": [],
+        "code": 200,
+        "message": "查询成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/payRate",
+        "method": "POST",
+        "actor": "admin_test",
+        "fields": [
+          "effectiveFrom",
+          "effectiveTo",
+          "rate",
+          "remark",
+          "status",
+          "title"
+        ],
+        "code": 200,
+        "message": "操作成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/payRate/list?title=%E8%AE%B2%E5%B8%88&pageSize=100",
+        "method": "GET",
+        "actor": "admin_test",
+        "fields": [],
+        "code": 200,
+        "message": "查询成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/calc/run",
+        "method": "POST",
+        "actor": "admin_test",
+        "fields": [
+          "includeG11",
+          "semester",
+          "userId"
+        ],
+        "code": 200,
+        "message": "操作成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/workloadSummary/list?userId=1003&semester=2097-2098-1",
+        "method": "GET",
+        "actor": "admin_test",
+        "fields": [],
+        "code": 200,
+        "message": "查询成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/payRecord/list?userId=1003&semester=2097-2098-1",
+        "method": "GET",
+        "actor": "admin_test",
+        "fields": [],
+        "code": 200,
+        "message": "查询成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/workloadSummary/110",
+        "method": "DELETE",
+        "actor": "admin_test",
+        "fields": [],
+        "code": 409,
+        "message": "已有结算证据的汇总或酬金记录禁止通用删除，请保留结算链",
+        "expected_code": 409
+      },
+      {
+        "path": "/system/payRecord/6",
+        "method": "DELETE",
+        "actor": "admin_test",
+        "fields": [],
+        "code": 409,
+        "message": "已有结算证据的汇总或酬金记录禁止通用删除，请保留结算链",
+        "expected_code": 409
+      },
+      {
+        "path": "/system/teacherProfile/1003",
+        "method": "GET",
+        "actor": "admin_test",
+        "fields": [],
+        "code": 200,
+        "message": "操作成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/workloadRule",
+        "method": "PUT",
+        "actor": "admin_test",
+        "fields": [
+          "id",
+          "ruleDesc",
+          "ruleValue"
+        ],
+        "code": 200,
+        "message": "操作成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/payRate",
+        "method": "PUT",
+        "actor": "admin_test",
+        "fields": [
+          "id",
+          "rate"
+        ],
+        "code": 200,
+        "message": "操作成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/teacherProfile",
+        "method": "PUT",
+        "actor": "admin_test",
+        "fields": [
+          "teacherNature",
+          "title",
+          "userId"
+        ],
+        "code": 200,
+        "message": "操作成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/workloadSummary/110",
+        "method": "GET",
+        "actor": "admin_test",
+        "fields": [],
+        "code": 200,
+        "message": "操作成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/calc/recalcPay?userId=1003&semester=2097-2098-1",
+        "method": "POST",
+        "actor": "admin_test",
+        "fields": [],
+        "code": 200,
+        "message": "操作成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/workloadSummary/110",
+        "method": "GET",
+        "actor": "admin_test",
+        "fields": [],
+        "code": 200,
+        "message": "操作成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/calc/recalcSummary?userId=1003&semester=2097-2098-1",
+        "method": "POST",
+        "actor": "admin_test",
+        "fields": [],
+        "code": 500,
+        "message": "人员性质不能确认专任绩效资格：行政",
+        "expected_code": null
+      },
+      {
+        "path": "/system/calc/preview?userId=1003&semester=2097-2098-1",
+        "method": "GET",
+        "actor": "admin_test",
+        "fields": [],
+        "code": 200,
+        "message": "操作成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/teacherProfile",
+        "method": "PUT",
+        "actor": "admin_test",
+        "fields": [
+          "deptId",
+          "enterpriseEvalResult",
+          "remark",
+          "specialStatus",
+          "specialStatusEnd",
+          "specialStatusStart",
+          "teacherNature",
+          "title",
+          "userId"
+        ],
+        "code": 200,
+        "message": "操作成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/payRate",
+        "method": "PUT",
+        "actor": "admin_test",
+        "fields": [
+          "effectiveFrom",
+          "effectiveTo",
+          "id",
+          "rate",
+          "remark",
+          "status",
+          "title"
+        ],
+        "code": 200,
+        "message": "操作成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/workloadRule",
+        "method": "PUT",
+        "actor": "admin_test",
+        "fields": [
+          "effectiveFrom",
+          "effectiveTo",
+          "id",
+          "ruleCode",
+          "ruleDesc",
+          "ruleValue",
+          "status"
+        ],
+        "code": 200,
+        "message": "操作成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/teacherProfile",
+        "method": "PUT",
+        "actor": "admin_test",
+        "fields": [
+          "teacherNature",
+          "title",
+          "userId"
+        ],
+        "code": 200,
+        "message": "操作成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/calc/recalcSummary?userId=1003&semester=2097-2098-1",
+        "method": "POST",
+        "actor": "admin_test",
+        "fields": [],
+        "code": 500,
+        "message": "专任绩效结算缺少当期职称费率，禁止完成结算",
+        "expected_code": null
+      },
+      {
+        "path": "/system/teacherProfile",
+        "method": "PUT",
+        "actor": "admin_test",
+        "fields": [
+          "deptId",
+          "enterpriseEvalResult",
+          "remark",
+          "specialStatus",
+          "specialStatusEnd",
+          "specialStatusStart",
+          "teacherNature",
+          "title",
+          "userId"
+        ],
+        "code": 200,
+        "message": "操作成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/workloadItem/611",
+        "method": "GET",
+        "actor": "admin_test",
+        "fields": [],
+        "code": 200,
+        "message": "操作成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/workloadItem/611/confirm",
+        "method": "POST",
+        "actor": "admin_test",
+        "fields": [
+          "expectedVersion",
+          "expectedWorkload"
+        ],
+        "code": 200,
+        "message": "操作成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/allowanceItem",
+        "method": "PUT",
+        "actor": "admin_test",
+        "fields": [
+          "amount",
+          "id"
+        ],
+        "code": 200,
+        "message": "操作成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/workloadSummary/110",
+        "method": "GET",
+        "actor": "admin_test",
+        "fields": [],
+        "code": 200,
+        "message": "操作成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/audit/submit?id=110",
+        "method": "POST",
+        "actor": "teacher_test",
+        "fields": [],
+        "code": 409,
+        "message": "其他酬金金额/来源已变化，请重新核算酬金",
+        "expected_code": null
+      },
+      {
+        "path": "/system/calc/recalcPay?userId=1003&semester=2097-2098-1",
+        "method": "POST",
+        "actor": "admin_test",
+        "fields": [],
+        "code": 200,
+        "message": "操作成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/workloadSummary/110",
+        "method": "GET",
+        "actor": "admin_test",
+        "fields": [],
+        "code": 200,
+        "message": "操作成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/audit/submit?id=110",
+        "method": "POST",
+        "actor": "teacher_test",
+        "fields": [],
+        "code": 200,
+        "message": "操作成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/audit/approve?id=110",
+        "method": "POST",
+        "actor": "jiaowu_test",
+        "fields": [],
+        "code": 50017,
+        "message": "计算快照完整性校验失败：汇总缺少结算证据，请重新核算",
+        "expected_code": 50017
+      },
+      {
+        "path": "/system/audit/teacherConfirm?id=110",
+        "method": "POST",
+        "actor": "teacher_test",
+        "fields": [],
+        "code": 200,
+        "message": "操作成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/audit/approve?id=110",
+        "method": "POST",
+        "actor": "jiaowu_test",
+        "fields": [],
+        "code": 200,
+        "message": "操作成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/calc/recalcSummary?userId=1003&semester=2097-2098-1",
+        "method": "POST",
+        "actor": "admin_test",
+        "fields": [],
+        "code": 500,
+        "message": "学期汇总已进入审批流程，数据已冻结",
+        "expected_code": null
+      },
+      {
+        "path": "/system/workloadItem",
+        "method": "POST",
+        "actor": "teacher_test",
+        "fields": [
+          "calculatedWorkload",
+          "courseName",
+          "description",
+          "itemType",
+          "semester",
+          "userId"
+        ],
+        "code": 200,
+        "message": "操作成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/workloadItem/list?userId=1003&semester=2097-2098-2",
+        "method": "GET",
+        "actor": "admin_test",
+        "fields": [],
+        "code": 200,
+        "message": "查询成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/allowanceItem",
+        "method": "POST",
+        "actor": "admin_test",
+        "fields": [
+          "amount",
+          "feeType",
+          "remark",
+          "semester",
+          "userId"
+        ],
+        "code": 200,
+        "message": "操作成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/calc/recalcSummary?userId=1003&semester=2097-2098-2",
+        "method": "POST",
+        "actor": "admin_test",
+        "fields": [],
+        "code": 200,
+        "message": "操作成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/workloadSummary/list?userId=1003&semester=2097-2098-2",
+        "method": "GET",
+        "actor": "admin_test",
+        "fields": [],
+        "code": 200,
+        "message": "查询成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/allowanceItem/list?userId=1003&semester=2097-2098-2",
+        "method": "GET",
+        "actor": "admin_test",
+        "fields": [],
+        "code": 200,
+        "message": "查询成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/allowanceItem",
+        "method": "PUT",
+        "actor": "admin_test",
+        "fields": [
+          "amount",
+          "id"
+        ],
+        "code": 200,
+        "message": "操作成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/workloadSummary/111",
+        "method": "GET",
+        "actor": "admin_test",
+        "fields": [],
+        "code": 200,
+        "message": "操作成功",
+        "expected_code": 200
+      },
+      {
+        "path": "/system/workloadSummary/106",
+        "method": "GET",
+        "actor": "admin_test",
+        "fields": [],
+        "code": 200,
+        "message": "操作成功",
+        "expected_code": 200
+      }
+    ]
+  },
+  "browser": {
+    "date": "2026-10-30",
+    "taskSpaceId": 3,
+    "resetFromMissingSpaceId": 2,
+    "checks": [
+      {
+        "name": "admin saved QA settlement",
+        "passed": true,
+        "viewport": [
+          1224,
+          726
+        ],
+        "text": "学期汇总详情\n隔离验收\n\n仅用于隔离验收，未指定正式启用学期。；明确专任；旧档案可能由历史默认产生，无法证明人工确认\n\n教师\t教师测试\t工号\tteacher_test\n学年学期\t2097-2098-1\t职称快照\t讲师\n结算快照\t3\t人员性质快照\t专任\n绩效封顶值快照\t20\t单位酬金快照\t17 元\nG7 第一课堂\t24.2\tG8 第二课堂\t0\nG9 其他\t0\tG10 教学合计\t24.2\nG11 管理服务\t0\t总工作量\t24.2\n额定工作量\t10\t超额工作量\t14.2\n绩效酬金\t170.00 元\t是否触顶\t\n是\n\n达标标准\t120\t是否达标\t\n未达标\n\n状态\t\n已完结\n\t教师确认\tteacher_test（2026-10-30）\n教务确认\tjiaowu_test（2026-10-30）\t锁定时间\t2026-10-30 16:18:49\n备注\t总工作量 24.2 超 CAP_200PCT=20，绩效酬金已按封顶值核算（第二十条）",
+        "screenshot": "01-隔离结算依据.png"
+      },
+      {
+        "name": "admin stale draft submit disabled",
+        "passed": true,
+        "buttons": [
+          {
+            "text": "提交",
+            "disabled": true
+          }
+        ]
+      },
+      {
+        "name": "stale detail reason",
+        "passed": true,
+        "text": "学期汇总详情\n需重新结算\n\n仅用于隔离验收，未指定正式启用学期。；明确专任；旧档案可能由历史默认产生，无法证明人工确认；其他酬金金额/来源已变化，请重新核算酬金\n\n教师\t教师测试\t工号\tteacher_test\n学年学期\t2097-2098-2\t职称快照\t讲师\n结算快照\t4\t人员性质快照\t专任\n绩效封顶值快照\t20\t单位酬金快照\t17 元\nG7 第一课堂\t0\tG8 第二课堂\t15\nG9 其他\t0\tG10 教学合计\t15\nG11 管理服务\t0\t总工作量\t15\n额定工作量\t10\t超额工作量\t5\n绩效酬金\t85.00 元\t是否触顶\t\n否\n\n达标标准\t120\t是否达标\t\n未达标\n\n状态\t\n填报中\n\t教师确认\t未确认\n教务确认\t未确认\t锁定时间\t未锁定\n备注\t-",
+        "screenshot": "02-失效结算提示.png"
+      },
+      {
+        "name": "pay stale evidence and protected delete",
+        "passed": true,
+        "text": "潍理工工作量管理系统\n首页\n系统管理\n系统监控\n系统工具\n若依官网\n工作量管理\n教师档案\n教学任务\n岗位任职\n数据导入\n工作量明细总表\n理论课明细(G1)\n课内实践明细(G2)\n实习实训明细(G3)\n课程设计明细(G4)\n毕业论文明细(G5)\n集中实习明细(G6)\n管理服务明细(G11)\n学期汇总\n酬金记录\n其他酬金\n我的工作量\n类别字典\n计算规则\n酬金标准\nG1理论课导入\nG2实践课导入\nG3实习实训导入\n系数调整申请\n首页\n/\n工作量管理\n/\n酬金记录\n管理员测试\n首页 酬金记录 \n刷新\n教师\n输入姓名或工号筛选\n学年学期\n状态\n请选择状态\n搜索\n重置\n编辑备注\n删除\n重算酬金\n导出\n\t\n教师\n\t\n工号\n\t\n学年学期\n\t\n课时/绩效酬金\n\t\n其他酬金合计\n\t\n总金额(元)\n\t\n状态\n\t\n结算依据\n\t\n备注\n\t\n操作\n\t\n教师测试\n\t\nteacher_test\n\t\n2097-2098-2\n\t\n85.00\n\t\n9.50\n\t\n95\n\t\n未发放\n\t\n需重新结算\n\t\n-\n\t\n酬金明细\n编辑备注\n删除\n共 1 条\n10条/页\n1\n前往\n页",
+        "deleteButtons": [
+          {
+            "disabled": true
+          },
+          {
+            "disabled": true
+          }
+        ],
+        "screenshot": "03-酬金依据与删除保护.png"
+      },
+      {
+        "name": "batch submit actual failure receipt",
+        "passed": true,
+        "text": "系统提示\n\n确认批量提交选中的 1 条汇总记录审核？\n\n取消\n确定\n系统提示\n\n已提交 0 条，失败 1 条。汇总 111：存在 1 条未核对或有异议的明细，请先由教务处理\n\n确定",
+        "screenshot": "04-批量提交真实回执.png"
+      },
+      {
+        "name": "legacy saved cap and nature missing",
+        "passed": true,
+        "text": "学期汇总详情\n历史依据缺失\n\n历史记录未保存结算证据，人员性质及具体封顶阈值未知；禁止按当前资料补造\n\n教师\t教师测试\t工号\tteacher_test\n学年学期\t2026-2027-2\t职称快照\t讲师\n结算快照\t历史依据缺失\t人员性质快照\t历史字段缺失\n绩效封顶值快照\t历史阈值缺失\t单位酬金快照\t50 元\nG7 第一课堂\t0\tG8 第二课堂\t20\nG9 其他\t0\tG10 教学合计\t20\nG11 管理服务\t0\t总工作量\t20\n额定工作量\t180\t超额工作量\t0\n绩效酬金\t0.00 元\t是否触顶\t\n否\n\n达标标准\t120\t是否达标\t\n未达标\n\n状态\t\n已完结\n\t教师确认\t未确认\n教务确认\tjiaowu_test（2026-10-29）\t锁定时间\t2026-10-29 10:39:59\n备注\tT03-reject",
+        "screenshot": "05-历史字段缺失.png"
+      },
+      {
+        "name": "teacher dashboard historical capped flag without invented threshold",
+        "passed": true,
+        "text": "潍理工工作量管理系统\n首页\n工作量管理\n首页\n/\n教师工作台\n教师测试\n首页 教师工作台 \n刷新\n教师测试 老师，您好\n\n当前学期：2026-2027-1 · 汇总更新于 2026-10-29 10:39\n\nteacher\n额定工作量：180 标准学时\n\n本学期承担课程\n0\n门\n共 20 标准学时\n已核算工作量\n20\n标准学时\n暂未超额\n预计超工作量绩效\n¥ 0.00\n已触顶（历史阈值缺失）\n20\n总工作量(学时)\n超额 0 ｜ 历史阈值缺失\n额定 180\n历史阈值缺失\n构成\n20\n第二课堂 G8 20\n0.00\n绩效酬金(元)\n触顶记录\n120\n基本教学量标准(学时)\n未达标\n基本教学量（三门理论课视同达标）\n近期工作量核算明细\n查看全部 >>\n类型\n\t\n来源\n\t\n核算学时(学时)\n\t\n状态\nG8 第二课堂\n\t\nT03角色验收\n\t\n20\n\t\n草稿\n快捷操作\n自主申报工作量\n查看学期汇总\n查看酬金记录\n导出个人工作量明细",
+        "viewport": [
+          1224,
+          726
+        ],
+        "gaugeLabels": [
+          "学期总工作量 20 学时，额定 180 学时，历史封顶阈值缺失"
+        ],
+        "invalidSvgGeometry": false,
+        "screenshot": "06-教师首页历史阈值缺失.png"
+      },
+      {
+        "name": "teacher ineligible preview and stale draft submit disabled",
+        "passed": true,
+        "text": "汇总预览（不落库）\n学年学期\n2097-2098-2\n预览\n本次预览未满足绩效结算条件\n\n人员性质不能确认专任绩效资格：行政\n\n注意：该教师本学期还有 1 条明细未核对确认，预览结果不含冻结口径\nG7 第一课堂\t0\tG8 第二课堂\t15\nG9 其他\t0\tG10 教学合计\t15\nG11 管理服务\t0\t总工作量\t15\n额定\t10\t超额\t5\n绩效酬金\t0.00 元\t是否达标\t\n未达标",
+        "buttons": [
+          {
+            "disabled": true
+          }
+        ],
+        "bodyOverflow": false,
+        "screenshot": "07-资格预览零金额与原因.png"
+      }
+    ],
+    "allPassed": true
+  },
+  "screenshots": [
+    {
+      "name": "01-隔离结算依据.png",
+      "sha256": "452effaf845aff565231a392390bb862f12b3438e113ca8edd76696b4cb22bb7"
+    },
+    {
+      "name": "02-失效结算提示.png",
+      "sha256": "a3ce9dd03a794741c349677c450544fbc3c578d4956d40e48eec314db9e70da2"
+    },
+    {
+      "name": "03-酬金依据与删除保护.png",
+      "sha256": "02edcd536f57aa3b8a29705b5d7f8cbfebe0bc9e3eeee1e04b8338e4d49d81c4"
+    },
+    {
+      "name": "04-批量提交真实回执.png",
+      "sha256": "eee958143394fa03967895c7086bf928053dd79cd82d8f41e202fabd4b28cd4d"
+    },
+    {
+      "name": "05-历史字段缺失.png",
+      "sha256": "cb6d660467a184a588c96b7c35b4386bfe49cef2b0f2753a4c09bd9561b04c99"
+    },
+    {
+      "name": "06-教师首页历史阈值缺失.png",
+      "sha256": "0fc4f6b3982483cb8eb72683dc4773f57a58f5e5ee9a547fec5aa7d1d5f6e100"
+    },
+    {
+      "name": "07-资格预览零金额与原因.png",
+      "sha256": "b2b71d228355faa523ed396d3e3c63e5df5882174763ff9c91e70990511e1509"
+    }
+  ],
+  "ui_fixture_restore": {
+    "restored": true,
+    "hashes": {
+      "biz_teacher_profile": "641ff68d430802ee3491b0d7793cb3c45c92b4d648b5934f18bc6a3881997c36",
+      "biz_workload_summary": "2ca594b1065ff640d699addb57500d7e3d309c31b210bd87949c41fc656fe64d"
+    }
+  },
+  "qa_notes": [
+    "截图实际视口1224x726；初始截图处于动画过程，最终文件等待稳定后重拍并逐张查看。",
+    "浏览器旧空间2丢失且inventory为空后，同名恢复为3；只使用新空间自建p1，已finish keep[]。",
+    "教师视图隐藏工号列，修正最初等待工号的测试条件，未因此改业务代码。",
+    "临时QA fixture将profile1003设行政、summary105设历史触顶标志，展示缺史和预览资格分支；两行完整原始hash均已恢复。",
+    "首次恢复脚本空字符串hex文字无效，MySQL语句拒绝；修正空串字面量后exact hash恢复。",
+    "共享TeacherOverview仍有540 fallback在真实浏览器被发现，已修并补构建/质量/实际页面复验。"
+  ],
+  "limitations": [
+    "正式启用学期待用户另行指定，当前未启用正式机制",
+    "MySQL8、空库、远程CI、全系统整链/容量/安全验收仍属后续任务",
+    "旧无证据记录不能恢复未知历史字段；旧专任是否曾默认无法人工确认",
+    "哈希不是防数据库root管理员重新签写的签名",
+    "本次浏览器为管理和教师相关汇总/酬金/首页，不是四角色全部页面验收"
+  ]
+}

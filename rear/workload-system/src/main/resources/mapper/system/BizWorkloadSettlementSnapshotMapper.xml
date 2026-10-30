@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.workload.system.mapper.BizWorkloadSettlementSnapshotMapper">
+ <resultMap id="snapshot" type="com.workload.system.domain.BizWorkloadSettlementSnapshot">
+  <result property="id" column="id"/>
+  <result property="summaryId" column="summary_id"/>
+  <result property="userId" column="user_id"/>
+  <result property="semester" column="semester"/>
+  <result property="settlementVersion" column="settlement_version"/>
+  <result property="formatVersion" column="format_version"/>
+  <result property="payloadJson" column="payload_json"/>
+  <result property="hash" column="hash"/>
+  <result property="createdBy" column="created_by"/>
+  <result property="createdAt" column="created_at"/>
+ </resultMap>
+ <insert id="insert" useGeneratedKeys="true" keyProperty="id">insert into biz_workload_settlement_snapshot(summary_id,user_id,semester,settlement_version,format_version,payload_json,hash,created_by,created_at) values(#{summaryId},#{userId},#{semester},#{settlementVersion},#{formatVersion},#{payloadJson},#{hash},#{createdBy},#{createdAt})</insert>
+ <select id="selectById" resultMap="snapshot" flushCache="true" useCache="false">select * from biz_workload_settlement_snapshot where id=#{id}</select>
+ <select id="selectMaxVersion" resultType="long" flushCache="true" useCache="false">select max(settlement_version) from biz_workload_settlement_snapshot where summary_id=#{summaryId}</select>
+ <select id="selectByIdCurrent" resultMap="snapshot" flushCache="true" useCache="false">select * from biz_workload_settlement_snapshot where id=#{id} for share</select>
+ <select id="selectMaxVersionCurrent" resultType="long" flushCache="true" useCache="false">select settlement_version from biz_workload_settlement_snapshot where summary_id=#{summaryId} order by settlement_version desc limit 1 for share</select>
+</mapper>

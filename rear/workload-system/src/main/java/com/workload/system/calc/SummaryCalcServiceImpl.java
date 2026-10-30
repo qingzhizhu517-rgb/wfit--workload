@@ -81,11 +81,17 @@ public class SummaryCalcServiceImpl implements SummaryCalcService
     @Autowired
     private BizRoleAssignmentMapper roleAssignmentMapper;
 
+    @Autowired private SettlementScope settlementScope = new SettlementScope();
+    @Autowired private SettlementSnapshotService settlementSnapshots;
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public BizWorkloadSummary recalcSummary(Long userId, String semester, boolean persist)
     {
         semesterCalendar.endOf(semester);
+        com.workload.system.calc.rule.CalculationPolicyContext evidenceContext = settlementScope.required(semester)
+            ? new com.workload.system.calc.rule.CalculationPolicyContext(semesterCalendar.endOf(semester),ruleParamService)
+                .withSelectionEvidence(com.workload.system.calc.rule.FactorProvenance.selection(semesterCalendar,semester)) : null;
         if (persist)
         {
             writeGuard.lockDraftOrAbsent(userId, semester);
@@ -98,6 +104,7 @@ public class SummaryCalcServiceImpl implements SummaryCalcService
         BizWorkloadSummary summary = persist
                 ? bizWorkloadSummaryMapper.selectByUserSemesterForUpdate(userId, semester)
                 : findSummary(userId, semester);
+        if(persist && settlementSnapshots!=null) settlementSnapshots.assertRecalculationBoundary(summary);
         if (persist && summary != null && WorkloadSummaryStatus.isWriteFrozen(summary.getStatus()))
         {
             throw new ServiceException("学期汇总已进入审批流程，禁止重算");
@@ -119,12 +126,12 @@ public class SummaryCalcServiceImpl implements SummaryCalcService
         BigDecimal g8 = sumOf(typeSum, "G8");
         BigDecimal g9 = sumOf(typeSum, "G9");
         BigDecimal g10 = g7.add(g8).add(g9);
-        BigDecimal g11Cap = ruleParamService.get("CAP_G11_SEMESTER", new BigDecimal("180"), semesterCalendar.endOf(semester));
+        BigDecimal g11Cap = rule(evidenceContext,"CAP_G11_SEMESTER", new BigDecimal("180"), semester);
         BigDecimal g11 = sumOf(typeSum, "G11").min(g11Cap);
         BigDecimal total = g10.add(g11);
 
-        BigDecimal rated = ruleParamService.get("RATED_WORKLOAD", new BigDecimal("180"), semesterCalendar.endOf(semester));
-        BigDecimal cap200 = ruleParamService.get("CAP_200PCT", new BigDecimal("540"), semesterCalendar.endOf(semester));
+        BigDecimal rated = rule(evidenceContext,"RATED_WORKLOAD", new BigDecimal("180"), semester);
+        BigDecimal cap200 = rule(evidenceContext,"CAP_200PCT", new BigDecimal("540"), semester);
 
         summary.setNeedsRecalculation(0);
         summary.setAcademicYear(deriveAcademicYear(semester));
@@ -141,22 +148,38 @@ public class SummaryCalcServiceImpl implements SummaryCalcService
         BizTeacherProfile profile = bizTeacherProfileMapper.selectBizTeacherProfileByUserId(userId);
         String title = profile == null ? null : profile.getTitle();
         String nature = profile == null ? "专任" : profile.getTeacherNature();
-        BigDecimal rate = findRate(title, semesterCalendar.endOf(semester));
+        BizPayRate rateRow = findRateRow(title, semesterCalendar.endOf(semester));
+        BigDecimal rate = rateRow == null ? null : rateRow.getRate();
+        if (evidenceContext != null && persist && !SettlementEvidence.eligible(nature))
+            throw new ServiceException(SettlementEvidence.eligibility(nature));
+        if (evidenceContext != null && persist && SettlementEvidence.eligible(nature) && rate == null)
+            throw new ServiceException("专任绩效结算缺少当期职称费率，禁止完成结算");
         summary.setTitle(title);
         summary.setPayRate(rate);
 
         boolean capped = total.compareTo(cap200) > 0;
         BigDecimal performance = BigDecimal.ZERO;
-        if ((nature == null || "专任".equals(nature)) && rate != null && total.compareTo(rated) > 0)
+        if ((evidenceContext == null ? nature == null || "专任".equals(nature) : "专任".equals(nature)) && rate != null && total.compareTo(rated) > 0)
         {
-            performance = total.min(cap200).subtract(rated).multiply(rate);
+            performance = total.min(cap200).subtract(rated).max(BigDecimal.ZERO).multiply(rate);
         }
         summary.setPerformancePay(scale(performance));
         summary.setIsCapped(capped ? 1 : 0);
 
         // 3. 达标（第五条，展示用）；第六条「三门理论课视同完成」参与判定
         ComplianceChecker.Result compliance = complianceChecker.check(userId, semester, items);
-        applyBasicTeaching(summary, profile, g10, semester, compliance.isThreeTheoryCourses());
+        applyBasicTeaching(summary, profile, g10, semester, compliance.isThreeTheoryCourses(), evidenceContext);
+        summary.setWorkloadCap(cap200);
+        summary.setTeacherNature(nature);
+        summary.setEligibilityReason(SettlementEvidence.eligibility(nature));
+        summary.setSettlementRequired(evidenceContext != null);
+        summary.setSettlementMode(settlementScope.mode(semester));
+        summary.setSettlementSubmittable(false);
+        if(evidenceContext!=null && SettlementEvidence.eligible(nature) && rate==null){
+            summary.setSettlementEvidenceStatus("PREVIEW_INELIGIBLE");
+            summary.setEligibilityReason("专任绩效结算缺少当期职称费率，预览绩效暂为0；不可提交，请补齐费率后重新核算");
+        }
+        if (evidenceContext != null && !SettlementEvidence.eligible(nature)) summary.setSettlementEvidenceStatus("PREVIEW_INELIGIBLE");
 
         // 4. 截断与降级统一告警（2026-09-10 原则：静默截断 = 教师无声少拿钱）。
         //    制度性校验（第六/八/九/十条）+ G11 学期封顶 + 540 绩效封顶，
@@ -209,7 +232,13 @@ public class SummaryCalcServiceImpl implements SummaryCalcService
                 updateDraftSummary(summary);
             }
             // 汇总与酬金必须一起提交；下游失败时回滚新鲜度和全部金额。
-            payCalcService.recalcPay(userId, semester);
+            if (evidenceContext == null) payCalcService.recalcPay(userId, semester);
+            else {
+                SettlementEvidence.SummaryEvidence evidence=settlementSnapshots.summary(summary,profile,items,evidenceContext,rateRow,cap200,compliance.isThreeTheoryCourses(),warnings);
+                var pay=payCalcService.recalcPayWithEvidence(userId,semester,evidence);
+                summary.setSettlementSnapshotId(pay.getSettlementSnapshotId());
+                settlementSnapshots.decorate(summary);
+            }
         }
         return summary;
     }
@@ -261,9 +290,9 @@ public class SummaryCalcServiceImpl implements SummaryCalcService
      * 课程，三门课不包含实践类课程）」——独立完成无法从数据核验，按 G1 去重课程名≥3 判定
      */
     private void applyBasicTeaching(BizWorkloadSummary summary, BizTeacherProfile profile,
-            BigDecimal g10, String semester, boolean threeTheoryCourses)
+            BigDecimal g10, String semester, boolean threeTheoryCourses, com.workload.system.calc.rule.CalculationPolicyContext evidenceContext)
     {
-        BigDecimal annual = annualStandard(summary.getTitle(), semester);
+        BigDecimal annual = annualStandard(summary.getTitle(), semester, evidenceContext);
         BigDecimal standard = annual.divide(new BigDecimal("2"), 2, RoundingMode.HALF_UP);
         boolean deemedMet = false;
         if (profile != null && StringUtils.hasText(profile.getSpecialStatus())
@@ -273,10 +302,10 @@ public class SummaryCalcServiceImpl implements SummaryCalcService
             switch (profile.getSpecialStatus())
             {
                 case "产假":
-                    standard = standard.multiply(ruleParamService.get("FACTOR_MATERNITY", new BigDecimal("0.5"), semesterCalendar.endOf(semester)));
+                    standard = standard.multiply(rule(evidenceContext,"FACTOR_MATERNITY", new BigDecimal("0.5"), semester));
                     break;
                 case "在职读博":
-                    standard = ruleParamService.get("BASIC_TEACH_PHD", new BigDecimal("128"), semesterCalendar.endOf(semester))
+                    standard = rule(evidenceContext,"BASIC_TEACH_PHD", new BigDecimal("128"), semester)
                             .divide(new BigDecimal("2"), 2, RoundingMode.HALF_UP);
                     break;
                 case "访学":
@@ -325,7 +354,7 @@ public class SummaryCalcServiceImpl implements SummaryCalcService
     /**
      * 职称 -> 年度基本教学量规则值
      */
-    private BigDecimal annualStandard(String title, String semester)
+    private BigDecimal annualStandard(String title, String semester, com.workload.system.calc.rule.CalculationPolicyContext evidenceContext)
     {
         String ruleCode;
         if (title != null && title.contains("教授") && !title.contains("副"))
@@ -344,13 +373,13 @@ public class SummaryCalcServiceImpl implements SummaryCalcService
         {
             ruleCode = "BASIC_TEACH_ASSIST";
         }
-        return ruleParamService.get(ruleCode, new BigDecimal("192"), semesterCalendar.endOf(semester));
+        return rule(evidenceContext,ruleCode, new BigDecimal("192"), semester);
     }
 
     /**
      * 取职称在核算基准日生效的单位酬金；无职称或无费率返回 null
      */
-    private BigDecimal findRate(String title, LocalDate asOfDate)
+    private BizPayRate findRateRow(String title, LocalDate asOfDate)
     {
         if (!StringUtils.hasText(title))
         {
@@ -362,7 +391,11 @@ public class SummaryCalcServiceImpl implements SummaryCalcService
         List<BizPayRate> rates = bizPayRateMapper.selectBizPayRateList(query);
         BizPayRate selected = EffectiveDateResolver.select(rates, asOfDate,
                 BizPayRate::getEffectiveFrom, BizPayRate::getEffectiveTo, "职称费率 " + title);
-        return selected == null ? null : selected.getRate();
+        return selected;
+    }
+
+    private BigDecimal rule(com.workload.system.calc.rule.CalculationPolicyContext context,String code,BigDecimal fallback,String semester) {
+        return context==null ? ruleParamService.get(code,fallback,semesterCalendar.endOf(semester)) : context.value(code,fallback);
     }
 
     private BizWorkloadSummary findSummary(Long userId, String semester)

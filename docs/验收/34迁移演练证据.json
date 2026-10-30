@@ -1,0 +1,114 @@
+{
+  "date": "2026-10-30",
+  "host": "127.0.0.1",
+  "port": 13306,
+  "server_version": "9.0.1",
+  "migration": "34_settlement_snapshot.sql",
+  "migration_sha256": "1ce51db2a0684d288d072480817b98af826d50e0d4aa1bd6bd241672d814c6f4",
+  "schemas": [
+    {
+      "schema": "wfit_verify_20261025_150548",
+      "before": {
+        "biz_workload_summary": {
+          "rows": 4,
+          "sha256": "4a86fa765003512ef948a3992a5bfc8866cfac942d4c3865e3e54c7178399703"
+        },
+        "biz_pay_record": {
+          "rows": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      },
+      "rounds": [
+        {
+          "round": 1,
+          "original_columns_unchanged": true,
+          "tables": {
+            "biz_workload_summary": {
+              "rows": 4,
+              "sha256": "4a86fa765003512ef948a3992a5bfc8866cfac942d4c3865e3e54c7178399703"
+            },
+            "biz_pay_record": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            }
+          },
+          "settlement_rows": 0,
+          "unique_summary_version": true
+        },
+        {
+          "round": 2,
+          "original_columns_unchanged": true,
+          "tables": {
+            "biz_workload_summary": {
+              "rows": 4,
+              "sha256": "4a86fa765003512ef948a3992a5bfc8866cfac942d4c3865e3e54c7178399703"
+            },
+            "biz_pay_record": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            }
+          },
+          "settlement_rows": 0,
+          "unique_summary_version": true
+        }
+      ],
+      "readonly_checker_exit": 0,
+      "readonly_checker_output_sha256": "456b1fe9cfc6f64ba563c7c70b6dbcee333208740d6cf71f211896c0996eb0c7"
+    },
+    {
+      "schema": "wfit_ui_20261028",
+      "before": {
+        "biz_workload_summary": {
+          "rows": 9,
+          "sha256": "29c30ceea116e951c389d39f4296d1f19a4c7b31081ed9148790978ccb7ec2fe"
+        },
+        "biz_pay_record": {
+          "rows": 5,
+          "sha256": "090c63438e83215bb4823417d3b61b35b11a00290a89698e629d85eb50ec994c"
+        }
+      },
+      "rounds": [
+        {
+          "round": 1,
+          "original_columns_unchanged": true,
+          "tables": {
+            "biz_workload_summary": {
+              "rows": 9,
+              "sha256": "29c30ceea116e951c389d39f4296d1f19a4c7b31081ed9148790978ccb7ec2fe"
+            },
+            "biz_pay_record": {
+              "rows": 5,
+              "sha256": "090c63438e83215bb4823417d3b61b35b11a00290a89698e629d85eb50ec994c"
+            }
+          },
+          "settlement_rows": 0,
+          "unique_summary_version": true
+        },
+        {
+          "round": 2,
+          "original_columns_unchanged": true,
+          "tables": {
+            "biz_workload_summary": {
+              "rows": 9,
+              "sha256": "29c30ceea116e951c389d39f4296d1f19a4c7b31081ed9148790978ccb7ec2fe"
+            },
+            "biz_pay_record": {
+              "rows": 5,
+              "sha256": "090c63438e83215bb4823417d3b61b35b11a00290a89698e629d85eb50ec994c"
+            }
+          },
+          "settlement_rows": 0,
+          "unique_summary_version": true
+        }
+      ],
+      "readonly_checker_exit": 0,
+      "readonly_checker_output_sha256": "7431491ae02865174243a6bb7cf452854efc98dd5e6b7342338ab710bdb65699"
+    }
+  ],
+  "original_database_touched": false,
+  "new_columns": {
+    "biz_workload_summary": "settlement_snapshot_id",
+    "biz_pay_record": "settlement_snapshot_id"
+  },
+  "historical_backfill": false
+}

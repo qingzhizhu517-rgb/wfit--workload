@@ -155,6 +155,9 @@ xss:
 
 # 工作量系统 - 学期校历（G11 任职折算/特殊状态区间判定用，MM-dd）
 wl:
+  settlement:
+    formal-start-semester: ""
+    verification-semesters: []
   semester:
     autumn-start: 09-01
     autumn-end: 01-31

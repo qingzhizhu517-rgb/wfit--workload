@@ -259,7 +259,7 @@ class WorkloadCalcServiceImplTest
         // includeG11=true：G11 已在 GENERATE_G11 阶段重算，RECALC_ITEMS 只算非 G11
         doReturn(7).when(service).recalcNonG11Items(USER, SEMESTER);
         when(summaryCalcService.recalcSummary(USER, SEMESTER, true)).thenReturn(new BizWorkloadSummary());
-        when(payCalcService.recalcPay(USER, SEMESTER)).thenReturn(new BizPayRecord());
+        when(payCalcService.currentPay(USER, SEMESTER)).thenReturn(new BizPayRecord());
         when(summaryCalcService.countUnconfirmed(USER, SEMESTER)).thenReturn(0);
 
         CalculationRunResult result = service.run(new CalculationRunRequest(USER, SEMESTER, true));
@@ -282,7 +282,7 @@ class WorkloadCalcServiceImplTest
         when(itemMapper.selectBizWorkloadItemList(any())).thenReturn(Collections.emptyList());
         doReturn(3).when(service).recalcItems(USER, SEMESTER);
         when(summaryCalcService.recalcSummary(USER, SEMESTER, true)).thenReturn(new BizWorkloadSummary());
-        when(payCalcService.recalcPay(USER, SEMESTER)).thenReturn(new BizPayRecord());
+        when(payCalcService.currentPay(USER, SEMESTER)).thenReturn(new BizPayRecord());
         when(summaryCalcService.countUnconfirmed(USER, SEMESTER)).thenReturn(0);
 
         CalculationRunResult result = service.run(new CalculationRunRequest(USER, SEMESTER, false));

@@ -183,8 +183,7 @@ public class BizDashboardController extends BaseController
 
         stats.put("semester", semester);
         stats.put("hasSummary", !summaries.isEmpty());
-        stats.put("workloadCap", summaries.isEmpty() ? null : ruleParamService.get("CAP_200PCT",
-                new BigDecimal("540"), semesterCalendar.endOf(summaries.get(0).getSemester())));
+        stats.put("workloadCap", summaries.isEmpty() ? null : summaries.get(0).getWorkloadCap());
 
         // 申诉中明细数
         long appealCount = items.stream().filter(i -> i.getAppealStatus() != null && i.getAppealStatus() == 1).count();
@@ -226,6 +225,14 @@ public class BizDashboardController extends BaseController
         stats.put("basicTeachingMet", summary.getBasicTeachingMet() == null ? 0 : summary.getBasicTeachingMet());
         stats.put("remark", summary.getRemark());
         stats.put("updateTime", summary.getUpdateTime());
+        stats.put("settlementSnapshotId",summary.getSettlementSnapshotId());
+        stats.put("settlementEvidenceStatus",summary.getSettlementEvidenceStatus());
+        stats.put("settlementMode",summary.getSettlementMode());
+        stats.put("settlementRequired",summary.getSettlementRequired());
+        stats.put("settlementSubmittable",summary.getSettlementSubmittable());
+        stats.put("teacherNature",summary.getTeacherNature());
+        stats.put("eligibilityReason",summary.getEligibilityReason());
+        stats.put("settlementMissingReason",summary.getSettlementMissingReason());
     }
 
     private BigDecimal valueOrZero(BigDecimal value)

@@ -56,8 +56,6 @@ public class BizWorkloadSummaryController extends BaseController
         bizWorkloadSummary.setUserId(DataScopeUtil.resolveUserId(bizWorkloadSummary.getUserId()));
         startPage();
         List<BizWorkloadSummary> list = bizWorkloadSummaryService.selectBizWorkloadSummaryList(bizWorkloadSummary);
-        list.forEach(summary -> summary.setWorkloadCap(ruleParamService.get("CAP_200PCT",
-                new BigDecimal("540"), semesterCalendar.endOf(summary.getSemester()))));
         return getDataTable(list);
     }
 

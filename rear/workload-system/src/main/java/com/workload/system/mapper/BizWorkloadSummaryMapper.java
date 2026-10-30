@@ -12,6 +12,7 @@ import com.workload.system.domain.BizWorkloadSummary;
  */
 public interface BizWorkloadSummaryMapper
 {
+    int updateSettlementPointer(@org.apache.ibatis.annotations.Param("id") Long id, @org.apache.ibatis.annotations.Param("snapshotId") Long snapshotId);
     int lockPeriod(@Param("userId") Long userId, @Param("semester") String semester);
     int markNeedsRecalculation(@Param("userId") Long userId, @Param("semester") String semester);
 

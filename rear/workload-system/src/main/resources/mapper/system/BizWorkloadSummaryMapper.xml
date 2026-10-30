@@ -6,6 +6,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     
     <resultMap type="BizWorkloadSummary" id="BizWorkloadSummaryResult">
         <result property="needsRecalculation" column="needs_recalculation"/>
+        <result property="settlementSnapshotId" column="settlement_snapshot_id"/>
         <result property="id"    column="id"    />
         <result property="userId"    column="user_id"    />
         <result property="semester"    column="semester"    />
@@ -42,7 +43,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectBizWorkloadSummaryVo">
-        select id, user_id, semester, needs_recalculation, academic_year, G7, G8, G9, G10, G11, total_workload, rated_workload, excess_workload, g8_remark, g11_remark, title, pay_rate, performance_pay, is_capped, basic_teaching_standard, basic_teaching_met, status, teacher_sign, teacher_sign_time, dept_leader_sign, dept_leader_sign_time, academic_assistant_sign, academic_assistant_sign_time, lock_time, create_by, create_time, update_by, update_time, remark from biz_workload_summary
+        select settlement_snapshot_id, id, user_id, semester, needs_recalculation, academic_year, G7, G8, G9, G10, G11, total_workload, rated_workload, excess_workload, g8_remark, g11_remark, title, pay_rate, performance_pay, is_capped, basic_teaching_standard, basic_teaching_met, status, teacher_sign, teacher_sign_time, dept_leader_sign, dept_leader_sign_time, academic_assistant_sign, academic_assistant_sign_time, lock_time, create_by, create_time, update_by, update_time, remark from biz_workload_summary
     </sql>
 
     <select id="selectBizWorkloadSummaryList" parameterType="BizWorkloadSummary" resultMap="BizWorkloadSummaryResult">
@@ -316,4 +317,5 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         update biz_workload_summary set needs_recalculation=1, update_time=now()
         where user_id=#{userId} and semester=#{semester} and status=0
     </update>
+<update id="updateSettlementPointer">update biz_workload_summary set settlement_snapshot_id=#{snapshotId} where id=#{id}</update>
 </mapper>

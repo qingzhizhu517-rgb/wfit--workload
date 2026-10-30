@@ -11,6 +11,7 @@ import com.workload.system.domain.BizPayRecord;
  */
 public interface BizPayRecordMapper
 {
+    int updateSettlementPointer(@org.apache.ibatis.annotations.Param("id") Long id, @org.apache.ibatis.annotations.Param("snapshotId") Long snapshotId);
     /** 仅保存匹配的草稿汇总对应酬金，不回写流程状态。 */
     int updateIfSummaryDraft(@org.apache.ibatis.annotations.Param("record") BizPayRecord record);
 

@@ -61,7 +61,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             d.dept_name          as deptName,
             s.semester           as semester,
             s.title              as title,
-            pf.teacher_nature    as teacherNature,
+            s.id                 as summaryId,
+            null                 as teacherNature,
             s.total_workload     as totalWorkload,
             s.rated_workload     as ratedWorkload,
             s.excess_workload    as excessWorkload,
@@ -76,7 +77,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             left join biz_pay_record p on p.user_id = s.user_id and p.semester = s.semester
             left join sys_user u on u.user_id = s.user_id
             left join sys_dept d on d.dept_id = u.dept_id
-            left join biz_teacher_profile pf on pf.user_id = s.user_id
         where s.semester = #{semester}
         <if test="userId != null">
             and s.user_id = #{userId}

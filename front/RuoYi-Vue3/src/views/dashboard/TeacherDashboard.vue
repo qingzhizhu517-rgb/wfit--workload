@@ -121,7 +121,12 @@
                 type="warning"
                 size="small"
               >
-                已达上限 ({{ formatNumber(workloadCap) }}学时)
+                <template v-if="workloadCap !== null">
+                  已达上限 ({{ formatNumber(workloadCap) }}学时)
+                </template>
+                <template v-else>
+                  已触顶（历史阈值缺失）
+                </template>
               </el-tag>
             </template>
             <template v-else-if="stats.hasSummary">
@@ -289,7 +294,7 @@ import { useRouter } from 'vue-router'
 import { getTeacherStats } from '@/api/system/dashboard'
 import { listWorkloadItem } from '@/api/system/workloadItem'
 import { useDashboard } from '@/composable/useDashboard'
-import { workloadItemStatusMap, summaryStatusMap, itemTypeMap, SEMESTER_WORKLOAD_CAP, formatAmount, formatNumber, getCurrentSemester } from '@/utils/bizDict'
+import { workloadItemStatusMap, summaryStatusMap, itemTypeMap, formatAmount, formatNumber, getCurrentSemester } from '@/utils/bizDict'
 import useUserStore from '@/store/modules/user'
 
 const router = useRouter()
@@ -325,12 +330,13 @@ const stats = reactive({
   remark: '',
   updateTime: null,
   appealCount: 0,
-  workloadCap: SEMESTER_WORKLOAD_CAP
+  workloadCap: null
 })
 
 const workloadCap = computed(() => {
+  if (stats.workloadCap === null || stats.workloadCap === undefined || stats.workloadCap === '') return null
   const value = Number(stats.workloadCap)
-  return Number.isFinite(value) && value > 0 ? value : SEMESTER_WORKLOAD_CAP
+  return Number.isFinite(value) ? value : null
 })
 
 function goWorkloadSummary() {

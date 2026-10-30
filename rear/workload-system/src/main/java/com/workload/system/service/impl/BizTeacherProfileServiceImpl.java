@@ -76,6 +76,8 @@ public class BizTeacherProfileServiceImpl implements IBizTeacherProfileService
     @Override
     public int insertBizTeacherProfile(BizTeacherProfile bizTeacherProfile)
     {
+        if (!org.springframework.util.StringUtils.hasText(bizTeacherProfile.getTeacherNature()))
+            throw new ServiceException("新增教师档案必须明确填写人员性质，禁止默认专任");
         // 检查是否已存在该教师的业务档案
         BizTeacherProfile existing = bizTeacherProfileMapper.selectBizTeacherProfileByUserId(bizTeacherProfile.getUserId());
         if (existing != null)

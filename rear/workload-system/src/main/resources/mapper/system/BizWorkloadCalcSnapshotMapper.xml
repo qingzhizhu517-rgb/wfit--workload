@@ -39,11 +39,18 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where item_id = #{itemId} order by calculation_version desc limit 1 for update
     </select>
 
-    <select id="selectLatestByItemId" parameterType="Long" resultMap="BizWorkloadCalcSnapshotResult">
+    <select id="selectLatestByItemId" flushCache="true" useCache="false" parameterType="Long" resultMap="BizWorkloadCalcSnapshotResult">
         <include refid="selectBizWorkloadCalcSnapshotVo"/>
         where item_id = #{itemId}
         order by calculation_version desc
         limit 1
+    </select>
+
+    <select id="selectLatestByItemIdCurrent" flushCache="true" useCache="false" parameterType="Long" resultMap="BizWorkloadCalcSnapshotResult">
+        <include refid="selectBizWorkloadCalcSnapshotVo"/>
+        where item_id = #{itemId}
+        order by calculation_version desc
+        limit 1 for share
     </select>
 
     <select id="selectByItemId" parameterType="Long" resultMap="BizWorkloadCalcSnapshotResult">

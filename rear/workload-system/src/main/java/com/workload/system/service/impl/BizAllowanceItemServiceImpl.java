@@ -37,6 +37,7 @@ public class BizAllowanceItemServiceImpl implements IBizAllowanceItemService
 
     @Autowired
     private WorkloadWriteGuard writeGuard;
+    @Autowired private com.workload.system.calc.SettlementScope settlementScope=new com.workload.system.calc.SettlementScope();
     @Autowired private com.workload.system.calc.rule.RuleParamService ruleParamService;
     @Autowired private com.workload.system.calc.SemesterCalendar semesterCalendar=new com.workload.system.calc.SemesterCalendar();
 
@@ -84,7 +85,7 @@ public class BizAllowanceItemServiceImpl implements IBizAllowanceItemService
         int rows = bizAllowanceItemMapper.insertBizAllowanceItem(bizAllowanceItem);
         if(bizAllowanceItem.getCalculationEvidenceJson()!=null) com.workload.system.calc.allowance.AllowanceEvidence.bindInserted(bizAllowanceItem,bizAllowanceItemMapper.selectBizAllowanceItemById(bizAllowanceItem.getId()));
         bizAllowanceItemMapper.updateCalculationEvidence(bizAllowanceItem.getId(),bizAllowanceItem.getCalculationEvidenceJson());
-        writeGuard.markChanged(bizAllowanceItem.getUserId(), bizAllowanceItem.getSemester());
+        if(!settlementScope.required(bizAllowanceItem.getSemester())) writeGuard.markChanged(bizAllowanceItem.getUserId(), bizAllowanceItem.getSemester());
         return rows;
     }
 
@@ -115,7 +116,7 @@ public class BizAllowanceItemServiceImpl implements IBizAllowanceItemService
         int rows = requireWritten(bizAllowanceItemMapper.updateIfSummaryDraft(bizAllowanceItem));
         if(bizAllowanceItem.getCalculationEvidenceJson()!=null) com.workload.system.calc.allowance.AllowanceEvidence.bindInserted(bizAllowanceItem,bizAllowanceItemMapper.selectBizAllowanceItemById(bizAllowanceItem.getId()));
         bizAllowanceItemMapper.updateCalculationEvidence(bizAllowanceItem.getId(),bizAllowanceItem.getCalculationEvidenceJson());
-        writeGuard.markChanged(old.getUserId(), old.getSemester());
+        if(!settlementScope.required(old.getSemester())) writeGuard.markChanged(old.getUserId(), old.getSemester());
         return rows;
     }
 
@@ -159,7 +160,7 @@ public class BizAllowanceItemServiceImpl implements IBizAllowanceItemService
         writeGuard.lockDraftOrAbsent(old.getUserId(), old.getSemester());
         payCalcService.assertAllowanceEditable(old.getUserId(), old.getSemester());
         int rows = requireWritten(bizAllowanceItemMapper.deleteByIdIfSummaryDraft(id));
-        writeGuard.markChanged(old.getUserId(), old.getSemester());
+        if(!settlementScope.required(old.getSemester())) writeGuard.markChanged(old.getUserId(), old.getSemester());
         return rows;
     }
 

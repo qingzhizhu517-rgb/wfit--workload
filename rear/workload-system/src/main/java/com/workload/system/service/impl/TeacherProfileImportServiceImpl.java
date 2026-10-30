@@ -134,7 +134,8 @@ public class TeacherProfileImportServiceImpl implements ITeacherProfileImportSer
         {
             throw new ServiceException(rowPrefix + "职称必须为：教授/副教授/讲师/助教/未定级，当前: " + title);
         }
-        // 校验人员性质（如果填写了）
+        if (!StringUtils.hasText(dto.getTeacherNature())) throw new ServiceException(rowPrefix + "人员性质不能为空，必须明确填写，禁止默认专任");
+        // 校验人员性质
         if (StringUtils.hasText(dto.getTeacherNature()))
         {
             String nature = dto.getTeacherNature();
@@ -267,7 +268,7 @@ public class TeacherProfileImportServiceImpl implements ITeacherProfileImportSer
             BizTeacherProfile profile = new BizTeacherProfile();
             profile.setUserId(user.getUserId());
             profile.setTitle(dto.getTitle());
-            profile.setTeacherNature(StringUtils.hasText(dto.getTeacherNature()) ? dto.getTeacherNature() : "专任");
+            profile.setTeacherNature(StringUtils.hasText(dto.getTeacherNature()) ? dto.getTeacherNature() : null);
             profile.setSpecialStatus("正常");
             profile.setDeptId(user.getDeptId());
             // 导入直连 mapper 未经 Service，需手动补审计字段，否则详情页创建时间/创建者为空

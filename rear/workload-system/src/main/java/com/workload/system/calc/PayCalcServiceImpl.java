@@ -44,16 +44,25 @@ public class PayCalcServiceImpl implements PayCalcService
     @Autowired
     private WorkloadWriteGuard writeGuard;
 
+    @Autowired private SettlementScope settlementScope = new SettlementScope();
+    @Autowired private SettlementSnapshotService settlementSnapshots;
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public BizPayRecord recalcPay(Long userId, String semester)
     {
+        return calculate(userId,semester,null);
+    }
+
+    @Override @Transactional(rollbackFor=Exception.class)
+    public BizPayRecord recalcPayWithEvidence(Long userId,String semester,SettlementEvidence.SummaryEvidence evidence) {
+        if(!settlementScope.required(semester)||evidence==null) throw new ServiceException("结算来源上下文缺失");
+        return calculate(userId,semester,evidence);
+    }
+
+    private BizPayRecord calculate(Long userId,String semester,SettlementEvidence.SummaryEvidence evidence) {
+        boolean independent=evidence==null;
         writeGuard.lockDraftOrAbsent(userId, semester);
-        // userId 合法性校验：教师档案不存在则快速失败，避免任意 userId 生成零值脏数据
-        if (bizTeacherProfileMapper.selectBizTeacherProfileByUserId(userId) == null)
-        {
-            throw new ServiceException("教师档案不存在，无法重算");
-        }
         // 写前锁定读：FOR UPDATE 行锁读取汇总并复核冻结状态，关闭"初查草稿 → 审批置待审
         // → 酬金仍按旧状态写入"的并发窗口。锁定顺序固定为 summary → allowance → pay_record，
         // 审批只更新 summary，避免逆序死锁。
@@ -61,6 +70,12 @@ public class PayCalcServiceImpl implements PayCalcService
         if (summary == null)
         {
             throw new ServiceException("学期汇总不存在，请先重算汇总");
+        }
+        if(settlementSnapshots!=null) settlementSnapshots.assertRecalculationBoundary(summary);
+        // Only genuine legacy periods may consult the current profile here; saved settlements never downgrade.
+        if (!settlementScope.required(semester) && bizTeacherProfileMapper.selectBizTeacherProfileByUserId(userId) == null)
+        {
+            throw new ServiceException("教师档案不存在，无法重算");
         }
         if (WorkloadSummaryStatus.isWriteFrozen(summary.getStatus()))
         {
@@ -72,6 +87,11 @@ public class PayCalcServiceImpl implements PayCalcService
             throw new ServiceException("源数据已变更，请先重新核算汇总和酬金");
         }
 
+        if(settlementScope.required(semester)) {
+            if(evidence==null) evidence=settlementSnapshots.savedSummary(summary);
+            SettlementEvidence.verifySummary(evidence);
+            if(!userId.equals(evidence.userId())||!semester.equals(evidence.semester())) throw com.workload.system.service.SnapshotIntegrity.failure("结算上下文归属不符");
+        }
         BigDecimal courseHourPay = summary.getPerformancePay() == null ? BigDecimal.ZERO
                 : summary.getPerformancePay();
 
@@ -86,6 +106,7 @@ public class PayCalcServiceImpl implements PayCalcService
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         BizPayRecord record = findPayRecord(userId, semester);
+        if(independent && settlementScope.required(semester)) settlementSnapshots.assertPreviousPay(summary,record);
         boolean isNew = record == null;
         if (isNew)
         {
@@ -124,8 +145,11 @@ public class PayCalcServiceImpl implements PayCalcService
         {
             updateDraftRecord(record);
         }
+        if(settlementScope.required(semester)) {settlementSnapshots.append(summary,record,evidence,allowances);settlementSnapshots.decorate(record);}
         return record;
     }
+
+    @Override @Transactional(readOnly=true) public BizPayRecord currentPay(Long userId,String semester){var record=findPayRecord(userId,semester,false);if(settlementSnapshots!=null)settlementSnapshots.decorate(record);return record;}
 
     private void updateDraftRecord(BizPayRecord record)
     {
@@ -155,12 +179,14 @@ public class PayCalcServiceImpl implements PayCalcService
         return list.isEmpty() ? null : list.get(0);
     }
 
-    private BizPayRecord findPayRecord(Long userId, String semester)
+    private BizPayRecord findPayRecord(Long userId, String semester) {return findPayRecord(userId,semester,true);}
+
+    private BizPayRecord findPayRecord(Long userId, String semester,boolean currentRead)
     {
         BizPayRecord query = new BizPayRecord();
         query.setUserId(userId);
         query.setSemester(semester);
-        query.getParams().put("currentRead", true);
+        query.getParams().put("currentRead", currentRead);
         List<BizPayRecord> list = bizPayRecordMapper.selectBizPayRecordList(query);
         return list.isEmpty() ? null : list.get(0);
     }

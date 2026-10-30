@@ -505,4 +505,11 @@ class SummaryCalcServiceImplTest
         item.setStatus(0);
         return item;
     }
+
+    @Test void capBelowRatedNeverProducesNegativePerformance() {
+        stubPerformanceCase(new SummaryCase("cap below rated","专任","讲师","300","30","0.00",1));
+        when(ruleParamService.get("CAP_200PCT",new BigDecimal("540"),java.time.LocalDate.of(2026,1,31))).thenReturn(new BigDecimal("60"));
+        when(complianceChecker.check(any(),anyString(),any())).thenReturn(result(false));
+        assertThat(service.recalcSummary(USER,SEMESTER,false).getPerformancePay()).isEqualByComparingTo("0.00");
+    }
 }

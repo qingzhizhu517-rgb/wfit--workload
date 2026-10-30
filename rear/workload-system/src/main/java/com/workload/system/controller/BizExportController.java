@@ -43,6 +43,8 @@ import jakarta.servlet.http.HttpServletResponse;
 @RequestMapping("/system/export")
 public class BizExportController extends BaseController
 {
+    @Autowired private com.workload.system.service.IBizWorkloadSummaryService summaries;
+
     @Autowired
     private BizExportMapper exportMapper;
 
@@ -168,6 +170,7 @@ public class BizExportController extends BaseController
      */
     @PreAuthorize("@ss.hasPermi('system:export:paySummary')")
     @GetMapping("/paySummary")
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public void exportPaySummary(
             @RequestParam("semester") String semester,
             HttpServletResponse response) throws Exception
@@ -186,10 +189,18 @@ public class BizExportController extends BaseController
             return;
         }
         // 封顶线取学期结束日有效规则值，勿在 SQL 里写死 540：政策调整只改 biz_workload_rule
-        BigDecimal cap200 = ruleParamService.get("CAP_200PCT", new BigDecimal("540"), semesterCalendar.endOf(semester));
         for (PaySummaryExportDTO dto : exportData)
         {
+            var summary = summaries.selectBizWorkloadSummaryById(dto.getSummaryId());
+            dto.setTeacherNature(summary == null ? null : summary.getTeacherNature());
+            BigDecimal cap200=summary == null ? null : summary.getWorkloadCap();
             fillPayExplain(dto, cap200);
+            if(summary!=null && summary.getEligibilityReason()!=null) dto.setRemark(dto.getRemark()+"；"+summary.getEligibilityReason());
+            if(summary!=null && "STALE".equals(summary.getSettlementEvidenceStatus())){
+                dto.setRemark(dto.getRemark()+"；需重新结算：本表金额为已保存旧版"
+                        +(StringUtils.isNotEmpty(summary.getSettlementMissingReason())?"；"+summary.getSettlementMissingReason():""));
+            }
+            if(summary!=null && "ISOLATED_VERIFICATION_ONLY".equals(summary.getSettlementMode())) dto.setRemark(dto.getRemark()+"；隔离验收记录：该学期尚未获得正式启用批准");
         }
 
         writeExcel(response, "绩效酬金统计_" + semester + ".xlsx",
@@ -200,7 +211,7 @@ public class BizExportController extends BaseController
      * 补齐附件2 的三列解释信息：是否触顶、计酬超额工作量、备注。
      * <p>
      * 与 {@code SummaryCalcServiceImpl} 的绩效口径严格对齐：
-     * 计酬基数 = min(总工作量, CAP_200PCT) − 额定，下限 0；仅「专任」（或无档案）计发。
+     * 计酬基数 = min(总工作量, CAP_200PCT) − 额定，下限 0；仅明确「专任」资格计发；历史缺证据时不推断人员性质。
      * 备注把「为什么是 0」写清楚，免得看表的人拿 超额×单位酬金 去对绩效酬金对不上。
      */
     private void fillPayExplain(PaySummaryExportDTO dto, BigDecimal cap200)
@@ -210,18 +221,19 @@ public class BizExportController extends BaseController
 
         BigDecimal total = dto.getTotalWorkload();
         BigDecimal rated = dto.getRatedWorkload();
-        if (total != null && rated != null)
+        if (total != null && rated != null && cap200 != null)
         {
             dto.setPayableExcess(total.min(cap200).subtract(rated).max(BigDecimal.ZERO));
         }
 
         List<String> notes = new ArrayList<>();
+        if(cap200 == null) notes.add("历史结算证据缺失，人员性质及具体封顶阈值未知");
         String nature = dto.getTeacherNature();
         if (StringUtils.isNotEmpty(nature) && !"专任".equals(nature))
         {
             notes.add("人员性质「" + nature + "」不计发绩效酬金");
         }
-        if (capped)
+        if (capped && cap200 != null)
         {
             notes.add("总工作量已触 200% 上限 " + cap200.stripTrailingZeros().toPlainString() + "，绩效按封顶值计发");
         }

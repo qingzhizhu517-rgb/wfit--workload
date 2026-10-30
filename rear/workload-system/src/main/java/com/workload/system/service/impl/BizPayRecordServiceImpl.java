@@ -21,6 +21,8 @@ import com.workload.system.service.IBizPayRecordService;
 @Service
 public class BizPayRecordServiceImpl implements IBizPayRecordService
 {
+    @Autowired private com.workload.system.calc.SettlementSnapshotService settlementSnapshots;
+
     @Autowired
     private BizPayRecordMapper bizPayRecordMapper;
 
@@ -34,9 +36,12 @@ public class BizPayRecordServiceImpl implements IBizPayRecordService
      * @return 酬金汇总
      */
     @Override
+    @Transactional(readOnly = true)
     public BizPayRecord selectBizPayRecordById(Long id)
     {
-        return bizPayRecordMapper.selectBizPayRecordById(id);
+        var result=bizPayRecordMapper.selectBizPayRecordById(id);
+        if(settlementSnapshots!=null) settlementSnapshots.decorate(result);
+        return result;
     }
 
     /**
@@ -46,9 +51,12 @@ public class BizPayRecordServiceImpl implements IBizPayRecordService
      * @return 酬金汇总
      */
     @Override
+    @Transactional(readOnly = true)
     public List<BizPayRecord> selectBizPayRecordList(BizPayRecord bizPayRecord)
     {
-        return bizPayRecordMapper.selectBizPayRecordList(bizPayRecord);
+        var list=bizPayRecordMapper.selectBizPayRecordList(bizPayRecord);
+        if(settlementSnapshots!=null) list.forEach(settlementSnapshots::decorate);
+        return list;
     }
 
     /**
@@ -103,12 +111,15 @@ public class BizPayRecordServiceImpl implements IBizPayRecordService
         {
             return 0;
         }
-        // 全部检查通过才删除，避免批次中冻结记录引起部分删除。
+        // 先完整预检，之后才标记真正legacy汇总脏并删除；新结算链禁止通用删除。
+        List<BizPayRecord> checked=new java.util.ArrayList<>();
         for (Long id : ids)
         {
             BizPayRecord existing = requireEditable(id);
-            writeGuard.markChanged(existing.getUserId(), existing.getSemester());
+            if(settlementSnapshots!=null)settlementSnapshots.assertPayDeletionAllowed(existing);
+            checked.add(existing);
         }
+        for(BizPayRecord existing:checked)writeGuard.markChanged(existing.getUserId(),existing.getSemester());
         return bizPayRecordMapper.deleteBizPayRecordByIds(ids);
     }
 
@@ -123,6 +134,7 @@ public class BizPayRecordServiceImpl implements IBizPayRecordService
     public int deleteBizPayRecordById(Long id)
     {
         BizPayRecord existing = requireEditable(id);
+        if(settlementSnapshots!=null)settlementSnapshots.assertPayDeletionAllowed(existing);
         writeGuard.markChanged(existing.getUserId(), existing.getSemester());
         return bizPayRecordMapper.deleteBizPayRecordById(id);
     }

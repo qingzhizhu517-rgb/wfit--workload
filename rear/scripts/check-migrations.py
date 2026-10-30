@@ -50,7 +50,9 @@ def main():
         'biz_allowance_item': 'calculation_evidence_json',
         'biz_workload_calc_snapshot': 'item_id calculation_version snapshot_hash context_json',
         'biz_coefficient_adjustment': 'id item_id status',
-        'biz_workload_summary': 'needs_recalculation',
+        'biz_workload_summary': 'needs_recalculation settlement_snapshot_id',
+        'biz_pay_record': 'settlement_snapshot_id',
+        'biz_workload_settlement_snapshot': 'id summary_id user_id semester settlement_version format_version payload_json hash created_by created_at',
         'biz_workload_period_lock': 'user_id semester',
     }
     for table, names in expected.items():
@@ -85,6 +87,7 @@ def main():
         ('biz_workload_calc_snapshot', 'uk_item_version')) == ('0', 'item_id,calculation_version')
     checks['index:unique_teacher_semester_lock'] = indexes.get(
         ('biz_workload_period_lock', 'PRIMARY')) == ('0', 'user_id,semester')
+    checks['index:unique_settlement_version'] = indexes.get(('biz_workload_settlement_snapshot', 'uk_summary_settlement_version')) == ('0', 'summary_id,settlement_version')
     tables = {table for table, _ in present}
     if {'sys_menu', 'sys_role', 'sys_role_menu'} <= tables:
         menus = query("SELECT menu_id,parent_id,menu_type,status FROM sys_menu "

@@ -20,7 +20,7 @@
           stroke="var(--el-fill-color)"
           stroke-width="14"
         />
-        <!-- 工作量进度环：满环 = 封顶值 -->
+        <!-- 已知历史封顶值时绘制进度；缺失时不伪造比例 -->
         <circle
           cx="90"
           cy="90"
@@ -34,11 +34,13 @@
         />
         <!-- 额定刻度（180/封顶 占比处） -->
         <line
+          v-if="cap !== null && cap > 0"
           v-bind="ratedTick"
           stroke="var(--el-text-color-regular)"
           stroke-width="2.5"
         />
         <text
+          v-if="cap !== null && cap > 0"
           :x="ratedText.x"
           :y="ratedText.y"
           class="to-ticktext"
@@ -61,11 +63,11 @@
           y="122"
           text-anchor="middle"
           class="to-sub"
-        >超额 {{ formatNumber(row.excessWorkload) }} ｜ 封顶 {{ formatNumber(cap) }}</text>
+        >超额 {{ formatNumber(row.excessWorkload) }} ｜ {{ cap === null ? '历史阈值缺失' : '封顶 ' + formatNumber(cap) }}</text>
       </svg>
       <div class="to-scale-note">
         <span>额定 {{ formatNumber(rated) }}</span>
-        <span>绩效封顶 {{ formatNumber(cap) }}</span>
+        <span>{{ cap === null ? '历史阈值缺失' : '绩效封顶 ' + formatNumber(cap) }}</span>
       </div>
     </div>
 
@@ -103,7 +105,7 @@
             绩效酬金(元)
             <el-tooltip
               v-if="row.isCapped === 1"
-              :content="`总工作量已触 ${cap} 学时绩效上限，酬金按封顶值计发`"
+              :content="cap === null ? '历史记录已标记触顶，但未保存当时的封顶阈值' : `总工作量已触 ${cap} 学时绩效上限，酬金按封顶值计发`"
               placement="top"
             >
               <el-tag
@@ -111,7 +113,7 @@
                 size="small"
                 disable-transitions
               >
-                封顶
+                {{ cap === null ? '触顶记录' : '封顶' }}
               </el-tag>
             </el-tooltip>
           </div>
@@ -152,21 +154,23 @@
 
 <script setup name="TeacherOverview">
 import { computed } from 'vue'
-import { formatNumber, formatAmount, SEMESTER_WORKLOAD_CAP } from '@/utils/bizDict'
+import { formatNumber, formatAmount } from '@/utils/bizDict'
 
 /**
  * 教师总览卡：额定环形进度 + 工作量构成堆叠条 + 绩效与达标信息。
  *
  * 数据直接取汇总行（biz_workload_summary 落库值，与表格/导出同源）。
- * 绩效封顶复用全局业务常量，仅用于展示，不参与前端核算。
+ * 绩效封顶只取保存的结算依据，缺失时明确提示，不参与前端核算。
  */
 const props = defineProps({
   row: { type: Object, default: null }
 })
 
 const cap = computed(() => {
-  const value = Number(props.row?.workloadCap)
-  return Number.isFinite(value) && value > 0 ? value : SEMESTER_WORKLOAD_CAP
+  const raw = props.row?.workloadCap
+  if (raw === null || raw === undefined || raw === '') return null
+  const value = Number(raw)
+  return Number.isFinite(value) ? value : null
 })
 const rated = computed(() => {
   const value = Number(props.row?.ratedWorkload)
@@ -178,26 +182,27 @@ const remarkText = computed(() => {
 })
 const gaugeAriaLabel = computed(() => {
   const total = formatNumber(props.row?.totalWorkload)
-  return `学期总工作量 ${total} 学时，额定 ${formatNumber(rated.value)} 学时，绩效封顶 ${formatNumber(cap.value)} 学时`
+  const capText = cap.value === null ? '历史封顶阈值缺失' : `绩效封顶 ${formatNumber(cap.value)} 学时`
+  return `学期总工作量 ${total} 学时，额定 ${formatNumber(rated.value)} 学时，${capText}`
 })
 
-// 环形几何：满环 = 封顶值
+// 环形几何：只在封顶依据完整时绘制有意义的比例
 const CIRC = 2 * Math.PI * 70
 const dasharray = computed(() => {
   const total = Number(props.row?.totalWorkload) || 0
-  const pct = Math.min(total / cap.value, 1)
+  const pct = cap.value !== null && cap.value > 0 ? Math.max(0, Math.min(total / cap.value, 1)) : 0
   return `${(pct * CIRC).toFixed(1)} ${CIRC.toFixed(1)}`
 })
 const ringColor = computed(() => {
   const total = Number(props.row?.totalWorkload) || 0
-  if (total >= cap.value) return 'var(--el-color-danger)'
+  if (cap.value !== null && total >= cap.value) return 'var(--el-color-danger)'
   if (total >= rated.value) return 'var(--el-color-primary)'
   return 'var(--el-color-info)'
 })
 
 // 额定刻度线位置（顶部为 0，顺时针）
 const ratedTick = computed(() => {
-  const angle = (Math.min(rated.value / cap.value, 1)) * 360
+  const angle = (Math.min(rated.value / (cap.value > 0 ? cap.value : 1), 1)) * 360
   const rad = (angle - 90) * Math.PI / 180
   const r1 = 62, r2 = 78
   return {
@@ -206,7 +211,7 @@ const ratedTick = computed(() => {
   }
 })
 const ratedText = computed(() => {
-  const angle = Math.min(rated.value / cap.value, 1) * 360
+  const angle = Math.min(rated.value / (cap.value > 0 ? cap.value : 1), 1) * 360
   const rad = (angle - 90) * Math.PI / 180
   const r = 88
   const x = 90 + r * Math.cos(rad)

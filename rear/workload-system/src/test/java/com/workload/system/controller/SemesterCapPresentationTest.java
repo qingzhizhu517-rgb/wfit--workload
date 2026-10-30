@@ -22,8 +22,8 @@ class SemesterCapPresentationTest {
         var controller=new BizWorkloadSummaryController();var summaries=mock(IBizWorkloadSummaryService.class);var rules=mock(RuleParamService.class);
         var autumn=summary("2025-2026-1");var spring=summary("2025-2026-2");
         when(summaries.selectBizWorkloadSummaryList(any())).thenReturn(List.of(autumn,spring));
-        when(rules.get("CAP_200PCT",new BigDecimal("540"),LocalDate.of(2026,1,31))).thenReturn(new BigDecimal("500"));
-        when(rules.get("CAP_200PCT",new BigDecimal("540"),LocalDate.of(2026,7,15))).thenReturn(new BigDecimal("600"));
+        autumn.setWorkloadCap(new BigDecimal("500"));
+        spring.setWorkloadCap(new BigDecimal("600"));
         ReflectionTestUtils.setField(controller,"bizWorkloadSummaryService",summaries);ReflectionTestUtils.setField(controller,"ruleParamService",rules);
         RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(new MockHttpServletRequest()));
         try(var scope=mockStatic(DataScopeUtil.class)) {controller.list(new BizWorkloadSummary());}
@@ -32,11 +32,11 @@ class SemesterCapPresentationTest {
     }
     @Test void dashboardUsesReturnedSummarySemesterWhenQueryIsEmpty() {
         var rules=mock(RuleParamService.class);var summaries=mock(IBizWorkloadSummaryService.class);var controller=dashboard(rules,summaries);
-        when(summaries.selectBizWorkloadSummaryList(any())).thenReturn(List.of(summary("2025-2026-2")));
-        when(rules.get("CAP_200PCT",new BigDecimal("540"),LocalDate.of(2026,7,15))).thenReturn(new BigDecimal("600"));
+        var saved=summary("2025-2026-2");saved.setWorkloadCap(new BigDecimal("600"));
+        when(summaries.selectBizWorkloadSummaryList(any())).thenReturn(List.of(saved));
         var result=controller.teacherStats(null);
         Map<?,?> data=(Map<?,?>)result.get("data");assertThat((BigDecimal)data.get("workloadCap")).isEqualByComparingTo("600");
-        verify(rules).get("CAP_200PCT",new BigDecimal("540"),LocalDate.of(2026,7,15));
+        verifyNoInteractions(rules);
     }
     @Test void dashboardWithoutSummaryDoesNotParseNullSemesterOrReadCurrentRule() {
         var rules=mock(RuleParamService.class);var summaries=mock(IBizWorkloadSummaryService.class);var controller=dashboard(rules,summaries);

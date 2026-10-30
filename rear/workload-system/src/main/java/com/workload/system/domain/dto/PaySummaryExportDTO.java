@@ -23,6 +23,9 @@ import com.alibaba.excel.annotation.write.style.ColumnWidth;
  */
 public class PaySummaryExportDTO
 {
+    @ExcelIgnore private Long summaryId;
+    public Long getSummaryId(){return summaryId;}
+    public void setSummaryId(Long id){summaryId=id;}
     @ExcelProperty("工号")
     @ColumnWidth(14)
     private String userCode;

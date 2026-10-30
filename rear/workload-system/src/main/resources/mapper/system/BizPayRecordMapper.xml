@@ -5,6 +5,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 <mapper namespace="com.workload.system.mapper.BizPayRecordMapper">
     
     <resultMap type="BizPayRecord" id="BizPayRecordResult">
+        <result property="settlementSnapshotId" column="settlement_snapshot_id"/>
         <result property="id"    column="id"    />
         <result property="userId"    column="user_id"    />
         <result property="semester"    column="semester"    />
@@ -21,7 +22,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectBizPayRecordVo">
-        select id, user_id, semester, summary_id, course_hour_pay, other_pay_total, total_pay, status, create_by, create_time, update_by, update_time, remark from biz_pay_record
+        select settlement_snapshot_id, id, user_id, semester, summary_id, course_hour_pay, other_pay_total, total_pay, status, create_by, create_time, update_by, update_time, remark from biz_pay_record
     </sql>
 
     <select id="selectBizPayRecordList" parameterType="BizPayRecord" flushCache="true" useCache="false" resultMap="BizPayRecordResult">
@@ -119,4 +120,5 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 and s.semester = p.semester and s.status = 0
           )
     </update>
+<update id="updateSettlementPointer">update biz_pay_record set settlement_snapshot_id=#{snapshotId} where id=#{id}</update>
 </mapper>

@@ -212,6 +212,22 @@
         </template>
       </el-table-column>
       <el-table-column
+        label="结算依据"
+        align="center"
+        width="150"
+      >
+        <template #default="scope">
+          <el-tooltip
+            :content="settlementHint(scope.row)"
+            placement="top"
+          >
+            <el-tag :type="settlementTagType(scope.row)">
+              {{ settlementLabel(scope.row) }}
+            </el-tag>
+          </el-tooltip>
+        </template>
+      </el-table-column>
+      <el-table-column
         label="备注"
         align="center"
         prop="remark"
@@ -253,6 +269,7 @@
             link
             type="primary"
             icon="Delete"
+            :disabled="!!scope.row.settlementSnapshotId"
             @click="handleDelete(scope.row)"
           >
             删除
@@ -348,6 +365,7 @@
 </template>
 
 <script setup name="PayRecord">
+import { settlementLabel, settlementTagType, settlementHint } from '@/utils/settlementEvidence'
 import { useRoute, useRouter } from 'vue-router'
 import { listPayRecord, getPayRecord, delPayRecord, updatePayRecord } from '@/api/system/payRecord'
 import { recalcPay } from '@/api/system/calc'

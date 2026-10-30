@@ -98,16 +98,16 @@ P0：阻塞安全整合或共享环境使用；P1：一期功能/验收必要项
 
 ### T05：规则费率版本与历史追溯
 
-**2026-10-29状态：** 日期选值/缓存/有效期LocalDate契约第一切片通过，570常规＋31MySQL＋双时区40条HTTP。下列来源ID/不可变版本、结算上下文和快照哈希要求仍未完成；日期部分完成不勾选包含来源要求的整项。详见`docs/验收/T05日期选值与缓存.md`。
+**2026-10-30状态：** T05技术实现及隔离验收完成；最新C 739常规＋164MySQL＋48HTTP＋8浏览器检查/7截图，规格和质量双PASS。用户明确暂不指定正式启用学期，跟踪配置正式起始/QA列表均空，正式业务生效待后续明确。历史缺史不回填，系统整链对账留T10。详见`docs/验收/T05结算证据与资格.md`。
 
 **涉及文件：** `rear/workload-system/src/main/java/com/workload/system/calc/rule/{RuleParamService,RuleParamServiceImpl}.java`、`calc/SummaryCalcServiceImpl.java`、`calc/WorkloadCalcServiceImpl.java`、`service/WorkloadSnapshotService.java`、`service/SnapshotContextCodec.java`、`service/impl/{WorkloadFactorFormulaServiceImpl,BizWorkloadCategoryDictServiceImpl,BizWorkloadRuleServiceImpl}.java`及规则/费率Mapper；测试新增`calc/rule/HistoricalRuleResolutionTest.java`、`service/SnapshotIntegrityTest.java`。
 
-- [ ] 固定业务口径：沿用未回复默认“学期结束日生效版本”，在结算配置中记录生效学期；对行政/兼岗和人员性质为空等异常不自动猜测结算资格。
-- [ ] 让规则和费率读取显式接收asOfDate/版本，返回值同时给出不可变来源ID/版本；缓存包含日期/版本维度，覆盖未来生效、过期和改名失效。
+- [x] 实现学期结束日选值和显式启用配置；正式起始学期按用户决定保持空，隔离QA独立标识且走相同门禁；生效范围内行政/兼岗和空性质不自动猜资格。
+- [x] 让规则和费率读取显式接收asOfDate/版本，返回值同时给出不可变来源ID/版本；缓存包含日期/版本维度，覆盖未来生效、过期和改名失效。
 - [x] 复用已有规则CRUD失效能力并补事务/时间切换测试；字典改绑策略时驱逐对应StrategyCache，避免把已修复的规则evict重复开发。
-- [ ] 将真实版本来源写入明细快照，替换仅`RULE-学期`的伪版本含义；固化汇总/酬金使用的规则、费率、人员性质和明细版本集合。
-- [ ] 实现按formatVersion读取校验哈希，兼容旧哈希格式；损坏/未知版本明确报错，缺少的历史字段明确标记，不用当前源数据回填冒充历史。
-- [ ] 测试旧/新政策跨生效日、同学期重新计算、来源记录后续修改、缺费率、旧快照读取及篡改检测；已完结结果不因配置变化被重写。
+- [x] 将真实版本来源写入明细快照，替换仅`RULE-学期`的伪版本含义；固化汇总/酬金使用的规则、费率、人员性质和明细版本集合。
+- [x] 实现按formatVersion读取校验哈希，兼容旧哈希格式；损坏/未知版本明确报错，缺少的历史字段明确标记，不用当前源数据回填冒充历史。
+- [x] 测试旧/新政策跨生效日、同学期重新计算、来源记录后续修改、缺费率、旧快照读取及篡改检测；已完结结果不因配置变化被重写。
 
 **验收：** 同一历史版本在当前日期改变后仍可解释并重现；版本不是标签而有真实不可变依据；历史结算风险R4—R6有关闭证据。
 
