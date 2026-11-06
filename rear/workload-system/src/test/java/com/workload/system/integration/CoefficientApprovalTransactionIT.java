@@ -186,6 +186,8 @@ class CoefficientApprovalTransactionIT
     @Test
     void confirmationSqlRejectsPendingChangedAndRepeatedResults()
     {
+        // No authenticated identity: caller-supplied reviewer must not become persistence audit identity.
+        assertThat(SecurityUtils.getAuthentication()).isNull();
         BizWorkloadItemMapper mapper = sessions.getMapper(BizWorkloadItemMapper.class);
         assertThat(mapper.confirmIfUnchanged(9L, 3L, new BigDecimal("32"), "qa")).isZero();
         jdbc.update("UPDATE biz_coefficient_adjustment SET status=2 WHERE id=5");
@@ -193,7 +195,7 @@ class CoefficientApprovalTransactionIT
         assertThat(mapper.confirmIfUnchanged(9L, 3L, new BigDecimal("33"), "qa")).isZero();
         assertThat(mapper.confirmIfUnchanged(9L, 3L, new BigDecimal("32"), "qa")).isEqualTo(1);
         assertThat(mapper.confirmIfUnchanged(9L, 3L, new BigDecimal("32"), "qa")).isZero();
-        assertThat(jdbc.queryForObject("SELECT update_by FROM biz_workload_item WHERE id=9", String.class)).isEqualTo("qa");
+        assertThat(jdbc.queryForObject("SELECT update_by FROM biz_workload_item WHERE id=9", String.class)).isEqualTo("SYSTEM");
     }
 
     @Test

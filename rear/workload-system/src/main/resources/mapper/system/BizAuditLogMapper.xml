@@ -13,11 +13,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="operatorId"    column="operator_id"    />
         <result property="operatorName"    column="operator_name"    />
         <result property="reason"    column="reason"    />
+        <result property="createBy" column="create_by"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
         <result property="createTime"    column="create_time"    />
     </resultMap>
 
     <insert id="insertBizAuditLog" parameterType="BizAuditLog" useGeneratedKeys="true" keyProperty="id">
-        insert into biz_audit_log (summary_id, action, from_status, to_status, operator_id, operator_name, reason, create_time)
-        values (#{summaryId}, #{action}, #{fromStatus}, #{toStatus}, #{operatorId}, #{operatorName}, #{reason}, #{createTime})
+        insert into biz_audit_log (summary_id, action, from_status, to_status, operator_id, operator_name, reason, create_by, create_time, update_by, update_time)
+        values (#{summaryId}, #{action}, #{fromStatus}, #{toStatus}, #{operatorId}, #{operatorName}, #{reason}, #{createBy}, #{createTime}, #{updateBy}, #{updateTime})
     </insert>
 </mapper>

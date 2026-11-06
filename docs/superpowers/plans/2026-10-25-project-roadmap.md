@@ -115,13 +115,15 @@ P0：阻塞安全整合或共享环境使用；P1：一期功能/验收必要项
 
 **涉及文件：** 修订`docs/superpowers/plans/2026-09-12-workload-audit-center.md`，新增`docs/验收/审核契约.md`；`rear/sql/MIGRATIONS.md`、`rear/sql/01_biz_schema.sql`、`rear/sql/05_biz_menu.sql`、`rear/sql/06_test_accounts.sql`；新增`rear/workload-common/src/main/java/com/workload/common/core/domain/AuditableEntity.java`、`rear/workload-framework/src/main/java/com/workload/framework/mybatis/BizAuditFieldInterceptor.java`，修改同framework/config下`MyBatisConfig.java`及common/BaseEntity。审计测试放`rear/workload-framework/src/test/java/com/workload/framework/mybatis/BizAuditFieldInterceptorTest.java`。
 
-- [ ] 先解决现状与旧计划的阶段差异：草稿态教务核对是提交前检查；待审态审核批次是审批证据。两者分别命名和授权，不把已有item.status复用为审核批次result。
-- [ ] 固定审核对象为workload_item，分类仅教学任务/人工申报/G11/超限；其他酬金不塞入多态审核表；result采用PENDING/PASS/REJECT/WAIVE并定义豁免权限。
-- [ ] 定义summary数据版本、审核批次快照、唯一键、并发版本和分页上限100；驳回原因必填。另建只追加的线下补差说明，关联完结汇总但不修改原工作量/酬金。
-- [ ] 在T02迁移清单中分配空闲编号并编写增量和fresh结构，验证重复执行、历史记录保留和权限最小化。
-- [ ] 自动审计填充仅面向约定的biz实体/参数，服务端覆盖客户端伪造操作者；测试单对象、集合、Mapper直调、匿名系统来源和线程上下文清理。
+- [x] 先解决现状与旧计划的阶段差异：草稿态教务核对是提交前检查；待审态审核批次是审批证据。两者分别命名和授权，不把已有item.status复用为审核批次result。
+- [x] 固定审核对象为workload_item，分类仅教学任务/人工申报/G11/超限；其他酬金不塞入多态审核表；result采用PENDING/PASS/REJECT/WAIVE并定义豁免权限。
+- [x] 定义summary数据版本、审核批次快照、唯一键、并发版本和分页上限100；驳回原因必填。另建只追加的线下补差说明，关联完结汇总但不修改原工作量/酬金。
+- [x] 在T02迁移清单中分配空闲编号并编写增量和fresh结构，验证重复执行、历史记录保留和权限最小化。
+- [x] 自动审计填充仅面向约定的biz实体/参数，服务端覆盖客户端伪造操作者；测试单对象、集合、Mapper直调、匿名系统来源和线程上下文清理。
 
 **验收：** 数据契约能同时解释“提交前核对”与“待审审核”；迁移无22/28编号碰撞；系统任务与用户动作可追溯；不因统一填充破坏手工固定历史字段。
+
+2026-11-06技术隔离验收通过：751常规、170真实MySQL、16角色HTTP；35两克隆双轮保全、每库216检查、28回滚约束及2实际漂移探针，规格/质量复核PASS。证据见`docs/验收/T06审核契约与统一审计.md`。MySQL8/整套空库仍未验证；T07/T08未启用。
 
 ### T07：明细审核批次、汇总门禁与补差API
 

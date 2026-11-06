@@ -16,16 +16,18 @@
 
 ## 切片B：统一审计Java实现
 
-- [ ] 明确20个BaseEntity业务Mapper＋AuditLog的statement/参数覆盖清单，不对所有biz无差别填充。
-- [ ] 创建AuditableEntity、BaseEntity实现、受控MyBatis插件与配置；约定标量ParamMap保留_audit*，防环遍历。
-- [ ] INSERT防伪创建/更新字段；UPDATE仅更新服务端update字段，普通XML移除create字段SET；业务operator/reviewer不信任HTTP输入。
-- [ ] 固定历史/业务时间、calc/settlement快照created_*及period_lock排除；新batch/补差由T07专用服务。
-- [ ] 先失败后通过：单实体/集合/数组/Mapper直调/标量、伪造操作者、匿名SYSTEM、异常与线程复用清理、固定历史不变；全量后端回归按当前日志汇总。
+- [x] 明确20个BaseEntity业务Mapper＋AuditLog的statement/参数覆盖清单，不对所有biz无差别填充。
+- [x] 创建AuditableEntity、BaseEntity实现、受控MyBatis插件与配置；约定标量ParamMap保留_audit*，防环遍历。
+- [x] INSERT防伪创建/更新字段；UPDATE仅更新服务端update字段，普通XML移除create字段SET；业务operator/reviewer不信任HTTP输入。
+- [x] 固定历史/业务时间、calc/settlement快照created_*及period_lock排除；新batch/补差由T07专用服务。
+- [x] 先失败后通过：单实体/集合/数组/Mapper直调/标量、伪造操作者、匿名SYSTEM、异常与线程复用清理、固定历史不变；全量后端回归按当前日志汇总。
 
 ## 收口
 
-- [ ] 规格复核：本契约能解释提交前核对与待审证据，WAIVE独立授权、补差只追加，T07约束明确未启用。
-- [ ] 质量复核：迁移双轮无历史改写、checker及审计测试、diff --check，保全原43文件与原库边界。
-- [ ] 仅本地统一提交；不宣称业务验收或正式启用，不勾选T07/T08。
+- [x] 规格复核：本契约能解释提交前核对与待审证据，WAIVE独立授权、补差只追加，T07约束明确未启用。
+- [x] 质量复核：迁移双轮无历史改写、checker及审计测试、diff --check，保全原43文件与原库边界。
+- [x] 仅本地统一提交；不宣称业务验收或正式启用，不勾选T07/T08。
 
-切片A独立规格及质量复核最终PASS；Java审计仍待切片B，不据此关闭整个T06。
+切片A收口时独立规格及质量复核最终PASS；当时Java仍待切片B，整体最终结果见下条。
+
+2026-11-06切片B及整体收口：751常规、170真实MySQL、完整打包/启动、16角色HTTP通过；两阶段独立复核及持久codec跟进PASS。创建历史和业务日期保持，原43文件与T05两验收源库数据未变，原3306未操作；正式范围空，不推送部署。最终记录见`docs/验收/T06审核契约与统一审计.md`。

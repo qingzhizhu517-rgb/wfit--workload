@@ -74,8 +74,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="effectiveFrom != null">effective_from = #{effectiveFrom},</if>
             <if test="effectiveTo != null">effective_to = #{effectiveTo},</if>
             <if test="status != null">status = #{status},</if>
-            <if test="createBy != null">create_by = #{createBy},</if>
-            <if test="createTime != null">create_time = #{createTime},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
             <if test="remark != null">remark = #{remark},</if>

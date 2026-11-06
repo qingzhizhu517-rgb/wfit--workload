@@ -15,7 +15,7 @@ public interface BizWorkloadItemMapper
     int updateFactorProvenance(@Param("id") Long id, @Param("json") String json);
 
     BizWorkloadItem selectByIdForUpdate(Long id);
-    int invalidateCalculation(Long id);
+    int invalidateCalculation(@Param("id") Long id);
 
     /** 汇总锁之后的当前读：未核对/异议/未知状态阻断；已驳回不参与汇总。 */
     List<Long> selectUnreviewedIdsForUpdate(@Param("userId") Long userId, @Param("semester") String semester);

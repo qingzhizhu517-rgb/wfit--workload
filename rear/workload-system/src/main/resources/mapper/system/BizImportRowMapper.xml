@@ -91,8 +91,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="errorCode != null">error_code = #{errorCode},</if>
             <if test="errorMessage != null">error_message = #{errorMessage},</if>
             <if test="targetId != null">target_id = #{targetId},</if>
-            <if test="createBy != null">create_by = #{createBy},</if>
-            <if test="createTime != null">create_time = #{createTime},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
             <if test="remark != null">remark = #{remark},</if>

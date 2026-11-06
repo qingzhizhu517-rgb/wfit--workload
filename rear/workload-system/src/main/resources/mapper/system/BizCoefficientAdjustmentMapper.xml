@@ -137,22 +137,24 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <update id="markApprovedIfPending">
+        <bind name="_audit" value="@com.workload.common.core.domain.audit.AuditFields@resolve(_parameter)"/>
         update biz_coefficient_adjustment
-        set status = 1,
+        set update_by = #{_audit.by}, status = 1,
             reviewer_id = #{reviewerId},
             review_reason = #{reviewReason},
             reviewed_at = now(),
-            update_time = now()
+            update_time = #{_audit.time}
         where id = #{id} and status = 0 and base_calculation_version = #{baseVersion}
     </update>
 
     <update id="markRejectedIfPending">
+        <bind name="_audit" value="@com.workload.common.core.domain.audit.AuditFields@resolve(_parameter)"/>
         update biz_coefficient_adjustment
-        set status = 2,
+        set update_by = #{_audit.by}, status = 2,
             reviewer_id = #{reviewerId},
             review_reason = #{reviewReason},
             reviewed_at = now(),
-            update_time = now()
+            update_time = #{_audit.time}
         where id = #{id} and status = 0 and base_calculation_version = #{baseVersion}
     </update>
     <select id="selectByIdForUpdate" resultMap="BizCoefficientAdjustmentResult" flushCache="true" useCache="false">

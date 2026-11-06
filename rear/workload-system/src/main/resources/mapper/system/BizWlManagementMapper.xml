@@ -76,8 +76,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="proratedAmount != null">prorated_amount = #{proratedAmount},</if>
             <if test="prorationBasis != null">proration_basis = #{prorationBasis},</if>
             <if test="sourceBatchId != null">source_batch_id = #{sourceBatchId},</if>
-            <if test="createBy != null">create_by = #{createBy},</if>
-            <if test="createTime != null">create_time = #{createTime},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
             <if test="remark != null">remark = #{remark},</if>
@@ -86,13 +84,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </update>
 
     <update id="updateProrationIfEditable">
+        <bind name="_audit" value="@com.workload.common.core.domain.audit.AuditFields@resolve(_parameter)"/>
         update biz_wl_management d
         join biz_workload_item i on i.id = d.item_id
-        set d.role_type = #{roleType},
+        set d.update_by = #{_audit.by}, d.role_type = #{roleType},
             d.prorated_amount = #{amount},
             d.proration_basis = #{basis},
             d.source_batch_id = #{sourceBatchId},
-            d.update_time = now()
+            d.update_time = #{_audit.time}
         where d.item_id = #{itemId}
           and ifnull(i.status, 0) != 1
           and not exists (

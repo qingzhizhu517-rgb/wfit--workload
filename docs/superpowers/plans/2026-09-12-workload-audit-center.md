@@ -17,11 +17,11 @@
 
 详见`docs/superpowers/plans/2026-11-06-t06-review-contract.md`。
 
-- [ ] 定稿`docs/验收/审核契约.md`及三表/summary版本/权限边界。
-- [ ] 35增量与01/05/06 fresh一致，双克隆双轮且原业务行hash不变。
-- [ ] 扩展只读`rear/scripts/check-migrations.py`，先失败后通过；验证新权限最小化及旧教务核对保留。
-- [ ] AuditableEntity、BaseEntity、受控MyBatis插件及明确Mapper覆盖名单；业务操作者服务端绑定，UPDATE禁止改创建字段。
-- [ ] 单对象/集合/标量/Mapper直调/匿名来源/异常上下文清理/固定历史测试；不动T05固定快照字段。
+- [x] 定稿`docs/验收/审核契约.md`及三表/summary版本/权限边界。
+- [x] 35增量与01/05/06 fresh一致，双克隆双轮且原业务行hash不变。
+- [x] 扩展只读`rear/scripts/check-migrations.py`，先失败后通过；验证新权限最小化及旧教务核对保留。
+- [x] AuditableEntity、BaseEntity、受控MyBatis插件及明确Mapper覆盖名单；业务操作者服务端绑定，UPDATE禁止改创建字段。
+- [x] 单对象/集合/标量/Mapper直调/匿名来源/异常上下文清理/固定历史测试；不动T05固定快照字段。
 
 T06结束仅表示技术切片通过，不代表T07 API、T08页面或业务签收。
 

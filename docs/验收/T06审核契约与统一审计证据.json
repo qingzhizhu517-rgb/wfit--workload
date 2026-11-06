@@ -1,0 +1,788 @@
+{
+  "date": "2026-11-06",
+  "base_commit": "d21aa4f",
+  "status": "T06_TECHNICAL_ISOLATED_ACCEPTANCE",
+  "implemented": {
+    "review_contract_and_migration_35": true,
+    "business_audit_mappers": 21,
+    "audited_write_statements": 70,
+    "review_api_T07": false,
+    "review_pages_T08": false
+  },
+  "verification": {
+    "regular": {
+      "system": 739,
+      "framework": 12,
+      "total": 751,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "mysql": {
+      "system": 164,
+      "framework": 6,
+      "total": 170,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "host": "127.0.0.1",
+      "port": 13306,
+      "server_version": "9.0.1"
+    },
+    "catalog_unit_tests": 11,
+    "migration_schemas": 2,
+    "migration_rounds_each": 2,
+    "final_readonly_checks_each": 216,
+    "rolled_back_constraint_cases": 28,
+    "live_schema_drift_probes_rejected_and_restored": 2,
+    "package": "PASS",
+    "http": {
+      "date": "2026-11-06",
+      "host": "127.0.0.1",
+      "port": 13306,
+      "schema": "wfit_t06_20261106_b",
+      "passed": true,
+      "http_observations": 16,
+      "observations": [
+        {
+          "method": "POST",
+          "path": "/login",
+          "account": null,
+          "code": 200
+        },
+        {
+          "method": "GET",
+          "path": "/getInfo",
+          "account": "admin_test",
+          "code": 200
+        },
+        {
+          "method": "POST",
+          "path": "/login",
+          "account": null,
+          "code": 200
+        },
+        {
+          "method": "GET",
+          "path": "/getInfo",
+          "account": "jiaowu_test",
+          "code": 200
+        },
+        {
+          "method": "POST",
+          "path": "/login",
+          "account": null,
+          "code": 200
+        },
+        {
+          "method": "GET",
+          "path": "/getInfo",
+          "account": "teacher_test",
+          "code": 200
+        },
+        {
+          "method": "POST",
+          "path": "/login",
+          "account": null,
+          "code": 200
+        },
+        {
+          "method": "GET",
+          "path": "/getInfo",
+          "account": "leader_test",
+          "code": 200
+        },
+        {
+          "method": "POST",
+          "path": "/system/payRate",
+          "account": null,
+          "code": 401
+        },
+        {
+          "method": "POST",
+          "path": "/system/payRate",
+          "account": "teacher_test",
+          "code": 403
+        },
+        {
+          "method": "POST",
+          "path": "/system/payRate",
+          "account": "admin_test",
+          "code": 200
+        },
+        {
+          "method": "GET",
+          "path": "/system/payRate/10",
+          "account": "admin_test",
+          "code": 200
+        },
+        {
+          "method": "PUT",
+          "path": "/system/payRate",
+          "account": "teacher_test",
+          "code": 403
+        },
+        {
+          "method": "PUT",
+          "path": "/system/payRate",
+          "account": "admin_test",
+          "code": 200
+        },
+        {
+          "method": "GET",
+          "path": "/system/payRate/10",
+          "account": "admin_test",
+          "code": 200
+        },
+        {
+          "method": "DELETE",
+          "path": "/system/payRate/10",
+          "account": "admin_test",
+          "code": 200
+        }
+      ],
+      "details": {
+        "permissions": {
+          "admin_test": {
+            "roles": [
+              "biz_admin"
+            ],
+            "new_permissions": [
+              "system:auditRecord:list",
+              "system:auditRecord:query",
+              "system:auditRecord:review",
+              "system:auditRecord:waive",
+              "system:offlineAdjustmentNote:add",
+              "system:offlineAdjustmentNote:query"
+            ],
+            "wildcard": false,
+            "passed": true
+          },
+          "jiaowu_test": {
+            "roles": [
+              "assistant"
+            ],
+            "new_permissions": [
+              "system:auditRecord:list",
+              "system:auditRecord:query",
+              "system:auditRecord:review",
+              "system:offlineAdjustmentNote:query"
+            ],
+            "wildcard": false,
+            "passed": true
+          },
+          "teacher_test": {
+            "roles": [
+              "teacher"
+            ],
+            "new_permissions": [],
+            "wildcard": false,
+            "passed": true
+          },
+          "leader_test": {
+            "roles": [
+              "leader"
+            ],
+            "new_permissions": [],
+            "wildcard": false,
+            "passed": true
+          }
+        },
+        "inserted": {
+          "id": 10,
+          "rate": 23.45,
+          "createBy": "admin_test",
+          "updateBy": "admin_test",
+          "createTime": "2026-11-06 14:48:14.000000",
+          "updateTime": "2026-11-06 14:48:14.000000",
+          "effectiveTo": "2100-01-31",
+          "createdEpoch": 1793947694,
+          "updatedEpoch": 1793947694,
+          "effectiveFrom": "2099-02-01"
+        },
+        "updated": {
+          "id": 10,
+          "rate": 28.9,
+          "createBy": "admin_test",
+          "updateBy": "admin_test",
+          "createTime": "2026-11-06 14:48:14.000000",
+          "updateTime": "2026-11-06 14:48:14.000000",
+          "effectiveTo": "2100-01-31",
+          "createdEpoch": 1793947694,
+          "updatedEpoch": 1793947694,
+          "effectiveFrom": "2099-02-01"
+        },
+        "business_dates_preserved": true,
+        "creation_history_preserved": true,
+        "client_audit_fields_replaced": true,
+        "denied_writes_unchanged": true
+      },
+      "before": {
+        "biz_allowance_item": {
+          "rows": 2,
+          "sha256": "f2329a1eed348e9174f816014cfa70cdeef3b9886cb49130ba2b1d84c028967a"
+        },
+        "biz_audit_log": {
+          "rows": 8,
+          "sha256": "77ff31f698af730f5af7eead5b2e0388a6fe403b77bbc474c23f7a4f7cf19765"
+        },
+        "biz_coefficient_adjustment": {
+          "rows": 1,
+          "sha256": "51536622b649ccfe80b101189a91fbd24128362509392ef088c96d7075923f06"
+        },
+        "biz_import_batch": {
+          "rows": 1,
+          "sha256": "15c93c9f70cbc15eb5ad5369bfc734b0379a8cc0fca32f094a04ce49a4ee698b"
+        },
+        "biz_import_row": {
+          "rows": 1,
+          "sha256": "eea89e5a3f8a4845b1f4a76b7e5f921444c037120138ee614653ec5fb637d71b"
+        },
+        "biz_offline_adjustment_note": {
+          "rows": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "biz_pay_rate": {
+          "rows": 9,
+          "sha256": "06e321a3abdfd515dcc0c145e55e7f6d26808f27439172ff39859b22345798f6"
+        },
+        "biz_pay_record": {
+          "rows": 7,
+          "sha256": "ed1bbf335533aa5e0559ee4787d4f32421eb669ab8216964396e9ff15872d37b"
+        },
+        "biz_role_assignment": {
+          "rows": 2,
+          "sha256": "5add7973ec4784fe009ca9409af0d09a2fd0c3efc8260751de76a36300e12df4"
+        },
+        "biz_teacher_profile": {
+          "rows": 8,
+          "sha256": "3c838c753b1b59a8fd49177e7b2e4ff21bbf257952e97028be9df56a76052171"
+        },
+        "biz_teaching_task": {
+          "rows": 10,
+          "sha256": "555bbc7e2876d4c98c257a27b5e0c6a7e0f94c834c88c6cd3feccc7e265c8fa9"
+        },
+        "biz_wl_concentrated_internship": {
+          "rows": 1,
+          "sha256": "c712f2ee15b76b4ce77516e587e348f479547c9999cab10704ab0ff7ac7598ce"
+        },
+        "biz_wl_course_design": {
+          "rows": 2,
+          "sha256": "6442d8bb3f93d8fe146a733ed7400364183a45cce77c18e3c4b97563df9fcc88"
+        },
+        "biz_wl_internship_training": {
+          "rows": 1,
+          "sha256": "179093fa4ee8d62bafbe10b1bb304268fde925caee480f3df013a608e4d0115d"
+        },
+        "biz_wl_management": {
+          "rows": 1,
+          "sha256": "f3f041718f15b096cf6ab0e08c65fdaccd932f8ae9989361c081cf5dbe6f6930"
+        },
+        "biz_wl_practice": {
+          "rows": 1,
+          "sha256": "4e24710c2b6de2566aa8130aa148482d2e4313f00695922d46efcf27ac66afc4"
+        },
+        "biz_wl_theory": {
+          "rows": 8,
+          "sha256": "1ed0ed478ab3a1a455f9ac5ee6a33d0e3d52cb70a25338b83eb81ab04182bb43"
+        },
+        "biz_wl_thesis": {
+          "rows": 1,
+          "sha256": "7fcca3a3f254c451f2140e0094d2263dd83deef3c8d6eec7cb52b6f663e87606"
+        },
+        "biz_workload_calc_snapshot": {
+          "rows": 9,
+          "sha256": "44477481e6d127b51807a5b196f297a9442a29a653fd705e2b7bc4c7087945d9"
+        },
+        "biz_workload_category_dict": {
+          "rows": 11,
+          "sha256": "f42cab24868daad0cc60d9dc4a741e087c8c23b13ed760b92c3f7e4510f27a20"
+        },
+        "biz_workload_item": {
+          "rows": 23,
+          "sha256": "f96b467cbec04c515914fee07923d363af06e1021acebd7acc30c1322c5f6f1a"
+        },
+        "biz_workload_item_review": {
+          "rows": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "biz_workload_period_lock": {
+          "rows": 8,
+          "sha256": "0b7997f3b9398bbb900e59deaf8db2da251427ce323c75bae2b02d076e65eec4"
+        },
+        "biz_workload_review_batch": {
+          "rows": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "biz_workload_rule": {
+          "rows": 52,
+          "sha256": "272baab18ab1a61b9f61daa6c50df8ac8e4930654cf5fe39af7f3e6eaf60618b"
+        },
+        "biz_workload_settlement_snapshot": {
+          "rows": 4,
+          "sha256": "f2b2d4ddf13d04940dc1d5c56a09d933e98145496f330d70a6f1a0c4e70e1899"
+        },
+        "biz_workload_summary": {
+          "rows": 11,
+          "sha256": "500dbb3ec758005aa5ffcd7d4f1d5834923cd7f4ab8ca200e59b3601cfff1eba"
+        }
+      },
+      "after": {
+        "biz_allowance_item": {
+          "rows": 2,
+          "sha256": "f2329a1eed348e9174f816014cfa70cdeef3b9886cb49130ba2b1d84c028967a"
+        },
+        "biz_audit_log": {
+          "rows": 8,
+          "sha256": "77ff31f698af730f5af7eead5b2e0388a6fe403b77bbc474c23f7a4f7cf19765"
+        },
+        "biz_coefficient_adjustment": {
+          "rows": 1,
+          "sha256": "51536622b649ccfe80b101189a91fbd24128362509392ef088c96d7075923f06"
+        },
+        "biz_import_batch": {
+          "rows": 1,
+          "sha256": "15c93c9f70cbc15eb5ad5369bfc734b0379a8cc0fca32f094a04ce49a4ee698b"
+        },
+        "biz_import_row": {
+          "rows": 1,
+          "sha256": "eea89e5a3f8a4845b1f4a76b7e5f921444c037120138ee614653ec5fb637d71b"
+        },
+        "biz_offline_adjustment_note": {
+          "rows": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "biz_pay_rate": {
+          "rows": 9,
+          "sha256": "06e321a3abdfd515dcc0c145e55e7f6d26808f27439172ff39859b22345798f6"
+        },
+        "biz_pay_record": {
+          "rows": 7,
+          "sha256": "ed1bbf335533aa5e0559ee4787d4f32421eb669ab8216964396e9ff15872d37b"
+        },
+        "biz_role_assignment": {
+          "rows": 2,
+          "sha256": "5add7973ec4784fe009ca9409af0d09a2fd0c3efc8260751de76a36300e12df4"
+        },
+        "biz_teacher_profile": {
+          "rows": 8,
+          "sha256": "3c838c753b1b59a8fd49177e7b2e4ff21bbf257952e97028be9df56a76052171"
+        },
+        "biz_teaching_task": {
+          "rows": 10,
+          "sha256": "555bbc7e2876d4c98c257a27b5e0c6a7e0f94c834c88c6cd3feccc7e265c8fa9"
+        },
+        "biz_wl_concentrated_internship": {
+          "rows": 1,
+          "sha256": "c712f2ee15b76b4ce77516e587e348f479547c9999cab10704ab0ff7ac7598ce"
+        },
+        "biz_wl_course_design": {
+          "rows": 2,
+          "sha256": "6442d8bb3f93d8fe146a733ed7400364183a45cce77c18e3c4b97563df9fcc88"
+        },
+        "biz_wl_internship_training": {
+          "rows": 1,
+          "sha256": "179093fa4ee8d62bafbe10b1bb304268fde925caee480f3df013a608e4d0115d"
+        },
+        "biz_wl_management": {
+          "rows": 1,
+          "sha256": "f3f041718f15b096cf6ab0e08c65fdaccd932f8ae9989361c081cf5dbe6f6930"
+        },
+        "biz_wl_practice": {
+          "rows": 1,
+          "sha256": "4e24710c2b6de2566aa8130aa148482d2e4313f00695922d46efcf27ac66afc4"
+        },
+        "biz_wl_theory": {
+          "rows": 8,
+          "sha256": "1ed0ed478ab3a1a455f9ac5ee6a33d0e3d52cb70a25338b83eb81ab04182bb43"
+        },
+        "biz_wl_thesis": {
+          "rows": 1,
+          "sha256": "7fcca3a3f254c451f2140e0094d2263dd83deef3c8d6eec7cb52b6f663e87606"
+        },
+        "biz_workload_calc_snapshot": {
+          "rows": 9,
+          "sha256": "44477481e6d127b51807a5b196f297a9442a29a653fd705e2b7bc4c7087945d9"
+        },
+        "biz_workload_category_dict": {
+          "rows": 11,
+          "sha256": "f42cab24868daad0cc60d9dc4a741e087c8c23b13ed760b92c3f7e4510f27a20"
+        },
+        "biz_workload_item": {
+          "rows": 23,
+          "sha256": "f96b467cbec04c515914fee07923d363af06e1021acebd7acc30c1322c5f6f1a"
+        },
+        "biz_workload_item_review": {
+          "rows": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "biz_workload_period_lock": {
+          "rows": 8,
+          "sha256": "0b7997f3b9398bbb900e59deaf8db2da251427ce323c75bae2b02d076e65eec4"
+        },
+        "biz_workload_review_batch": {
+          "rows": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "biz_workload_rule": {
+          "rows": 52,
+          "sha256": "272baab18ab1a61b9f61daa6c50df8ac8e4930654cf5fe39af7f3e6eaf60618b"
+        },
+        "biz_workload_settlement_snapshot": {
+          "rows": 4,
+          "sha256": "f2b2d4ddf13d04940dc1d5c56a09d933e98145496f330d70a6f1a0c4e70e1899"
+        },
+        "biz_workload_summary": {
+          "rows": 11,
+          "sha256": "500dbb3ec758005aa5ffcd7d4f1d5834923cd7f4ab8ca200e59b3601cfff1eba"
+        }
+      },
+      "all_business_rows_restored": true,
+      "formal_settlement_enabled": false,
+      "original_database_touched": false
+    }
+  },
+  "reviews": {
+    "contract_spec": "PASS",
+    "contract_quality_after_two_checker_fixes": "PASS",
+    "audit_spec": "PASS",
+    "audit_quality": "PASS",
+    "T05_READ_ONLY_codec_followup": "PASS",
+    "reviewers_ran_maven_or_database": false
+  },
+  "regression_resolution": {
+    "test": "CoefficientApprovalTransactionIT.confirmationSqlRejectsPendingChangedAndRepeatedResults",
+    "before": "expected caller reviewer qa; actual SYSTEM because no authentication",
+    "after": "assert absent authentication, keep all five state/CAS guards, expect SYSTEM; no production relaxation"
+  },
+  "preservation": {
+    "original_root": "/Users/a1/Desktop/wfit--workload",
+    "original_head": "dcb452e",
+    "original_files": 43,
+    "original_files_unchanged": true,
+    "original_database_3306_touched": false,
+    "T05_source_qa": [
+      {
+        "schema": "wfit_verify_20261025_150548",
+        "all_original_business_rows_unchanged": true,
+        "tables": {
+          "biz_allowance_item": {
+            "rows": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "biz_audit_log": {
+            "rows": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "biz_coefficient_adjustment": {
+            "rows": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "biz_import_batch": {
+            "rows": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "biz_import_row": {
+            "rows": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "biz_pay_rate": {
+            "rows": 4,
+            "sha256": "cfd76a98bfff304ae3c4f0bbce6227655e08c354041c010d201180a588949179"
+          },
+          "biz_pay_record": {
+            "rows": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "biz_role_assignment": {
+            "rows": 2,
+            "sha256": "5add7973ec4784fe009ca9409af0d09a2fd0c3efc8260751de76a36300e12df4"
+          },
+          "biz_teacher_profile": {
+            "rows": 6,
+            "sha256": "8a31a1036a163cc91929324840123d9e15f19d4d1a027570f24e890b6a4a30c7"
+          },
+          "biz_teaching_task": {
+            "rows": 9,
+            "sha256": "5ff2be68705f39323b8a478d10fdebfc63cb78495e1d2a8dcd53c59f681a9e0e"
+          },
+          "biz_wl_concentrated_internship": {
+            "rows": 1,
+            "sha256": "c712f2ee15b76b4ce77516e587e348f479547c9999cab10704ab0ff7ac7598ce"
+          },
+          "biz_wl_course_design": {
+            "rows": 1,
+            "sha256": "b57567130ed10a2f130bfbe6f44e47e2940b74513fb065ba6e4ad675d1000758"
+          },
+          "biz_wl_internship_training": {
+            "rows": 1,
+            "sha256": "179093fa4ee8d62bafbe10b1bb304268fde925caee480f3df013a608e4d0115d"
+          },
+          "biz_wl_management": {
+            "rows": 1,
+            "sha256": "f3f041718f15b096cf6ab0e08c65fdaccd932f8ae9989361c081cf5dbe6f6930"
+          },
+          "biz_wl_practice": {
+            "rows": 1,
+            "sha256": "4e24710c2b6de2566aa8130aa148482d2e4313f00695922d46efcf27ac66afc4"
+          },
+          "biz_wl_theory": {
+            "rows": 7,
+            "sha256": "728fd7187111f0487fe94cbc088edcc782a59f1ab8536ef81b1ec37d17a3e4e2"
+          },
+          "biz_wl_thesis": {
+            "rows": 1,
+            "sha256": "7fcca3a3f254c451f2140e0094d2263dd83deef3c8d6eec7cb52b6f663e87606"
+          },
+          "biz_workload_calc_snapshot": {
+            "rows": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "biz_workload_category_dict": {
+            "rows": 11,
+            "sha256": "f42cab24868daad0cc60d9dc4a741e087c8c23b13ed760b92c3f7e4510f27a20"
+          },
+          "biz_workload_item": {
+            "rows": 14,
+            "sha256": "5a75b2e589346a9612365ac7bf158412a42b64ef494a176a0d3b635c5ffd447c"
+          },
+          "biz_workload_period_lock": {
+            "rows": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "biz_workload_rule": {
+            "rows": 43,
+            "sha256": "331f85af25c16316a3cb2906fc23f74b3f520aed89faa870edee1b2b0b91ff42"
+          },
+          "biz_workload_settlement_snapshot": {
+            "rows": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "biz_workload_summary": {
+            "rows": 4,
+            "sha256": "ea17c0f443f09614c440d3de92193080fe11d29781278ddcecdac0e653f793bf"
+          }
+        }
+      },
+      {
+        "schema": "wfit_ui_20261028",
+        "all_original_business_rows_unchanged": true,
+        "tables": {
+          "biz_allowance_item": {
+            "rows": 2,
+            "sha256": "f2329a1eed348e9174f816014cfa70cdeef3b9886cb49130ba2b1d84c028967a"
+          },
+          "biz_audit_log": {
+            "rows": 8,
+            "sha256": "67b12f4f3be629996f6bce1eff90d226f968ccef615f5f48051d8bf338cfae7e"
+          },
+          "biz_coefficient_adjustment": {
+            "rows": 1,
+            "sha256": "51536622b649ccfe80b101189a91fbd24128362509392ef088c96d7075923f06"
+          },
+          "biz_import_batch": {
+            "rows": 1,
+            "sha256": "15c93c9f70cbc15eb5ad5369bfc734b0379a8cc0fca32f094a04ce49a4ee698b"
+          },
+          "biz_import_row": {
+            "rows": 1,
+            "sha256": "eea89e5a3f8a4845b1f4a76b7e5f921444c037120138ee614653ec5fb637d71b"
+          },
+          "biz_pay_rate": {
+            "rows": 9,
+            "sha256": "06e321a3abdfd515dcc0c145e55e7f6d26808f27439172ff39859b22345798f6"
+          },
+          "biz_pay_record": {
+            "rows": 7,
+            "sha256": "ed1bbf335533aa5e0559ee4787d4f32421eb669ab8216964396e9ff15872d37b"
+          },
+          "biz_role_assignment": {
+            "rows": 2,
+            "sha256": "5add7973ec4784fe009ca9409af0d09a2fd0c3efc8260751de76a36300e12df4"
+          },
+          "biz_teacher_profile": {
+            "rows": 8,
+            "sha256": "3c838c753b1b59a8fd49177e7b2e4ff21bbf257952e97028be9df56a76052171"
+          },
+          "biz_teaching_task": {
+            "rows": 10,
+            "sha256": "555bbc7e2876d4c98c257a27b5e0c6a7e0f94c834c88c6cd3feccc7e265c8fa9"
+          },
+          "biz_wl_concentrated_internship": {
+            "rows": 1,
+            "sha256": "c712f2ee15b76b4ce77516e587e348f479547c9999cab10704ab0ff7ac7598ce"
+          },
+          "biz_wl_course_design": {
+            "rows": 2,
+            "sha256": "6442d8bb3f93d8fe146a733ed7400364183a45cce77c18e3c4b97563df9fcc88"
+          },
+          "biz_wl_internship_training": {
+            "rows": 1,
+            "sha256": "179093fa4ee8d62bafbe10b1bb304268fde925caee480f3df013a608e4d0115d"
+          },
+          "biz_wl_management": {
+            "rows": 1,
+            "sha256": "f3f041718f15b096cf6ab0e08c65fdaccd932f8ae9989361c081cf5dbe6f6930"
+          },
+          "biz_wl_practice": {
+            "rows": 1,
+            "sha256": "4e24710c2b6de2566aa8130aa148482d2e4313f00695922d46efcf27ac66afc4"
+          },
+          "biz_wl_theory": {
+            "rows": 8,
+            "sha256": "1ed0ed478ab3a1a455f9ac5ee6a33d0e3d52cb70a25338b83eb81ab04182bb43"
+          },
+          "biz_wl_thesis": {
+            "rows": 1,
+            "sha256": "7fcca3a3f254c451f2140e0094d2263dd83deef3c8d6eec7cb52b6f663e87606"
+          },
+          "biz_workload_calc_snapshot": {
+            "rows": 9,
+            "sha256": "44477481e6d127b51807a5b196f297a9442a29a653fd705e2b7bc4c7087945d9"
+          },
+          "biz_workload_category_dict": {
+            "rows": 11,
+            "sha256": "f42cab24868daad0cc60d9dc4a741e087c8c23b13ed760b92c3f7e4510f27a20"
+          },
+          "biz_workload_item": {
+            "rows": 23,
+            "sha256": "f96b467cbec04c515914fee07923d363af06e1021acebd7acc30c1322c5f6f1a"
+          },
+          "biz_workload_period_lock": {
+            "rows": 8,
+            "sha256": "0b7997f3b9398bbb900e59deaf8db2da251427ce323c75bae2b02d076e65eec4"
+          },
+          "biz_workload_rule": {
+            "rows": 52,
+            "sha256": "272baab18ab1a61b9f61daa6c50df8ac8e4930654cf5fe39af7f3e6eaf60618b"
+          },
+          "biz_workload_settlement_snapshot": {
+            "rows": 4,
+            "sha256": "f2b2d4ddf13d04940dc1d5c56a09d933e98145496f330d70a6f1a0c4e70e1899"
+          },
+          "biz_workload_summary": {
+            "rows": 11,
+            "sha256": "85cb9eab2a22f8f0ad7e96240662605c95589c7614407b17f9b08e0a4e1c08a3"
+          }
+        }
+      }
+    ],
+    "cleanup": {
+      "backend_pid": 34364,
+      "identity_verified": true,
+      "backend_18084_closed": true,
+      "frontend_13000_started": false,
+      "mysql_13306_and_redis_16379_retained": true,
+      "qa_business_rows_restored": true
+    },
+    "local_development_target": {
+      "host": "127.0.0.1",
+      "port": 13306,
+      "database": "wfit_t06_20261106_a",
+      "original_worktree_env_touched": false,
+      "only_key_changed": "WFIT_DB_NAME",
+      "private_backup_saved": true,
+      "formal_settlement_environment_empty": true,
+      "readonly_checker_passed": true,
+      "readonly_checks": 216
+    }
+  },
+  "formal_settlement": {
+    "formal_start_semester": "",
+    "verification_semesters": [],
+    "business_approval": false
+  },
+  "limitations": [
+    "MySQL8 not verified",
+    "complete fresh initialization not verified",
+    "remote CI not run",
+    "existing full frontend lint debt remains",
+    "T07 lifecycle APIs and T08 pages not implemented"
+  ],
+  "source_sha256": {
+    "rear/scripts/check-migrations.py": "f1e5ec4e36273688c11d2c27a97880f896785fbef54afd1aadfae2e0a4e061db",
+    "rear/sql/01_biz_schema.sql": "b15f05d627e2d35c8d019cb44735bee7730877f821db624a9e9388901b744cb7",
+    "rear/sql/05_biz_menu.sql": "c0fad441abf1ea05770cb380ff79008224a7f8b8b4948ac647bf533724866ed3",
+    "rear/sql/06_test_accounts.sql": "c78f2f1fe3d6cbba3a37f6fc2e369196502c57bbe0462f863c040d705e2947b1",
+    "rear/sql/35_workload_review_contract.sql": "58230eb606e901e7540cadf0810b91518f0f7384b6b07e339cca5421658e93ce",
+    "rear/workload-common/src/main/java/com/workload/common/core/domain/AuditableEntity.java": "1dd79338486630b6205d963385079168f23c967c65af23aaefcf335dab66773b",
+    "rear/workload-common/src/main/java/com/workload/common/core/domain/BaseEntity.java": "b3064ec53e94ef910810c4d020b2ae2c8922c2ee7582053ec3705f865e0d2a06",
+    "rear/workload-common/src/main/java/com/workload/common/core/domain/audit/AuditFields.java": "9f4eb5d4be9a0f8c5e9926c42782cd9e79becce744fb9b071faad5d5fdec8cae",
+    "rear/workload-framework/pom.xml": "6c0db87f8a8f66308c21a5b3b497c883b294f87d8360c9e2618849ba241ab36b",
+    "rear/workload-framework/src/main/java/com/workload/framework/config/MyBatisConfig.java": "0fc4d09c42969d204770bc21b2fefa21d241cf731ebc9e1ce9293ae7d6433cb1",
+    "rear/workload-framework/src/main/java/com/workload/framework/mybatis/BizAuditFieldInterceptor.java": "c462af4573ce0b9638f80d5063a21ba63d1daa0227ba2edb79bcba2ad92668ff",
+    "rear/workload-framework/src/test/java/com/workload/framework/mybatis/BizAuditCoverageTest.java": "790b6aab3e8aab8538123514a4371e12bded0883b9f1443b058ea5e96592de8a",
+    "rear/workload-framework/src/test/java/com/workload/framework/mybatis/BizAuditFieldInterceptorTest.java": "82aff67d27512a8d8fcaa6dd086516cb32384a9780639cd14b7cbab0bcddcda0",
+    "rear/workload-framework/src/test/java/com/workload/framework/mybatis/BizAuditFieldMysqlIT.java": "68b6640a66f442b37dcf76575a96bda0f23845d4162ae92a8a6a2653585c4e9f",
+    "rear/workload-system/src/main/java/com/workload/system/domain/BizAuditLog.java": "03efee630029ca64e4712bfd4d6cc069bb13d3ef6d330c45689896ba3a3646db",
+    "rear/workload-system/src/main/java/com/workload/system/mapper/BizWorkloadItemMapper.java": "b256bf38f5224f09c0a9643ec76677845a22b2b0957032f09ff8878ebb78d842",
+    "rear/workload-system/src/main/resources/mapper/system/BizAllowanceItemMapper.xml": "1ffa91d9912cfea8e55c08075882cc6fd2f581ce30b01303f0841f520962eb37",
+    "rear/workload-system/src/main/resources/mapper/system/BizAuditLogMapper.xml": "396fe4c987d43925c1a5eb3cf0d768a3766adeb3f612bca14dd6eb900d87737d",
+    "rear/workload-system/src/main/resources/mapper/system/BizCoefficientAdjustmentMapper.xml": "423152ca31d4cf4c4fef7aab20db02e1155ceb7a1069692a55126f8af5dd4f21",
+    "rear/workload-system/src/main/resources/mapper/system/BizImportBatchMapper.xml": "34c1c9c3aefab043221716e04c96076f0da4b31af172c2848abba0f1456ea0f4",
+    "rear/workload-system/src/main/resources/mapper/system/BizImportRowMapper.xml": "386077f135120f76428f0afef3ad4112971ee7f55b259f977f2b0b17114b5a3a",
+    "rear/workload-system/src/main/resources/mapper/system/BizPayRateMapper.xml": "6521b72c8455d9073629942d89ea44ffc00ccaa444f47c4bc544dc4bcf1c688d",
+    "rear/workload-system/src/main/resources/mapper/system/BizPayRecordMapper.xml": "d0430ea1ffc2f786e207552e9a559085a6ba46f1a4470829b2086607bd5c910b",
+    "rear/workload-system/src/main/resources/mapper/system/BizRoleAssignmentMapper.xml": "65fb96da9faa3e85e7709a934e710f8f72c977ee057a172f2af39c203973712b",
+    "rear/workload-system/src/main/resources/mapper/system/BizTeacherProfileMapper.xml": "248078e6ddbfa71e1115297a9f6bbac25970fa36f03220dde5fa190f9c32bcc9",
+    "rear/workload-system/src/main/resources/mapper/system/BizTeachingTaskMapper.xml": "3314a66b4ebed3bcbec00e06c03badcf05ba1f1927a906c74a05be31f1726b7e",
+    "rear/workload-system/src/main/resources/mapper/system/BizWlConcentratedInternshipMapper.xml": "ada211d64c1caea98bc0c6c9cf706426c6f303c2ed3c1d4ee1b21b344e29dbed",
+    "rear/workload-system/src/main/resources/mapper/system/BizWlCourseDesignMapper.xml": "a736c13673447e00f333ed7bbb5606c93c2a96ada171fca5d28a9e9e618ea71c",
+    "rear/workload-system/src/main/resources/mapper/system/BizWlInternshipTrainingMapper.xml": "843dff3199d2c3323a3d321ca38d23190e5e5c8f57025b3556a2d16bbe7da885",
+    "rear/workload-system/src/main/resources/mapper/system/BizWlManagementMapper.xml": "a4b4c9afb59146a43820d6dc154071c83a14817b260f598351d5b5b94c57f6ca",
+    "rear/workload-system/src/main/resources/mapper/system/BizWlPracticeMapper.xml": "89281ede9ad2af97ef4502e19683b1bb544a372a999633d45997ba283028d986",
+    "rear/workload-system/src/main/resources/mapper/system/BizWlTheoryMapper.xml": "15a92fe5f1e74f29dad704a6ababdd4c44645d0655165ac1da945d58a857ad0b",
+    "rear/workload-system/src/main/resources/mapper/system/BizWlThesisMapper.xml": "f1e5fd1d9fb3ab53b1fd6c49a4644da16afa3d05908fdc4e437ab3bf1226b405",
+    "rear/workload-system/src/main/resources/mapper/system/BizWorkloadCategoryDictMapper.xml": "8d800b4949ec005e89e7e44116c84268de9a9f9fa2a7e8aa6a150d48eca9158d",
+    "rear/workload-system/src/main/resources/mapper/system/BizWorkloadItemMapper.xml": "527efb60f706f10da8fc7b7ca342b700f5165a02787365674222d4e5f7425d36",
+    "rear/workload-system/src/main/resources/mapper/system/BizWorkloadRuleMapper.xml": "b2e6096aa112b109c848b9190e6b0d131e602afa877a79368133ae4935b28276",
+    "rear/workload-system/src/main/resources/mapper/system/BizWorkloadSummaryMapper.xml": "fdfc7eaf12b745d197a1b26c50a65c8f73cfd10ac30011edb0d72e49a63a73cf",
+    "rear/workload-system/src/test/java/com/workload/system/integration/CoefficientApprovalTransactionIT.java": "a9fb116bd8155941a8a0bcd230c82230560e7389814921e91a6c0bbc2c722d81"
+  },
+  "jar": {
+    "path": "/Users/a1/.codex/worktrees/workload-baseline-integration/wfit--workload/rear/workload-admin/target/workload-admin.jar",
+    "sha256": "37d927f1087d94d25717c6d10be7e7d0a172696d56d3706a7ac97d54f8615b12"
+  },
+  "migration_evidence": {
+    "path": "docs/验收/35迁移演练证据.json",
+    "sha256": "79b9c8b890629768854f064ca22d82e7048e2a09c08ea0d237d91173c41b9bb6"
+  },
+  "logs": {
+    "regular-baseline.log": {
+      "path": "/Users/a1/.local/share/wfit-backups/20261025-150548/t06-evidence/regular-baseline.log",
+      "sha256": "62dd8c2ad927da4089cae56b9984a1c45b753cf40b55445806a088cc08335633"
+    },
+    "mysql-baseline.log": {
+      "path": "/Users/a1/.local/share/wfit-backups/20261025-150548/t06-evidence/mysql-baseline.log",
+      "sha256": "e72410f35f440982cad45b53431f4d6f73bdd19b5b0203f2746e2ee7f8705cb0"
+    },
+    "catalog-final.log": {
+      "path": "/Users/a1/.local/share/wfit-backups/20261025-150548/t06-evidence/catalog-final.log",
+      "sha256": "2c1831fcc4fc94c5520aca273c5465f8e555e94d4fc96736246361d86a2ef0e9"
+    },
+    "regular-final1.log": {
+      "path": "/Users/a1/.local/share/wfit-backups/20261025-150548/t06-evidence/regular-final1.log",
+      "sha256": "b45d7c0fddad9cff5b07638b404551d23dac50c94fa1c4480abe83f544974dfe"
+    },
+    "mysql-final2.log": {
+      "path": "/Users/a1/.local/share/wfit-backups/20261025-150548/t06-evidence/mysql-final2.log",
+      "sha256": "b20fd5db0e10a4afd00897c85c2d1c7fc90a6a03f872c00235b0e5b4fd5fe019"
+    },
+    "package-final.log": {
+      "path": "/Users/a1/.local/share/wfit-backups/20261025-150548/t06-evidence/package-final.log",
+      "sha256": "1c176b80b2230c0ffe8c4e3caa2144387a9bb9087d85ca249796850b70c6c910"
+    },
+    "audit-http.log": {
+      "path": "/Users/a1/.local/share/wfit-backups/20261025-150548/t06-evidence/audit-http.log",
+      "sha256": "f03cc098a87c6ce082aa66c89a111425823a606fd9dd8f2889ae80f8196d9408"
+    },
+    "wfit-t06-audit-focused-final2.log": {
+      "path": "/Users/a1/.local/share/wfit-backups/20261025-150548/t06-evidence/wfit-t06-audit-focused-final2.log",
+      "sha256": "585e2db99b60522220b93828f1dc65c2bf6c379a7dc093d8b53cc90751b91155"
+    },
+    "wfit-t06-audit-contract-it-final.log": {
+      "path": "/Users/a1/.local/share/wfit-backups/20261025-150548/t06-evidence/wfit-t06-audit-contract-it-final.log",
+      "sha256": "00f58a493ba68c1de4a2419bdf18c0a52da403ecb3690b8e511c1af34bb4b572"
+    }
+  }
+}

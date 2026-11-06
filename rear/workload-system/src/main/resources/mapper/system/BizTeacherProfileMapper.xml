@@ -87,8 +87,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="specialStatusEnd != null">special_status_end = #{specialStatusEnd},</if>
             <if test="enterpriseEvalResult != null">enterprise_eval_result = #{enterpriseEvalResult},</if>
             <if test="deptId != null">dept_id = #{deptId},</if>
-            <if test="createBy != null">create_by = #{createBy},</if>
-            <if test="createTime != null">create_time = #{createTime},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
             <if test="remark != null">remark = #{remark},</if>

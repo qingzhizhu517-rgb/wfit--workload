@@ -1,8 +1,10 @@
 package com.workload.system.domain;
 
 import java.io.Serializable;
+import com.workload.common.core.domain.AuditableEntity;
 import java.util.Date;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
@@ -14,7 +16,7 @@ import org.apache.commons.lang3.builder.ToStringStyle;
  *
  * @author wflg
  */
-public class BizAuditLog implements Serializable
+public class BizAuditLog implements Serializable, AuditableEntity
 {
     private static final long serialVersionUID = 1L;
 
@@ -44,7 +46,21 @@ public class BizAuditLog implements Serializable
 
     /** 创建时间 */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private Date createTime;
+
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    private String createBy;
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    private String updateBy;
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    private Date updateTime;
+    public String getCreateBy() { return createBy; }
+    public void setCreateBy(String value) { createBy = value; }
+    public String getUpdateBy() { return updateBy; }
+    public void setUpdateBy(String value) { updateBy = value; }
+    public Date getUpdateTime() { return updateTime; }
+    public void setUpdateTime(Date value) { updateTime = value; }
 
     public void setId(Long id)
     {

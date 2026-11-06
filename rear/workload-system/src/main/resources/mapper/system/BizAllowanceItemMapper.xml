@@ -121,8 +121,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="ext != null">ext = #{ext},</if>
             <if test="amount != null">amount = #{amount},</if>
             <if test="status != null">status = #{status},</if>
-            <if test="createBy != null">create_by = #{createBy},</if>
-            <if test="createTime != null">create_time = #{createTime},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
             <if test="remark != null">remark = #{remark},</if>
@@ -174,5 +172,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
           )
     </delete>
     <select id="selectByIdForUpdate" resultMap="BizAllowanceItemResult" flushCache="true" useCache="false"><include refid="selectBizAllowanceItemVo"/> where id=#{id} for update</select>
-    <update id="updateCalculationEvidence">update biz_allowance_item set calculation_evidence_json=#{json} where id=#{id}</update>
+    <update id="updateCalculationEvidence">
+        <bind name="_audit" value="@com.workload.common.core.domain.audit.AuditFields@resolve(_parameter)"/>update biz_allowance_item set update_by = #{_audit.by}, update_time = #{_audit.time}, calculation_evidence_json=#{json} where id=#{id}</update>
 </mapper>

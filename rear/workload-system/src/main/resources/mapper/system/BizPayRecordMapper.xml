@@ -86,8 +86,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="otherPayTotal != null">other_pay_total = #{otherPayTotal},</if>
             <if test="totalPay != null">total_pay = #{totalPay},</if>
             <if test="status != null">status = #{status},</if>
-            <if test="createBy != null">create_by = #{createBy},</if>
-            <if test="createTime != null">create_time = #{createTime},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
             <if test="remark != null">remark = #{remark},</if>
@@ -106,12 +104,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </foreach>
     </delete>
     <update id="updateIfSummaryDraft">
+        <bind name="_audit" value="@com.workload.common.core.domain.audit.AuditFields@resolve(_parameter)"/>
         update biz_pay_record p
-        set p.summary_id = #{record.summaryId},
+        set p.update_by = #{_audit.by}, p.summary_id = #{record.summaryId},
             p.course_hour_pay = #{record.courseHourPay},
             p.other_pay_total = #{record.otherPayTotal},
             p.total_pay = #{record.totalPay},
-            p.update_time = #{record.updateTime}
+            p.update_time = #{_audit.time}
         where p.id = #{record.id}
           and p.user_id = #{record.userId} and p.semester = #{record.semester}
           and exists (
@@ -120,5 +119,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 and s.semester = p.semester and s.status = 0
           )
     </update>
-<update id="updateSettlementPointer">update biz_pay_record set settlement_snapshot_id=#{snapshotId} where id=#{id}</update>
+<update id="updateSettlementPointer">
+        <bind name="_audit" value="@com.workload.common.core.domain.audit.AuditFields@resolve(_parameter)"/>update biz_pay_record set update_by = #{_audit.by}, update_time = #{_audit.time}, settlement_snapshot_id=#{snapshotId} where id=#{id}</update>
 </mapper>

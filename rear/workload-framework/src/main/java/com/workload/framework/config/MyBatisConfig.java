@@ -7,6 +7,9 @@ import java.util.HashSet;
 import java.util.List;
 import javax.sql.DataSource;
 import org.apache.ibatis.io.VFS;
+import org.apache.ibatis.plugin.Interceptor;
+import org.springframework.beans.factory.ObjectProvider;
+import com.workload.framework.mybatis.BizAuditFieldInterceptor;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.mybatis.spring.SqlSessionFactoryBean;
 import org.mybatis.spring.boot.autoconfigure.SpringBootVFS;
@@ -114,7 +117,10 @@ public class MyBatisConfig
     }
 
     @Bean
-    public SqlSessionFactory sqlSessionFactory(DataSource dataSource) throws Exception
+    public BizAuditFieldInterceptor bizAuditFieldInterceptor() { return new BizAuditFieldInterceptor(); }
+
+    @Bean
+    public SqlSessionFactory sqlSessionFactory(DataSource dataSource, ObjectProvider<Interceptor> interceptors) throws Exception
     {
         String typeAliasesPackage = env.getProperty("mybatis.typeAliasesPackage");
         String mapperLocations = env.getProperty("mybatis.mapperLocations");
@@ -124,6 +130,7 @@ public class MyBatisConfig
 
         final SqlSessionFactoryBean sessionFactory = new SqlSessionFactoryBean();
         sessionFactory.setDataSource(dataSource);
+        sessionFactory.setPlugins(interceptors.orderedStream().toArray(Interceptor[]::new));
         sessionFactory.setTypeAliasesPackage(typeAliasesPackage);
         sessionFactory.setMapperLocations(resolveMapperLocations(StringUtils.split(mapperLocations, ",")));
         sessionFactory.setConfigLocation(new DefaultResourceLoader().getResource(configLocation));

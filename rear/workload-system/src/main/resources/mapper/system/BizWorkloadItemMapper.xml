@@ -164,8 +164,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="status != null">status = #{status},</if>
             <if test="calculationVersion != null">calculation_version = #{calculationVersion},</if>
             <if test="lastCalculatedAt != null">last_calculated_at = #{lastCalculatedAt},</if>
-            <if test="createBy != null">create_by = #{createBy},</if>
-            <if test="createTime != null">create_time = #{createTime},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
             <if test="remark != null">remark = #{remark},</if>
@@ -174,12 +172,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </update>
 
     <update id="updateCalculationIfEditable">
+        <bind name="_audit" value="@com.workload.common.core.domain.audit.AuditFields@resolve(_parameter)"/>
         update biz_workload_item i
-        set i.calculated_workload = #{item.calculatedWorkload},
+        set i.update_by = #{_audit.by}, i.calculated_workload = #{item.calculatedWorkload},
             i.is_over_limit = #{item.isOverLimit},
             i.calculation_version = #{item.calculationVersion},
             i.last_calculated_at = #{item.lastCalculatedAt},
-            i.update_time = #{item.updateTime}
+            i.update_time = #{_audit.time}
         where i.id = #{item.id}
           and ifnull(i.status, 0) &lt;&gt; #{confirmedStatus}
           and not exists (
@@ -215,8 +214,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <update id="confirmIfUnchanged">
+        <bind name="_audit" value="@com.workload.common.core.domain.audit.AuditFields@resolve(_parameter)"/>
         update biz_workload_item i
-        set i.status = 1, i.update_by = #{reviewer}, i.update_time = now()
+        set i.status = 1, i.update_by = #{_audit.by}, i.update_time = #{_audit.time}
         where i.id = #{id} and i.status = 0
           and ifnull(i.calculation_version, 0) = #{version}
           and i.calculated_workload = #{workload}
@@ -229,9 +229,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <include refid="selectBizWorkloadItemVo"/> where id=#{id} for update
     </select>
     <update id="invalidateCalculation">
-        update biz_workload_item set calculated_workload=0, is_over_limit=0,
-            calculation_version=ifnull(calculation_version,0)+1, last_calculated_at=null, update_time=now()
+        <bind name="_audit" value="@com.workload.common.core.domain.audit.AuditFields@resolve(_parameter)"/>
+        update biz_workload_item set update_by = #{_audit.by}, calculated_workload=0, is_over_limit=0,
+            calculation_version=ifnull(calculation_version,0)+1, last_calculated_at=null, update_time = #{_audit.time}
         where id=#{id}
     </update>
-    <update id="updateFactorProvenance">update biz_workload_item set factor_provenance_json=#{json} where id=#{id}</update>
+    <update id="updateFactorProvenance">
+        <bind name="_audit" value="@com.workload.common.core.domain.audit.AuditFields@resolve(_parameter)"/>update biz_workload_item set update_by = #{_audit.by}, update_time = #{_audit.time}, factor_provenance_json=#{json} where id=#{id}</update>
 </mapper>

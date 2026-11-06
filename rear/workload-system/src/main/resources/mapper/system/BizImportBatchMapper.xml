@@ -122,8 +122,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="operatorName != null">operator_name = #{operatorName},</if>
             <if test="confirmTokenHash != null">confirm_token_hash = #{confirmTokenHash},</if>
             <if test="confirmedAt != null">confirmed_at = #{confirmedAt},</if>
-            <if test="createBy != null">create_by = #{createBy},</if>
-            <if test="createTime != null">create_time = #{createTime},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
             <if test="remark != null">remark = #{remark},</if>
@@ -144,15 +142,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <!-- 条件更新：待确认→已导入，落确认时间。where status=#{expectedStatus} 保证原子性与幂等 -->
     <update id="markConfirmed">
+        <bind name="_audit" value="@com.workload.common.core.domain.audit.AuditFields@resolve(_parameter)"/>
         update biz_import_batch
-        set status = #{targetStatus}, confirmed_at = now(), update_by = #{operator}, update_time = now()
+        set status = #{targetStatus}, confirmed_at = now(), update_by = #{_audit.by}, update_time = #{_audit.time}
         where id = #{id} and status = #{expectedStatus}
     </update>
 
     <!-- 条件更新批次状态（不落确认时间）：0→1 预检完成、1→4 确认失败 -->
     <update id="markStatus">
+        <bind name="_audit" value="@com.workload.common.core.domain.audit.AuditFields@resolve(_parameter)"/>
         update biz_import_batch
-        set status = #{targetStatus}, update_by = #{operator}, update_time = now()
+        set status = #{targetStatus}, update_by = #{_audit.by}, update_time = #{_audit.time}
         where id = #{id} and status = #{expectedStatus}
     </update>
 

@@ -5,6 +5,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
@@ -13,7 +14,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
  * 
  * @author ruoyi
  */
-public class BaseEntity implements Serializable
+public class BaseEntity implements Serializable, AuditableEntity
 {
     private static final long serialVersionUID = 1L;
 
@@ -22,17 +23,21 @@ public class BaseEntity implements Serializable
     private String searchValue;
 
     /** 创建者 */
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private String createBy;
 
     /** 创建时间 */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private Date createTime;
 
     /** 更新者 */
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private String updateBy;
 
     /** 更新时间 */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private Date updateTime;
 
     /** 备注 */
