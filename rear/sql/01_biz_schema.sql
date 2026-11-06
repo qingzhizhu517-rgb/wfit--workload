@@ -337,6 +337,10 @@ CREATE TABLE biz_wl_management (
 -- ========== 汇总层 ==========
 DROP TABLE IF EXISTS biz_workload_summary;
 CREATE TABLE biz_workload_summary (
+  review_batch_no VARCHAR(50) NULL COMMENT '当前审核批次，旧记录缺失保持NULL',
+  data_version BIGINT NOT NULL DEFAULT 0 COMMENT '新版审核数据版本，0表示尚未纳入',
+  last_calculated_at DATETIME NULL COMMENT '新版审核最近核算时间，历史缺失不回填',
+
   settlement_snapshot_id BIGINT NULL COMMENT '服务器结算证据指针',
   id                       BIGINT(20)    NOT NULL AUTO_INCREMENT,
   user_id                  BIGINT(20)    NOT NULL,
@@ -370,7 +374,8 @@ CREATE TABLE biz_workload_summary (
   update_by VARCHAR(64) DEFAULT '', update_time DATETIME DEFAULT NULL,
   remark VARCHAR(500) DEFAULT NULL,
   PRIMARY KEY (id),
-  UNIQUE KEY uk_user_sem (user_id, semester)
+  UNIQUE KEY uk_user_sem (user_id, semester),
+  KEY idx_summary_review_center (status, semester, review_batch_no, user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='学期工作量汇总';
 
 -- ========== 酬金层 ==========
@@ -432,3 +437,100 @@ CREATE TABLE IF NOT EXISTS biz_workload_settlement_snapshot (
  created_at DATETIME NOT NULL,
  PRIMARY KEY(id), UNIQUE KEY uk_summary_settlement_version(summary_id,settlement_version)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='只追加学期结算证据';
+
+CREATE TABLE IF NOT EXISTS biz_audit_log (
+  id            BIGINT       NOT NULL AUTO_INCREMENT COMMENT '主键',
+  summary_id    BIGINT       NOT NULL COMMENT '学期汇总ID',
+  action        VARCHAR(32)  NOT NULL COMMENT '动作: submit/approve/reject/unlock/teacherConfirm（sign 为 2026-09-10 前的历史值）',
+  from_status   TINYINT(1)   DEFAULT NULL COMMENT '流转前状态: 0填报中/1教务处待审/2已完结（历史值可能为 3 待院领导签字/已完结）',
+  to_status     TINYINT(1)   DEFAULT NULL COMMENT '流转后状态',
+  operator_id   BIGINT       DEFAULT NULL COMMENT '操作人ID',
+  operator_name VARCHAR(64)  DEFAULT NULL COMMENT '操作人',
+  reason        VARCHAR(500) DEFAULT NULL COMMENT '原因（驳回理由等）',
+  create_time   DATETIME     DEFAULT NULL,
+  create_by VARCHAR(64) NULL,
+  update_by VARCHAR(64) NULL,
+  update_time DATETIME NULL,
+  PRIMARY KEY (id),
+  KEY idx_audit_log_summary (summary_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='工作量审批流转日志';
+
+-- T06 contract only. T07 owns immutable evidence and append-only enforcement.
+CREATE TABLE IF NOT EXISTS biz_workload_review_batch (
+ id BIGINT NOT NULL AUTO_INCREMENT,
+ summary_id BIGINT NOT NULL,
+ review_batch_no VARCHAR(50) NOT NULL,
+ summary_data_version BIGINT NOT NULL,
+ user_id BIGINT NOT NULL,
+ semester VARCHAR(20) NOT NULL,
+ settlement_snapshot_id BIGINT NULL,
+ settlement_snapshot_hash CHAR(64) NULL,
+ format_version INT NOT NULL,
+ snapshot_json JSON NOT NULL,
+ data_hash CHAR(64) NOT NULL,
+ created_by VARCHAR(64) NOT NULL,
+ created_at DATETIME NOT NULL,
+ PRIMARY KEY(id),
+ UNIQUE KEY uk_summary_review_batch(summary_id,review_batch_no),
+ KEY idx_review_batch_teacher(user_id,semester,id),
+ CONSTRAINT ck_review_batch_version CHECK(summary_data_version>0 AND format_version>0),
+ CONSTRAINT ck_review_batch_settlement CHECK(
+ (settlement_snapshot_id IS NULL AND settlement_snapshot_hash IS NULL) OR
+ (settlement_snapshot_id IS NOT NULL AND settlement_snapshot_hash IS NOT NULL))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='只追加汇总审核批次证据';
+
+CREATE TABLE IF NOT EXISTS biz_workload_item_review (
+ id BIGINT NOT NULL AUTO_INCREMENT,
+ summary_id BIGINT NOT NULL,
+ item_id BIGINT NOT NULL COMMENT '仅指向biz_workload_item',
+ review_batch_no VARCHAR(50) NOT NULL,
+ review_type VARCHAR(32) NOT NULL,
+ format_version INT NOT NULL,
+ snapshot_json JSON NOT NULL,
+ data_hash CHAR(64) NOT NULL,
+ result VARCHAR(16) NOT NULL DEFAULT 'PENDING',
+ reason VARCHAR(500) NULL,
+ reviewer_id BIGINT NULL,
+ reviewer_name VARCHAR(64) NULL,
+ reviewed_at DATETIME NULL,
+ version BIGINT NOT NULL DEFAULT 0,
+ create_by VARCHAR(64) NOT NULL,
+ create_time DATETIME NOT NULL,
+ update_by VARCHAR(64) NULL,
+ update_time DATETIME NULL,
+ PRIMARY KEY(id),
+ UNIQUE KEY uk_summary_batch_item(summary_id,review_batch_no,item_id),
+ KEY idx_review_summary_result(summary_id,review_batch_no,result,id),
+ KEY idx_review_center(review_type,result,create_time,id),
+ CONSTRAINT ck_item_review_type CHECK(review_type IN ('TEACHING_TASK','MANUAL_DECLARATION','G11_ROLE','OVER_LIMIT')),
+ CONSTRAINT ck_item_review_result CHECK(result IN ('PENDING','PASS','REJECT','WAIVE')),
+ CONSTRAINT ck_item_review_reason CHECK(result NOT IN ('REJECT','WAIVE') OR (reason IS NOT NULL AND CHAR_LENGTH(TRIM(reason))>0)),
+ CONSTRAINT ck_item_review_version CHECK(version>=0 AND format_version>0)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='明细审核证据及独立审核结果';
+
+CREATE TABLE IF NOT EXISTS biz_offline_adjustment_note (
+ id BIGINT NOT NULL AUTO_INCREMENT,
+ summary_id BIGINT NOT NULL COMMENT '仅关联状态2已完结汇总',
+ user_id BIGINT NOT NULL COMMENT '服务端从原汇总派生',
+ semester VARCHAR(20) NOT NULL COMMENT '服务端从原汇总派生',
+ request_key VARCHAR(64) NOT NULL COMMENT '服务端幂等请求标识',
+ adjustment_amount DECIMAL(12,2) NOT NULL COMMENT '线下补差金额，可正可负，不回写原酬金',
+ reason VARCHAR(500) NOT NULL,
+ handled_at DATE NOT NULL COMMENT '实际线下处理日期，不是创建时间',
+ handled_by_id BIGINT NOT NULL COMMENT '服务端可信经办用户ID',
+ handled_by VARCHAR(64) NOT NULL COMMENT '服务端可信经办账号快照',
+ reference_no VARCHAR(100) NULL,
+ note_text TEXT NULL COMMENT '可选线下处理备注',
+ attachment_ref VARCHAR(500) NULL,
+ settlement_snapshot_id BIGINT NULL COMMENT '原完结证据引用，历史缺失保留NULL',
+ settlement_snapshot_hash CHAR(64) NULL,
+ created_by VARCHAR(64) NOT NULL,
+ created_at DATETIME NOT NULL,
+ PRIMARY KEY(id),
+ UNIQUE KEY uk_adjustment_request(summary_id,request_key),
+ KEY idx_adjustment_summary(summary_id,id),
+ CONSTRAINT ck_adjustment_reason CHECK(CHAR_LENGTH(TRIM(reason))>0),
+ CONSTRAINT ck_adjustment_settlement CHECK(
+ (settlement_snapshot_id IS NULL AND settlement_snapshot_hash IS NULL) OR
+ (settlement_snapshot_id IS NOT NULL AND settlement_snapshot_hash IS NOT NULL))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='只追加完结汇总线下补差说明';

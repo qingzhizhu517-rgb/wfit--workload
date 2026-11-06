@@ -1,0 +1,42 @@
+[
+  {
+    "table": "biz_offline_adjustment_note",
+    "name": "ck_adjustment_reason",
+    "clause": "(char_length(trim(`reason`)) > 0)"
+  },
+  {
+    "table": "biz_offline_adjustment_note",
+    "name": "ck_adjustment_settlement",
+    "clause": "(((`settlement_snapshot_id` is null) and (`settlement_snapshot_hash` is null)) or ((`settlement_snapshot_id` is not null) and (`settlement_snapshot_hash` is not null)))"
+  },
+  {
+    "table": "biz_workload_item_review",
+    "name": "ck_item_review_reason",
+    "clause": "((`result` not in (_utf8mb4\\'REJECT\\',_utf8mb4\\'WAIVE\\')) or ((`reason` is not null) and (char_length(trim(`reason`)) > 0)))"
+  },
+  {
+    "table": "biz_workload_item_review",
+    "name": "ck_item_review_result",
+    "clause": "(`result` in (_utf8mb4\\'PENDING\\',_utf8mb4\\'PASS\\',_utf8mb4\\'REJECT\\',_utf8mb4\\'WAIVE\\'))"
+  },
+  {
+    "table": "biz_workload_item_review",
+    "name": "ck_item_review_type",
+    "clause": "(`review_type` in (_utf8mb4\\'TEACHING_TASK\\',_utf8mb4\\'MANUAL_DECLARATION\\',_utf8mb4\\'G11_ROLE\\',_utf8mb4\\'OVER_LIMIT\\'))"
+  },
+  {
+    "table": "biz_workload_item_review",
+    "name": "ck_item_review_version",
+    "clause": "((`version` >= 0) and (`format_version` > 0))"
+  },
+  {
+    "table": "biz_workload_review_batch",
+    "name": "ck_review_batch_settlement",
+    "clause": "(((`settlement_snapshot_id` is null) and (`settlement_snapshot_hash` is null)) or ((`settlement_snapshot_id` is not null) and (`settlement_snapshot_hash` is not null)))"
+  },
+  {
+    "table": "biz_workload_review_batch",
+    "name": "ck_review_batch_version",
+    "clause": "((`summary_data_version` > 0) and (`format_version` > 0))"
+  }
+]

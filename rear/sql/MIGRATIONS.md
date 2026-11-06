@@ -1,4 +1,4 @@
-# 数据库迁移清单（更新2026-10-30）
+# 数据库迁移清单（更新2026-11-06）
 
 编号不是执行记录。部署前按结构、索引和权限确认状态，不能以“已到28”推断兼容。本次验证 MySQL 9.0.1；MySQL 8 尚未验证。
 
@@ -14,6 +14,7 @@
 | 32_workload_consistency.sql | summary及现行状态0/1/2 | 教师学期互斥锁表；needs_recalculation非空默认1，旧草稿需重算，既有待审/完结保持原流程 |
 | 33_factor_provenance.sql | workload_item、allowance_item | 两个可空LONGTEXT来源/实算证据列；旧行保持NULL，不回填历史 |
 | 34_settlement_snapshot.sql | summary、pay_record及33来源结构 | 只追加结算快照表及唯一summary/version；两个可空pointer；不回填历史 |
+| 35_workload_review_contract.sql | through34、biz_audit_log、业务菜单及角色 | batch/item_review/线下补差三表；summary版本0及可空批次/日期；audit_log仅三nullable列；六项隐藏F权限最小授予；不回填历史 |
 
 2026-10-30，33在13306验证副本与QA克隆分别执行两轮通过，两业务表全部原列/行数哈希不变；新列类型/可空及只读检查器通过，见`docs/验收/33迁移演练证据.json`。B已完成来源链隔离验收，见`docs/验收/T05因子与其他酬金来源.md`。
 
@@ -25,17 +26,17 @@
 python3 rear/scripts/check-migrations.py --mysql /usr/local/mysql/bin/mysql
 ```
 
-返回0为本次集成列/索引/核对权限满足；1为缺失或不符；2为配置/连接失败。不执行迁移，不证明全部历史业务种子正确。
+返回0为本次集成列/索引/核对及T06审核权限、CHECK执行状态满足；1为缺失或不符；2为配置/连接失败。不执行迁移，不证明全部历史业务种子正确。
 
 ## 编号与历史映射
 
 - 远程28固定为导入框架。原本地28_snapshot_context等字节移为30_snapshot_context；原本地29_item_review_permission等字节移为31_item_review_permission。29作为历史编号保留，不复用。
 - 已执行旧名字的环境按列与权限探测确认；内容哈希不变，不重写快照。
-- 旧计划22_calculation_consistency实际为23，22_workload_requirements实际为28。旧审核中心计划的22尚未落地，后续必须重新分配。
+- 旧计划22_calculation_consistency实际为23，22_workload_requirements实际为28。旧审核中心计划的22未落地且冲突，已修订为35_workload_review_contract；不得再以旧名执行。
 
 ## 空库与历史脚本
 
-空的专用开发库候选顺序：`ry_20260321 → quartz → 01 → 02 → 03 → 04 → 05 → 06 → 08 → 13 → 16 → 17 → 18 → 19 → 23 → 24 → 25 → 26 → 27 → 28 → 30 → 31 → 32 → 33 → 34`。本次验证存量库恢复升级，未执行整套空库初始化。该路径包含测试数据与测试账号，不直接用于共享部署。
+空的专用开发库候选顺序：`ry_20260321 → quartz → 01 → 02 → 03 → 04 → 05 → 06 → 08 → 13 → 16 → 17 → 18 → 19 → 23 → 24 → 25 → 26 → 27 → 28 → 30 → 31 → 32 → 33 → 34 → 35`。本次验证存量库恢复升级，未执行整套空库初始化。该路径包含测试数据与测试账号，不直接用于共享部署。
 
 | 脚本 | 使用边界与检查 |
 |---|---|
@@ -55,6 +56,7 @@ python3 rear/scripts/check-migrations.py --mysql /usr/local/mysql/bin/mysql
 | 23 | 快照、item计算版本；依赖01；检查item/version唯一索引 |
 | 24 | 系数申请状态机；依赖23；检查审批字段 |
 | 25/26/27 | 分类导入、系数申请/列表菜单；依赖业务菜单及角色，按顺序 |
+| 35 | fresh01已含新三表、summary版本及audit_log，05/06已含六权限；仍末尾执行35兼容旧fresh路径；禁止在存量重放01/05/06 |
 
 应用回退保留新增表、可空列和新快照；不DROP新增数据。数据恢复须恢复到独立目标并核验，不能直接覆盖现有业务库。
 
@@ -64,12 +66,12 @@ python3 rear/scripts/check-migrations.py --mysql /usr/local/mysql/bin/mysql
 
 | 文件 | SHA-256 |
 |---|---|
-| `01_biz_schema.sql` | `bb1219fbe8f37985c79935cb12eadafb1815312aef7e4ea5ac55993c67a10e41` |
+| `01_biz_schema.sql` | `b15f05d627e2d35c8d019cb44735bee7730877f821db624a9e9388901b744cb7` |
 | `02_biz_seed.sql` | `25d3aff52f183a004e6b885d5662e0e188d93b1076aba8d85b4a3bcfc9ffafc7` |
 | `03_calc_rules.sql` | `ca34a45bb1c42ff521f6a64ef927d50a878d32b1575982ed91bc6946bd8ef9ba` |
 | `04_biz_test_data.sql` | `7a565a7d883ee9172628e1d3f17dd6737c327acd340ffc8bc64f4ebab30b8de7` |
-| `05_biz_menu.sql` | `140110adf52422a6b390a843894f2f9cb6e35daaebf9ac9139197638731706be` |
-| `06_test_accounts.sql` | `ffc2fdfdc7248ec0587e56911cb85c9909a3d21eddd14f58af1607dac0e392f2` |
+| `05_biz_menu.sql` | `c0fad441abf1ea05770cb380ff79008224a7f8b8b4948ac647bf533724866ed3` |
+| `06_test_accounts.sql` | `c78f2f1fe3d6cbba3a37f6fc2e369196502c57bbe0462f863c040d705e2947b1` |
 | `07_fix_test_data.sql` | `e490b11719db21b9fb4b652a4776e9a53121af80b922c5c20f8fe613716b2bdc` |
 | `08_review_fixes.sql` | `f224a175dc850cab453b70a14b4f656e5d1cb9423c6ac6d3ddb35f35d6bafdf1` |
 | `09_dashboard_perm.sql` | `ae22d4df714d5fe1898f4fcb18001f0c5455f43e68b85ebdd94d04806deda0ab` |
@@ -97,6 +99,7 @@ python3 rear/scripts/check-migrations.py --mysql /usr/local/mysql/bin/mysql
 | `32_workload_consistency.sql` | `86ba2308657e9b233f1f0ac257cc6c2ad93155f92a4dc28aebb25a3b1c6224a2` |
 | `33_factor_provenance.sql` | `389a7e9a2d3429f9e5ed1fe2fe5c67e675908fb938ba7832354f10429eda4dff` |
 | `34_settlement_snapshot.sql` | `1ce51db2a0684d288d072480817b98af826d50e0d4aa1bd6bd241672d814c6f4` |
+| `35_workload_review_contract.sql` | `58230eb606e901e7540cadf0810b91518f0f7384b6b07e339cca5421658e93ce` |
 | `quartz.sql` | `68ddc1c2dcd003e5a5470d88f23bfe8daee54d2b6ae77c720e5b82f8dd57ef0a` |
 | `ry_20260321.sql` | `c9fbf093800da257534a3329a82d77ab2d5987d9987639c92a43026a33ff7f69` |
 
@@ -105,3 +108,9 @@ python3 rear/scripts/check-migrations.py --mysql /usr/local/mysql/bin/mysql
 33必须先于读取/写入来源证据列的B应用启动；旧应用可忽略新增可空列，但不得覆盖新证据或用当前政策回填旧NULL。禁止DROP列回退。
 
 34必须先于结算引擎启动。只保留新增结构与快照，不DROP回退；正式启用学期默认空，隔离verification学期不是正式业务批准。
+
+35目前为T06技术契约，不启用T07接口或T08页面。data_version=0、last_calculated_at=NULL表示未纳入新版审核；禁止伪造历史批次/审核结果/来源。只补biz_audit_log.create_by/update_by/update_time三个nullable字段，旧create_time/operator保真；不得对所有biz表做MIGRATION/NOW回填。批次/补差created_*与T05快照字段由专用路径保留，不受通用审计写入覆盖。
+
+35的六项权限按perms查重自动分配menu_id，均为2020下隐藏F按钮；waive和追加补差仅admin/biz_admin，其它四权限再授jiaowu/assistant，teacher/leader无新审核权限。保留既有system:workloadItem:review（草稿核对）。重复执行只补授权矩阵并清除六项新增权限的越权关联，不重置其它菜单。幂等操作需独占迁移窗口，不能并行执行多个迁移进程。
+
+审核证据JSON格式、生命周期/CAS、补差永久只追加、终审门禁和教师本人范围由T07落实；35不是这些业务约束已经上线的证明。2026-11-06在MySQL9.0.1的两个13306克隆各执行两轮35通过，全部原biz原列行数/hash不变、三个新表空、checker通过；另每库14项共28项事务回滚约束/唯一键用例通过，见`docs/验收/35迁移演练证据.json`。MySQL8与整套空库初始化尚未验证。回退保留新增结构/证据，不DROP。

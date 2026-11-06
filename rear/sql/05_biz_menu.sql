@@ -343,3 +343,32 @@ SELECT 2, menu_id FROM sys_menu WHERE menu_id >= 2000 AND menu_id < 30000;
 INSERT IGNORE INTO sys_role_menu(role_id, menu_id) VALUES (1, 20216), (2, 20216), (3, 20216);
 INSERT IGNORE INTO sys_role_menu(role_id, menu_id) VALUES (1, 20217), (2, 20217), (3, 20217), (5, 20217);
 INSERT IGNORE INTO sys_role_menu(role_id, menu_id) VALUES (4, 20201);
+
+-- T06 permission baseline; pure buttons, no unfinished page route.
+-- Pure hidden buttons; no route/component is published before T08.
+-- Resolve by perms and allocate menu_id automatically: custom menus cannot collide.
+INSERT INTO sys_menu(menu_name,parent_id,order_num,path,component,menu_type,visible,status,perms,icon,create_by,create_time)
+SELECT p.menu_name,2020,p.order_num,'',NULL,'F','1','0',p.perms,'#','admin',CURRENT_TIMESTAMP
+FROM (
+ SELECT '待审审核查询' menu_name,30 order_num,'system:auditRecord:list' perms
+ UNION ALL SELECT '审核证据详情',31,'system:auditRecord:query'
+ UNION ALL SELECT '待审逐条审核',32,'system:auditRecord:review'
+ UNION ALL SELECT '审核授权豁免',33,'system:auditRecord:waive'
+ UNION ALL SELECT '线下补差说明查询',34,'system:offlineAdjustmentNote:query'
+ UNION ALL SELECT '追加线下补差说明',35,'system:offlineAdjustmentNote:add'
+) p WHERE NOT EXISTS(SELECT 1 FROM sys_menu m WHERE m.perms=p.perms);
+-- Revoke only these NEW permissions outside the explicit role-key matrix.
+DELETE grants FROM sys_role_menu grants JOIN sys_menu m ON m.menu_id=grants.menu_id
+JOIN sys_role r ON r.role_id=grants.role_id
+WHERE (m.perms IN ('system:auditRecord:list','system:auditRecord:query','system:auditRecord:review','system:offlineAdjustmentNote:query')
+ AND (r.role_key NOT IN ('admin','biz_admin','jiaowu','assistant') OR r.status<>'0' OR r.del_flag<>'0'))
+ OR (m.perms IN ('system:auditRecord:waive','system:offlineAdjustmentNote:add')
+ AND (r.role_key NOT IN ('admin','biz_admin') OR r.status<>'0' OR r.del_flag<>'0'));
+INSERT IGNORE INTO sys_role_menu(role_id,menu_id)
+SELECT r.role_id,m.menu_id FROM sys_role r JOIN sys_menu m
+ ON m.perms IN ('system:auditRecord:list','system:auditRecord:query','system:auditRecord:review','system:offlineAdjustmentNote:query')
+WHERE r.role_key IN ('admin','biz_admin','jiaowu','assistant') AND r.status='0' AND r.del_flag='0';
+INSERT IGNORE INTO sys_role_menu(role_id,menu_id)
+SELECT r.role_id,m.menu_id FROM sys_role r JOIN sys_menu m
+ ON m.perms IN ('system:auditRecord:waive','system:offlineAdjustmentNote:add')
+WHERE r.role_key IN ('admin','biz_admin') AND r.status='0' AND r.del_flag='0';

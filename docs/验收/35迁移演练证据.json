@@ -1,0 +1,2059 @@
+{
+  "date": "2026-11-06",
+  "host": "127.0.0.1",
+  "port": 13306,
+  "server_version": "9.0.1",
+  "migration": "35_workload_review_contract.sql",
+  "migration_sha256": "58230eb606e901e7540cadf0810b91518f0f7384b6b07e339cca5421658e93ce",
+  "schemas": [
+    {
+      "schema": "wfit_t06_20261106_a",
+      "before": {
+        "biz_allowance_item": {
+          "rows": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "biz_audit_log": {
+          "rows": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "biz_coefficient_adjustment": {
+          "rows": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "biz_import_batch": {
+          "rows": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "biz_import_row": {
+          "rows": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "biz_pay_rate": {
+          "rows": 4,
+          "sha256": "cfd76a98bfff304ae3c4f0bbce6227655e08c354041c010d201180a588949179"
+        },
+        "biz_pay_record": {
+          "rows": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "biz_role_assignment": {
+          "rows": 2,
+          "sha256": "5add7973ec4784fe009ca9409af0d09a2fd0c3efc8260751de76a36300e12df4"
+        },
+        "biz_teacher_profile": {
+          "rows": 6,
+          "sha256": "8a31a1036a163cc91929324840123d9e15f19d4d1a027570f24e890b6a4a30c7"
+        },
+        "biz_teaching_task": {
+          "rows": 9,
+          "sha256": "5ff2be68705f39323b8a478d10fdebfc63cb78495e1d2a8dcd53c59f681a9e0e"
+        },
+        "biz_wl_concentrated_internship": {
+          "rows": 1,
+          "sha256": "c712f2ee15b76b4ce77516e587e348f479547c9999cab10704ab0ff7ac7598ce"
+        },
+        "biz_wl_course_design": {
+          "rows": 1,
+          "sha256": "b57567130ed10a2f130bfbe6f44e47e2940b74513fb065ba6e4ad675d1000758"
+        },
+        "biz_wl_internship_training": {
+          "rows": 1,
+          "sha256": "179093fa4ee8d62bafbe10b1bb304268fde925caee480f3df013a608e4d0115d"
+        },
+        "biz_wl_management": {
+          "rows": 1,
+          "sha256": "f3f041718f15b096cf6ab0e08c65fdaccd932f8ae9989361c081cf5dbe6f6930"
+        },
+        "biz_wl_practice": {
+          "rows": 1,
+          "sha256": "4e24710c2b6de2566aa8130aa148482d2e4313f00695922d46efcf27ac66afc4"
+        },
+        "biz_wl_theory": {
+          "rows": 7,
+          "sha256": "728fd7187111f0487fe94cbc088edcc782a59f1ab8536ef81b1ec37d17a3e4e2"
+        },
+        "biz_wl_thesis": {
+          "rows": 1,
+          "sha256": "7fcca3a3f254c451f2140e0094d2263dd83deef3c8d6eec7cb52b6f663e87606"
+        },
+        "biz_workload_calc_snapshot": {
+          "rows": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "biz_workload_category_dict": {
+          "rows": 11,
+          "sha256": "f42cab24868daad0cc60d9dc4a741e087c8c23b13ed760b92c3f7e4510f27a20"
+        },
+        "biz_workload_item": {
+          "rows": 14,
+          "sha256": "5a75b2e589346a9612365ac7bf158412a42b64ef494a176a0d3b635c5ffd447c"
+        },
+        "biz_workload_period_lock": {
+          "rows": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "biz_workload_rule": {
+          "rows": 43,
+          "sha256": "331f85af25c16316a3cb2906fc23f74b3f520aed89faa870edee1b2b0b91ff42"
+        },
+        "biz_workload_settlement_snapshot": {
+          "rows": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "biz_workload_summary": {
+          "rows": 4,
+          "sha256": "ea17c0f443f09614c440d3de92193080fe11d29781278ddcecdac0e653f793bf"
+        }
+      },
+      "checker_before_failed": true,
+      "rounds": [
+        {
+          "round": 1,
+          "existing_business_columns_unchanged": true,
+          "business_tables": {
+            "biz_allowance_item": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "biz_audit_log": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "biz_coefficient_adjustment": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "biz_import_batch": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "biz_import_row": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "biz_pay_rate": {
+              "rows": 4,
+              "sha256": "cfd76a98bfff304ae3c4f0bbce6227655e08c354041c010d201180a588949179"
+            },
+            "biz_pay_record": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "biz_role_assignment": {
+              "rows": 2,
+              "sha256": "5add7973ec4784fe009ca9409af0d09a2fd0c3efc8260751de76a36300e12df4"
+            },
+            "biz_teacher_profile": {
+              "rows": 6,
+              "sha256": "8a31a1036a163cc91929324840123d9e15f19d4d1a027570f24e890b6a4a30c7"
+            },
+            "biz_teaching_task": {
+              "rows": 9,
+              "sha256": "5ff2be68705f39323b8a478d10fdebfc63cb78495e1d2a8dcd53c59f681a9e0e"
+            },
+            "biz_wl_concentrated_internship": {
+              "rows": 1,
+              "sha256": "c712f2ee15b76b4ce77516e587e348f479547c9999cab10704ab0ff7ac7598ce"
+            },
+            "biz_wl_course_design": {
+              "rows": 1,
+              "sha256": "b57567130ed10a2f130bfbe6f44e47e2940b74513fb065ba6e4ad675d1000758"
+            },
+            "biz_wl_internship_training": {
+              "rows": 1,
+              "sha256": "179093fa4ee8d62bafbe10b1bb304268fde925caee480f3df013a608e4d0115d"
+            },
+            "biz_wl_management": {
+              "rows": 1,
+              "sha256": "f3f041718f15b096cf6ab0e08c65fdaccd932f8ae9989361c081cf5dbe6f6930"
+            },
+            "biz_wl_practice": {
+              "rows": 1,
+              "sha256": "4e24710c2b6de2566aa8130aa148482d2e4313f00695922d46efcf27ac66afc4"
+            },
+            "biz_wl_theory": {
+              "rows": 7,
+              "sha256": "728fd7187111f0487fe94cbc088edcc782a59f1ab8536ef81b1ec37d17a3e4e2"
+            },
+            "biz_wl_thesis": {
+              "rows": 1,
+              "sha256": "7fcca3a3f254c451f2140e0094d2263dd83deef3c8d6eec7cb52b6f663e87606"
+            },
+            "biz_workload_calc_snapshot": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "biz_workload_category_dict": {
+              "rows": 11,
+              "sha256": "f42cab24868daad0cc60d9dc4a741e087c8c23b13ed760b92c3f7e4510f27a20"
+            },
+            "biz_workload_item": {
+              "rows": 14,
+              "sha256": "5a75b2e589346a9612365ac7bf158412a42b64ef494a176a0d3b635c5ffd447c"
+            },
+            "biz_workload_period_lock": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "biz_workload_rule": {
+              "rows": 43,
+              "sha256": "331f85af25c16316a3cb2906fc23f74b3f520aed89faa870edee1b2b0b91ff42"
+            },
+            "biz_workload_settlement_snapshot": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "biz_workload_summary": {
+              "rows": 4,
+              "sha256": "ea17c0f443f09614c440d3de92193080fe11d29781278ddcecdac0e653f793bf"
+            }
+          },
+          "new_business_rows": {
+            "biz_offline_adjustment_note": 0,
+            "biz_workload_item_review": 0,
+            "biz_workload_review_batch": 0
+          },
+          "readonly_checker": {
+            "database": "wfit_t06_20261106_a",
+            "server_version": "9.0.1",
+            "table_count": 58,
+            "passed": true,
+            "checks": {
+              "column:biz_import_batch.template_version": true,
+              "column:biz_import_batch.template_category": true,
+              "column:biz_import_batch.source_hash": true,
+              "column:biz_import_batch.operator_id": true,
+              "column:biz_import_batch.operator_name": true,
+              "column:biz_import_batch.confirm_token_hash": true,
+              "column:biz_import_batch.confirmed_at": true,
+              "column:biz_teaching_task.input_planned_hours": true,
+              "column:biz_teaching_task.input_days": true,
+              "column:biz_teaching_task.input_weeks": true,
+              "column:biz_teaching_task.input_credits": true,
+              "column:biz_teaching_task.quantity_type": true,
+              "column:biz_import_row.id": true,
+              "column:biz_import_row.batch_id": true,
+              "column:biz_import_row.row_no": true,
+              "column:biz_import_row.raw_json": true,
+              "column:biz_import_row.normalized_json": true,
+              "column:biz_import_row.status": true,
+              "column:biz_import_row.error_code": true,
+              "column:biz_import_row.error_message": true,
+              "column:biz_import_row.target_id": true,
+              "column:biz_import_row.create_by": true,
+              "column:biz_import_row.create_time": true,
+              "column:biz_import_row.update_by": true,
+              "column:biz_import_row.update_time": true,
+              "column:biz_import_row.remark": true,
+              "column:biz_workload_item.calculation_version": true,
+              "column:biz_workload_item.last_calculated_at": true,
+              "column:biz_workload_item.factor_provenance_json": true,
+              "column:biz_allowance_item.calculation_evidence_json": true,
+              "column:biz_workload_calc_snapshot.item_id": true,
+              "column:biz_workload_calc_snapshot.calculation_version": true,
+              "column:biz_workload_calc_snapshot.snapshot_hash": true,
+              "column:biz_workload_calc_snapshot.context_json": true,
+              "column:biz_coefficient_adjustment.id": true,
+              "column:biz_coefficient_adjustment.item_id": true,
+              "column:biz_coefficient_adjustment.status": true,
+              "column:biz_workload_summary.needs_recalculation": true,
+              "column:biz_workload_summary.settlement_snapshot_id": true,
+              "column:biz_pay_record.settlement_snapshot_id": true,
+              "column:biz_workload_settlement_snapshot.id": true,
+              "column:biz_workload_settlement_snapshot.summary_id": true,
+              "column:biz_workload_settlement_snapshot.user_id": true,
+              "column:biz_workload_settlement_snapshot.semester": true,
+              "column:biz_workload_settlement_snapshot.settlement_version": true,
+              "column:biz_workload_settlement_snapshot.format_version": true,
+              "column:biz_workload_settlement_snapshot.payload_json": true,
+              "column:biz_workload_settlement_snapshot.hash": true,
+              "column:biz_workload_settlement_snapshot.created_by": true,
+              "column:biz_workload_settlement_snapshot.created_at": true,
+              "column:biz_workload_period_lock.user_id": true,
+              "column:biz_workload_period_lock.semester": true,
+              "context:nullable_longtext": true,
+              "provenance:biz_workload_item.factor_provenance_json:nullable_longtext": true,
+              "provenance:biz_allowance_item.calculation_evidence_json:nullable_longtext": true,
+              "freshness:non_null_flag": true,
+              "freshness:uncalculated_by_default": true,
+              "index:import_source_non_unique": true,
+              "index:no_legacy_unique_import_source": true,
+              "index:unique_import_row": true,
+              "index:unique_snapshot_version": true,
+              "index:unique_teacher_semester_lock": true,
+              "index:unique_settlement_version": true,
+              "review:column:biz_workload_summary.review_batch_no": true,
+              "review:column:biz_workload_summary.data_version": true,
+              "review:column:biz_workload_summary.last_calculated_at": true,
+              "review:column:biz_workload_review_batch.id": true,
+              "review:column:biz_workload_review_batch.summary_id": true,
+              "review:column:biz_workload_review_batch.review_batch_no": true,
+              "review:column:biz_workload_review_batch.summary_data_version": true,
+              "review:column:biz_workload_review_batch.user_id": true,
+              "review:column:biz_workload_review_batch.semester": true,
+              "review:column:biz_workload_review_batch.settlement_snapshot_id": true,
+              "review:column:biz_workload_review_batch.settlement_snapshot_hash": true,
+              "review:column:biz_workload_review_batch.format_version": true,
+              "review:column:biz_workload_review_batch.snapshot_json": true,
+              "review:column:biz_workload_review_batch.data_hash": true,
+              "review:column:biz_workload_review_batch.created_by": true,
+              "review:column:biz_workload_review_batch.created_at": true,
+              "review:column:biz_workload_item_review.id": true,
+              "review:column:biz_workload_item_review.summary_id": true,
+              "review:column:biz_workload_item_review.item_id": true,
+              "review:column:biz_workload_item_review.review_batch_no": true,
+              "review:column:biz_workload_item_review.review_type": true,
+              "review:column:biz_workload_item_review.format_version": true,
+              "review:column:biz_workload_item_review.snapshot_json": true,
+              "review:column:biz_workload_item_review.data_hash": true,
+              "review:column:biz_workload_item_review.result": true,
+              "review:column:biz_workload_item_review.reason": true,
+              "review:column:biz_workload_item_review.reviewer_id": true,
+              "review:column:biz_workload_item_review.reviewer_name": true,
+              "review:column:biz_workload_item_review.reviewed_at": true,
+              "review:column:biz_workload_item_review.version": true,
+              "review:column:biz_workload_item_review.create_by": true,
+              "review:column:biz_workload_item_review.create_time": true,
+              "review:column:biz_workload_item_review.update_by": true,
+              "review:column:biz_workload_item_review.update_time": true,
+              "review:column:biz_offline_adjustment_note.id": true,
+              "review:column:biz_offline_adjustment_note.summary_id": true,
+              "review:column:biz_offline_adjustment_note.user_id": true,
+              "review:column:biz_offline_adjustment_note.semester": true,
+              "review:column:biz_offline_adjustment_note.request_key": true,
+              "review:column:biz_offline_adjustment_note.adjustment_amount": true,
+              "review:column:biz_offline_adjustment_note.reason": true,
+              "review:column:biz_offline_adjustment_note.handled_at": true,
+              "review:column:biz_offline_adjustment_note.handled_by_id": true,
+              "review:column:biz_offline_adjustment_note.handled_by": true,
+              "review:column:biz_offline_adjustment_note.reference_no": true,
+              "review:column:biz_offline_adjustment_note.note_text": true,
+              "review:column:biz_offline_adjustment_note.attachment_ref": true,
+              "review:column:biz_offline_adjustment_note.settlement_snapshot_id": true,
+              "review:column:biz_offline_adjustment_note.settlement_snapshot_hash": true,
+              "review:column:biz_offline_adjustment_note.created_by": true,
+              "review:column:biz_offline_adjustment_note.created_at": true,
+              "review:batch_version": true,
+              "review:summary_version": true,
+              "review:cas_version": true,
+              "review:adjustment_signed_amount": true,
+              "review:adjustment_business_date": true,
+              "review:adjustment_optional_note": true,
+              "review:version_zero_by_default": true,
+              "review:historical_audit_nullable": true,
+              "review:historical_calculated_at_nullable": true,
+              "review:no_polymorphic_target": true,
+              "review:unique_batch": true,
+              "review:unique_item_in_batch": true,
+              "review:result_page": true,
+              "review:summary_page": true,
+              "review:unique_note_request": true,
+              "review:note_page": true,
+              "permission:single_active_review_button": true,
+              "permission:reviewer_role_exists": true,
+              "permission:role:1:admin": true,
+              "permission:role:2:biz_admin": true,
+              "permission:role:3:assistant": true,
+              "permission:role:4:teacher": true,
+              "permission:role:5:leader": true,
+              "permission:hidden:system:auditRecord:list": true,
+              "permission:system:auditRecord:list:role:1": true,
+              "permission:system:auditRecord:list:role:2": true,
+              "permission:system:auditRecord:list:role:3": true,
+              "permission:system:auditRecord:list:role:4": true,
+              "permission:system:auditRecord:list:role:5": true,
+              "permission:hidden:system:auditRecord:query": true,
+              "permission:system:auditRecord:query:role:1": true,
+              "permission:system:auditRecord:query:role:2": true,
+              "permission:system:auditRecord:query:role:3": true,
+              "permission:system:auditRecord:query:role:4": true,
+              "permission:system:auditRecord:query:role:5": true,
+              "permission:hidden:system:auditRecord:review": true,
+              "permission:system:auditRecord:review:role:1": true,
+              "permission:system:auditRecord:review:role:2": true,
+              "permission:system:auditRecord:review:role:3": true,
+              "permission:system:auditRecord:review:role:4": true,
+              "permission:system:auditRecord:review:role:5": true,
+              "permission:hidden:system:auditRecord:waive": true,
+              "permission:system:auditRecord:waive:role:1": true,
+              "permission:system:auditRecord:waive:role:2": true,
+              "permission:system:auditRecord:waive:role:3": true,
+              "permission:system:auditRecord:waive:role:4": true,
+              "permission:system:auditRecord:waive:role:5": true,
+              "permission:hidden:system:offlineAdjustmentNote:query": true,
+              "permission:system:offlineAdjustmentNote:query:role:1": true,
+              "permission:system:offlineAdjustmentNote:query:role:2": true,
+              "permission:system:offlineAdjustmentNote:query:role:3": true,
+              "permission:system:offlineAdjustmentNote:query:role:4": true,
+              "permission:system:offlineAdjustmentNote:query:role:5": true,
+              "permission:hidden:system:offlineAdjustmentNote:add": true,
+              "permission:system:offlineAdjustmentNote:add:role:1": true,
+              "permission:system:offlineAdjustmentNote:add:role:2": true,
+              "permission:system:offlineAdjustmentNote:add:role:3": true,
+              "permission:system:offlineAdjustmentNote:add:role:4": true,
+              "permission:system:offlineAdjustmentNote:add:role:5": true
+            },
+            "missing_or_invalid": []
+          }
+        },
+        {
+          "round": 2,
+          "existing_business_columns_unchanged": true,
+          "business_tables": {
+            "biz_allowance_item": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "biz_audit_log": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "biz_coefficient_adjustment": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "biz_import_batch": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "biz_import_row": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "biz_pay_rate": {
+              "rows": 4,
+              "sha256": "cfd76a98bfff304ae3c4f0bbce6227655e08c354041c010d201180a588949179"
+            },
+            "biz_pay_record": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "biz_role_assignment": {
+              "rows": 2,
+              "sha256": "5add7973ec4784fe009ca9409af0d09a2fd0c3efc8260751de76a36300e12df4"
+            },
+            "biz_teacher_profile": {
+              "rows": 6,
+              "sha256": "8a31a1036a163cc91929324840123d9e15f19d4d1a027570f24e890b6a4a30c7"
+            },
+            "biz_teaching_task": {
+              "rows": 9,
+              "sha256": "5ff2be68705f39323b8a478d10fdebfc63cb78495e1d2a8dcd53c59f681a9e0e"
+            },
+            "biz_wl_concentrated_internship": {
+              "rows": 1,
+              "sha256": "c712f2ee15b76b4ce77516e587e348f479547c9999cab10704ab0ff7ac7598ce"
+            },
+            "biz_wl_course_design": {
+              "rows": 1,
+              "sha256": "b57567130ed10a2f130bfbe6f44e47e2940b74513fb065ba6e4ad675d1000758"
+            },
+            "biz_wl_internship_training": {
+              "rows": 1,
+              "sha256": "179093fa4ee8d62bafbe10b1bb304268fde925caee480f3df013a608e4d0115d"
+            },
+            "biz_wl_management": {
+              "rows": 1,
+              "sha256": "f3f041718f15b096cf6ab0e08c65fdaccd932f8ae9989361c081cf5dbe6f6930"
+            },
+            "biz_wl_practice": {
+              "rows": 1,
+              "sha256": "4e24710c2b6de2566aa8130aa148482d2e4313f00695922d46efcf27ac66afc4"
+            },
+            "biz_wl_theory": {
+              "rows": 7,
+              "sha256": "728fd7187111f0487fe94cbc088edcc782a59f1ab8536ef81b1ec37d17a3e4e2"
+            },
+            "biz_wl_thesis": {
+              "rows": 1,
+              "sha256": "7fcca3a3f254c451f2140e0094d2263dd83deef3c8d6eec7cb52b6f663e87606"
+            },
+            "biz_workload_calc_snapshot": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "biz_workload_category_dict": {
+              "rows": 11,
+              "sha256": "f42cab24868daad0cc60d9dc4a741e087c8c23b13ed760b92c3f7e4510f27a20"
+            },
+            "biz_workload_item": {
+              "rows": 14,
+              "sha256": "5a75b2e589346a9612365ac7bf158412a42b64ef494a176a0d3b635c5ffd447c"
+            },
+            "biz_workload_period_lock": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "biz_workload_rule": {
+              "rows": 43,
+              "sha256": "331f85af25c16316a3cb2906fc23f74b3f520aed89faa870edee1b2b0b91ff42"
+            },
+            "biz_workload_settlement_snapshot": {
+              "rows": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "biz_workload_summary": {
+              "rows": 4,
+              "sha256": "ea17c0f443f09614c440d3de92193080fe11d29781278ddcecdac0e653f793bf"
+            }
+          },
+          "new_business_rows": {
+            "biz_offline_adjustment_note": 0,
+            "biz_workload_item_review": 0,
+            "biz_workload_review_batch": 0
+          },
+          "readonly_checker": {
+            "database": "wfit_t06_20261106_a",
+            "server_version": "9.0.1",
+            "table_count": 58,
+            "passed": true,
+            "checks": {
+              "column:biz_import_batch.template_version": true,
+              "column:biz_import_batch.template_category": true,
+              "column:biz_import_batch.source_hash": true,
+              "column:biz_import_batch.operator_id": true,
+              "column:biz_import_batch.operator_name": true,
+              "column:biz_import_batch.confirm_token_hash": true,
+              "column:biz_import_batch.confirmed_at": true,
+              "column:biz_teaching_task.input_planned_hours": true,
+              "column:biz_teaching_task.input_days": true,
+              "column:biz_teaching_task.input_weeks": true,
+              "column:biz_teaching_task.input_credits": true,
+              "column:biz_teaching_task.quantity_type": true,
+              "column:biz_import_row.id": true,
+              "column:biz_import_row.batch_id": true,
+              "column:biz_import_row.row_no": true,
+              "column:biz_import_row.raw_json": true,
+              "column:biz_import_row.normalized_json": true,
+              "column:biz_import_row.status": true,
+              "column:biz_import_row.error_code": true,
+              "column:biz_import_row.error_message": true,
+              "column:biz_import_row.target_id": true,
+              "column:biz_import_row.create_by": true,
+              "column:biz_import_row.create_time": true,
+              "column:biz_import_row.update_by": true,
+              "column:biz_import_row.update_time": true,
+              "column:biz_import_row.remark": true,
+              "column:biz_workload_item.calculation_version": true,
+              "column:biz_workload_item.last_calculated_at": true,
+              "column:biz_workload_item.factor_provenance_json": true,
+              "column:biz_allowance_item.calculation_evidence_json": true,
+              "column:biz_workload_calc_snapshot.item_id": true,
+              "column:biz_workload_calc_snapshot.calculation_version": true,
+              "column:biz_workload_calc_snapshot.snapshot_hash": true,
+              "column:biz_workload_calc_snapshot.context_json": true,
+              "column:biz_coefficient_adjustment.id": true,
+              "column:biz_coefficient_adjustment.item_id": true,
+              "column:biz_coefficient_adjustment.status": true,
+              "column:biz_workload_summary.needs_recalculation": true,
+              "column:biz_workload_summary.settlement_snapshot_id": true,
+              "column:biz_pay_record.settlement_snapshot_id": true,
+              "column:biz_workload_settlement_snapshot.id": true,
+              "column:biz_workload_settlement_snapshot.summary_id": true,
+              "column:biz_workload_settlement_snapshot.user_id": true,
+              "column:biz_workload_settlement_snapshot.semester": true,
+              "column:biz_workload_settlement_snapshot.settlement_version": true,
+              "column:biz_workload_settlement_snapshot.format_version": true,
+              "column:biz_workload_settlement_snapshot.payload_json": true,
+              "column:biz_workload_settlement_snapshot.hash": true,
+              "column:biz_workload_settlement_snapshot.created_by": true,
+              "column:biz_workload_settlement_snapshot.created_at": true,
+              "column:biz_workload_period_lock.user_id": true,
+              "column:biz_workload_period_lock.semester": true,
+              "context:nullable_longtext": true,
+              "provenance:biz_workload_item.factor_provenance_json:nullable_longtext": true,
+              "provenance:biz_allowance_item.calculation_evidence_json:nullable_longtext": true,
+              "freshness:non_null_flag": true,
+              "freshness:uncalculated_by_default": true,
+              "index:import_source_non_unique": true,
+              "index:no_legacy_unique_import_source": true,
+              "index:unique_import_row": true,
+              "index:unique_snapshot_version": true,
+              "index:unique_teacher_semester_lock": true,
+              "index:unique_settlement_version": true,
+              "review:column:biz_workload_summary.review_batch_no": true,
+              "review:column:biz_workload_summary.data_version": true,
+              "review:column:biz_workload_summary.last_calculated_at": true,
+              "review:column:biz_workload_review_batch.id": true,
+              "review:column:biz_workload_review_batch.summary_id": true,
+              "review:column:biz_workload_review_batch.review_batch_no": true,
+              "review:column:biz_workload_review_batch.summary_data_version": true,
+              "review:column:biz_workload_review_batch.user_id": true,
+              "review:column:biz_workload_review_batch.semester": true,
+              "review:column:biz_workload_review_batch.settlement_snapshot_id": true,
+              "review:column:biz_workload_review_batch.settlement_snapshot_hash": true,
+              "review:column:biz_workload_review_batch.format_version": true,
+              "review:column:biz_workload_review_batch.snapshot_json": true,
+              "review:column:biz_workload_review_batch.data_hash": true,
+              "review:column:biz_workload_review_batch.created_by": true,
+              "review:column:biz_workload_review_batch.created_at": true,
+              "review:column:biz_workload_item_review.id": true,
+              "review:column:biz_workload_item_review.summary_id": true,
+              "review:column:biz_workload_item_review.item_id": true,
+              "review:column:biz_workload_item_review.review_batch_no": true,
+              "review:column:biz_workload_item_review.review_type": true,
+              "review:column:biz_workload_item_review.format_version": true,
+              "review:column:biz_workload_item_review.snapshot_json": true,
+              "review:column:biz_workload_item_review.data_hash": true,
+              "review:column:biz_workload_item_review.result": true,
+              "review:column:biz_workload_item_review.reason": true,
+              "review:column:biz_workload_item_review.reviewer_id": true,
+              "review:column:biz_workload_item_review.reviewer_name": true,
+              "review:column:biz_workload_item_review.reviewed_at": true,
+              "review:column:biz_workload_item_review.version": true,
+              "review:column:biz_workload_item_review.create_by": true,
+              "review:column:biz_workload_item_review.create_time": true,
+              "review:column:biz_workload_item_review.update_by": true,
+              "review:column:biz_workload_item_review.update_time": true,
+              "review:column:biz_offline_adjustment_note.id": true,
+              "review:column:biz_offline_adjustment_note.summary_id": true,
+              "review:column:biz_offline_adjustment_note.user_id": true,
+              "review:column:biz_offline_adjustment_note.semester": true,
+              "review:column:biz_offline_adjustment_note.request_key": true,
+              "review:column:biz_offline_adjustment_note.adjustment_amount": true,
+              "review:column:biz_offline_adjustment_note.reason": true,
+              "review:column:biz_offline_adjustment_note.handled_at": true,
+              "review:column:biz_offline_adjustment_note.handled_by_id": true,
+              "review:column:biz_offline_adjustment_note.handled_by": true,
+              "review:column:biz_offline_adjustment_note.reference_no": true,
+              "review:column:biz_offline_adjustment_note.note_text": true,
+              "review:column:biz_offline_adjustment_note.attachment_ref": true,
+              "review:column:biz_offline_adjustment_note.settlement_snapshot_id": true,
+              "review:column:biz_offline_adjustment_note.settlement_snapshot_hash": true,
+              "review:column:biz_offline_adjustment_note.created_by": true,
+              "review:column:biz_offline_adjustment_note.created_at": true,
+              "review:batch_version": true,
+              "review:summary_version": true,
+              "review:cas_version": true,
+              "review:adjustment_signed_amount": true,
+              "review:adjustment_business_date": true,
+              "review:adjustment_optional_note": true,
+              "review:version_zero_by_default": true,
+              "review:historical_audit_nullable": true,
+              "review:historical_calculated_at_nullable": true,
+              "review:no_polymorphic_target": true,
+              "review:unique_batch": true,
+              "review:unique_item_in_batch": true,
+              "review:result_page": true,
+              "review:summary_page": true,
+              "review:unique_note_request": true,
+              "review:note_page": true,
+              "permission:single_active_review_button": true,
+              "permission:reviewer_role_exists": true,
+              "permission:role:1:admin": true,
+              "permission:role:2:biz_admin": true,
+              "permission:role:3:assistant": true,
+              "permission:role:4:teacher": true,
+              "permission:role:5:leader": true,
+              "permission:hidden:system:auditRecord:list": true,
+              "permission:system:auditRecord:list:role:1": true,
+              "permission:system:auditRecord:list:role:2": true,
+              "permission:system:auditRecord:list:role:3": true,
+              "permission:system:auditRecord:list:role:4": true,
+              "permission:system:auditRecord:list:role:5": true,
+              "permission:hidden:system:auditRecord:query": true,
+              "permission:system:auditRecord:query:role:1": true,
+              "permission:system:auditRecord:query:role:2": true,
+              "permission:system:auditRecord:query:role:3": true,
+              "permission:system:auditRecord:query:role:4": true,
+              "permission:system:auditRecord:query:role:5": true,
+              "permission:hidden:system:auditRecord:review": true,
+              "permission:system:auditRecord:review:role:1": true,
+              "permission:system:auditRecord:review:role:2": true,
+              "permission:system:auditRecord:review:role:3": true,
+              "permission:system:auditRecord:review:role:4": true,
+              "permission:system:auditRecord:review:role:5": true,
+              "permission:hidden:system:auditRecord:waive": true,
+              "permission:system:auditRecord:waive:role:1": true,
+              "permission:system:auditRecord:waive:role:2": true,
+              "permission:system:auditRecord:waive:role:3": true,
+              "permission:system:auditRecord:waive:role:4": true,
+              "permission:system:auditRecord:waive:role:5": true,
+              "permission:hidden:system:offlineAdjustmentNote:query": true,
+              "permission:system:offlineAdjustmentNote:query:role:1": true,
+              "permission:system:offlineAdjustmentNote:query:role:2": true,
+              "permission:system:offlineAdjustmentNote:query:role:3": true,
+              "permission:system:offlineAdjustmentNote:query:role:4": true,
+              "permission:system:offlineAdjustmentNote:query:role:5": true,
+              "permission:hidden:system:offlineAdjustmentNote:add": true,
+              "permission:system:offlineAdjustmentNote:add:role:1": true,
+              "permission:system:offlineAdjustmentNote:add:role:2": true,
+              "permission:system:offlineAdjustmentNote:add:role:3": true,
+              "permission:system:offlineAdjustmentNote:add:role:4": true,
+              "permission:system:offlineAdjustmentNote:add:role:5": true
+            },
+            "missing_or_invalid": []
+          }
+        }
+      ],
+      "final_readonly_checker": {
+        "database": "wfit_t06_20261106_a",
+        "server_version": "9.0.1",
+        "table_count": 58,
+        "passed": true,
+        "checks": {
+          "column:biz_import_batch.template_version": true,
+          "column:biz_import_batch.template_category": true,
+          "column:biz_import_batch.source_hash": true,
+          "column:biz_import_batch.operator_id": true,
+          "column:biz_import_batch.operator_name": true,
+          "column:biz_import_batch.confirm_token_hash": true,
+          "column:biz_import_batch.confirmed_at": true,
+          "column:biz_teaching_task.input_planned_hours": true,
+          "column:biz_teaching_task.input_days": true,
+          "column:biz_teaching_task.input_weeks": true,
+          "column:biz_teaching_task.input_credits": true,
+          "column:biz_teaching_task.quantity_type": true,
+          "column:biz_import_row.id": true,
+          "column:biz_import_row.batch_id": true,
+          "column:biz_import_row.row_no": true,
+          "column:biz_import_row.raw_json": true,
+          "column:biz_import_row.normalized_json": true,
+          "column:biz_import_row.status": true,
+          "column:biz_import_row.error_code": true,
+          "column:biz_import_row.error_message": true,
+          "column:biz_import_row.target_id": true,
+          "column:biz_import_row.create_by": true,
+          "column:biz_import_row.create_time": true,
+          "column:biz_import_row.update_by": true,
+          "column:biz_import_row.update_time": true,
+          "column:biz_import_row.remark": true,
+          "column:biz_workload_item.calculation_version": true,
+          "column:biz_workload_item.last_calculated_at": true,
+          "column:biz_workload_item.factor_provenance_json": true,
+          "column:biz_allowance_item.calculation_evidence_json": true,
+          "column:biz_workload_calc_snapshot.item_id": true,
+          "column:biz_workload_calc_snapshot.calculation_version": true,
+          "column:biz_workload_calc_snapshot.snapshot_hash": true,
+          "column:biz_workload_calc_snapshot.context_json": true,
+          "column:biz_coefficient_adjustment.id": true,
+          "column:biz_coefficient_adjustment.item_id": true,
+          "column:biz_coefficient_adjustment.status": true,
+          "column:biz_workload_summary.needs_recalculation": true,
+          "column:biz_workload_summary.settlement_snapshot_id": true,
+          "column:biz_pay_record.settlement_snapshot_id": true,
+          "column:biz_workload_settlement_snapshot.id": true,
+          "column:biz_workload_settlement_snapshot.summary_id": true,
+          "column:biz_workload_settlement_snapshot.user_id": true,
+          "column:biz_workload_settlement_snapshot.semester": true,
+          "column:biz_workload_settlement_snapshot.settlement_version": true,
+          "column:biz_workload_settlement_snapshot.format_version": true,
+          "column:biz_workload_settlement_snapshot.payload_json": true,
+          "column:biz_workload_settlement_snapshot.hash": true,
+          "column:biz_workload_settlement_snapshot.created_by": true,
+          "column:biz_workload_settlement_snapshot.created_at": true,
+          "column:biz_workload_period_lock.user_id": true,
+          "column:biz_workload_period_lock.semester": true,
+          "context:nullable_longtext": true,
+          "provenance:biz_workload_item.factor_provenance_json:nullable_longtext": true,
+          "provenance:biz_allowance_item.calculation_evidence_json:nullable_longtext": true,
+          "freshness:non_null_flag": true,
+          "freshness:uncalculated_by_default": true,
+          "index:import_source_non_unique": true,
+          "index:no_legacy_unique_import_source": true,
+          "index:unique_import_row": true,
+          "index:unique_snapshot_version": true,
+          "index:unique_teacher_semester_lock": true,
+          "index:unique_settlement_version": true,
+          "review:column:biz_workload_summary.review_batch_no": true,
+          "review:column:biz_workload_summary.data_version": true,
+          "review:column:biz_workload_summary.last_calculated_at": true,
+          "review:column:biz_workload_review_batch.id": true,
+          "review:column:biz_workload_review_batch.summary_id": true,
+          "review:column:biz_workload_review_batch.review_batch_no": true,
+          "review:column:biz_workload_review_batch.summary_data_version": true,
+          "review:column:biz_workload_review_batch.user_id": true,
+          "review:column:biz_workload_review_batch.semester": true,
+          "review:column:biz_workload_review_batch.settlement_snapshot_id": true,
+          "review:column:biz_workload_review_batch.settlement_snapshot_hash": true,
+          "review:column:biz_workload_review_batch.format_version": true,
+          "review:column:biz_workload_review_batch.snapshot_json": true,
+          "review:column:biz_workload_review_batch.data_hash": true,
+          "review:column:biz_workload_review_batch.created_by": true,
+          "review:column:biz_workload_review_batch.created_at": true,
+          "review:column:biz_workload_item_review.id": true,
+          "review:column:biz_workload_item_review.summary_id": true,
+          "review:column:biz_workload_item_review.item_id": true,
+          "review:column:biz_workload_item_review.review_batch_no": true,
+          "review:column:biz_workload_item_review.review_type": true,
+          "review:column:biz_workload_item_review.format_version": true,
+          "review:column:biz_workload_item_review.snapshot_json": true,
+          "review:column:biz_workload_item_review.data_hash": true,
+          "review:column:biz_workload_item_review.result": true,
+          "review:column:biz_workload_item_review.reason": true,
+          "review:column:biz_workload_item_review.reviewer_id": true,
+          "review:column:biz_workload_item_review.reviewer_name": true,
+          "review:column:biz_workload_item_review.reviewed_at": true,
+          "review:column:biz_workload_item_review.version": true,
+          "review:column:biz_workload_item_review.create_by": true,
+          "review:column:biz_workload_item_review.create_time": true,
+          "review:column:biz_workload_item_review.update_by": true,
+          "review:column:biz_workload_item_review.update_time": true,
+          "review:column:biz_offline_adjustment_note.id": true,
+          "review:column:biz_offline_adjustment_note.summary_id": true,
+          "review:column:biz_offline_adjustment_note.user_id": true,
+          "review:column:biz_offline_adjustment_note.semester": true,
+          "review:column:biz_offline_adjustment_note.request_key": true,
+          "review:column:biz_offline_adjustment_note.adjustment_amount": true,
+          "review:column:biz_offline_adjustment_note.reason": true,
+          "review:column:biz_offline_adjustment_note.handled_at": true,
+          "review:column:biz_offline_adjustment_note.handled_by_id": true,
+          "review:column:biz_offline_adjustment_note.handled_by": true,
+          "review:column:biz_offline_adjustment_note.reference_no": true,
+          "review:column:biz_offline_adjustment_note.note_text": true,
+          "review:column:biz_offline_adjustment_note.attachment_ref": true,
+          "review:column:biz_offline_adjustment_note.settlement_snapshot_id": true,
+          "review:column:biz_offline_adjustment_note.settlement_snapshot_hash": true,
+          "review:column:biz_offline_adjustment_note.created_by": true,
+          "review:column:biz_offline_adjustment_note.created_at": true,
+          "review:batch_version": true,
+          "review:summary_version": true,
+          "review:cas_version": true,
+          "review:adjustment_signed_amount": true,
+          "review:adjustment_business_date": true,
+          "review:adjustment_optional_note": true,
+          "review:shape:biz_workload_review_batch.id": true,
+          "review:shape:biz_workload_review_batch.summary_id": true,
+          "review:shape:biz_workload_review_batch.summary_data_version": true,
+          "review:shape:biz_workload_review_batch.user_id": true,
+          "review:shape:biz_workload_review_batch.review_batch_no": true,
+          "review:shape:biz_workload_review_batch.semester": true,
+          "review:shape:biz_workload_review_batch.format_version": true,
+          "review:shape:biz_workload_review_batch.snapshot_json": true,
+          "review:shape:biz_workload_review_batch.data_hash": true,
+          "review:shape:biz_workload_review_batch.created_by": true,
+          "review:shape:biz_workload_review_batch.created_at": true,
+          "review:shape:biz_workload_item_review.id": true,
+          "review:shape:biz_workload_item_review.summary_id": true,
+          "review:shape:biz_workload_item_review.item_id": true,
+          "review:shape:biz_workload_item_review.version": true,
+          "review:shape:biz_workload_item_review.review_batch_no": true,
+          "review:shape:biz_workload_item_review.review_type": true,
+          "review:shape:biz_workload_item_review.format_version": true,
+          "review:shape:biz_workload_item_review.snapshot_json": true,
+          "review:shape:biz_workload_item_review.data_hash": true,
+          "review:shape:biz_workload_item_review.result": true,
+          "review:shape:biz_workload_item_review.create_by": true,
+          "review:shape:biz_workload_item_review.create_time": true,
+          "review:shape:biz_offline_adjustment_note.id": true,
+          "review:shape:biz_offline_adjustment_note.summary_id": true,
+          "review:shape:biz_offline_adjustment_note.user_id": true,
+          "review:shape:biz_offline_adjustment_note.handled_by_id": true,
+          "review:shape:biz_offline_adjustment_note.semester": true,
+          "review:shape:biz_offline_adjustment_note.request_key": true,
+          "review:shape:biz_offline_adjustment_note.handled_by": true,
+          "review:shape:biz_offline_adjustment_note.created_by": true,
+          "review:shape:biz_offline_adjustment_note.adjustment_amount": true,
+          "review:shape:biz_offline_adjustment_note.reason": true,
+          "review:shape:biz_offline_adjustment_note.handled_at": true,
+          "review:shape:biz_offline_adjustment_note.created_at": true,
+          "review:version_zero_by_default": true,
+          "review:historical_audit_nullable": true,
+          "review:historical_calculated_at_nullable": true,
+          "review:no_polymorphic_target": true,
+          "review:unique_batch": true,
+          "review:unique_item_in_batch": true,
+          "review:result_page": true,
+          "review:summary_page": true,
+          "review:unique_note_request": true,
+          "review:note_page": true,
+          "review:constraint:biz_workload_review_batch.ck_review_batch_version": true,
+          "review:constraint:biz_workload_review_batch.ck_review_batch_settlement": true,
+          "review:constraint:biz_workload_item_review.ck_item_review_type": true,
+          "review:constraint:biz_workload_item_review.ck_item_review_result": true,
+          "review:constraint:biz_workload_item_review.ck_item_review_reason": true,
+          "review:constraint:biz_workload_item_review.ck_item_review_version": true,
+          "review:constraint:biz_offline_adjustment_note.ck_adjustment_reason": true,
+          "review:constraint:biz_offline_adjustment_note.ck_adjustment_settlement": true,
+          "permission:single_active_review_button": true,
+          "permission:reviewer_role_exists": true,
+          "permission:role:1:admin": true,
+          "permission:role:2:biz_admin": true,
+          "permission:role:3:assistant": true,
+          "permission:role:4:teacher": true,
+          "permission:role:5:leader": true,
+          "permission:hidden:system:auditRecord:list": true,
+          "permission:system:auditRecord:list:role:1": true,
+          "permission:system:auditRecord:list:role:2": true,
+          "permission:system:auditRecord:list:role:3": true,
+          "permission:system:auditRecord:list:role:4": true,
+          "permission:system:auditRecord:list:role:5": true,
+          "permission:hidden:system:auditRecord:query": true,
+          "permission:system:auditRecord:query:role:1": true,
+          "permission:system:auditRecord:query:role:2": true,
+          "permission:system:auditRecord:query:role:3": true,
+          "permission:system:auditRecord:query:role:4": true,
+          "permission:system:auditRecord:query:role:5": true,
+          "permission:hidden:system:auditRecord:review": true,
+          "permission:system:auditRecord:review:role:1": true,
+          "permission:system:auditRecord:review:role:2": true,
+          "permission:system:auditRecord:review:role:3": true,
+          "permission:system:auditRecord:review:role:4": true,
+          "permission:system:auditRecord:review:role:5": true,
+          "permission:hidden:system:auditRecord:waive": true,
+          "permission:system:auditRecord:waive:role:1": true,
+          "permission:system:auditRecord:waive:role:2": true,
+          "permission:system:auditRecord:waive:role:3": true,
+          "permission:system:auditRecord:waive:role:4": true,
+          "permission:system:auditRecord:waive:role:5": true,
+          "permission:hidden:system:offlineAdjustmentNote:query": true,
+          "permission:system:offlineAdjustmentNote:query:role:1": true,
+          "permission:system:offlineAdjustmentNote:query:role:2": true,
+          "permission:system:offlineAdjustmentNote:query:role:3": true,
+          "permission:system:offlineAdjustmentNote:query:role:4": true,
+          "permission:system:offlineAdjustmentNote:query:role:5": true,
+          "permission:hidden:system:offlineAdjustmentNote:add": true,
+          "permission:system:offlineAdjustmentNote:add:role:1": true,
+          "permission:system:offlineAdjustmentNote:add:role:2": true,
+          "permission:system:offlineAdjustmentNote:add:role:3": true,
+          "permission:system:offlineAdjustmentNote:add:role:4": true,
+          "permission:system:offlineAdjustmentNote:add:role:5": true
+        },
+        "missing_or_invalid": []
+      }
+    },
+    {
+      "schema": "wfit_t06_20261106_b",
+      "before": {
+        "biz_allowance_item": {
+          "rows": 2,
+          "sha256": "f2329a1eed348e9174f816014cfa70cdeef3b9886cb49130ba2b1d84c028967a"
+        },
+        "biz_audit_log": {
+          "rows": 8,
+          "sha256": "67b12f4f3be629996f6bce1eff90d226f968ccef615f5f48051d8bf338cfae7e"
+        },
+        "biz_coefficient_adjustment": {
+          "rows": 1,
+          "sha256": "51536622b649ccfe80b101189a91fbd24128362509392ef088c96d7075923f06"
+        },
+        "biz_import_batch": {
+          "rows": 1,
+          "sha256": "15c93c9f70cbc15eb5ad5369bfc734b0379a8cc0fca32f094a04ce49a4ee698b"
+        },
+        "biz_import_row": {
+          "rows": 1,
+          "sha256": "eea89e5a3f8a4845b1f4a76b7e5f921444c037120138ee614653ec5fb637d71b"
+        },
+        "biz_pay_rate": {
+          "rows": 9,
+          "sha256": "06e321a3abdfd515dcc0c145e55e7f6d26808f27439172ff39859b22345798f6"
+        },
+        "biz_pay_record": {
+          "rows": 7,
+          "sha256": "ed1bbf335533aa5e0559ee4787d4f32421eb669ab8216964396e9ff15872d37b"
+        },
+        "biz_role_assignment": {
+          "rows": 2,
+          "sha256": "5add7973ec4784fe009ca9409af0d09a2fd0c3efc8260751de76a36300e12df4"
+        },
+        "biz_teacher_profile": {
+          "rows": 8,
+          "sha256": "3c838c753b1b59a8fd49177e7b2e4ff21bbf257952e97028be9df56a76052171"
+        },
+        "biz_teaching_task": {
+          "rows": 10,
+          "sha256": "555bbc7e2876d4c98c257a27b5e0c6a7e0f94c834c88c6cd3feccc7e265c8fa9"
+        },
+        "biz_wl_concentrated_internship": {
+          "rows": 1,
+          "sha256": "c712f2ee15b76b4ce77516e587e348f479547c9999cab10704ab0ff7ac7598ce"
+        },
+        "biz_wl_course_design": {
+          "rows": 2,
+          "sha256": "6442d8bb3f93d8fe146a733ed7400364183a45cce77c18e3c4b97563df9fcc88"
+        },
+        "biz_wl_internship_training": {
+          "rows": 1,
+          "sha256": "179093fa4ee8d62bafbe10b1bb304268fde925caee480f3df013a608e4d0115d"
+        },
+        "biz_wl_management": {
+          "rows": 1,
+          "sha256": "f3f041718f15b096cf6ab0e08c65fdaccd932f8ae9989361c081cf5dbe6f6930"
+        },
+        "biz_wl_practice": {
+          "rows": 1,
+          "sha256": "4e24710c2b6de2566aa8130aa148482d2e4313f00695922d46efcf27ac66afc4"
+        },
+        "biz_wl_theory": {
+          "rows": 8,
+          "sha256": "1ed0ed478ab3a1a455f9ac5ee6a33d0e3d52cb70a25338b83eb81ab04182bb43"
+        },
+        "biz_wl_thesis": {
+          "rows": 1,
+          "sha256": "7fcca3a3f254c451f2140e0094d2263dd83deef3c8d6eec7cb52b6f663e87606"
+        },
+        "biz_workload_calc_snapshot": {
+          "rows": 9,
+          "sha256": "44477481e6d127b51807a5b196f297a9442a29a653fd705e2b7bc4c7087945d9"
+        },
+        "biz_workload_category_dict": {
+          "rows": 11,
+          "sha256": "f42cab24868daad0cc60d9dc4a741e087c8c23b13ed760b92c3f7e4510f27a20"
+        },
+        "biz_workload_item": {
+          "rows": 23,
+          "sha256": "f96b467cbec04c515914fee07923d363af06e1021acebd7acc30c1322c5f6f1a"
+        },
+        "biz_workload_period_lock": {
+          "rows": 8,
+          "sha256": "0b7997f3b9398bbb900e59deaf8db2da251427ce323c75bae2b02d076e65eec4"
+        },
+        "biz_workload_rule": {
+          "rows": 52,
+          "sha256": "272baab18ab1a61b9f61daa6c50df8ac8e4930654cf5fe39af7f3e6eaf60618b"
+        },
+        "biz_workload_settlement_snapshot": {
+          "rows": 4,
+          "sha256": "f2b2d4ddf13d04940dc1d5c56a09d933e98145496f330d70a6f1a0c4e70e1899"
+        },
+        "biz_workload_summary": {
+          "rows": 11,
+          "sha256": "85cb9eab2a22f8f0ad7e96240662605c95589c7614407b17f9b08e0a4e1c08a3"
+        }
+      },
+      "checker_before_failed": true,
+      "rounds": [
+        {
+          "round": 1,
+          "existing_business_columns_unchanged": true,
+          "business_tables": {
+            "biz_allowance_item": {
+              "rows": 2,
+              "sha256": "f2329a1eed348e9174f816014cfa70cdeef3b9886cb49130ba2b1d84c028967a"
+            },
+            "biz_audit_log": {
+              "rows": 8,
+              "sha256": "67b12f4f3be629996f6bce1eff90d226f968ccef615f5f48051d8bf338cfae7e"
+            },
+            "biz_coefficient_adjustment": {
+              "rows": 1,
+              "sha256": "51536622b649ccfe80b101189a91fbd24128362509392ef088c96d7075923f06"
+            },
+            "biz_import_batch": {
+              "rows": 1,
+              "sha256": "15c93c9f70cbc15eb5ad5369bfc734b0379a8cc0fca32f094a04ce49a4ee698b"
+            },
+            "biz_import_row": {
+              "rows": 1,
+              "sha256": "eea89e5a3f8a4845b1f4a76b7e5f921444c037120138ee614653ec5fb637d71b"
+            },
+            "biz_pay_rate": {
+              "rows": 9,
+              "sha256": "06e321a3abdfd515dcc0c145e55e7f6d26808f27439172ff39859b22345798f6"
+            },
+            "biz_pay_record": {
+              "rows": 7,
+              "sha256": "ed1bbf335533aa5e0559ee4787d4f32421eb669ab8216964396e9ff15872d37b"
+            },
+            "biz_role_assignment": {
+              "rows": 2,
+              "sha256": "5add7973ec4784fe009ca9409af0d09a2fd0c3efc8260751de76a36300e12df4"
+            },
+            "biz_teacher_profile": {
+              "rows": 8,
+              "sha256": "3c838c753b1b59a8fd49177e7b2e4ff21bbf257952e97028be9df56a76052171"
+            },
+            "biz_teaching_task": {
+              "rows": 10,
+              "sha256": "555bbc7e2876d4c98c257a27b5e0c6a7e0f94c834c88c6cd3feccc7e265c8fa9"
+            },
+            "biz_wl_concentrated_internship": {
+              "rows": 1,
+              "sha256": "c712f2ee15b76b4ce77516e587e348f479547c9999cab10704ab0ff7ac7598ce"
+            },
+            "biz_wl_course_design": {
+              "rows": 2,
+              "sha256": "6442d8bb3f93d8fe146a733ed7400364183a45cce77c18e3c4b97563df9fcc88"
+            },
+            "biz_wl_internship_training": {
+              "rows": 1,
+              "sha256": "179093fa4ee8d62bafbe10b1bb304268fde925caee480f3df013a608e4d0115d"
+            },
+            "biz_wl_management": {
+              "rows": 1,
+              "sha256": "f3f041718f15b096cf6ab0e08c65fdaccd932f8ae9989361c081cf5dbe6f6930"
+            },
+            "biz_wl_practice": {
+              "rows": 1,
+              "sha256": "4e24710c2b6de2566aa8130aa148482d2e4313f00695922d46efcf27ac66afc4"
+            },
+            "biz_wl_theory": {
+              "rows": 8,
+              "sha256": "1ed0ed478ab3a1a455f9ac5ee6a33d0e3d52cb70a25338b83eb81ab04182bb43"
+            },
+            "biz_wl_thesis": {
+              "rows": 1,
+              "sha256": "7fcca3a3f254c451f2140e0094d2263dd83deef3c8d6eec7cb52b6f663e87606"
+            },
+            "biz_workload_calc_snapshot": {
+              "rows": 9,
+              "sha256": "44477481e6d127b51807a5b196f297a9442a29a653fd705e2b7bc4c7087945d9"
+            },
+            "biz_workload_category_dict": {
+              "rows": 11,
+              "sha256": "f42cab24868daad0cc60d9dc4a741e087c8c23b13ed760b92c3f7e4510f27a20"
+            },
+            "biz_workload_item": {
+              "rows": 23,
+              "sha256": "f96b467cbec04c515914fee07923d363af06e1021acebd7acc30c1322c5f6f1a"
+            },
+            "biz_workload_period_lock": {
+              "rows": 8,
+              "sha256": "0b7997f3b9398bbb900e59deaf8db2da251427ce323c75bae2b02d076e65eec4"
+            },
+            "biz_workload_rule": {
+              "rows": 52,
+              "sha256": "272baab18ab1a61b9f61daa6c50df8ac8e4930654cf5fe39af7f3e6eaf60618b"
+            },
+            "biz_workload_settlement_snapshot": {
+              "rows": 4,
+              "sha256": "f2b2d4ddf13d04940dc1d5c56a09d933e98145496f330d70a6f1a0c4e70e1899"
+            },
+            "biz_workload_summary": {
+              "rows": 11,
+              "sha256": "85cb9eab2a22f8f0ad7e96240662605c95589c7614407b17f9b08e0a4e1c08a3"
+            }
+          },
+          "new_business_rows": {
+            "biz_offline_adjustment_note": 0,
+            "biz_workload_item_review": 0,
+            "biz_workload_review_batch": 0
+          },
+          "readonly_checker": {
+            "database": "wfit_t06_20261106_b",
+            "server_version": "9.0.1",
+            "table_count": 58,
+            "passed": true,
+            "checks": {
+              "column:biz_import_batch.template_version": true,
+              "column:biz_import_batch.template_category": true,
+              "column:biz_import_batch.source_hash": true,
+              "column:biz_import_batch.operator_id": true,
+              "column:biz_import_batch.operator_name": true,
+              "column:biz_import_batch.confirm_token_hash": true,
+              "column:biz_import_batch.confirmed_at": true,
+              "column:biz_teaching_task.input_planned_hours": true,
+              "column:biz_teaching_task.input_days": true,
+              "column:biz_teaching_task.input_weeks": true,
+              "column:biz_teaching_task.input_credits": true,
+              "column:biz_teaching_task.quantity_type": true,
+              "column:biz_import_row.id": true,
+              "column:biz_import_row.batch_id": true,
+              "column:biz_import_row.row_no": true,
+              "column:biz_import_row.raw_json": true,
+              "column:biz_import_row.normalized_json": true,
+              "column:biz_import_row.status": true,
+              "column:biz_import_row.error_code": true,
+              "column:biz_import_row.error_message": true,
+              "column:biz_import_row.target_id": true,
+              "column:biz_import_row.create_by": true,
+              "column:biz_import_row.create_time": true,
+              "column:biz_import_row.update_by": true,
+              "column:biz_import_row.update_time": true,
+              "column:biz_import_row.remark": true,
+              "column:biz_workload_item.calculation_version": true,
+              "column:biz_workload_item.last_calculated_at": true,
+              "column:biz_workload_item.factor_provenance_json": true,
+              "column:biz_allowance_item.calculation_evidence_json": true,
+              "column:biz_workload_calc_snapshot.item_id": true,
+              "column:biz_workload_calc_snapshot.calculation_version": true,
+              "column:biz_workload_calc_snapshot.snapshot_hash": true,
+              "column:biz_workload_calc_snapshot.context_json": true,
+              "column:biz_coefficient_adjustment.id": true,
+              "column:biz_coefficient_adjustment.item_id": true,
+              "column:biz_coefficient_adjustment.status": true,
+              "column:biz_workload_summary.needs_recalculation": true,
+              "column:biz_workload_summary.settlement_snapshot_id": true,
+              "column:biz_pay_record.settlement_snapshot_id": true,
+              "column:biz_workload_settlement_snapshot.id": true,
+              "column:biz_workload_settlement_snapshot.summary_id": true,
+              "column:biz_workload_settlement_snapshot.user_id": true,
+              "column:biz_workload_settlement_snapshot.semester": true,
+              "column:biz_workload_settlement_snapshot.settlement_version": true,
+              "column:biz_workload_settlement_snapshot.format_version": true,
+              "column:biz_workload_settlement_snapshot.payload_json": true,
+              "column:biz_workload_settlement_snapshot.hash": true,
+              "column:biz_workload_settlement_snapshot.created_by": true,
+              "column:biz_workload_settlement_snapshot.created_at": true,
+              "column:biz_workload_period_lock.user_id": true,
+              "column:biz_workload_period_lock.semester": true,
+              "context:nullable_longtext": true,
+              "provenance:biz_workload_item.factor_provenance_json:nullable_longtext": true,
+              "provenance:biz_allowance_item.calculation_evidence_json:nullable_longtext": true,
+              "freshness:non_null_flag": true,
+              "freshness:uncalculated_by_default": true,
+              "index:import_source_non_unique": true,
+              "index:no_legacy_unique_import_source": true,
+              "index:unique_import_row": true,
+              "index:unique_snapshot_version": true,
+              "index:unique_teacher_semester_lock": true,
+              "index:unique_settlement_version": true,
+              "review:column:biz_workload_summary.review_batch_no": true,
+              "review:column:biz_workload_summary.data_version": true,
+              "review:column:biz_workload_summary.last_calculated_at": true,
+              "review:column:biz_workload_review_batch.id": true,
+              "review:column:biz_workload_review_batch.summary_id": true,
+              "review:column:biz_workload_review_batch.review_batch_no": true,
+              "review:column:biz_workload_review_batch.summary_data_version": true,
+              "review:column:biz_workload_review_batch.user_id": true,
+              "review:column:biz_workload_review_batch.semester": true,
+              "review:column:biz_workload_review_batch.settlement_snapshot_id": true,
+              "review:column:biz_workload_review_batch.settlement_snapshot_hash": true,
+              "review:column:biz_workload_review_batch.format_version": true,
+              "review:column:biz_workload_review_batch.snapshot_json": true,
+              "review:column:biz_workload_review_batch.data_hash": true,
+              "review:column:biz_workload_review_batch.created_by": true,
+              "review:column:biz_workload_review_batch.created_at": true,
+              "review:column:biz_workload_item_review.id": true,
+              "review:column:biz_workload_item_review.summary_id": true,
+              "review:column:biz_workload_item_review.item_id": true,
+              "review:column:biz_workload_item_review.review_batch_no": true,
+              "review:column:biz_workload_item_review.review_type": true,
+              "review:column:biz_workload_item_review.format_version": true,
+              "review:column:biz_workload_item_review.snapshot_json": true,
+              "review:column:biz_workload_item_review.data_hash": true,
+              "review:column:biz_workload_item_review.result": true,
+              "review:column:biz_workload_item_review.reason": true,
+              "review:column:biz_workload_item_review.reviewer_id": true,
+              "review:column:biz_workload_item_review.reviewer_name": true,
+              "review:column:biz_workload_item_review.reviewed_at": true,
+              "review:column:biz_workload_item_review.version": true,
+              "review:column:biz_workload_item_review.create_by": true,
+              "review:column:biz_workload_item_review.create_time": true,
+              "review:column:biz_workload_item_review.update_by": true,
+              "review:column:biz_workload_item_review.update_time": true,
+              "review:column:biz_offline_adjustment_note.id": true,
+              "review:column:biz_offline_adjustment_note.summary_id": true,
+              "review:column:biz_offline_adjustment_note.user_id": true,
+              "review:column:biz_offline_adjustment_note.semester": true,
+              "review:column:biz_offline_adjustment_note.request_key": true,
+              "review:column:biz_offline_adjustment_note.adjustment_amount": true,
+              "review:column:biz_offline_adjustment_note.reason": true,
+              "review:column:biz_offline_adjustment_note.handled_at": true,
+              "review:column:biz_offline_adjustment_note.handled_by_id": true,
+              "review:column:biz_offline_adjustment_note.handled_by": true,
+              "review:column:biz_offline_adjustment_note.reference_no": true,
+              "review:column:biz_offline_adjustment_note.note_text": true,
+              "review:column:biz_offline_adjustment_note.attachment_ref": true,
+              "review:column:biz_offline_adjustment_note.settlement_snapshot_id": true,
+              "review:column:biz_offline_adjustment_note.settlement_snapshot_hash": true,
+              "review:column:biz_offline_adjustment_note.created_by": true,
+              "review:column:biz_offline_adjustment_note.created_at": true,
+              "review:batch_version": true,
+              "review:summary_version": true,
+              "review:cas_version": true,
+              "review:adjustment_signed_amount": true,
+              "review:adjustment_business_date": true,
+              "review:adjustment_optional_note": true,
+              "review:version_zero_by_default": true,
+              "review:historical_audit_nullable": true,
+              "review:historical_calculated_at_nullable": true,
+              "review:no_polymorphic_target": true,
+              "review:unique_batch": true,
+              "review:unique_item_in_batch": true,
+              "review:result_page": true,
+              "review:summary_page": true,
+              "review:unique_note_request": true,
+              "review:note_page": true,
+              "permission:single_active_review_button": true,
+              "permission:reviewer_role_exists": true,
+              "permission:role:1:admin": true,
+              "permission:role:2:biz_admin": true,
+              "permission:role:3:assistant": true,
+              "permission:role:4:teacher": true,
+              "permission:role:5:leader": true,
+              "permission:hidden:system:auditRecord:list": true,
+              "permission:system:auditRecord:list:role:1": true,
+              "permission:system:auditRecord:list:role:2": true,
+              "permission:system:auditRecord:list:role:3": true,
+              "permission:system:auditRecord:list:role:4": true,
+              "permission:system:auditRecord:list:role:5": true,
+              "permission:hidden:system:auditRecord:query": true,
+              "permission:system:auditRecord:query:role:1": true,
+              "permission:system:auditRecord:query:role:2": true,
+              "permission:system:auditRecord:query:role:3": true,
+              "permission:system:auditRecord:query:role:4": true,
+              "permission:system:auditRecord:query:role:5": true,
+              "permission:hidden:system:auditRecord:review": true,
+              "permission:system:auditRecord:review:role:1": true,
+              "permission:system:auditRecord:review:role:2": true,
+              "permission:system:auditRecord:review:role:3": true,
+              "permission:system:auditRecord:review:role:4": true,
+              "permission:system:auditRecord:review:role:5": true,
+              "permission:hidden:system:auditRecord:waive": true,
+              "permission:system:auditRecord:waive:role:1": true,
+              "permission:system:auditRecord:waive:role:2": true,
+              "permission:system:auditRecord:waive:role:3": true,
+              "permission:system:auditRecord:waive:role:4": true,
+              "permission:system:auditRecord:waive:role:5": true,
+              "permission:hidden:system:offlineAdjustmentNote:query": true,
+              "permission:system:offlineAdjustmentNote:query:role:1": true,
+              "permission:system:offlineAdjustmentNote:query:role:2": true,
+              "permission:system:offlineAdjustmentNote:query:role:3": true,
+              "permission:system:offlineAdjustmentNote:query:role:4": true,
+              "permission:system:offlineAdjustmentNote:query:role:5": true,
+              "permission:hidden:system:offlineAdjustmentNote:add": true,
+              "permission:system:offlineAdjustmentNote:add:role:1": true,
+              "permission:system:offlineAdjustmentNote:add:role:2": true,
+              "permission:system:offlineAdjustmentNote:add:role:3": true,
+              "permission:system:offlineAdjustmentNote:add:role:4": true,
+              "permission:system:offlineAdjustmentNote:add:role:5": true
+            },
+            "missing_or_invalid": []
+          }
+        },
+        {
+          "round": 2,
+          "existing_business_columns_unchanged": true,
+          "business_tables": {
+            "biz_allowance_item": {
+              "rows": 2,
+              "sha256": "f2329a1eed348e9174f816014cfa70cdeef3b9886cb49130ba2b1d84c028967a"
+            },
+            "biz_audit_log": {
+              "rows": 8,
+              "sha256": "67b12f4f3be629996f6bce1eff90d226f968ccef615f5f48051d8bf338cfae7e"
+            },
+            "biz_coefficient_adjustment": {
+              "rows": 1,
+              "sha256": "51536622b649ccfe80b101189a91fbd24128362509392ef088c96d7075923f06"
+            },
+            "biz_import_batch": {
+              "rows": 1,
+              "sha256": "15c93c9f70cbc15eb5ad5369bfc734b0379a8cc0fca32f094a04ce49a4ee698b"
+            },
+            "biz_import_row": {
+              "rows": 1,
+              "sha256": "eea89e5a3f8a4845b1f4a76b7e5f921444c037120138ee614653ec5fb637d71b"
+            },
+            "biz_pay_rate": {
+              "rows": 9,
+              "sha256": "06e321a3abdfd515dcc0c145e55e7f6d26808f27439172ff39859b22345798f6"
+            },
+            "biz_pay_record": {
+              "rows": 7,
+              "sha256": "ed1bbf335533aa5e0559ee4787d4f32421eb669ab8216964396e9ff15872d37b"
+            },
+            "biz_role_assignment": {
+              "rows": 2,
+              "sha256": "5add7973ec4784fe009ca9409af0d09a2fd0c3efc8260751de76a36300e12df4"
+            },
+            "biz_teacher_profile": {
+              "rows": 8,
+              "sha256": "3c838c753b1b59a8fd49177e7b2e4ff21bbf257952e97028be9df56a76052171"
+            },
+            "biz_teaching_task": {
+              "rows": 10,
+              "sha256": "555bbc7e2876d4c98c257a27b5e0c6a7e0f94c834c88c6cd3feccc7e265c8fa9"
+            },
+            "biz_wl_concentrated_internship": {
+              "rows": 1,
+              "sha256": "c712f2ee15b76b4ce77516e587e348f479547c9999cab10704ab0ff7ac7598ce"
+            },
+            "biz_wl_course_design": {
+              "rows": 2,
+              "sha256": "6442d8bb3f93d8fe146a733ed7400364183a45cce77c18e3c4b97563df9fcc88"
+            },
+            "biz_wl_internship_training": {
+              "rows": 1,
+              "sha256": "179093fa4ee8d62bafbe10b1bb304268fde925caee480f3df013a608e4d0115d"
+            },
+            "biz_wl_management": {
+              "rows": 1,
+              "sha256": "f3f041718f15b096cf6ab0e08c65fdaccd932f8ae9989361c081cf5dbe6f6930"
+            },
+            "biz_wl_practice": {
+              "rows": 1,
+              "sha256": "4e24710c2b6de2566aa8130aa148482d2e4313f00695922d46efcf27ac66afc4"
+            },
+            "biz_wl_theory": {
+              "rows": 8,
+              "sha256": "1ed0ed478ab3a1a455f9ac5ee6a33d0e3d52cb70a25338b83eb81ab04182bb43"
+            },
+            "biz_wl_thesis": {
+              "rows": 1,
+              "sha256": "7fcca3a3f254c451f2140e0094d2263dd83deef3c8d6eec7cb52b6f663e87606"
+            },
+            "biz_workload_calc_snapshot": {
+              "rows": 9,
+              "sha256": "44477481e6d127b51807a5b196f297a9442a29a653fd705e2b7bc4c7087945d9"
+            },
+            "biz_workload_category_dict": {
+              "rows": 11,
+              "sha256": "f42cab24868daad0cc60d9dc4a741e087c8c23b13ed760b92c3f7e4510f27a20"
+            },
+            "biz_workload_item": {
+              "rows": 23,
+              "sha256": "f96b467cbec04c515914fee07923d363af06e1021acebd7acc30c1322c5f6f1a"
+            },
+            "biz_workload_period_lock": {
+              "rows": 8,
+              "sha256": "0b7997f3b9398bbb900e59deaf8db2da251427ce323c75bae2b02d076e65eec4"
+            },
+            "biz_workload_rule": {
+              "rows": 52,
+              "sha256": "272baab18ab1a61b9f61daa6c50df8ac8e4930654cf5fe39af7f3e6eaf60618b"
+            },
+            "biz_workload_settlement_snapshot": {
+              "rows": 4,
+              "sha256": "f2b2d4ddf13d04940dc1d5c56a09d933e98145496f330d70a6f1a0c4e70e1899"
+            },
+            "biz_workload_summary": {
+              "rows": 11,
+              "sha256": "85cb9eab2a22f8f0ad7e96240662605c95589c7614407b17f9b08e0a4e1c08a3"
+            }
+          },
+          "new_business_rows": {
+            "biz_offline_adjustment_note": 0,
+            "biz_workload_item_review": 0,
+            "biz_workload_review_batch": 0
+          },
+          "readonly_checker": {
+            "database": "wfit_t06_20261106_b",
+            "server_version": "9.0.1",
+            "table_count": 58,
+            "passed": true,
+            "checks": {
+              "column:biz_import_batch.template_version": true,
+              "column:biz_import_batch.template_category": true,
+              "column:biz_import_batch.source_hash": true,
+              "column:biz_import_batch.operator_id": true,
+              "column:biz_import_batch.operator_name": true,
+              "column:biz_import_batch.confirm_token_hash": true,
+              "column:biz_import_batch.confirmed_at": true,
+              "column:biz_teaching_task.input_planned_hours": true,
+              "column:biz_teaching_task.input_days": true,
+              "column:biz_teaching_task.input_weeks": true,
+              "column:biz_teaching_task.input_credits": true,
+              "column:biz_teaching_task.quantity_type": true,
+              "column:biz_import_row.id": true,
+              "column:biz_import_row.batch_id": true,
+              "column:biz_import_row.row_no": true,
+              "column:biz_import_row.raw_json": true,
+              "column:biz_import_row.normalized_json": true,
+              "column:biz_import_row.status": true,
+              "column:biz_import_row.error_code": true,
+              "column:biz_import_row.error_message": true,
+              "column:biz_import_row.target_id": true,
+              "column:biz_import_row.create_by": true,
+              "column:biz_import_row.create_time": true,
+              "column:biz_import_row.update_by": true,
+              "column:biz_import_row.update_time": true,
+              "column:biz_import_row.remark": true,
+              "column:biz_workload_item.calculation_version": true,
+              "column:biz_workload_item.last_calculated_at": true,
+              "column:biz_workload_item.factor_provenance_json": true,
+              "column:biz_allowance_item.calculation_evidence_json": true,
+              "column:biz_workload_calc_snapshot.item_id": true,
+              "column:biz_workload_calc_snapshot.calculation_version": true,
+              "column:biz_workload_calc_snapshot.snapshot_hash": true,
+              "column:biz_workload_calc_snapshot.context_json": true,
+              "column:biz_coefficient_adjustment.id": true,
+              "column:biz_coefficient_adjustment.item_id": true,
+              "column:biz_coefficient_adjustment.status": true,
+              "column:biz_workload_summary.needs_recalculation": true,
+              "column:biz_workload_summary.settlement_snapshot_id": true,
+              "column:biz_pay_record.settlement_snapshot_id": true,
+              "column:biz_workload_settlement_snapshot.id": true,
+              "column:biz_workload_settlement_snapshot.summary_id": true,
+              "column:biz_workload_settlement_snapshot.user_id": true,
+              "column:biz_workload_settlement_snapshot.semester": true,
+              "column:biz_workload_settlement_snapshot.settlement_version": true,
+              "column:biz_workload_settlement_snapshot.format_version": true,
+              "column:biz_workload_settlement_snapshot.payload_json": true,
+              "column:biz_workload_settlement_snapshot.hash": true,
+              "column:biz_workload_settlement_snapshot.created_by": true,
+              "column:biz_workload_settlement_snapshot.created_at": true,
+              "column:biz_workload_period_lock.user_id": true,
+              "column:biz_workload_period_lock.semester": true,
+              "context:nullable_longtext": true,
+              "provenance:biz_workload_item.factor_provenance_json:nullable_longtext": true,
+              "provenance:biz_allowance_item.calculation_evidence_json:nullable_longtext": true,
+              "freshness:non_null_flag": true,
+              "freshness:uncalculated_by_default": true,
+              "index:import_source_non_unique": true,
+              "index:no_legacy_unique_import_source": true,
+              "index:unique_import_row": true,
+              "index:unique_snapshot_version": true,
+              "index:unique_teacher_semester_lock": true,
+              "index:unique_settlement_version": true,
+              "review:column:biz_workload_summary.review_batch_no": true,
+              "review:column:biz_workload_summary.data_version": true,
+              "review:column:biz_workload_summary.last_calculated_at": true,
+              "review:column:biz_workload_review_batch.id": true,
+              "review:column:biz_workload_review_batch.summary_id": true,
+              "review:column:biz_workload_review_batch.review_batch_no": true,
+              "review:column:biz_workload_review_batch.summary_data_version": true,
+              "review:column:biz_workload_review_batch.user_id": true,
+              "review:column:biz_workload_review_batch.semester": true,
+              "review:column:biz_workload_review_batch.settlement_snapshot_id": true,
+              "review:column:biz_workload_review_batch.settlement_snapshot_hash": true,
+              "review:column:biz_workload_review_batch.format_version": true,
+              "review:column:biz_workload_review_batch.snapshot_json": true,
+              "review:column:biz_workload_review_batch.data_hash": true,
+              "review:column:biz_workload_review_batch.created_by": true,
+              "review:column:biz_workload_review_batch.created_at": true,
+              "review:column:biz_workload_item_review.id": true,
+              "review:column:biz_workload_item_review.summary_id": true,
+              "review:column:biz_workload_item_review.item_id": true,
+              "review:column:biz_workload_item_review.review_batch_no": true,
+              "review:column:biz_workload_item_review.review_type": true,
+              "review:column:biz_workload_item_review.format_version": true,
+              "review:column:biz_workload_item_review.snapshot_json": true,
+              "review:column:biz_workload_item_review.data_hash": true,
+              "review:column:biz_workload_item_review.result": true,
+              "review:column:biz_workload_item_review.reason": true,
+              "review:column:biz_workload_item_review.reviewer_id": true,
+              "review:column:biz_workload_item_review.reviewer_name": true,
+              "review:column:biz_workload_item_review.reviewed_at": true,
+              "review:column:biz_workload_item_review.version": true,
+              "review:column:biz_workload_item_review.create_by": true,
+              "review:column:biz_workload_item_review.create_time": true,
+              "review:column:biz_workload_item_review.update_by": true,
+              "review:column:biz_workload_item_review.update_time": true,
+              "review:column:biz_offline_adjustment_note.id": true,
+              "review:column:biz_offline_adjustment_note.summary_id": true,
+              "review:column:biz_offline_adjustment_note.user_id": true,
+              "review:column:biz_offline_adjustment_note.semester": true,
+              "review:column:biz_offline_adjustment_note.request_key": true,
+              "review:column:biz_offline_adjustment_note.adjustment_amount": true,
+              "review:column:biz_offline_adjustment_note.reason": true,
+              "review:column:biz_offline_adjustment_note.handled_at": true,
+              "review:column:biz_offline_adjustment_note.handled_by_id": true,
+              "review:column:biz_offline_adjustment_note.handled_by": true,
+              "review:column:biz_offline_adjustment_note.reference_no": true,
+              "review:column:biz_offline_adjustment_note.note_text": true,
+              "review:column:biz_offline_adjustment_note.attachment_ref": true,
+              "review:column:biz_offline_adjustment_note.settlement_snapshot_id": true,
+              "review:column:biz_offline_adjustment_note.settlement_snapshot_hash": true,
+              "review:column:biz_offline_adjustment_note.created_by": true,
+              "review:column:biz_offline_adjustment_note.created_at": true,
+              "review:batch_version": true,
+              "review:summary_version": true,
+              "review:cas_version": true,
+              "review:adjustment_signed_amount": true,
+              "review:adjustment_business_date": true,
+              "review:adjustment_optional_note": true,
+              "review:version_zero_by_default": true,
+              "review:historical_audit_nullable": true,
+              "review:historical_calculated_at_nullable": true,
+              "review:no_polymorphic_target": true,
+              "review:unique_batch": true,
+              "review:unique_item_in_batch": true,
+              "review:result_page": true,
+              "review:summary_page": true,
+              "review:unique_note_request": true,
+              "review:note_page": true,
+              "permission:single_active_review_button": true,
+              "permission:reviewer_role_exists": true,
+              "permission:role:1:admin": true,
+              "permission:role:2:biz_admin": true,
+              "permission:role:3:assistant": true,
+              "permission:role:4:teacher": true,
+              "permission:role:5:leader": true,
+              "permission:hidden:system:auditRecord:list": true,
+              "permission:system:auditRecord:list:role:1": true,
+              "permission:system:auditRecord:list:role:2": true,
+              "permission:system:auditRecord:list:role:3": true,
+              "permission:system:auditRecord:list:role:4": true,
+              "permission:system:auditRecord:list:role:5": true,
+              "permission:hidden:system:auditRecord:query": true,
+              "permission:system:auditRecord:query:role:1": true,
+              "permission:system:auditRecord:query:role:2": true,
+              "permission:system:auditRecord:query:role:3": true,
+              "permission:system:auditRecord:query:role:4": true,
+              "permission:system:auditRecord:query:role:5": true,
+              "permission:hidden:system:auditRecord:review": true,
+              "permission:system:auditRecord:review:role:1": true,
+              "permission:system:auditRecord:review:role:2": true,
+              "permission:system:auditRecord:review:role:3": true,
+              "permission:system:auditRecord:review:role:4": true,
+              "permission:system:auditRecord:review:role:5": true,
+              "permission:hidden:system:auditRecord:waive": true,
+              "permission:system:auditRecord:waive:role:1": true,
+              "permission:system:auditRecord:waive:role:2": true,
+              "permission:system:auditRecord:waive:role:3": true,
+              "permission:system:auditRecord:waive:role:4": true,
+              "permission:system:auditRecord:waive:role:5": true,
+              "permission:hidden:system:offlineAdjustmentNote:query": true,
+              "permission:system:offlineAdjustmentNote:query:role:1": true,
+              "permission:system:offlineAdjustmentNote:query:role:2": true,
+              "permission:system:offlineAdjustmentNote:query:role:3": true,
+              "permission:system:offlineAdjustmentNote:query:role:4": true,
+              "permission:system:offlineAdjustmentNote:query:role:5": true,
+              "permission:hidden:system:offlineAdjustmentNote:add": true,
+              "permission:system:offlineAdjustmentNote:add:role:1": true,
+              "permission:system:offlineAdjustmentNote:add:role:2": true,
+              "permission:system:offlineAdjustmentNote:add:role:3": true,
+              "permission:system:offlineAdjustmentNote:add:role:4": true,
+              "permission:system:offlineAdjustmentNote:add:role:5": true
+            },
+            "missing_or_invalid": []
+          }
+        }
+      ],
+      "final_readonly_checker": {
+        "database": "wfit_t06_20261106_b",
+        "server_version": "9.0.1",
+        "table_count": 58,
+        "passed": true,
+        "checks": {
+          "column:biz_import_batch.template_version": true,
+          "column:biz_import_batch.template_category": true,
+          "column:biz_import_batch.source_hash": true,
+          "column:biz_import_batch.operator_id": true,
+          "column:biz_import_batch.operator_name": true,
+          "column:biz_import_batch.confirm_token_hash": true,
+          "column:biz_import_batch.confirmed_at": true,
+          "column:biz_teaching_task.input_planned_hours": true,
+          "column:biz_teaching_task.input_days": true,
+          "column:biz_teaching_task.input_weeks": true,
+          "column:biz_teaching_task.input_credits": true,
+          "column:biz_teaching_task.quantity_type": true,
+          "column:biz_import_row.id": true,
+          "column:biz_import_row.batch_id": true,
+          "column:biz_import_row.row_no": true,
+          "column:biz_import_row.raw_json": true,
+          "column:biz_import_row.normalized_json": true,
+          "column:biz_import_row.status": true,
+          "column:biz_import_row.error_code": true,
+          "column:biz_import_row.error_message": true,
+          "column:biz_import_row.target_id": true,
+          "column:biz_import_row.create_by": true,
+          "column:biz_import_row.create_time": true,
+          "column:biz_import_row.update_by": true,
+          "column:biz_import_row.update_time": true,
+          "column:biz_import_row.remark": true,
+          "column:biz_workload_item.calculation_version": true,
+          "column:biz_workload_item.last_calculated_at": true,
+          "column:biz_workload_item.factor_provenance_json": true,
+          "column:biz_allowance_item.calculation_evidence_json": true,
+          "column:biz_workload_calc_snapshot.item_id": true,
+          "column:biz_workload_calc_snapshot.calculation_version": true,
+          "column:biz_workload_calc_snapshot.snapshot_hash": true,
+          "column:biz_workload_calc_snapshot.context_json": true,
+          "column:biz_coefficient_adjustment.id": true,
+          "column:biz_coefficient_adjustment.item_id": true,
+          "column:biz_coefficient_adjustment.status": true,
+          "column:biz_workload_summary.needs_recalculation": true,
+          "column:biz_workload_summary.settlement_snapshot_id": true,
+          "column:biz_pay_record.settlement_snapshot_id": true,
+          "column:biz_workload_settlement_snapshot.id": true,
+          "column:biz_workload_settlement_snapshot.summary_id": true,
+          "column:biz_workload_settlement_snapshot.user_id": true,
+          "column:biz_workload_settlement_snapshot.semester": true,
+          "column:biz_workload_settlement_snapshot.settlement_version": true,
+          "column:biz_workload_settlement_snapshot.format_version": true,
+          "column:biz_workload_settlement_snapshot.payload_json": true,
+          "column:biz_workload_settlement_snapshot.hash": true,
+          "column:biz_workload_settlement_snapshot.created_by": true,
+          "column:biz_workload_settlement_snapshot.created_at": true,
+          "column:biz_workload_period_lock.user_id": true,
+          "column:biz_workload_period_lock.semester": true,
+          "context:nullable_longtext": true,
+          "provenance:biz_workload_item.factor_provenance_json:nullable_longtext": true,
+          "provenance:biz_allowance_item.calculation_evidence_json:nullable_longtext": true,
+          "freshness:non_null_flag": true,
+          "freshness:uncalculated_by_default": true,
+          "index:import_source_non_unique": true,
+          "index:no_legacy_unique_import_source": true,
+          "index:unique_import_row": true,
+          "index:unique_snapshot_version": true,
+          "index:unique_teacher_semester_lock": true,
+          "index:unique_settlement_version": true,
+          "review:column:biz_workload_summary.review_batch_no": true,
+          "review:column:biz_workload_summary.data_version": true,
+          "review:column:biz_workload_summary.last_calculated_at": true,
+          "review:column:biz_workload_review_batch.id": true,
+          "review:column:biz_workload_review_batch.summary_id": true,
+          "review:column:biz_workload_review_batch.review_batch_no": true,
+          "review:column:biz_workload_review_batch.summary_data_version": true,
+          "review:column:biz_workload_review_batch.user_id": true,
+          "review:column:biz_workload_review_batch.semester": true,
+          "review:column:biz_workload_review_batch.settlement_snapshot_id": true,
+          "review:column:biz_workload_review_batch.settlement_snapshot_hash": true,
+          "review:column:biz_workload_review_batch.format_version": true,
+          "review:column:biz_workload_review_batch.snapshot_json": true,
+          "review:column:biz_workload_review_batch.data_hash": true,
+          "review:column:biz_workload_review_batch.created_by": true,
+          "review:column:biz_workload_review_batch.created_at": true,
+          "review:column:biz_workload_item_review.id": true,
+          "review:column:biz_workload_item_review.summary_id": true,
+          "review:column:biz_workload_item_review.item_id": true,
+          "review:column:biz_workload_item_review.review_batch_no": true,
+          "review:column:biz_workload_item_review.review_type": true,
+          "review:column:biz_workload_item_review.format_version": true,
+          "review:column:biz_workload_item_review.snapshot_json": true,
+          "review:column:biz_workload_item_review.data_hash": true,
+          "review:column:biz_workload_item_review.result": true,
+          "review:column:biz_workload_item_review.reason": true,
+          "review:column:biz_workload_item_review.reviewer_id": true,
+          "review:column:biz_workload_item_review.reviewer_name": true,
+          "review:column:biz_workload_item_review.reviewed_at": true,
+          "review:column:biz_workload_item_review.version": true,
+          "review:column:biz_workload_item_review.create_by": true,
+          "review:column:biz_workload_item_review.create_time": true,
+          "review:column:biz_workload_item_review.update_by": true,
+          "review:column:biz_workload_item_review.update_time": true,
+          "review:column:biz_offline_adjustment_note.id": true,
+          "review:column:biz_offline_adjustment_note.summary_id": true,
+          "review:column:biz_offline_adjustment_note.user_id": true,
+          "review:column:biz_offline_adjustment_note.semester": true,
+          "review:column:biz_offline_adjustment_note.request_key": true,
+          "review:column:biz_offline_adjustment_note.adjustment_amount": true,
+          "review:column:biz_offline_adjustment_note.reason": true,
+          "review:column:biz_offline_adjustment_note.handled_at": true,
+          "review:column:biz_offline_adjustment_note.handled_by_id": true,
+          "review:column:biz_offline_adjustment_note.handled_by": true,
+          "review:column:biz_offline_adjustment_note.reference_no": true,
+          "review:column:biz_offline_adjustment_note.note_text": true,
+          "review:column:biz_offline_adjustment_note.attachment_ref": true,
+          "review:column:biz_offline_adjustment_note.settlement_snapshot_id": true,
+          "review:column:biz_offline_adjustment_note.settlement_snapshot_hash": true,
+          "review:column:biz_offline_adjustment_note.created_by": true,
+          "review:column:biz_offline_adjustment_note.created_at": true,
+          "review:batch_version": true,
+          "review:summary_version": true,
+          "review:cas_version": true,
+          "review:adjustment_signed_amount": true,
+          "review:adjustment_business_date": true,
+          "review:adjustment_optional_note": true,
+          "review:shape:biz_workload_review_batch.id": true,
+          "review:shape:biz_workload_review_batch.summary_id": true,
+          "review:shape:biz_workload_review_batch.summary_data_version": true,
+          "review:shape:biz_workload_review_batch.user_id": true,
+          "review:shape:biz_workload_review_batch.review_batch_no": true,
+          "review:shape:biz_workload_review_batch.semester": true,
+          "review:shape:biz_workload_review_batch.format_version": true,
+          "review:shape:biz_workload_review_batch.snapshot_json": true,
+          "review:shape:biz_workload_review_batch.data_hash": true,
+          "review:shape:biz_workload_review_batch.created_by": true,
+          "review:shape:biz_workload_review_batch.created_at": true,
+          "review:shape:biz_workload_item_review.id": true,
+          "review:shape:biz_workload_item_review.summary_id": true,
+          "review:shape:biz_workload_item_review.item_id": true,
+          "review:shape:biz_workload_item_review.version": true,
+          "review:shape:biz_workload_item_review.review_batch_no": true,
+          "review:shape:biz_workload_item_review.review_type": true,
+          "review:shape:biz_workload_item_review.format_version": true,
+          "review:shape:biz_workload_item_review.snapshot_json": true,
+          "review:shape:biz_workload_item_review.data_hash": true,
+          "review:shape:biz_workload_item_review.result": true,
+          "review:shape:biz_workload_item_review.create_by": true,
+          "review:shape:biz_workload_item_review.create_time": true,
+          "review:shape:biz_offline_adjustment_note.id": true,
+          "review:shape:biz_offline_adjustment_note.summary_id": true,
+          "review:shape:biz_offline_adjustment_note.user_id": true,
+          "review:shape:biz_offline_adjustment_note.handled_by_id": true,
+          "review:shape:biz_offline_adjustment_note.semester": true,
+          "review:shape:biz_offline_adjustment_note.request_key": true,
+          "review:shape:biz_offline_adjustment_note.handled_by": true,
+          "review:shape:biz_offline_adjustment_note.created_by": true,
+          "review:shape:biz_offline_adjustment_note.adjustment_amount": true,
+          "review:shape:biz_offline_adjustment_note.reason": true,
+          "review:shape:biz_offline_adjustment_note.handled_at": true,
+          "review:shape:biz_offline_adjustment_note.created_at": true,
+          "review:version_zero_by_default": true,
+          "review:historical_audit_nullable": true,
+          "review:historical_calculated_at_nullable": true,
+          "review:no_polymorphic_target": true,
+          "review:unique_batch": true,
+          "review:unique_item_in_batch": true,
+          "review:result_page": true,
+          "review:summary_page": true,
+          "review:unique_note_request": true,
+          "review:note_page": true,
+          "review:constraint:biz_workload_review_batch.ck_review_batch_version": true,
+          "review:constraint:biz_workload_review_batch.ck_review_batch_settlement": true,
+          "review:constraint:biz_workload_item_review.ck_item_review_type": true,
+          "review:constraint:biz_workload_item_review.ck_item_review_result": true,
+          "review:constraint:biz_workload_item_review.ck_item_review_reason": true,
+          "review:constraint:biz_workload_item_review.ck_item_review_version": true,
+          "review:constraint:biz_offline_adjustment_note.ck_adjustment_reason": true,
+          "review:constraint:biz_offline_adjustment_note.ck_adjustment_settlement": true,
+          "permission:single_active_review_button": true,
+          "permission:reviewer_role_exists": true,
+          "permission:role:1:admin": true,
+          "permission:role:2:biz_admin": true,
+          "permission:role:3:assistant": true,
+          "permission:role:4:teacher": true,
+          "permission:role:5:leader": true,
+          "permission:hidden:system:auditRecord:list": true,
+          "permission:system:auditRecord:list:role:1": true,
+          "permission:system:auditRecord:list:role:2": true,
+          "permission:system:auditRecord:list:role:3": true,
+          "permission:system:auditRecord:list:role:4": true,
+          "permission:system:auditRecord:list:role:5": true,
+          "permission:hidden:system:auditRecord:query": true,
+          "permission:system:auditRecord:query:role:1": true,
+          "permission:system:auditRecord:query:role:2": true,
+          "permission:system:auditRecord:query:role:3": true,
+          "permission:system:auditRecord:query:role:4": true,
+          "permission:system:auditRecord:query:role:5": true,
+          "permission:hidden:system:auditRecord:review": true,
+          "permission:system:auditRecord:review:role:1": true,
+          "permission:system:auditRecord:review:role:2": true,
+          "permission:system:auditRecord:review:role:3": true,
+          "permission:system:auditRecord:review:role:4": true,
+          "permission:system:auditRecord:review:role:5": true,
+          "permission:hidden:system:auditRecord:waive": true,
+          "permission:system:auditRecord:waive:role:1": true,
+          "permission:system:auditRecord:waive:role:2": true,
+          "permission:system:auditRecord:waive:role:3": true,
+          "permission:system:auditRecord:waive:role:4": true,
+          "permission:system:auditRecord:waive:role:5": true,
+          "permission:hidden:system:offlineAdjustmentNote:query": true,
+          "permission:system:offlineAdjustmentNote:query:role:1": true,
+          "permission:system:offlineAdjustmentNote:query:role:2": true,
+          "permission:system:offlineAdjustmentNote:query:role:3": true,
+          "permission:system:offlineAdjustmentNote:query:role:4": true,
+          "permission:system:offlineAdjustmentNote:query:role:5": true,
+          "permission:hidden:system:offlineAdjustmentNote:add": true,
+          "permission:system:offlineAdjustmentNote:add:role:1": true,
+          "permission:system:offlineAdjustmentNote:add:role:2": true,
+          "permission:system:offlineAdjustmentNote:add:role:3": true,
+          "permission:system:offlineAdjustmentNote:add:role:4": true,
+          "permission:system:offlineAdjustmentNote:add:role:5": true
+        },
+        "missing_or_invalid": []
+      }
+    }
+  ],
+  "original_database_touched": false,
+  "historical_backfill": false,
+  "constraint_cases": {
+    "date": "2026-11-06",
+    "host": "127.0.0.1",
+    "port": 13306,
+    "passed": true,
+    "cases": [
+      {
+        "schema": "wfit_t06_20261106_a",
+        "case": "invalid_type",
+        "expected_allowed": false,
+        "passed": true,
+        "transaction_rolled_back": true
+      },
+      {
+        "schema": "wfit_t06_20261106_a",
+        "case": "invalid_result",
+        "expected_allowed": false,
+        "passed": true,
+        "transaction_rolled_back": true
+      },
+      {
+        "schema": "wfit_t06_20261106_a",
+        "case": "reject_missing_reason",
+        "expected_allowed": false,
+        "passed": true,
+        "transaction_rolled_back": true
+      },
+      {
+        "schema": "wfit_t06_20261106_a",
+        "case": "waive_blank_reason",
+        "expected_allowed": false,
+        "passed": true,
+        "transaction_rolled_back": true
+      },
+      {
+        "schema": "wfit_t06_20261106_a",
+        "case": "negative_cas_version",
+        "expected_allowed": false,
+        "passed": true,
+        "transaction_rolled_back": true
+      },
+      {
+        "schema": "wfit_t06_20261106_a",
+        "case": "duplicate_review_identity",
+        "expected_allowed": false,
+        "passed": true,
+        "transaction_rolled_back": true
+      },
+      {
+        "schema": "wfit_t06_20261106_a",
+        "case": "zero_batch_version",
+        "expected_allowed": false,
+        "passed": true,
+        "transaction_rolled_back": true
+      },
+      {
+        "schema": "wfit_t06_20261106_a",
+        "case": "duplicate_batch_identity",
+        "expected_allowed": false,
+        "passed": true,
+        "transaction_rolled_back": true
+      },
+      {
+        "schema": "wfit_t06_20261106_a",
+        "case": "blank_adjustment_reason",
+        "expected_allowed": false,
+        "passed": true,
+        "transaction_rolled_back": true
+      },
+      {
+        "schema": "wfit_t06_20261106_a",
+        "case": "duplicate_adjustment_request",
+        "expected_allowed": false,
+        "passed": true,
+        "transaction_rolled_back": true
+      },
+      {
+        "schema": "wfit_t06_20261106_a",
+        "case": "positive_adjustment_optional_note",
+        "expected_allowed": true,
+        "passed": true,
+        "transaction_rolled_back": true
+      },
+      {
+        "schema": "wfit_t06_20261106_a",
+        "case": "negative_adjustment_optional_note",
+        "expected_allowed": true,
+        "passed": true,
+        "transaction_rolled_back": true
+      },
+      {
+        "schema": "wfit_t06_20261106_a",
+        "case": "pass_review",
+        "expected_allowed": true,
+        "passed": true,
+        "transaction_rolled_back": true
+      },
+      {
+        "schema": "wfit_t06_20261106_a",
+        "case": "waive_with_reason",
+        "expected_allowed": true,
+        "passed": true,
+        "transaction_rolled_back": true
+      },
+      {
+        "schema": "wfit_t06_20261106_b",
+        "case": "invalid_type",
+        "expected_allowed": false,
+        "passed": true,
+        "transaction_rolled_back": true
+      },
+      {
+        "schema": "wfit_t06_20261106_b",
+        "case": "invalid_result",
+        "expected_allowed": false,
+        "passed": true,
+        "transaction_rolled_back": true
+      },
+      {
+        "schema": "wfit_t06_20261106_b",
+        "case": "reject_missing_reason",
+        "expected_allowed": false,
+        "passed": true,
+        "transaction_rolled_back": true
+      },
+      {
+        "schema": "wfit_t06_20261106_b",
+        "case": "waive_blank_reason",
+        "expected_allowed": false,
+        "passed": true,
+        "transaction_rolled_back": true
+      },
+      {
+        "schema": "wfit_t06_20261106_b",
+        "case": "negative_cas_version",
+        "expected_allowed": false,
+        "passed": true,
+        "transaction_rolled_back": true
+      },
+      {
+        "schema": "wfit_t06_20261106_b",
+        "case": "duplicate_review_identity",
+        "expected_allowed": false,
+        "passed": true,
+        "transaction_rolled_back": true
+      },
+      {
+        "schema": "wfit_t06_20261106_b",
+        "case": "zero_batch_version",
+        "expected_allowed": false,
+        "passed": true,
+        "transaction_rolled_back": true
+      },
+      {
+        "schema": "wfit_t06_20261106_b",
+        "case": "duplicate_batch_identity",
+        "expected_allowed": false,
+        "passed": true,
+        "transaction_rolled_back": true
+      },
+      {
+        "schema": "wfit_t06_20261106_b",
+        "case": "blank_adjustment_reason",
+        "expected_allowed": false,
+        "passed": true,
+        "transaction_rolled_back": true
+      },
+      {
+        "schema": "wfit_t06_20261106_b",
+        "case": "duplicate_adjustment_request",
+        "expected_allowed": false,
+        "passed": true,
+        "transaction_rolled_back": true
+      },
+      {
+        "schema": "wfit_t06_20261106_b",
+        "case": "positive_adjustment_optional_note",
+        "expected_allowed": true,
+        "passed": true,
+        "transaction_rolled_back": true
+      },
+      {
+        "schema": "wfit_t06_20261106_b",
+        "case": "negative_adjustment_optional_note",
+        "expected_allowed": true,
+        "passed": true,
+        "transaction_rolled_back": true
+      },
+      {
+        "schema": "wfit_t06_20261106_b",
+        "case": "pass_review",
+        "expected_allowed": true,
+        "passed": true,
+        "transaction_rolled_back": true
+      },
+      {
+        "schema": "wfit_t06_20261106_b",
+        "case": "waive_with_reason",
+        "expected_allowed": true,
+        "passed": true,
+        "transaction_rolled_back": true
+      }
+    ]
+  },
+  "intermediate_checker_sha256": "d1400efadd5a4da56f35662a58425e4cf037b98c8687a9b3cc92285b90d433c3",
+  "final_checker_sha256": "f1e5ec4e36273688c11d2c27a97880f896785fbef54afd1aadfae2e0a4e061db",
+  "checker_version_note": "四轮迁移时检查器仍在补强；固定final_checker_sha256仅对应最终只读检查。迁移hash及原业务保全独立记录。",
+  "live_drift_cases": {
+    "schema": "wfit_t06_20261106_a",
+    "cases": [
+      {
+        "case": "nullable_unique_key_rejected",
+        "passed": true,
+        "missing_or_invalid": [
+          "review:shape:biz_workload_item_review.item_id"
+        ]
+      },
+      {
+        "case": "same_name_tautology_check_rejected",
+        "passed": true,
+        "missing_or_invalid": [
+          "review:constraint:biz_workload_item_review.ck_item_review_result"
+        ]
+      },
+      {
+        "case": "exact_constraint_restored_and_checker_passed",
+        "passed": true,
+        "all_checks": 216,
+        "empty_table": true
+      }
+    ],
+    "restored": true
+  }
+}
