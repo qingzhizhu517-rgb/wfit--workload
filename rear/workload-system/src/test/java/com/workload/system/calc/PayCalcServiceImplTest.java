@@ -54,6 +54,7 @@ class PayCalcServiceImplTest
     @BeforeEach
     void setUp()
     {
+        lenient().when(summaryMapper.advanceDataVersion(any())).thenReturn(1);
         lenient().when(teacherProfileMapper.selectBizTeacherProfileByUserId(USER))
                 .thenReturn(new BizTeacherProfile());
     }
@@ -217,7 +218,7 @@ class PayCalcServiceImplTest
         when(summaryMapper.selectForPayUpdate(USER, SEMESTER)).thenReturn(pending);
 
         assertThatThrownBy(() -> service.recalcPay(USER, SEMESTER))
-                .isInstanceOf(ServiceException.class).hasMessageContaining("酬金已冻结");
+                .isInstanceOf(ServiceException.class).hasMessageContaining("酬金已冻结").extracting("code").isEqualTo(409);
 
         verify(payRecordMapper, never()).insertBizPayRecord(any());
         verify(payRecordMapper, never()).updateIfSummaryDraft(any());
@@ -261,7 +262,7 @@ class PayCalcServiceImplTest
 
         assertThatThrownBy(() -> service.recalcPay(USER, SEMESTER))
                 .isInstanceOf(ServiceException.class)
-                .hasMessageContaining("酬金已冻结");
+                .hasMessageContaining("酬金已冻结").extracting("code").isEqualTo(409);
     }
 
     @Test
@@ -272,7 +273,7 @@ class PayCalcServiceImplTest
 
         assertThatThrownBy(() -> service.recalcPay(USER, SEMESTER))
                 .isInstanceOf(ServiceException.class)
-                .hasMessageContaining("酬金已冻结");
+                .hasMessageContaining("酬金已冻结").extracting("code").isEqualTo(409);
     }
 
     // ==================== 其他酬金编辑校验（只读普通查询，不持行锁） ====================
@@ -294,7 +295,7 @@ class PayCalcServiceImplTest
 
         assertThatThrownBy(() -> service.assertAllowanceEditable(USER, SEMESTER))
                 .isInstanceOf(ServiceException.class)
-                .hasMessageContaining("禁止修改");
+                .hasMessageContaining("禁止修改").extracting("code").isEqualTo(409);
     }
 
     @Test
@@ -305,7 +306,7 @@ class PayCalcServiceImplTest
 
         assertThatThrownBy(() -> service.assertAllowanceEditable(USER, SEMESTER))
                 .isInstanceOf(ServiceException.class)
-                .hasMessageContaining("禁止修改");
+                .hasMessageContaining("禁止修改").extracting("code").isEqualTo(409);
     }
 
     // ==================== helpers ====================
@@ -317,6 +318,7 @@ class PayCalcServiceImplTest
         summary.setUserId(USER);
         summary.setSemester(SEMESTER);
         summary.setStatus(status);
+        summary.setDataVersion(1L);summary.setLastCalculatedAt(new java.util.Date(1000));
         return summary;
     }
 

@@ -15,7 +15,7 @@ class BizAuditCoverageTest {
         try(var files=Files.list(root)) {
             for(Path path:files.filter(p->p.getFileName().toString().startsWith("Biz")).toList()) {
                 String name=path.getFileName().toString().replace(".xml","");
-                if(Set.of("BizWorkloadCalcSnapshotMapper","BizWorkloadSettlementSnapshotMapper").contains(name)) continue;
+                if(Set.of("BizWorkloadCalcSnapshotMapper","BizWorkloadSettlementSnapshotMapper","BizWorkloadReviewBatchMapper","BizOfflineAdjustmentNoteMapper").contains(name)) continue;
                 String xml=Files.readString(path);var matcher=Pattern.compile("<(insert|update)\\b[^>]*id=\"([^\"]+)\"[^>]*>(.*?)</\\1>",Pattern.DOTALL).matcher(xml);
                 boolean covered=false;
                 while(matcher.find()) {
@@ -33,7 +33,7 @@ class BizAuditCoverageTest {
                 if(covered)mappers++;
             }
         }
-        assertEquals(21,mappers);assertEquals(writes,BizAuditFieldInterceptor.statementIds());
+        assertEquals(22,mappers);assertEquals(writes,BizAuditFieldInterceptor.statementIds());
     }
     @Test void productionFactoryRegistersRealPluginAndPreservesOthers() throws Exception {
         var config=new MyBatisConfig();

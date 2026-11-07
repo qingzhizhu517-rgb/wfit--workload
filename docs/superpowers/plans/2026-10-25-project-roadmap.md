@@ -62,15 +62,17 @@ P0：阻塞安全整合或共享环境使用；P1：一期功能/验收必要项
 
 **涉及文件：** `rear/sql/01_biz_schema.sql`、远程`rear/sql/28_import_framework.sql`、本地`rear/sql/28_snapshot_context.sql`及`29_item_review_permission.sql`、`docs/计算快照上下文格式与升级.md`；新增`rear/sql/MIGRATIONS.md`、`docs/验收/数据库升级与恢复.md`。
 
-- [ ] 只读核对目标host/port/schema/version、表数、关键行数和schema指纹。当前MySQL9.0.1与文档MySQL8分别列出，确定实际部署支持版本并在其上验证。
+- [x] 只读核对目标host/port/schema/version、表数、关键行数和schema指纹。当前MySQL9.0.1与文档MySQL8分别列出，确定实际部署支持版本并在其上验证。
 - [x] 生成结构+数据备份，记录时间和SHA-256，备份存放仓库之外；在独立数据库恢复并检查关键表数和行数。恢复成功才进入升级演练。
 - [x] 以文件名、用途、内容哈希、前置条件和后置查询为键整理迁移清单；区分fresh脚本与增量脚本，明确03非幂等。检查22/28号历史冲突，不根据文件前缀猜执行状态。
 - [x] 统一28导入/快照及29权限的后续命名与引用；为可能已执行的旧名字记录等价映射与结构探测，保留原迁移内容追溯。
 - [x] 在恢复副本按清单升级；对声明幂等的脚本重复执行，验证表/列/索引/角色授权及业务行数无意外变化；保存实际应用清单，不在本期强制引入全新迁移框架。
-- [ ] 演练旧应用回退时保留新增可空列/历史快照；如需数据恢复，证明从备份恢复到独立目标可用。
+- [x] 演练旧应用回退时保留新增可空列/历史快照；如需数据恢复，证明从备份恢复到独立目标可用。
 
 **验收：** 副本同时满足导入、快照和权限契约；`biz_import_row`、7个导入批次新列、5个任务数量新列、`context_json`及核对权限可查询；每条迁移有可复验状态。不得直接以含DROP的fresh脚本升级现有库。
 
+
+2026-11-06技术隔离补验：MySQL9.0.1及独立MySQL8.4.11各完成26脚本空库初始化、58表216检查及748应用启动；逻辑恢复至8.4后全部biz行hash与9来源一致，原旧版应用回退证据保留。仅覆盖实际版本，不当作其它8.0小版本或正式迁移批准。详见两份空库证据JSON。
 
 ### T03：写入冻结、核对与并发收尾
 
@@ -88,13 +90,15 @@ P0：阻塞安全整合或共享环境使用；P1：一期功能/验收必要项
 
 **涉及文件：** `rear/pom.xml`、`front/RuoYi-Vue3/package.json`及锁文件、`.eslintrc.cjs`、`README.md`、`AGENTS.md`、`CLAUDE.md`；新增`.github/workflows/verify.yml`、`.java-version`、`.nvmrc`、`docs/验收/质量门禁.md`。
 
-- [ ] 记录并固定已验证的JDK17和Node版本，使用`npm ci`复现依赖；确保CI实际使用目标JDK而不是本机默认Java26。
-- [ ] 后端执行常规测试；前端执行整合后已有`npm run test:unit`和生产构建，上传测试结果，全部要求退出0。
-- [ ] 运行完整lint并按规则/文件分类；当前1477错误作为审计起点，新增代码不得增加错误。对登录、权限、审核、导入、导出关键路径的未定义变量/副作用等先写复现并关闭；格式清理移交T14。
-- [ ] 将lint债务作为可见失败项或明确独立债务检查，不把忽略规则、删除规则或只检查改动文件冒充全量lint通过。
-- [ ] 修正生产`VITE_APP_TITLE`配置；更新指导文档的测试命令、公式、G11申报边界、状态和迁移引用。
+- [x] 记录并固定已验证的JDK17和Node版本，使用`npm ci`复现依赖；确保CI实际使用目标JDK而不是本机默认Java26。
+- [x] 后端执行常规测试；前端执行整合后已有`npm run test:unit`和生产构建，上传测试结果，全部要求退出0。
+- [x] 运行完整lint并按规则/文件分类；当前1477错误作为审计起点，新增代码不得增加错误。对登录、权限、审核、导入、导出关键路径的未定义变量/副作用等先写复现并关闭；格式清理移交T14。
+- [x] 将lint债务作为可见失败项或明确独立债务检查，不把忽略规则、删除规则或只检查改动文件冒充全量lint通过。
+- [x] 修正生产`VITE_APP_TITLE`配置；更新指导文档的测试命令、公式、G11申报边界、状态和迁移引用。
 
 **验收：** 干净环境能复现测试/构建，新增代码受门禁约束；真实MySQL IT独立配置专用测试库，连接缺失不能记作通过。全量lint最终清零由T14负责，正式发布前必须关闭。
+
+2026-11-06闭环：main748e3c2的GitHub Verify42183485996后端/前端/空白三job success；全量lint3246错误/86警告明确为容错债务步骤，新增0，未冒称清零。MySQL真实IT不在普通CI中，须13306隔离运行；完整证据见`docs/验收/远程CI主分支同步证据.json`。
 
 ### T05：规则费率版本与历史追溯
 
@@ -127,15 +131,17 @@ P0：阻塞安全整合或共享环境使用；P1：一期功能/验收必要项
 
 ### T07：明细审核批次、汇总门禁与补差API
 
-**涉及文件：** 在system业务包新增`domain/BizWorkloadItemReview.java`、`mapper/BizWorkloadItemReviewMapper.java`、`service/BizWorkloadItemReviewService.java`、`service/impl/BizWorkloadItemReviewServiceImpl.java`、`controller/BizWorkloadItemReviewController.java`、`service/WorkloadSummaryDetailService.java`及impl；新增对应`resources/mapper/system/BizWorkloadItemReviewMapper.xml`。补差说明使用独立`BizOfflineAdjustmentNote`实体/Mapper/Service/Controller及XML。修改`BizAuditServiceImpl`、`BizWorkloadSummaryController`、`BizAuditLogMapper`；测试新增同名Service/Controller测试。
+**涉及文件：** system/review领域服务、三个审核/详情/补差Controller、三实体及Mapper/XML；Summary/Pay版本入口、既有审批与删除服务、framework精确审计名单及对应常规/真实IT。
 
-- [ ] 提交汇总时按数据版本生成审核批次并冻结引用快照；再次提交生成新批次，保留此前结果。
-- [ ] 实现逐条通过/驳回/授权豁免及有界批量接口，校验状态1、当前批次、用户权限和版本。重复或过期命令返回明确冲突。
-- [ ] 汇总终审要求当前批次无待审、无驳回并匹配数据版本；驳回清签回草稿，保留历史审核，不开放完结解锁。
-- [ ] 提供summary detail、reviews、auditLogs分页查询和固定口径的来源计数；教师仅本人可读、无审核写权限。
-- [ ] 实现完结后追加线下补差说明，验证业务数值、签字、原快照均不变；禁止编辑/删除历史说明。
+- [x] 提交汇总时按数据版本生成审核批次并冻结引用快照；再次提交生成新批次，保留此前结果。
+- [x] 实现逐条通过/驳回/授权豁免及有界批量接口，校验状态1、当前批次、用户权限和版本。重复或过期命令返回明确冲突。
+- [x] 汇总终审要求当前批次无待审、无驳回并匹配数据版本；驳回清签回草稿，保留历史审核，不开放完结解锁。
+- [x] 提供summary detail、reviews、auditLogs分页查询和固定口径的来源计数；教师仅本人可读、无审核写权限。
+- [x] 实现完结后追加线下补差说明，验证业务数值、签字、原快照均不变；禁止编辑/删除历史说明。
 
 **验收：** 完整通过/驳回/重提/豁免/完结/线下说明链有数据库、Service及安全接口测试；跨教师ID不能越权；列表无无界数组。
+
+2026-11-07技术隔离验收通过：788常规、199真实MySQL、双版本各93角色HTTP，规格/质量PASS；详见`docs/验收/T07审核生命周期.md`。T08页面未接入，正式结算学期仍空。
 
 ### T08：审核中心与汇总详情前端
 

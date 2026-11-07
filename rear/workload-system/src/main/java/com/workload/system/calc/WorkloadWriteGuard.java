@@ -5,6 +5,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import com.workload.common.constant.HttpStatus;
 import com.workload.common.exception.ServiceException;
 import com.workload.system.domain.BizWorkloadSummary;
 import com.workload.system.domain.WorkloadSummaryStatus;
@@ -31,7 +32,7 @@ public class WorkloadWriteGuard
         BizWorkloadSummary summary = summaryMapper.selectByUserSemesterForUpdate(userId, semester);
         if (summary != null && WorkloadSummaryStatus.isWriteFrozen(summary.getStatus()))
         {
-            throw new ServiceException("学期汇总已进入审批流程，数据已冻结");
+            throw new ServiceException("学期汇总已进入审批流程，数据已冻结", HttpStatus.CONFLICT);
         }
     }
     /** All writers and audit actions use period -> summary -> item -> adjustment order. */

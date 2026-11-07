@@ -9,6 +9,8 @@ import com.workload.system.domain.BizAuditLog;
  */
 public interface BizAuditLogMapper
 {
+    java.util.List<BizAuditLog> selectPage(@org.apache.ibatis.annotations.Param("summaryId") Long summaryId,@org.apache.ibatis.annotations.Param("offset") long offset,@org.apache.ibatis.annotations.Param("size") int size);
+    long countPage(@org.apache.ibatis.annotations.Param("summaryId") Long summaryId);
     /**
      * 新增审批日志
      *

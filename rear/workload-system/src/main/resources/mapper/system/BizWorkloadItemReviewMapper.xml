@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.workload.system.mapper.BizWorkloadItemReviewMapper">
+    <resultMap id="row" type="BizWorkloadItemReview">
+        <result property="id" column="id"/>
+        <result property="summaryId" column="summary_id"/>
+        <result property="itemId" column="item_id"/>
+        <result property="reviewBatchNo" column="review_batch_no"/>
+        <result property="reviewType" column="review_type"/>
+        <result property="formatVersion" column="format_version"/>
+        <result property="snapshotJson" column="snapshot_json"/>
+        <result property="dataHash" column="data_hash"/>
+        <result property="result" column="result"/>
+        <result property="reason" column="reason"/>
+        <result property="reviewerId" column="reviewer_id"/>
+        <result property="reviewerName" column="reviewer_name"/>
+        <result property="reviewedAt" column="reviewed_at"/>
+        <result property="version" column="version"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+    <sql id="columns">id,summary_id,item_id,review_batch_no,review_type,format_version,snapshot_json,data_hash,result,reason,reviewer_id,reviewer_name,reviewed_at,version,create_by,create_time,update_by,update_time</sql>
+    <select id="selectById" resultMap="row">select <include refid="columns"/> from biz_workload_item_review where id=#{id}</select>
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        insert into biz_workload_item_review(summary_id,item_id,review_batch_no,review_type,format_version,snapshot_json,data_hash,result,reason,reviewer_id,reviewer_name,reviewed_at,version,create_by,create_time,update_by,update_time)
+        values(#{summaryId},#{itemId},#{reviewBatchNo},#{reviewType},#{formatVersion},#{snapshotJson},#{dataHash},#{result},#{reason},#{reviewerId},#{reviewerName},#{reviewedAt},#{version},#{createBy},#{createTime},#{updateBy},#{updateTime})
+    </insert>
+    <select id="selectForBatch" resultMap="row" flushCache="true" useCache="false">select <include refid="columns"/> from biz_workload_item_review where summary_id=#{summaryId} and review_batch_no=#{batchNo} order by item_id,id <if test="current">for update</if></select>
+    <sql id="wherePage">from biz_workload_item_review r where 1=1
+        <if test="summaryId != null">and r.summary_id=#{summaryId}</if><if test="batchNo != null">and r.review_batch_no=#{batchNo}</if>
+        <if test="userId != null">and exists(select 1 from biz_workload_summary s where s.id=r.summary_id and s.user_id=#{userId})</if>
+        <if test="reviewType != null">and r.review_type=#{reviewType}</if><if test="result != null">and r.result=#{result}</if>
+    </sql>
+    <select id="selectPage" resultMap="row">select r.* <include refid="wherePage"/> order by r.id limit #{size} offset #{offset}</select>
+    <select id="countPage" resultType="long">select count(*) <include refid="wherePage"/></select>
+    <update id="reviewIfPending">
+        <bind name="_audit" value="@com.workload.common.core.domain.audit.AuditFields@resolve(_parameter)"/>
+        update biz_workload_item_review r set result=#{review.result},reason=#{review.reason},reviewer_id=#{review.reviewerId},reviewer_name=#{review.reviewerName},reviewed_at=#{review.reviewedAt},version=version+1,update_by=#{_audit.by},update_time=#{_audit.time}
+        where r.id=#{review.id} and r.summary_id=#{review.summaryId} and r.review_batch_no=#{review.reviewBatchNo} and r.result='PENDING' and r.version=#{expectedVersion}
+        and exists(select 1 from biz_workload_summary s join biz_workload_review_batch b on b.summary_id=s.id and b.review_batch_no=s.review_batch_no where s.id=r.summary_id and s.status=1 and s.review_batch_no=r.review_batch_no and s.data_version=#{dataVersion} and b.summary_data_version=s.data_version)
+    </update>
+</mapper>

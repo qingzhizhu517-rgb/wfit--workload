@@ -5,6 +5,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 <mapper namespace="com.workload.system.mapper.BizWorkloadSummaryMapper">
     
     <resultMap type="BizWorkloadSummary" id="BizWorkloadSummaryResult">
+        <result property="dataVersion" column="data_version"/>
+        <result property="reviewBatchNo" column="review_batch_no"/>
+        <result property="lastCalculatedAt" column="last_calculated_at"/>
         <result property="needsRecalculation" column="needs_recalculation"/>
         <result property="settlementSnapshotId" column="settlement_snapshot_id"/>
         <result property="id"    column="id"    />
@@ -43,7 +46,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectBizWorkloadSummaryVo">
-        select settlement_snapshot_id, id, user_id, semester, needs_recalculation, academic_year, G7, G8, G9, G10, G11, total_workload, rated_workload, excess_workload, g8_remark, g11_remark, title, pay_rate, performance_pay, is_capped, basic_teaching_standard, basic_teaching_met, status, teacher_sign, teacher_sign_time, dept_leader_sign, dept_leader_sign_time, academic_assistant_sign, academic_assistant_sign_time, lock_time, create_by, create_time, update_by, update_time, remark from biz_workload_summary
+        select data_version, review_batch_no, last_calculated_at, settlement_snapshot_id, id, user_id, semester, needs_recalculation, academic_year, G7, G8, G9, G10, G11, total_workload, rated_workload, excess_workload, g8_remark, g11_remark, title, pay_rate, performance_pay, is_capped, basic_teaching_standard, basic_teaching_met, status, teacher_sign, teacher_sign_time, dept_leader_sign, dept_leader_sign_time, academic_assistant_sign, academic_assistant_sign_time, lock_time, create_by, create_time, update_by, update_time, remark from biz_workload_summary
     </sql>
 
     <select id="selectBizWorkloadSummaryList" parameterType="BizWorkloadSummary" resultMap="BizWorkloadSummaryResult">
@@ -100,6 +103,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         insert into biz_workload_summary
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="needsRecalculation != null">needs_recalculation,</if>
+            <if test="lastCalculatedAt != null">last_calculated_at,</if>
             <if test="userId != null">user_id,</if>
             <if test="semester != null and semester != ''">semester,</if>
             <if test="academicYear != null">academic_year,</if>
@@ -135,6 +139,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="needsRecalculation != null">#{needsRecalculation},</if>
+            <if test="lastCalculatedAt != null">#{lastCalculatedAt},</if>
             <if test="userId != null">#{userId},</if>
             <if test="semester != null and semester != ''">#{semester},</if>
             <if test="academicYear != null">#{academicYear},</if>
@@ -301,7 +306,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <update id="updateCalculatedFieldsIfStatus">
         <bind name="_audit" value="@com.workload.common.core.domain.audit.AuditFields@resolve(_parameter)"/>
         update biz_workload_summary
-        set update_by = #{_audit.by}, needs_recalculation = 0, academic_year = #{summary.academicYear},
+        set update_by = #{_audit.by}, last_calculated_at=#{summary.lastCalculatedAt}, needs_recalculation = 0, academic_year = #{summary.academicYear},
             G7 = #{summary.G7}, G8 = #{summary.G8}, G9 = #{summary.G9},
             G10 = #{summary.G10}, G11 = #{summary.G11},
             total_workload = #{summary.totalWorkload}, rated_workload = #{summary.ratedWorkload},
@@ -324,4 +329,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </update>
 <update id="updateSettlementPointer">
         <bind name="_audit" value="@com.workload.common.core.domain.audit.AuditFields@resolve(_parameter)"/>update biz_workload_summary set update_by = #{_audit.by}, update_time = #{_audit.time}, settlement_snapshot_id=#{snapshotId} where id=#{id}</update>
+    <update id="advanceDataVersion">
+        <bind name="_audit" value="@com.workload.common.core.domain.audit.AuditFields@resolve(_parameter)"/>
+        update biz_workload_summary set data_version=data_version+1,
+            update_by=#{_audit.by}, update_time=#{_audit.time}
+        where id=#{id} and status=0 and needs_recalculation=0
+    </update>
+    <update id="setReviewBatch">
+        <bind name="_audit" value="@com.workload.common.core.domain.audit.AuditFields@resolve(_parameter)"/>
+        update biz_workload_summary set review_batch_no=#{batchNo},update_by=#{_audit.by},update_time=#{_audit.time}
+        where id=#{id} and status=0 and data_version=#{dataVersion} and needs_recalculation=0
+    </update>
 </mapper>

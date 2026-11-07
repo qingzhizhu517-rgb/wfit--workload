@@ -59,7 +59,7 @@ class WorkloadMysqlFixture implements AutoCloseable {
         ds = new DriverManagerDataSource(base + schema + params, user, password);
         jdbc = new JdbcTemplate(ds);
         try {
-        for (String table : List.of("biz_workload_item", "biz_wl_theory", "biz_wl_practice", "biz_wl_internship_training", "biz_wl_course_design", "biz_wl_thesis", "biz_wl_concentrated_internship", "biz_wl_management", "biz_workload_summary", "biz_coefficient_adjustment", "biz_workload_calc_snapshot", "biz_teacher_profile", "biz_teaching_task", "biz_workload_category_dict", "biz_pay_rate", "biz_pay_record", "biz_allowance_item", "biz_role_assignment", "biz_audit_log")) {
+        for (String table : List.of("biz_workload_item", "biz_wl_theory", "biz_wl_practice", "biz_wl_internship_training", "biz_wl_course_design", "biz_wl_thesis", "biz_wl_concentrated_internship", "biz_wl_management", "biz_workload_summary", "biz_coefficient_adjustment", "biz_workload_calc_snapshot", "biz_teacher_profile", "biz_teaching_task", "biz_workload_category_dict", "biz_pay_rate", "biz_pay_record", "biz_allowance_item", "biz_role_assignment", "biz_audit_log", "biz_workload_review_batch", "biz_workload_item_review", "biz_offline_adjustment_note")) {
             String ddl = admin.queryForObject("SHOW CREATE TABLE " + table, (rs,n) -> rs.getString(2));
             jdbc.execute(ddl);
         }
@@ -75,7 +75,7 @@ class WorkloadMysqlFixture implements AutoCloseable {
         Configuration config = new Configuration(new Environment("isolated-mysql", new SpringManagedTransactionFactory(), ds));
         config.getTypeAliasRegistry().registerAliases("com.workload.system.domain");
         // Default SESSION cache matches production; lock reads must flush stale entries.
-        for (String name : List.of("BizWorkloadItemMapper", "BizWlTheoryMapper", "BizWlPracticeMapper", "BizWlInternshipTrainingMapper", "BizWlCourseDesignMapper", "BizWlThesisMapper", "BizWlConcentratedInternshipMapper", "BizWlManagementMapper", "BizWorkloadSummaryMapper", "BizWorkloadSettlementSnapshotMapper", "BizCoefficientAdjustmentMapper", "BizWorkloadCalcSnapshotMapper", "BizTeacherProfileMapper", "BizTeachingTaskMapper", "BizWorkloadCategoryDictMapper", "BizPayRateMapper", "BizPayRecordMapper", "BizAllowanceItemMapper", "BizRoleAssignmentMapper", "BizAuditLogMapper", "BizImportBatchMapper", "BizImportRowMapper")) {
+        for (String name : List.of("BizWorkloadItemMapper", "BizWlTheoryMapper", "BizWlPracticeMapper", "BizWlInternshipTrainingMapper", "BizWlCourseDesignMapper", "BizWlThesisMapper", "BizWlConcentratedInternshipMapper", "BizWlManagementMapper", "BizWorkloadSummaryMapper", "BizWorkloadSettlementSnapshotMapper", "BizCoefficientAdjustmentMapper", "BizWorkloadCalcSnapshotMapper", "BizTeacherProfileMapper", "BizTeachingTaskMapper", "BizWorkloadCategoryDictMapper", "BizPayRateMapper", "BizPayRecordMapper", "BizAllowanceItemMapper", "BizRoleAssignmentMapper", "BizAuditLogMapper", "BizImportBatchMapper", "BizImportRowMapper", "BizWorkloadReviewBatchMapper", "BizWorkloadItemReviewMapper", "BizOfflineAdjustmentNoteMapper")) {
             String resource = "mapper/system/" + name + ".xml";
             try (var in = getClass().getClassLoader().getResourceAsStream(resource)) { new XMLMapperBuilder(in, config, resource, config.getSqlFragments()).parse(); }
         }
@@ -89,6 +89,7 @@ class WorkloadMysqlFixture implements AutoCloseable {
         beans.put(RuleParamService.class, rules);
         beans.put(SemesterCalendar.class, new SemesterCalendar());
         beans.put(SettlementScope.class,new SettlementScope());
+        beans.put(SettlementSnapshotService.class,new SettlementSnapshotService(mapper(BizWorkloadSettlementSnapshotMapper.class),mapper(BizWorkloadCalcSnapshotMapper.class),mapper(BizWorkloadSummaryMapper.class),mapper(BizPayRecordMapper.class),mapper(BizWorkloadItemMapper.class),mapper(BizAllowanceItemMapper.class),(SettlementScope)beans.get(SettlementScope.class)));
         beans.put(ComplianceChecker.class, wire(new ComplianceChecker()));
         TheoryCalcStrategy strategy = wire(new TheoryCalcStrategy());
         CalcStrategyFactory factory = new CalcStrategyFactory();
@@ -105,6 +106,10 @@ class WorkloadMysqlFixture implements AutoCloseable {
         items = proxy(wire(new BizWorkloadItemServiceImpl()));
         tasks = proxy(wire(new BizTeachingTaskServiceImpl()));
         adjustments = proxy(wire(new CoefficientAdjustmentServiceImpl()));
+        var reviewBatch=proxy(wire(new com.workload.system.review.ReviewBatchService()));
+        beans.put(com.workload.system.review.ReviewBatchService.class,reviewBatch);
+        var itemReviews=proxy(wire(new com.workload.system.review.ItemReviewService()));
+        beans.put(com.workload.system.review.ItemReviewService.class,itemReviews);
         audit = proxy(wire(new BizAuditServiceImpl()));
         seed();
         } catch (Exception | AssertionError failure) { admin.execute("DROP DATABASE `" + schema + "`"); throw failure; }
@@ -130,7 +135,7 @@ class WorkloadMysqlFixture implements AutoCloseable {
     void seed() {
         jdbc.update("INSERT INTO biz_teacher_profile(user_id,title,teacher_nature) VALUES(1003,'讲师','专任')");
         jdbc.update("INSERT INTO biz_workload_category_dict(type_code,type_name,parent_group,calc_strategy) VALUES('G1','理论','G7','theoryCalcStrategy')");
-        jdbc.update("INSERT INTO biz_workload_item(id,user_id,semester,item_type,source_type,course_name,calculated_workload,status,calculation_version) VALUES(9,1003,?,'G1','IMPORT','数学',32,0,0)", SEM);
+        jdbc.update("INSERT INTO biz_workload_item(id,user_id,semester,item_type,source_type,course_name,calculated_workload,status,calculation_version) VALUES(9,1003,?,'G1','MANUAL','数学',32,0,0)", SEM);
         jdbc.update("INSERT INTO biz_wl_theory(item_id,J1,C1,K1,Q1,Q2,N) VALUES(9,32,1,1,1,1,1)");
     }
     long count(String table) { return jdbc.queryForObject("SELECT COUNT(*) FROM " + table, Long.class); }

@@ -19,6 +19,7 @@ public interface PayCalcService
      */
     public BizPayRecord recalcPay(Long userId, String semester);
     BizPayRecord recalcPayWithEvidence(Long userId,String semester,SettlementEvidence.SummaryEvidence evidence);
+    BizPayRecord recalcPayFromSummary(Long userId,String semester);
     BizPayRecord currentPay(Long userId,String semester);
 
     /**

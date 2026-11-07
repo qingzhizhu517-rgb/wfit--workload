@@ -48,8 +48,9 @@ public final class BizAuditFieldInterceptor implements Interceptor {
         register(result, BizWlThesis.class, BizWlThesisMapper.class, "insertBizWlThesis", "updateBizWlThesis");
         register(result, BizWorkloadCategoryDict.class, BizWorkloadCategoryDictMapper.class, "insertBizWorkloadCategoryDict", "updateBizWorkloadCategoryDict");
         register(result, BizWorkloadItem.class, BizWorkloadItemMapper.class, "insertBizWorkloadItem", "updateBizWorkloadItem", "updateCalculationIfEditable", "confirmIfUnchanged", "invalidateCalculation", "updateFactorProvenance");
+        register(result, BizWorkloadItemReview.class, BizWorkloadItemReviewMapper.class, "insert", "reviewIfPending");
         register(result, BizWorkloadRule.class, BizWorkloadRuleMapper.class, "insertBizWorkloadRule", "updateBizWorkloadRule");
-        register(result, BizWorkloadSummary.class, BizWorkloadSummaryMapper.class, "insertBizWorkloadSummary", "updateBizWorkloadSummary", "updateStatusIf", "approveSummary", "rejectSummary", "unlockById", "teacherConfirmById", "updateCalculatedFieldsIfStatus", "markNeedsRecalculation", "updateSettlementPointer");
+        register(result, BizWorkloadSummary.class, BizWorkloadSummaryMapper.class, "insertBizWorkloadSummary", "updateBizWorkloadSummary", "updateStatusIf", "approveSummary", "rejectSummary", "unlockById", "teacherConfirmById", "updateCalculatedFieldsIfStatus", "markNeedsRecalculation", "updateSettlementPointer", "advanceDataVersion", "setReviewBatch");
         return Collections.unmodifiableMap(result);
     }
     private static void register(Map<String,Contract> result, Class<?> entity, Class<?> mapper, String... ids) {

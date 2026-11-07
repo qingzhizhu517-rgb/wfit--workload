@@ -1,0 +1,2331 @@
+{
+  "date": "2026-11-07",
+  "base_commit": "748e3c202fa01311757244dfe1712b7b828327dc",
+  "regular_and_mysql_logs": {
+    "freeze-conflict-final-regular.log": {
+      "sha256": "80ebf32543ceb98f8728a7691a5b8be110c4dae14008462f7fb00da8fdff4aff",
+      "tests": 788,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "freeze-conflict-final-all-it.log": {
+      "sha256": "6389c838e26e320d7d38d91bc107214adb394dc835b2fdea3bb7a7941b2b01c4",
+      "tests": 199,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "package_log_sha256": "f33c949f64187e1bb6d6aae1be374ec51e2a52718435ef16885977bd8df17028",
+  "jar_sha256": "4a0e957fe63a14e40dfe7c03389067e5ba4ef6a8c0e2e1c522ea38602182835c",
+  "sources_sha256": {
+    "rear/workload-system/src/main/resources/mapper/system/BizWorkloadReviewBatchMapper.xml": "f20e9608ae21384658eb49af1aaa7c75ea4f1b2f25c7a62013f1ebe59b053dbd",
+    "rear/workload-system/src/main/java/com/workload/system/review/ReviewQueryService.java": "1169425a19a36cca510419c4bafc86d9efd201cbda08ee414bccf516e8042028",
+    "rear/workload-system/src/test/java/com/workload/system/review/ReviewSnapshotCodecTest.java": "b03e007685e03870987446b23b68abdfa8010107bea9c894ff4a980009228f4e",
+    "rear/workload-system/src/main/java/com/workload/system/domain/BizWorkloadSummary.java": "08373a90cd4e8e5404d3888da9f01c43dea099e010ebae19c7a6f095560736ca",
+    "rear/workload-framework/src/test/java/com/workload/framework/mybatis/BizAuditFieldInterceptorTest.java": "373bb25bb5d2f4b5d29995c07ef8edf14f84db5bf6f8c4c4d110333a9f5a88c2",
+    "rear/workload-system/src/main/java/com/workload/system/service/impl/BizWorkloadSummaryServiceImpl.java": "c64b026499078f8de3544e026f9059403c27044a890bb1591b5d5a6d958f1ea9",
+    "rear/workload-system/src/main/java/com/workload/system/review/ReviewSnapshotCodec.java": "c3f29848580642bff62ea7c7d1206980f4541cbbec6e1833fce10e4e724e2cb9",
+    "rear/workload-system/src/test/java/com/workload/system/integration/ReviewQueryAndNoteIT.java": "99cc588d82c41267454e048b75bb376eeee9f46c0d13c561569fa82c57e9925e",
+    "rear/workload-system/src/main/java/com/workload/system/review/ReviewCommands.java": "8c1ade6a8181978c9e9ee495de3f907b4f78e3d8c3c580ca64dd8add271f2b9f",
+    "rear/workload-system/src/test/java/com/workload/system/review/ReviewQueryDataScopeTest.java": "65bfd383334a407915308dfd64d8facc8bbd61cd1e4569441a0f0eaabfa47cb6",
+    "rear/workload-system/src/test/java/com/workload/system/integration/ReviewLifecycleIT.java": "a2b91745fab4c80976bcf0be410dd51223c641513dcec6e4ee41b84557f8ff93",
+    "rear/workload-system/src/main/java/com/workload/system/domain/BizWorkloadItemReview.java": "07d1a56da8f69ebc3c9a68ead258f44824e21d22a1efe2e14ff5e9f2086e5a92",
+    "rear/workload-system/src/test/java/com/workload/system/calc/WorkloadWriteGuardTest.java": "7036a3ead7d9cc66658a7df076c3602614737b3be2d6532f5bb517457f919c93",
+    "rear/workload-system/src/test/java/com/workload/system/calc/PayCalcServiceImplTest.java": "7eda901c8942e5a2d5f17b16c6eb17159d67eca50139c30f2804e4383809b1e7",
+    "rear/workload-system/src/test/java/com/workload/system/review/ReviewControllerContractTest.java": "6830c31521f4f43c46dee1ba8c103d6df9a60aa2c22d05710fdd8da61613f3af",
+    "rear/workload-system/src/main/java/com/workload/system/mapper/BizAuditLogMapper.java": "fdbec34d66075f114782174a805bb84ff6dad7ed56a3b0d7941b9ea881486239",
+    "rear/workload-system/src/test/java/com/workload/system/review/ReviewRowIntegrityTest.java": "3c532119e81b819d82d56489e5465c261f9a504c8123e24d3263c16db62e6b4e",
+    "rear/workload-system/src/main/java/com/workload/system/service/impl/BizAuditServiceImpl.java": "2497e1f46d1c437ea702c74134e2f5a92247c5af8b4f69dd6d8fab27c288479f",
+    "rear/workload-system/src/main/java/com/workload/system/review/OfflineAdjustmentNoteService.java": "9dec27f78cb3b5d119ce34ede3cd7305deb2b4aca4d814296b75a812a1e9a187",
+    "rear/workload-system/src/test/java/com/workload/system/service/impl/BizAuditBatchSubmitTest.java": "072b005733eed3e3b29787cff49ba2b8236f92e5e6fe94af5fb1c5227786699e",
+    "rear/workload-framework/src/test/java/com/workload/framework/mybatis/BizAuditCoverageTest.java": "deed2a725dd6ba6f8d901e7774ae40fad82635d5a5a51460ccbd711d5aad5122",
+    "rear/workload-system/src/test/java/com/workload/system/review/ReviewCommandsTest.java": "da49352fa5fe9da3853570d212853470cb4e344844fd825c5bc5245cf4fffdf6",
+    "rear/workload-system/src/main/java/com/workload/system/calc/SummaryCalcServiceImpl.java": "aad57fc2e27a32b7990949a189ec16e7e985448610add997f977923bc7a73264",
+    "rear/workload-system/src/main/java/com/workload/system/review/ReviewBatchService.java": "5b0368f5ea4f79f44de74ce637be874ca283b6f910002f4a32f0a2b26958ed27",
+    "rear/workload-framework/src/test/java/com/workload/framework/mybatis/BizAuditFieldMysqlIT.java": "1bad6c1f3335c795e6a8b3bd79f1252569483deb85f60bc5b81489ad3838fb9e",
+    "rear/workload-common/src/main/java/com/workload/common/utils/DataScopeUtil.java": "74f0192f5ab8339bdbaf8a685596c7b30957205c7cea6aa47b998147f4cc0117",
+    "rear/workload-system/src/test/java/com/workload/system/integration/SettlementSnapshotIT.java": "55bffbf693177465a03dc7e8031182869efec68d8fea61054f5b5b29ade31365",
+    "rear/workload-system/src/main/java/com/workload/system/domain/BizOfflineAdjustmentNote.java": "b75d746bf6e105e941e9c77755f61a3af0e63654fcc0978808200a78448494eb",
+    "rear/workload-system/src/main/java/com/workload/system/calc/PayCalcServiceImpl.java": "e88404bb0653d0093274b5a5175266990168cadc2b442e71047b19dd19011f1d",
+    "rear/workload-system/src/main/java/com/workload/system/mapper/BizWorkloadItemReviewMapper.java": "99eae895cf99ac6664f6ca94772c52bf1ff8af1807e07f1716b352466cc08fd3",
+    "rear/workload-system/src/test/java/com/workload/system/integration/ReviewVersionIT.java": "2043c0f532a301b29430d10b7f6e5544b90e9855a2d7e2d1d09b1a3d9daa6e92",
+    "rear/workload-system/src/test/java/com/workload/system/integration/WorkloadMysqlFixture.java": "db637e9e2a2bb360787fa7f19eeee8d41d95e0ef8b66d51552f2e1b60a73959b",
+    "rear/workload-system/src/main/java/com/workload/system/controller/BizAuditController.java": "fb475f1c573cba1b2951db68591ee2985bb465c1c86de78a3b6e45dfeaa8d374",
+    "rear/workload-system/src/main/java/com/workload/system/review/ReviewBatchCommandService.java": "2964c8ecad59c9d12238d3acb51684b38a77704182a53ad94e0da402281dd3de",
+    "rear/workload-system/src/test/java/com/workload/system/integration/WorkloadConcurrencyIT.java": "e79a10521659f5b69bd1bbcd4ddd3377b1869b0b0b6b29e5b837b0c169e35424",
+    "rear/workload-system/src/main/resources/mapper/system/BizWorkloadSummaryMapper.xml": "df35b7b1742ba48b5eaf0eeb722eb9117243c35a1147b2ee9ae1bfe7da952e97",
+    "rear/workload-system/src/main/java/com/workload/system/review/ItemReviewService.java": "28d351f4adf09d36dce4f3e5134f8200b19d497821bcec066c42b3a4cb7e6d6e",
+    "rear/workload-system/src/main/java/com/workload/system/domain/BizWorkloadReviewBatch.java": "a738849462c968a84874a83d133180b0fc0b2b28e8633a6ae6ac61ca879b3cd3",
+    "rear/workload-system/src/main/java/com/workload/system/controller/BizAuditRecordController.java": "410b2b17440cebd7841ce24aa0099ad9d8addb38c301ee6044e75c5a9c9c1c38",
+    "rear/workload-system/src/main/java/com/workload/system/controller/BizOfflineAdjustmentNoteController.java": "bfc9e3169bbe555b1c4ddb5d1bfab0179acbc4e4696b783e87d7393a137b1b66",
+    "rear/workload-framework/src/main/java/com/workload/framework/mybatis/BizAuditFieldInterceptor.java": "6b320e002e28ffd3b9e984b4a4571339ddd78cba5d34bace75f135e1e85ae045",
+    "rear/workload-system/src/main/java/com/workload/system/mapper/BizOfflineAdjustmentNoteMapper.java": "273bfb2fca068f2ca0036d4f986d46caced25faf4a2e0e3cbf156b31c885c76c",
+    "rear/workload-system/src/main/resources/mapper/system/BizOfflineAdjustmentNoteMapper.xml": "70a1b941c23850bb772b90c34eaf603c96c3d68db1dd54da19d3b8692a334c2f",
+    "rear/workload-system/src/main/java/com/workload/system/controller/BizReviewDetailController.java": "ebe4bd5ea3f5ee2ba038f9c59f4591a9b44c8a0974d7a7fba9632f45526668b4",
+    "rear/workload-system/src/main/java/com/workload/system/calc/WorkloadWriteGuard.java": "4e048ac92780ebb47d6356091954555cf32379fe1b1962c347ef3c12e49068f7",
+    "rear/workload-system/src/main/java/com/workload/system/mapper/BizWorkloadReviewBatchMapper.java": "b3f35a0e7bfd3f1431ed390d3d30b08cebb9fa4dbfed0f7c2dd488d138c9d991",
+    "rear/workload-system/src/test/java/com/workload/system/calc/SummaryCalcServiceImplTest.java": "e62ce0641d8add9f39564b86440d609207bd820248eb6e176329c192861b5ca1",
+    "rear/workload-system/src/main/resources/mapper/system/BizWorkloadItemReviewMapper.xml": "6459546767d993e3987c92ec54ff1a1e1fefba44395af0860f48352020e424da",
+    "rear/workload-system/src/main/java/com/workload/system/mapper/BizWorkloadSummaryMapper.java": "0eef526a598c18df48efeead4bd689e60d0627f98b596e648cabf276fda3a30c",
+    "rear/workload-system/src/main/resources/mapper/system/BizAuditLogMapper.xml": "a4bdd884595040c79e6d8fe3315099878ff41e02b1430dfe3ce387094c9f20aa",
+    "rear/workload-system/src/main/java/com/workload/system/calc/PayCalcService.java": "a43b380e30f453c32513d0491a81c0f69a30dda2e97c61a63b641a44b8e88734",
+    "rear/workload-system/src/test/java/com/workload/system/service/impl/BizAuditServiceImplTest.java": "fbdc4752c0c9d58e0391da77b1d438434cb35b53c8a356715a21e2ebfdbe7c23"
+  },
+  "unchanged_lines_ending_differences": 0,
+  "http": {
+    "mysql9": {
+      "mode": "mysql9",
+      "schema": "wfit_t07_ui_20261106",
+      "host": "127.0.0.1",
+      "database_port": 13306,
+      "backend_port": 18084,
+      "passed": true,
+      "observations": [
+        {
+          "path": "/login",
+          "method": "POST",
+          "actor": null,
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/getInfo",
+          "method": "GET",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/login",
+          "method": "POST",
+          "actor": null,
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/getInfo",
+          "method": "GET",
+          "actor": "jiaowu_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/login",
+          "method": "POST",
+          "actor": null,
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/getInfo",
+          "method": "GET",
+          "actor": "teacher_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/login",
+          "method": "POST",
+          "actor": null,
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/getInfo",
+          "method": "GET",
+          "actor": "leader_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/auditRecord/list",
+          "method": "GET",
+          "actor": null,
+          "expected": 401,
+          "actual": 401,
+          "passed": true,
+          "message": "请求访问：/system/auditRecord/list，认证失败，无法访问系统资源"
+        },
+        {
+          "path": "/system/workloadRule",
+          "method": "POST",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/workloadRule",
+          "method": "POST",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/payRate",
+          "method": "POST",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/workloadItem",
+          "method": "POST",
+          "actor": "teacher_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/workloadItem",
+          "method": "POST",
+          "actor": "teacher_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/allowanceItem",
+          "method": "POST",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/calc/recalcSummary?userId=1003&semester=2106-2107-1",
+          "method": "POST",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/workloadSummary/list?userId=1003&semester=2106-2107-1",
+          "method": "GET",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "查询成功"
+        },
+        {
+          "path": "/system/workloadSummary/117",
+          "method": "GET",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/audit/batchSubmit?ids=117,117",
+          "method": "POST",
+          "actor": "teacher_test",
+          "expected": 400,
+          "actual": 400,
+          "passed": true,
+          "message": "批量ID须为正整数且不重复"
+        },
+        {
+          "path": "/system/audit/batchSubmit?ids=900000,900001,900002,900003,900004,900005,900006,900007,900008,900009,900010,900011,900012,900013,900014,900015,900016,900017,900018,900019,900020,900021,900022,900023,900024,900025,900026,900027,900028,900029,900030,900031,900032,900033,900034,900035,900036,900037,900038,900039,900040,900041,900042,900043,900044,900045,900046,900047,900048,900049,900050,900051,900052,900053,900054,900055,900056,900057,900058,900059,900060,900061,900062,900063,900064,900065,900066,900067,900068,900069,900070,900071,900072,900073,900074,900075,900076,900077,900078,900079,900080,900081,900082,900083,900084,900085,900086,900087,900088,900089,900090,900091,900092,900093,900094,900095,900096,900097,900098,900099,900100",
+          "method": "POST",
+          "actor": "teacher_test",
+          "expected": 400,
+          "actual": 400,
+          "passed": true,
+          "message": "批量必须为1至100项"
+        },
+        {
+          "path": "/system/audit/batchSubmit?ids=0",
+          "method": "POST",
+          "actor": "teacher_test",
+          "expected": 400,
+          "actual": 400,
+          "passed": true,
+          "message": "批量ID须为正整数且不重复"
+        },
+        {
+          "path": "/system/calc/preview?userId=1003&semester=2106-2107-1",
+          "method": "GET",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/calc/recalcPay?userId=1003&semester=2106-2107-1",
+          "method": "POST",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/workloadSummary/117",
+          "method": "GET",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/workloadSummary/117/detail",
+          "method": "GET",
+          "actor": "teacher_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/workloadSummary/101/detail",
+          "method": "GET",
+          "actor": "teacher_test",
+          "expected": 403,
+          "actual": 403,
+          "passed": true,
+          "message": "无权访问他人数据"
+        },
+        {
+          "path": "/system/workloadSummary/101/reviews",
+          "method": "GET",
+          "actor": "teacher_test",
+          "expected": 403,
+          "actual": 403,
+          "passed": true,
+          "message": "无权访问他人数据"
+        },
+        {
+          "path": "/system/workloadSummary/101/auditLogs",
+          "method": "GET",
+          "actor": "teacher_test",
+          "expected": 403,
+          "actual": 403,
+          "passed": true,
+          "message": "无权访问他人数据"
+        },
+        {
+          "path": "/system/workloadSummary/101/offlineAdjustmentNotes",
+          "method": "GET",
+          "actor": "teacher_test",
+          "expected": 403,
+          "actual": 403,
+          "passed": true,
+          "message": "无权访问他人数据"
+        },
+        {
+          "path": "/system/workloadItem/list?userId=1003&semester=2106-2107-1",
+          "method": "GET",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "查询成功"
+        },
+        {
+          "path": "/system/workloadItem/624/confirm",
+          "method": "POST",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/workloadItem/625/confirm",
+          "method": "POST",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/audit/submit?id=117",
+          "method": "POST",
+          "actor": "teacher_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/workloadSummary/117",
+          "method": "GET",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/workloadSummary/117/reviews",
+          "method": "GET",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "查询成功"
+        },
+        {
+          "path": "/system/workloadSummary/117/reviews?pageSize=1&pageNum=1",
+          "method": "GET",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "查询成功"
+        },
+        {
+          "path": "/system/workloadSummary/117/reviews?pageSize=1&pageNum=2",
+          "method": "GET",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "查询成功"
+        },
+        {
+          "path": "/system/workloadSummary/117/reviews?pageSize=101",
+          "method": "GET",
+          "actor": "admin_test",
+          "expected": 400,
+          "actual": 400,
+          "passed": true,
+          "message": "pageSize超出上限100"
+        },
+        {
+          "path": "/system/workloadSummary/117/reviews?pageNum=0",
+          "method": "GET",
+          "actor": "admin_test",
+          "expected": 400,
+          "actual": 400,
+          "passed": true,
+          "message": "pageNum必须为正整数"
+        },
+        {
+          "path": "/system/workloadSummary/117/reviews?pageSize=1.5",
+          "method": "GET",
+          "actor": "admin_test",
+          "expected": 400,
+          "actual": 400,
+          "passed": true,
+          "message": "pageSize必须为正整数"
+        },
+        {
+          "path": "/system/auditRecord/list",
+          "method": "GET",
+          "actor": "teacher_test",
+          "expected": 403,
+          "actual": 403,
+          "passed": true,
+          "message": "没有权限，请联系管理员授权"
+        },
+        {
+          "path": "/system/auditRecord/list",
+          "method": "GET",
+          "actor": "leader_test",
+          "expected": 403,
+          "actual": 403,
+          "passed": true,
+          "message": "没有权限，请联系管理员授权"
+        },
+        {
+          "path": "/system/auditRecord/list?summaryId=117",
+          "method": "GET",
+          "actor": "jiaowu_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "查询成功"
+        },
+        {
+          "path": "/system/auditRecord/list?reviewType=ALLOWANCE",
+          "method": "GET",
+          "actor": "jiaowu_test",
+          "expected": 400,
+          "actual": 400,
+          "passed": true,
+          "message": "审核类型无效"
+        },
+        {
+          "path": "/system/workloadSummary/117/detail",
+          "method": "GET",
+          "actor": "teacher_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/auditRecord/16",
+          "method": "GET",
+          "actor": "jiaowu_test",
+          "expected": 409,
+          "actual": 409,
+          "passed": true,
+          "message": "审核证据损坏：hash不符"
+        },
+        {
+          "path": "/system/auditRecord/16",
+          "method": "GET",
+          "actor": "jiaowu_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/auditRecord/16/pass",
+          "method": "POST",
+          "actor": "teacher_test",
+          "expected": 403,
+          "actual": 403,
+          "passed": true,
+          "message": "没有权限，请联系管理员授权"
+        },
+        {
+          "path": "/system/auditRecord/16/waive",
+          "method": "POST",
+          "actor": "jiaowu_test",
+          "expected": 403,
+          "actual": 403,
+          "passed": true,
+          "message": "没有权限，请联系管理员授权"
+        },
+        {
+          "path": "/system/auditRecord/16/pass",
+          "method": "POST",
+          "actor": "jiaowu_test",
+          "expected": 400,
+          "actual": 400,
+          "passed": true,
+          "message": "不允许的字段：reviewerId"
+        },
+        {
+          "path": "/system/auditRecord/16/pass",
+          "method": "POST",
+          "actor": "jiaowu_test",
+          "expected": 400,
+          "actual": 400,
+          "passed": true,
+          "message": "version必须为明确整数"
+        },
+        {
+          "path": "/system/auditRecord/16/pass",
+          "method": "POST",
+          "actor": "jiaowu_test",
+          "expected": 400,
+          "actual": 400,
+          "passed": true,
+          "message": "请求JSON格式无效或字段重复"
+        },
+        {
+          "path": "/system/auditRecord/16/reject",
+          "method": "POST",
+          "actor": "jiaowu_test",
+          "expected": 400,
+          "actual": 400,
+          "passed": true,
+          "message": "reason原因或字段长度无效"
+        },
+        {
+          "path": "/system/auditRecord/16/reject",
+          "method": "POST",
+          "actor": "jiaowu_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/auditRecord/16",
+          "method": "GET",
+          "actor": "jiaowu_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/audit/approve?id=117",
+          "method": "POST",
+          "actor": "jiaowu_test",
+          "expected": 409,
+          "actual": 409,
+          "passed": true,
+          "message": "存在未通过的审核明细，请完成逐项审核"
+        },
+        {
+          "path": "/system/audit/reject?id=117&reason=",
+          "method": "POST",
+          "actor": "jiaowu_test",
+          "expected": 400,
+          "actual": 400,
+          "passed": true,
+          "message": "驳回原因必填且最多500字"
+        },
+        {
+          "path": "/system/audit/reject?id=117&reason=QA&reviewerId=1",
+          "method": "POST",
+          "actor": "jiaowu_test",
+          "expected": 400,
+          "actual": 400,
+          "passed": true,
+          "message": "请求包含未声明的字段"
+        },
+        {
+          "path": "/system/audit/reject?id=117&reason=QA+return+for+correction",
+          "method": "POST",
+          "actor": "jiaowu_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/workloadSummary/117",
+          "method": "DELETE",
+          "actor": "admin_test",
+          "expected": 409,
+          "actual": 409,
+          "passed": true,
+          "message": "已有结算证据的汇总或酬金记录禁止通用删除，请保留结算链"
+        },
+        {
+          "path": "/system/workloadItem",
+          "method": "POST",
+          "actor": "teacher_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/calc/recalcSummary?userId=1003&semester=2106-2107-1",
+          "method": "POST",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/workloadSummary/117",
+          "method": "GET",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/workloadSummary/117/detail",
+          "method": "GET",
+          "actor": "teacher_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/workloadSummary/117/reviews?batchNo=d0f2b1e5-bee4-4c2a-9a33-164e7505d1df",
+          "method": "GET",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "查询成功"
+        },
+        {
+          "path": "/system/workloadItem/list?userId=1003&semester=2106-2107-1",
+          "method": "GET",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "查询成功"
+        },
+        {
+          "path": "/system/workloadItem/626/confirm",
+          "method": "POST",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/audit/submit?id=117",
+          "method": "POST",
+          "actor": "teacher_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/workloadSummary/117",
+          "method": "GET",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/workloadSummary/117/reviews",
+          "method": "GET",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "查询成功"
+        },
+        {
+          "path": "/system/auditRecord/17/pass",
+          "method": "POST",
+          "actor": "jiaowu_test",
+          "expected": 409,
+          "actual": 409,
+          "passed": true,
+          "message": "审核批次已过期"
+        },
+        {
+          "path": "/system/auditRecord/batch/pass",
+          "method": "POST",
+          "actor": "jiaowu_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/workloadSummary/117/reviews",
+          "method": "GET",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "查询成功"
+        },
+        {
+          "path": "/system/auditRecord/19/waive",
+          "method": "POST",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/auditRecord/20/waive",
+          "method": "POST",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/audit/teacherConfirm?id=117",
+          "method": "POST",
+          "actor": "teacher_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/workloadSummary/117",
+          "method": "GET",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/audit/approve?id=117",
+          "method": "POST",
+          "actor": "jiaowu_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/workloadSummary/117",
+          "method": "GET",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/calc/recalcSummary?userId=1003&semester=2106-2107-1",
+          "method": "POST",
+          "actor": "admin_test",
+          "expected": 409,
+          "actual": 409,
+          "passed": true,
+          "message": "学期汇总已进入审批流程，数据已冻结"
+        },
+        {
+          "path": "/system/audit/unlock?id=117",
+          "method": "POST",
+          "actor": "admin_test",
+          "expected": 409,
+          "actual": 409,
+          "passed": true,
+          "message": "已完结汇总永久锁定，不允许解锁"
+        },
+        {
+          "path": "/system/offlineAdjustmentNote/117",
+          "method": "POST",
+          "actor": "teacher_test",
+          "expected": 403,
+          "actual": 403,
+          "passed": true,
+          "message": "没有权限，请联系管理员授权"
+        },
+        {
+          "path": "/system/offlineAdjustmentNote/117",
+          "method": "POST",
+          "actor": "jiaowu_test",
+          "expected": 403,
+          "actual": 403,
+          "passed": true,
+          "message": "没有权限，请联系管理员授权"
+        },
+        {
+          "path": "/system/offlineAdjustmentNote/117",
+          "method": "POST",
+          "actor": "admin_test",
+          "expected": 400,
+          "actual": 400,
+          "passed": true,
+          "message": "缺少或非法Idempotency-Key"
+        },
+        {
+          "path": "/system/offlineAdjustmentNote/117",
+          "method": "POST",
+          "actor": "admin_test",
+          "expected": 400,
+          "actual": 400,
+          "passed": true,
+          "message": "不允许的字段：handledById"
+        },
+        {
+          "path": "/system/offlineAdjustmentNote/117",
+          "method": "POST",
+          "actor": "admin_test",
+          "expected": 400,
+          "actual": 400,
+          "passed": true,
+          "message": "附件必须为受控上传引用"
+        },
+        {
+          "path": "/system/offlineAdjustmentNote/117",
+          "method": "POST",
+          "actor": "admin_test",
+          "expected": 400,
+          "actual": 400,
+          "passed": true,
+          "message": "补差金额须为DECIMAL(12,2)，禁止舍入"
+        },
+        {
+          "path": "/system/offlineAdjustmentNote/117",
+          "method": "POST",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/offlineAdjustmentNote/117",
+          "method": "POST",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/offlineAdjustmentNote/117",
+          "method": "POST",
+          "actor": "admin_test",
+          "expected": 409,
+          "actual": 409,
+          "passed": true,
+          "message": "幂等请求标识已用于不同内容或经办人"
+        },
+        {
+          "path": "/system/offlineAdjustmentNote/117",
+          "method": "POST",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/workloadSummary/117/offlineAdjustmentNotes",
+          "method": "GET",
+          "actor": "teacher_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "查询成功"
+        },
+        {
+          "path": "/system/workloadSummary/117/auditLogs?pageSize=2",
+          "method": "GET",
+          "actor": "teacher_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "查询成功"
+        }
+      ],
+      "http_observations": 93,
+      "facts": {
+        "marker": "T07_HTTP_4c45dd646c",
+        "semester": "2106-2107-1",
+        "roles": {
+          "admin_test": [
+            "biz_admin"
+          ],
+          "jiaowu_test": [
+            "assistant"
+          ],
+          "teacher_test": [
+            "teacher"
+          ],
+          "leader_test": [
+            "leader"
+          ]
+        },
+        "summary_id": 117,
+        "preview_no_write": true,
+        "single_pay_advances_once": true,
+        "summary_advances_once": true,
+        "review_hash_tamper_rejected_and_exactly_restored": true,
+        "summary_version": 3,
+        "finished": true,
+        "historical_batch_preserved": true,
+        "stale_batch_rejected": true,
+        "partial_batch_receipt": {
+          "successCount": 1,
+          "failDetails": [
+            {
+              "reason": "审核已处理或版本过期，请刷新",
+              "id": 19
+            }
+          ],
+          "failCount": 1
+        },
+        "teacher_confirmation_keeps_batch_and_version": true,
+        "frozen_rows_before": {
+          "biz_workload_summary": {
+            "rows": 1,
+            "sha256": "a20e01eeae836b1bf574fd8d9b757ed0663867820cf867e931f94b092cb7538c"
+          },
+          "biz_pay_record": {
+            "rows": 1,
+            "sha256": "9371e93b11553a50cfb7a560789ce31032071bc8fd29bde5a80315e49187b124"
+          },
+          "biz_workload_item": {
+            "rows": 3,
+            "sha256": "b68adb586800e0cd3ba6fe3972b0a5a10ff398f2cb309762f7be258db8d90f5f"
+          },
+          "biz_workload_review_batch": {
+            "rows": 2,
+            "sha256": "7e09efeaca39f81b585648392e2f1b13eabf105812e3ab5067635aa8e9bdc035"
+          },
+          "biz_workload_settlement_snapshot": {
+            "rows": 3,
+            "sha256": "d0eb370f9a5ead84b46bcd028ddee7ec2debb794cb9c51c1812dec7d55782d4f"
+          },
+          "biz_workload_calc_snapshot": {
+            "rows": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        "frozen_rows_after": {
+          "biz_workload_summary": {
+            "rows": 1,
+            "sha256": "a20e01eeae836b1bf574fd8d9b757ed0663867820cf867e931f94b092cb7538c"
+          },
+          "biz_pay_record": {
+            "rows": 1,
+            "sha256": "9371e93b11553a50cfb7a560789ce31032071bc8fd29bde5a80315e49187b124"
+          },
+          "biz_workload_item": {
+            "rows": 3,
+            "sha256": "b68adb586800e0cd3ba6fe3972b0a5a10ff398f2cb309762f7be258db8d90f5f"
+          },
+          "biz_workload_review_batch": {
+            "rows": 2,
+            "sha256": "7e09efeaca39f81b585648392e2f1b13eabf105812e3ab5067635aa8e9bdc035"
+          },
+          "biz_workload_settlement_snapshot": {
+            "rows": 3,
+            "sha256": "d0eb370f9a5ead84b46bcd028ddee7ec2debb794cb9c51c1812dec7d55782d4f"
+          },
+          "biz_workload_calc_snapshot": {
+            "rows": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        "note_ids": [
+          5,
+          6
+        ],
+        "idempotency_preserved": true,
+        "full_500_character_reasons_preserved": true,
+        "high_precision_amount_rejected": true,
+        "json3_snapshot_shape_verified": true,
+        "teacher_data_scope_verified": true
+      },
+      "formal_settlement_enabled": false,
+      "original_database_touched": false
+    },
+    "mysql8": {
+      "mode": "mysql8",
+      "schema": "wfit_restore8_20261106",
+      "host": "127.0.0.1",
+      "database_port": 13308,
+      "backend_port": 18086,
+      "passed": true,
+      "observations": [
+        {
+          "path": "/login",
+          "method": "POST",
+          "actor": null,
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/getInfo",
+          "method": "GET",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/login",
+          "method": "POST",
+          "actor": null,
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/getInfo",
+          "method": "GET",
+          "actor": "jiaowu_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/login",
+          "method": "POST",
+          "actor": null,
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/getInfo",
+          "method": "GET",
+          "actor": "teacher_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/login",
+          "method": "POST",
+          "actor": null,
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/getInfo",
+          "method": "GET",
+          "actor": "leader_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/auditRecord/list",
+          "method": "GET",
+          "actor": null,
+          "expected": 401,
+          "actual": 401,
+          "passed": true,
+          "message": "请求访问：/system/auditRecord/list，认证失败，无法访问系统资源"
+        },
+        {
+          "path": "/system/workloadRule",
+          "method": "POST",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/workloadRule",
+          "method": "POST",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/payRate",
+          "method": "POST",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/workloadItem",
+          "method": "POST",
+          "actor": "teacher_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/workloadItem",
+          "method": "POST",
+          "actor": "teacher_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/allowanceItem",
+          "method": "POST",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/calc/recalcSummary?userId=1003&semester=2103-2104-1",
+          "method": "POST",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/workloadSummary/list?userId=1003&semester=2103-2104-1",
+          "method": "GET",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "查询成功"
+        },
+        {
+          "path": "/system/workloadSummary/114",
+          "method": "GET",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/audit/batchSubmit?ids=114,114",
+          "method": "POST",
+          "actor": "teacher_test",
+          "expected": 400,
+          "actual": 400,
+          "passed": true,
+          "message": "批量ID须为正整数且不重复"
+        },
+        {
+          "path": "/system/audit/batchSubmit?ids=900000,900001,900002,900003,900004,900005,900006,900007,900008,900009,900010,900011,900012,900013,900014,900015,900016,900017,900018,900019,900020,900021,900022,900023,900024,900025,900026,900027,900028,900029,900030,900031,900032,900033,900034,900035,900036,900037,900038,900039,900040,900041,900042,900043,900044,900045,900046,900047,900048,900049,900050,900051,900052,900053,900054,900055,900056,900057,900058,900059,900060,900061,900062,900063,900064,900065,900066,900067,900068,900069,900070,900071,900072,900073,900074,900075,900076,900077,900078,900079,900080,900081,900082,900083,900084,900085,900086,900087,900088,900089,900090,900091,900092,900093,900094,900095,900096,900097,900098,900099,900100",
+          "method": "POST",
+          "actor": "teacher_test",
+          "expected": 400,
+          "actual": 400,
+          "passed": true,
+          "message": "批量必须为1至100项"
+        },
+        {
+          "path": "/system/audit/batchSubmit?ids=0",
+          "method": "POST",
+          "actor": "teacher_test",
+          "expected": 400,
+          "actual": 400,
+          "passed": true,
+          "message": "批量ID须为正整数且不重复"
+        },
+        {
+          "path": "/system/calc/preview?userId=1003&semester=2103-2104-1",
+          "method": "GET",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/calc/recalcPay?userId=1003&semester=2103-2104-1",
+          "method": "POST",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/workloadSummary/114",
+          "method": "GET",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/workloadSummary/114/detail",
+          "method": "GET",
+          "actor": "teacher_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/workloadSummary/101/detail",
+          "method": "GET",
+          "actor": "teacher_test",
+          "expected": 403,
+          "actual": 403,
+          "passed": true,
+          "message": "无权访问他人数据"
+        },
+        {
+          "path": "/system/workloadSummary/101/reviews",
+          "method": "GET",
+          "actor": "teacher_test",
+          "expected": 403,
+          "actual": 403,
+          "passed": true,
+          "message": "无权访问他人数据"
+        },
+        {
+          "path": "/system/workloadSummary/101/auditLogs",
+          "method": "GET",
+          "actor": "teacher_test",
+          "expected": 403,
+          "actual": 403,
+          "passed": true,
+          "message": "无权访问他人数据"
+        },
+        {
+          "path": "/system/workloadSummary/101/offlineAdjustmentNotes",
+          "method": "GET",
+          "actor": "teacher_test",
+          "expected": 403,
+          "actual": 403,
+          "passed": true,
+          "message": "无权访问他人数据"
+        },
+        {
+          "path": "/system/workloadItem/list?userId=1003&semester=2103-2104-1",
+          "method": "GET",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "查询成功"
+        },
+        {
+          "path": "/system/workloadItem/618/confirm",
+          "method": "POST",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/workloadItem/619/confirm",
+          "method": "POST",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/audit/submit?id=114",
+          "method": "POST",
+          "actor": "teacher_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/workloadSummary/114",
+          "method": "GET",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/workloadSummary/114/reviews",
+          "method": "GET",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "查询成功"
+        },
+        {
+          "path": "/system/workloadSummary/114/reviews?pageSize=1&pageNum=1",
+          "method": "GET",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "查询成功"
+        },
+        {
+          "path": "/system/workloadSummary/114/reviews?pageSize=1&pageNum=2",
+          "method": "GET",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "查询成功"
+        },
+        {
+          "path": "/system/workloadSummary/114/reviews?pageSize=101",
+          "method": "GET",
+          "actor": "admin_test",
+          "expected": 400,
+          "actual": 400,
+          "passed": true,
+          "message": "pageSize超出上限100"
+        },
+        {
+          "path": "/system/workloadSummary/114/reviews?pageNum=0",
+          "method": "GET",
+          "actor": "admin_test",
+          "expected": 400,
+          "actual": 400,
+          "passed": true,
+          "message": "pageNum必须为正整数"
+        },
+        {
+          "path": "/system/workloadSummary/114/reviews?pageSize=1.5",
+          "method": "GET",
+          "actor": "admin_test",
+          "expected": 400,
+          "actual": 400,
+          "passed": true,
+          "message": "pageSize必须为正整数"
+        },
+        {
+          "path": "/system/auditRecord/list",
+          "method": "GET",
+          "actor": "teacher_test",
+          "expected": 403,
+          "actual": 403,
+          "passed": true,
+          "message": "没有权限，请联系管理员授权"
+        },
+        {
+          "path": "/system/auditRecord/list",
+          "method": "GET",
+          "actor": "leader_test",
+          "expected": 403,
+          "actual": 403,
+          "passed": true,
+          "message": "没有权限，请联系管理员授权"
+        },
+        {
+          "path": "/system/auditRecord/list?summaryId=114",
+          "method": "GET",
+          "actor": "jiaowu_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "查询成功"
+        },
+        {
+          "path": "/system/auditRecord/list?reviewType=ALLOWANCE",
+          "method": "GET",
+          "actor": "jiaowu_test",
+          "expected": 400,
+          "actual": 400,
+          "passed": true,
+          "message": "审核类型无效"
+        },
+        {
+          "path": "/system/workloadSummary/114/detail",
+          "method": "GET",
+          "actor": "teacher_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/auditRecord/12",
+          "method": "GET",
+          "actor": "jiaowu_test",
+          "expected": 409,
+          "actual": 409,
+          "passed": true,
+          "message": "审核证据损坏：hash不符"
+        },
+        {
+          "path": "/system/auditRecord/12",
+          "method": "GET",
+          "actor": "jiaowu_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/auditRecord/12/pass",
+          "method": "POST",
+          "actor": "teacher_test",
+          "expected": 403,
+          "actual": 403,
+          "passed": true,
+          "message": "没有权限，请联系管理员授权"
+        },
+        {
+          "path": "/system/auditRecord/12/waive",
+          "method": "POST",
+          "actor": "jiaowu_test",
+          "expected": 403,
+          "actual": 403,
+          "passed": true,
+          "message": "没有权限，请联系管理员授权"
+        },
+        {
+          "path": "/system/auditRecord/12/pass",
+          "method": "POST",
+          "actor": "jiaowu_test",
+          "expected": 400,
+          "actual": 400,
+          "passed": true,
+          "message": "不允许的字段：reviewerId"
+        },
+        {
+          "path": "/system/auditRecord/12/pass",
+          "method": "POST",
+          "actor": "jiaowu_test",
+          "expected": 400,
+          "actual": 400,
+          "passed": true,
+          "message": "version必须为明确整数"
+        },
+        {
+          "path": "/system/auditRecord/12/pass",
+          "method": "POST",
+          "actor": "jiaowu_test",
+          "expected": 400,
+          "actual": 400,
+          "passed": true,
+          "message": "请求JSON格式无效或字段重复"
+        },
+        {
+          "path": "/system/auditRecord/12/reject",
+          "method": "POST",
+          "actor": "jiaowu_test",
+          "expected": 400,
+          "actual": 400,
+          "passed": true,
+          "message": "reason原因或字段长度无效"
+        },
+        {
+          "path": "/system/auditRecord/12/reject",
+          "method": "POST",
+          "actor": "jiaowu_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/auditRecord/12",
+          "method": "GET",
+          "actor": "jiaowu_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/audit/approve?id=114",
+          "method": "POST",
+          "actor": "jiaowu_test",
+          "expected": 409,
+          "actual": 409,
+          "passed": true,
+          "message": "存在未通过的审核明细，请完成逐项审核"
+        },
+        {
+          "path": "/system/audit/reject?id=114&reason=",
+          "method": "POST",
+          "actor": "jiaowu_test",
+          "expected": 400,
+          "actual": 400,
+          "passed": true,
+          "message": "驳回原因必填且最多500字"
+        },
+        {
+          "path": "/system/audit/reject?id=114&reason=QA&reviewerId=1",
+          "method": "POST",
+          "actor": "jiaowu_test",
+          "expected": 400,
+          "actual": 400,
+          "passed": true,
+          "message": "请求包含未声明的字段"
+        },
+        {
+          "path": "/system/audit/reject?id=114&reason=QA+return+for+correction",
+          "method": "POST",
+          "actor": "jiaowu_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/workloadSummary/114",
+          "method": "DELETE",
+          "actor": "admin_test",
+          "expected": 409,
+          "actual": 409,
+          "passed": true,
+          "message": "已有结算证据的汇总或酬金记录禁止通用删除，请保留结算链"
+        },
+        {
+          "path": "/system/workloadItem",
+          "method": "POST",
+          "actor": "teacher_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/calc/recalcSummary?userId=1003&semester=2103-2104-1",
+          "method": "POST",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/workloadSummary/114",
+          "method": "GET",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/workloadSummary/114/detail",
+          "method": "GET",
+          "actor": "teacher_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/workloadSummary/114/reviews?batchNo=6542d1ab-23b5-4267-b305-9c4ca84c349c",
+          "method": "GET",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "查询成功"
+        },
+        {
+          "path": "/system/workloadItem/list?userId=1003&semester=2103-2104-1",
+          "method": "GET",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "查询成功"
+        },
+        {
+          "path": "/system/workloadItem/620/confirm",
+          "method": "POST",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/audit/submit?id=114",
+          "method": "POST",
+          "actor": "teacher_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/workloadSummary/114",
+          "method": "GET",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/workloadSummary/114/reviews",
+          "method": "GET",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "查询成功"
+        },
+        {
+          "path": "/system/auditRecord/13/pass",
+          "method": "POST",
+          "actor": "jiaowu_test",
+          "expected": 409,
+          "actual": 409,
+          "passed": true,
+          "message": "审核批次已过期"
+        },
+        {
+          "path": "/system/auditRecord/batch/pass",
+          "method": "POST",
+          "actor": "jiaowu_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/workloadSummary/114/reviews",
+          "method": "GET",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "查询成功"
+        },
+        {
+          "path": "/system/auditRecord/15/waive",
+          "method": "POST",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/auditRecord/16/waive",
+          "method": "POST",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/audit/teacherConfirm?id=114",
+          "method": "POST",
+          "actor": "teacher_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/workloadSummary/114",
+          "method": "GET",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/audit/approve?id=114",
+          "method": "POST",
+          "actor": "jiaowu_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/workloadSummary/114",
+          "method": "GET",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/calc/recalcSummary?userId=1003&semester=2103-2104-1",
+          "method": "POST",
+          "actor": "admin_test",
+          "expected": 409,
+          "actual": 409,
+          "passed": true,
+          "message": "学期汇总已进入审批流程，数据已冻结"
+        },
+        {
+          "path": "/system/audit/unlock?id=114",
+          "method": "POST",
+          "actor": "admin_test",
+          "expected": 409,
+          "actual": 409,
+          "passed": true,
+          "message": "已完结汇总永久锁定，不允许解锁"
+        },
+        {
+          "path": "/system/offlineAdjustmentNote/114",
+          "method": "POST",
+          "actor": "teacher_test",
+          "expected": 403,
+          "actual": 403,
+          "passed": true,
+          "message": "没有权限，请联系管理员授权"
+        },
+        {
+          "path": "/system/offlineAdjustmentNote/114",
+          "method": "POST",
+          "actor": "jiaowu_test",
+          "expected": 403,
+          "actual": 403,
+          "passed": true,
+          "message": "没有权限，请联系管理员授权"
+        },
+        {
+          "path": "/system/offlineAdjustmentNote/114",
+          "method": "POST",
+          "actor": "admin_test",
+          "expected": 400,
+          "actual": 400,
+          "passed": true,
+          "message": "缺少或非法Idempotency-Key"
+        },
+        {
+          "path": "/system/offlineAdjustmentNote/114",
+          "method": "POST",
+          "actor": "admin_test",
+          "expected": 400,
+          "actual": 400,
+          "passed": true,
+          "message": "不允许的字段：handledById"
+        },
+        {
+          "path": "/system/offlineAdjustmentNote/114",
+          "method": "POST",
+          "actor": "admin_test",
+          "expected": 400,
+          "actual": 400,
+          "passed": true,
+          "message": "附件必须为受控上传引用"
+        },
+        {
+          "path": "/system/offlineAdjustmentNote/114",
+          "method": "POST",
+          "actor": "admin_test",
+          "expected": 400,
+          "actual": 400,
+          "passed": true,
+          "message": "补差金额须为DECIMAL(12,2)，禁止舍入"
+        },
+        {
+          "path": "/system/offlineAdjustmentNote/114",
+          "method": "POST",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/offlineAdjustmentNote/114",
+          "method": "POST",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/offlineAdjustmentNote/114",
+          "method": "POST",
+          "actor": "admin_test",
+          "expected": 409,
+          "actual": 409,
+          "passed": true,
+          "message": "幂等请求标识已用于不同内容或经办人"
+        },
+        {
+          "path": "/system/offlineAdjustmentNote/114",
+          "method": "POST",
+          "actor": "admin_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "操作成功"
+        },
+        {
+          "path": "/system/workloadSummary/114/offlineAdjustmentNotes",
+          "method": "GET",
+          "actor": "teacher_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "查询成功"
+        },
+        {
+          "path": "/system/workloadSummary/114/auditLogs?pageSize=2",
+          "method": "GET",
+          "actor": "teacher_test",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "message": "查询成功"
+        }
+      ],
+      "http_observations": 93,
+      "facts": {
+        "marker": "T07_HTTP_3568ca11c9",
+        "semester": "2103-2104-1",
+        "roles": {
+          "admin_test": [
+            "biz_admin"
+          ],
+          "jiaowu_test": [
+            "assistant"
+          ],
+          "teacher_test": [
+            "teacher"
+          ],
+          "leader_test": [
+            "leader"
+          ]
+        },
+        "summary_id": 114,
+        "preview_no_write": true,
+        "single_pay_advances_once": true,
+        "summary_advances_once": true,
+        "review_hash_tamper_rejected_and_exactly_restored": true,
+        "summary_version": 3,
+        "finished": true,
+        "historical_batch_preserved": true,
+        "stale_batch_rejected": true,
+        "partial_batch_receipt": {
+          "failCount": 1,
+          "failDetails": [
+            {
+              "reason": "审核已处理或版本过期，请刷新",
+              "id": 15
+            }
+          ],
+          "successCount": 1
+        },
+        "teacher_confirmation_keeps_batch_and_version": true,
+        "frozen_rows_before": {
+          "biz_workload_summary": {
+            "rows": 1,
+            "sha256": "aa224c61568d199b2d186df4c1424b42e8176b7273f83f88018065c453ffd9e7"
+          },
+          "biz_pay_record": {
+            "rows": 1,
+            "sha256": "f0911572b573055855061be52fed663e3fc7f4b32cd71b3753b95258c1c873c8"
+          },
+          "biz_workload_item": {
+            "rows": 3,
+            "sha256": "595c1cd63705f6c1141624898b58896f808b896ef752c9e2278380ea3e426fa1"
+          },
+          "biz_workload_review_batch": {
+            "rows": 2,
+            "sha256": "c7e7fb5dc61db05a6e2acaa63f22e704e36cc4bdb8bed7a6fa7c21880dc7a9db"
+          },
+          "biz_workload_settlement_snapshot": {
+            "rows": 3,
+            "sha256": "96ce274381526c3baedf5690d4cc42935b5e3e1b32b6b23c8aab96dd4c097603"
+          },
+          "biz_workload_calc_snapshot": {
+            "rows": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        "frozen_rows_after": {
+          "biz_workload_summary": {
+            "rows": 1,
+            "sha256": "aa224c61568d199b2d186df4c1424b42e8176b7273f83f88018065c453ffd9e7"
+          },
+          "biz_pay_record": {
+            "rows": 1,
+            "sha256": "f0911572b573055855061be52fed663e3fc7f4b32cd71b3753b95258c1c873c8"
+          },
+          "biz_workload_item": {
+            "rows": 3,
+            "sha256": "595c1cd63705f6c1141624898b58896f808b896ef752c9e2278380ea3e426fa1"
+          },
+          "biz_workload_review_batch": {
+            "rows": 2,
+            "sha256": "c7e7fb5dc61db05a6e2acaa63f22e704e36cc4bdb8bed7a6fa7c21880dc7a9db"
+          },
+          "biz_workload_settlement_snapshot": {
+            "rows": 3,
+            "sha256": "96ce274381526c3baedf5690d4cc42935b5e3e1b32b6b23c8aab96dd4c097603"
+          },
+          "biz_workload_calc_snapshot": {
+            "rows": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        "note_ids": [
+          5,
+          6
+        ],
+        "idempotency_preserved": true,
+        "full_500_character_reasons_preserved": true,
+        "high_precision_amount_rejected": true,
+        "json3_snapshot_shape_verified": true,
+        "teacher_data_scope_verified": true
+      },
+      "formal_settlement_enabled": false,
+      "original_database_touched": false
+    }
+  },
+  "preservation": {
+    "original_worktree_head": "dcb452ea8e32324b745f8ddbb24337096e279b8a",
+    "original_files_checked": 43,
+    "original_files_unchanged": true,
+    "database_port": 13306,
+    "original_3306_touched": false,
+    "preserved_sources": [
+      {
+        "schema": "wfit_verify_20261025_150548",
+        "business_tables_unchanged": true,
+        "tables": {
+          "biz_allowance_item": {
+            "rows": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "biz_audit_log": {
+            "rows": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "biz_coefficient_adjustment": {
+            "rows": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "biz_import_batch": {
+            "rows": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "biz_import_row": {
+            "rows": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "biz_pay_rate": {
+            "rows": 4,
+            "sha256": "cfd76a98bfff304ae3c4f0bbce6227655e08c354041c010d201180a588949179"
+          },
+          "biz_pay_record": {
+            "rows": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "biz_role_assignment": {
+            "rows": 2,
+            "sha256": "5add7973ec4784fe009ca9409af0d09a2fd0c3efc8260751de76a36300e12df4"
+          },
+          "biz_teacher_profile": {
+            "rows": 6,
+            "sha256": "8a31a1036a163cc91929324840123d9e15f19d4d1a027570f24e890b6a4a30c7"
+          },
+          "biz_teaching_task": {
+            "rows": 9,
+            "sha256": "5ff2be68705f39323b8a478d10fdebfc63cb78495e1d2a8dcd53c59f681a9e0e"
+          },
+          "biz_wl_concentrated_internship": {
+            "rows": 1,
+            "sha256": "c712f2ee15b76b4ce77516e587e348f479547c9999cab10704ab0ff7ac7598ce"
+          },
+          "biz_wl_course_design": {
+            "rows": 1,
+            "sha256": "b57567130ed10a2f130bfbe6f44e47e2940b74513fb065ba6e4ad675d1000758"
+          },
+          "biz_wl_internship_training": {
+            "rows": 1,
+            "sha256": "179093fa4ee8d62bafbe10b1bb304268fde925caee480f3df013a608e4d0115d"
+          },
+          "biz_wl_management": {
+            "rows": 1,
+            "sha256": "f3f041718f15b096cf6ab0e08c65fdaccd932f8ae9989361c081cf5dbe6f6930"
+          },
+          "biz_wl_practice": {
+            "rows": 1,
+            "sha256": "4e24710c2b6de2566aa8130aa148482d2e4313f00695922d46efcf27ac66afc4"
+          },
+          "biz_wl_theory": {
+            "rows": 7,
+            "sha256": "728fd7187111f0487fe94cbc088edcc782a59f1ab8536ef81b1ec37d17a3e4e2"
+          },
+          "biz_wl_thesis": {
+            "rows": 1,
+            "sha256": "7fcca3a3f254c451f2140e0094d2263dd83deef3c8d6eec7cb52b6f663e87606"
+          },
+          "biz_workload_calc_snapshot": {
+            "rows": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "biz_workload_category_dict": {
+            "rows": 11,
+            "sha256": "f42cab24868daad0cc60d9dc4a741e087c8c23b13ed760b92c3f7e4510f27a20"
+          },
+          "biz_workload_item": {
+            "rows": 14,
+            "sha256": "5a75b2e589346a9612365ac7bf158412a42b64ef494a176a0d3b635c5ffd447c"
+          },
+          "biz_workload_period_lock": {
+            "rows": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "biz_workload_rule": {
+            "rows": 43,
+            "sha256": "331f85af25c16316a3cb2906fc23f74b3f520aed89faa870edee1b2b0b91ff42"
+          },
+          "biz_workload_settlement_snapshot": {
+            "rows": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "biz_workload_summary": {
+            "rows": 4,
+            "sha256": "ea17c0f443f09614c440d3de92193080fe11d29781278ddcecdac0e653f793bf"
+          }
+        }
+      },
+      {
+        "schema": "wfit_ui_20261028",
+        "business_tables_unchanged": true,
+        "tables": {
+          "biz_allowance_item": {
+            "rows": 2,
+            "sha256": "f2329a1eed348e9174f816014cfa70cdeef3b9886cb49130ba2b1d84c028967a"
+          },
+          "biz_audit_log": {
+            "rows": 8,
+            "sha256": "67b12f4f3be629996f6bce1eff90d226f968ccef615f5f48051d8bf338cfae7e"
+          },
+          "biz_coefficient_adjustment": {
+            "rows": 1,
+            "sha256": "51536622b649ccfe80b101189a91fbd24128362509392ef088c96d7075923f06"
+          },
+          "biz_import_batch": {
+            "rows": 1,
+            "sha256": "15c93c9f70cbc15eb5ad5369bfc734b0379a8cc0fca32f094a04ce49a4ee698b"
+          },
+          "biz_import_row": {
+            "rows": 1,
+            "sha256": "eea89e5a3f8a4845b1f4a76b7e5f921444c037120138ee614653ec5fb637d71b"
+          },
+          "biz_pay_rate": {
+            "rows": 9,
+            "sha256": "06e321a3abdfd515dcc0c145e55e7f6d26808f27439172ff39859b22345798f6"
+          },
+          "biz_pay_record": {
+            "rows": 7,
+            "sha256": "ed1bbf335533aa5e0559ee4787d4f32421eb669ab8216964396e9ff15872d37b"
+          },
+          "biz_role_assignment": {
+            "rows": 2,
+            "sha256": "5add7973ec4784fe009ca9409af0d09a2fd0c3efc8260751de76a36300e12df4"
+          },
+          "biz_teacher_profile": {
+            "rows": 8,
+            "sha256": "3c838c753b1b59a8fd49177e7b2e4ff21bbf257952e97028be9df56a76052171"
+          },
+          "biz_teaching_task": {
+            "rows": 10,
+            "sha256": "555bbc7e2876d4c98c257a27b5e0c6a7e0f94c834c88c6cd3feccc7e265c8fa9"
+          },
+          "biz_wl_concentrated_internship": {
+            "rows": 1,
+            "sha256": "c712f2ee15b76b4ce77516e587e348f479547c9999cab10704ab0ff7ac7598ce"
+          },
+          "biz_wl_course_design": {
+            "rows": 2,
+            "sha256": "6442d8bb3f93d8fe146a733ed7400364183a45cce77c18e3c4b97563df9fcc88"
+          },
+          "biz_wl_internship_training": {
+            "rows": 1,
+            "sha256": "179093fa4ee8d62bafbe10b1bb304268fde925caee480f3df013a608e4d0115d"
+          },
+          "biz_wl_management": {
+            "rows": 1,
+            "sha256": "f3f041718f15b096cf6ab0e08c65fdaccd932f8ae9989361c081cf5dbe6f6930"
+          },
+          "biz_wl_practice": {
+            "rows": 1,
+            "sha256": "4e24710c2b6de2566aa8130aa148482d2e4313f00695922d46efcf27ac66afc4"
+          },
+          "biz_wl_theory": {
+            "rows": 8,
+            "sha256": "1ed0ed478ab3a1a455f9ac5ee6a33d0e3d52cb70a25338b83eb81ab04182bb43"
+          },
+          "biz_wl_thesis": {
+            "rows": 1,
+            "sha256": "7fcca3a3f254c451f2140e0094d2263dd83deef3c8d6eec7cb52b6f663e87606"
+          },
+          "biz_workload_calc_snapshot": {
+            "rows": 9,
+            "sha256": "44477481e6d127b51807a5b196f297a9442a29a653fd705e2b7bc4c7087945d9"
+          },
+          "biz_workload_category_dict": {
+            "rows": 11,
+            "sha256": "f42cab24868daad0cc60d9dc4a741e087c8c23b13ed760b92c3f7e4510f27a20"
+          },
+          "biz_workload_item": {
+            "rows": 23,
+            "sha256": "f96b467cbec04c515914fee07923d363af06e1021acebd7acc30c1322c5f6f1a"
+          },
+          "biz_workload_period_lock": {
+            "rows": 8,
+            "sha256": "0b7997f3b9398bbb900e59deaf8db2da251427ce323c75bae2b02d076e65eec4"
+          },
+          "biz_workload_rule": {
+            "rows": 52,
+            "sha256": "272baab18ab1a61b9f61daa6c50df8ac8e4930654cf5fe39af7f3e6eaf60618b"
+          },
+          "biz_workload_settlement_snapshot": {
+            "rows": 4,
+            "sha256": "f2b2d4ddf13d04940dc1d5c56a09d933e98145496f330d70a6f1a0c4e70e1899"
+          },
+          "biz_workload_summary": {
+            "rows": 11,
+            "sha256": "85cb9eab2a22f8f0ad7e96240662605c95589c7614407b17f9b08e0a4e1c08a3"
+          }
+        }
+      },
+      {
+        "schema": "wfit_t06_20261106_b",
+        "business_tables_unchanged": true,
+        "tables": {
+          "biz_allowance_item": {
+            "rows": 2,
+            "sha256": "f2329a1eed348e9174f816014cfa70cdeef3b9886cb49130ba2b1d84c028967a"
+          },
+          "biz_audit_log": {
+            "rows": 8,
+            "sha256": "77ff31f698af730f5af7eead5b2e0388a6fe403b77bbc474c23f7a4f7cf19765"
+          },
+          "biz_coefficient_adjustment": {
+            "rows": 1,
+            "sha256": "51536622b649ccfe80b101189a91fbd24128362509392ef088c96d7075923f06"
+          },
+          "biz_import_batch": {
+            "rows": 1,
+            "sha256": "15c93c9f70cbc15eb5ad5369bfc734b0379a8cc0fca32f094a04ce49a4ee698b"
+          },
+          "biz_import_row": {
+            "rows": 1,
+            "sha256": "eea89e5a3f8a4845b1f4a76b7e5f921444c037120138ee614653ec5fb637d71b"
+          },
+          "biz_offline_adjustment_note": {
+            "rows": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "biz_pay_rate": {
+            "rows": 9,
+            "sha256": "06e321a3abdfd515dcc0c145e55e7f6d26808f27439172ff39859b22345798f6"
+          },
+          "biz_pay_record": {
+            "rows": 7,
+            "sha256": "ed1bbf335533aa5e0559ee4787d4f32421eb669ab8216964396e9ff15872d37b"
+          },
+          "biz_role_assignment": {
+            "rows": 2,
+            "sha256": "5add7973ec4784fe009ca9409af0d09a2fd0c3efc8260751de76a36300e12df4"
+          },
+          "biz_teacher_profile": {
+            "rows": 8,
+            "sha256": "3c838c753b1b59a8fd49177e7b2e4ff21bbf257952e97028be9df56a76052171"
+          },
+          "biz_teaching_task": {
+            "rows": 10,
+            "sha256": "555bbc7e2876d4c98c257a27b5e0c6a7e0f94c834c88c6cd3feccc7e265c8fa9"
+          },
+          "biz_wl_concentrated_internship": {
+            "rows": 1,
+            "sha256": "c712f2ee15b76b4ce77516e587e348f479547c9999cab10704ab0ff7ac7598ce"
+          },
+          "biz_wl_course_design": {
+            "rows": 2,
+            "sha256": "6442d8bb3f93d8fe146a733ed7400364183a45cce77c18e3c4b97563df9fcc88"
+          },
+          "biz_wl_internship_training": {
+            "rows": 1,
+            "sha256": "179093fa4ee8d62bafbe10b1bb304268fde925caee480f3df013a608e4d0115d"
+          },
+          "biz_wl_management": {
+            "rows": 1,
+            "sha256": "f3f041718f15b096cf6ab0e08c65fdaccd932f8ae9989361c081cf5dbe6f6930"
+          },
+          "biz_wl_practice": {
+            "rows": 1,
+            "sha256": "4e24710c2b6de2566aa8130aa148482d2e4313f00695922d46efcf27ac66afc4"
+          },
+          "biz_wl_theory": {
+            "rows": 8,
+            "sha256": "1ed0ed478ab3a1a455f9ac5ee6a33d0e3d52cb70a25338b83eb81ab04182bb43"
+          },
+          "biz_wl_thesis": {
+            "rows": 1,
+            "sha256": "7fcca3a3f254c451f2140e0094d2263dd83deef3c8d6eec7cb52b6f663e87606"
+          },
+          "biz_workload_calc_snapshot": {
+            "rows": 9,
+            "sha256": "44477481e6d127b51807a5b196f297a9442a29a653fd705e2b7bc4c7087945d9"
+          },
+          "biz_workload_category_dict": {
+            "rows": 11,
+            "sha256": "f42cab24868daad0cc60d9dc4a741e087c8c23b13ed760b92c3f7e4510f27a20"
+          },
+          "biz_workload_item": {
+            "rows": 23,
+            "sha256": "f96b467cbec04c515914fee07923d363af06e1021acebd7acc30c1322c5f6f1a"
+          },
+          "biz_workload_item_review": {
+            "rows": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "biz_workload_period_lock": {
+            "rows": 8,
+            "sha256": "0b7997f3b9398bbb900e59deaf8db2da251427ce323c75bae2b02d076e65eec4"
+          },
+          "biz_workload_review_batch": {
+            "rows": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "biz_workload_rule": {
+            "rows": 52,
+            "sha256": "272baab18ab1a61b9f61daa6c50df8ac8e4930654cf5fe39af7f3e6eaf60618b"
+          },
+          "biz_workload_settlement_snapshot": {
+            "rows": 4,
+            "sha256": "f2b2d4ddf13d04940dc1d5c56a09d933e98145496f330d70a6f1a0c4e70e1899"
+          },
+          "biz_workload_summary": {
+            "rows": 11,
+            "sha256": "500dbb3ec758005aa5ffcd7d4f1d5834923cd7f4ab8ca200e59b3601cfff1eba"
+          }
+        }
+      }
+    ]
+  },
+  "cleanup": {
+    "backends": [
+      {
+        "mode": "mysql9",
+        "pid": 48589,
+        "port": 18084,
+        "stopped_and_port_closed": true
+      },
+      {
+        "mode": "mysql8",
+        "pid": 48584,
+        "port": 18086,
+        "stopped_and_port_closed": true
+      }
+    ],
+    "mysql8": {
+      "container": "wfit-t02-mysql8-20261106",
+      "stopped": true,
+      "port_13308_closed": true,
+      "volume_preserved": "wfit_t02_mysql8_20261106"
+    }
+  },
+  "independent_spec_review": "PASS; static review only",
+  "independent_quality_review": "PASS; static review only",
+  "formal_settlement_enabled": false,
+  "frontend_T08_completed": false,
+  "deployed": false
+}

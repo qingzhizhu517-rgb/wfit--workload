@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.workload.system.mapper.BizWorkloadReviewBatchMapper">
+    <resultMap id="row" type="BizWorkloadReviewBatch">
+        <result property="id" column="id"/>
+        <result property="summaryId" column="summary_id"/>
+        <result property="reviewBatchNo" column="review_batch_no"/>
+        <result property="summaryDataVersion" column="summary_data_version"/>
+        <result property="userId" column="user_id"/>
+        <result property="semester" column="semester"/>
+        <result property="settlementSnapshotId" column="settlement_snapshot_id"/>
+        <result property="settlementSnapshotHash" column="settlement_snapshot_hash"/>
+        <result property="formatVersion" column="format_version"/>
+        <result property="snapshotJson" column="snapshot_json"/>
+        <result property="dataHash" column="data_hash"/>
+        <result property="createdBy" column="created_by"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+    <sql id="columns">id,summary_id,review_batch_no,summary_data_version,user_id,semester,settlement_snapshot_id,settlement_snapshot_hash,format_version,snapshot_json,data_hash,created_by,created_at</sql>
+    <select id="selectById" resultMap="row">select <include refid="columns"/> from biz_workload_review_batch where id=#{id}</select>
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        insert into biz_workload_review_batch(summary_id,review_batch_no,summary_data_version,user_id,semester,settlement_snapshot_id,settlement_snapshot_hash,format_version,snapshot_json,data_hash,created_by,created_at)
+        values(#{summaryId},#{reviewBatchNo},#{summaryDataVersion},#{userId},#{semester},#{settlementSnapshotId},#{settlementSnapshotHash},#{formatVersion},#{snapshotJson},#{dataHash},#{createdBy},#{createdAt})
+    </insert>
+    <select id="selectBatch" resultMap="row" flushCache="true" useCache="false">select <include refid="columns"/> from biz_workload_review_batch where summary_id=#{summaryId} and review_batch_no=#{batchNo}<if test="current"> for update</if></select>
+    <select id="countHistoryCurrent" resultType="long" flushCache="true" useCache="false">select count(*) from biz_workload_review_batch where summary_id=#{summaryId} for update</select>
+</mapper>

@@ -21,6 +21,8 @@ import com.workload.system.service.IBizWorkloadSummaryService;
 @Service
 public class BizWorkloadSummaryServiceImpl implements IBizWorkloadSummaryService
 {
+    @Autowired private com.workload.system.review.ReviewBatchService reviewBatches;
+
     @Autowired private com.workload.system.calc.SettlementSnapshotService settlementSnapshots;
 
     @Autowired
@@ -109,6 +111,7 @@ public class BizWorkloadSummaryServiceImpl implements IBizWorkloadSummaryService
         for (Long id : ids){
             var existing=requireEditable(id);
             if(settlementSnapshots!=null)settlementSnapshots.assertSummaryDeletionAllowed(existing);
+            reviewBatches.assertDeletionAllowed(existing);
         }
         return bizWorkloadSummaryMapper.deleteBizWorkloadSummaryByIds(ids);
     }
@@ -125,6 +128,7 @@ public class BizWorkloadSummaryServiceImpl implements IBizWorkloadSummaryService
     {
         var existing=requireEditable(id);
         if(settlementSnapshots!=null)settlementSnapshots.assertSummaryDeletionAllowed(existing);
+            reviewBatches.assertDeletionAllowed(existing);
         return bizWorkloadSummaryMapper.deleteBizWorkloadSummaryById(id);
     }
 

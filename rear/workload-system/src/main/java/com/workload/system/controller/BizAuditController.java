@@ -36,6 +36,7 @@ public class BizAuditController extends BaseController
     @PostMapping("/submit")
     public AjaxResult submit(@RequestParam("id") Long id)
     {
+        requireOnly(java.util.Set.of("id"));
         bizAuditService.submit(id);
         return success();
     }
@@ -48,6 +49,7 @@ public class BizAuditController extends BaseController
     @PostMapping("/approve")
     public AjaxResult approve(@RequestParam("id") Long id)
     {
+        requireOnly(java.util.Set.of("id"));
         bizAuditService.approve(id);
         return success();
     }
@@ -60,6 +62,7 @@ public class BizAuditController extends BaseController
     @PostMapping("/reject")
     public AjaxResult reject(@RequestParam("id") Long id, @RequestParam(value = "reason", required = false) String reason)
     {
+        requireOnly(java.util.Set.of("id","reason"));
         bizAuditService.reject(id, reason);
         return success();
     }
@@ -72,6 +75,7 @@ public class BizAuditController extends BaseController
     @PostMapping("/unlock")
     public AjaxResult unlock(@RequestParam("id") Long id)
     {
+        requireOnly(java.util.Set.of("id"));
         bizAuditService.unlock(id);
         return success();
     }
@@ -84,6 +88,7 @@ public class BizAuditController extends BaseController
     @PostMapping("/teacherConfirm")
     public AjaxResult teacherConfirm(@RequestParam("id") Long id)
     {
+        requireOnly(java.util.Set.of("id"));
         bizAuditService.teacherConfirm(id);
         return success();
     }
@@ -96,6 +101,14 @@ public class BizAuditController extends BaseController
     @PostMapping("/batchSubmit")
     public AjaxResult batchSubmit(@RequestParam("ids") Long[] ids)
     {
+        requireOnly(java.util.Set.of("ids"));
         return success(bizAuditService.batchSubmit(ids));
+    }
+    private static void requireOnly(java.util.Set<String> fields) {
+        var attributes=org.springframework.web.context.request.RequestContextHolder.getRequestAttributes();
+        if(!(attributes instanceof org.springframework.web.context.request.ServletRequestAttributes web))throw com.workload.system.review.ReviewCommands.bad("缺少请求上下文");
+        var request=web.getRequest();
+        if(!fields.containsAll(request.getParameterMap().keySet()))throw com.workload.system.review.ReviewCommands.bad("请求包含未声明的字段");
+        if(request.getContentLengthLong()>0 && request.getContentType()!=null && request.getContentType().toLowerCase(java.util.Locale.ROOT).contains("application/json"))throw com.workload.system.review.ReviewCommands.bad("本接口仅接受声明的请求参数");
     }
 }

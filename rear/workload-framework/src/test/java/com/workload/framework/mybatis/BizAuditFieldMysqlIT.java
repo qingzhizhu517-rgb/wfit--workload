@@ -32,14 +32,14 @@ class BizAuditFieldMysqlIT {
         var ds=new DriverManagerDataSource(base+schema+(url.contains("?")?url.substring(url.indexOf('?')):""),user,password);
         jdbc=new JdbcTemplate(ds);
         try {
-            for(String table:List.of("biz_pay_rate","biz_audit_log","biz_workload_summary","biz_pay_record","biz_workload_item","biz_wl_theory","biz_workload_calc_snapshot","biz_workload_settlement_snapshot")) {
+            for(String table:List.of("biz_pay_rate","biz_audit_log","biz_workload_summary","biz_pay_record","biz_workload_item","biz_wl_theory","biz_workload_calc_snapshot","biz_workload_settlement_snapshot","biz_workload_review_batch","biz_workload_item_review","biz_offline_adjustment_note")) {
                 String ddl=admin.queryForObject("SHOW CREATE TABLE "+table,(rs,n)->rs.getString(2));
                 jdbc.execute(ddl);
             }
             Configuration config=new Configuration(new Environment("audit-real-mysql",new JdbcTransactionFactory(),ds));
             config.getTypeAliasRegistry().registerAliases("com.workload.system.domain");
             config.addInterceptor(new BizAuditFieldInterceptor(()->"trusted",Clock.fixed(now.toInstant(),ZoneOffset.UTC)));
-            for(String mapper:List.of("BizPayRateMapper","BizAuditLogMapper","BizWorkloadSummaryMapper","BizPayRecordMapper","BizWorkloadItemMapper","BizWlTheoryMapper","BizWorkloadCalcSnapshotMapper","BizWorkloadSettlementSnapshotMapper")) {
+            for(String mapper:List.of("BizPayRateMapper","BizAuditLogMapper","BizWorkloadSummaryMapper","BizPayRecordMapper","BizWorkloadItemMapper","BizWlTheoryMapper","BizWorkloadCalcSnapshotMapper","BizWorkloadSettlementSnapshotMapper","BizWorkloadReviewBatchMapper","BizWorkloadItemReviewMapper","BizOfflineAdjustmentNoteMapper")) {
                 String resource="mapper/system/"+mapper+".xml";
                 try(var input=getClass().getClassLoader().getResourceAsStream(resource)) {
                     new XMLMapperBuilder(input,config,resource,config.getSqlFragments()).parse();
@@ -50,6 +50,25 @@ class BizAuditFieldMysqlIT {
     }
     @AfterEach void cleanup() {
         if(schema!=null && schema.matches("wfit_it_[a-f0-9]{32}")) { admin.execute("DROP DATABASE `"+schema+"`"); schema=null; }
+    }
+    @Test void reviewInsertAndCasUseTrustedAuditWithoutChangingFrozenEvidenceOrCreator() {
+        jdbc.update("INSERT INTO biz_workload_summary(id,user_id,semester,status,data_version,review_batch_no) VALUES(1,1003,'2097-2098-1',1,1,'batch-1')");
+        jdbc.update("INSERT INTO biz_workload_review_batch(summary_id,review_batch_no,summary_data_version,user_id,semester,format_version,snapshot_json,data_hash,created_by,created_at) VALUES(1,'batch-1',1,1003,'2097-2098-1',1,'{}',?,'source',?)","a".repeat(64),new Date(100000));
+        try(SqlSession session=factory.openSession(true)) {
+            var mapper=session.getMapper(BizWorkloadItemReviewMapper.class);var review=new BizWorkloadItemReview();review.setSummaryId(1L);review.setItemId(7L);review.setReviewBatchNo("batch-1");review.setReviewType("MANUAL_DECLARATION");review.setFormatVersion(1);review.setSnapshotJson("{}");review.setDataHash("a".repeat(64));review.setResult("PENDING");review.setVersion(0L);review.setCreateBy("forged");review.setCreateTime(new Date(0));mapper.insert(review);
+            var before=jdbc.queryForMap("SELECT * FROM biz_workload_item_review WHERE id=?",review.getId());assertEquals("trusted",before.get("create_by"));assertEquals(sqlTime(now),before.get("create_time"));
+            review.setResult("PASS");review.setReviewerId(77L);review.setReviewerName("business-reviewer");review.setReviewedAt(new Date(200000));review.setCreateBy("forged");review.setCreateTime(new Date(0));review.setSnapshotJson("{\"forged\":true}");review.setDataHash("b".repeat(64));
+            assertEquals(1,mapper.reviewIfPending(review,0,1));var after=jdbc.queryForMap("SELECT * FROM biz_workload_item_review WHERE id=?",review.getId());
+            for(String key:List.of("snapshot_json","data_hash","create_by","create_time","summary_id","item_id","review_batch_no","review_type"))assertEquals(before.get(key),after.get(key),key);
+            assertEquals("trusted",after.get("update_by"));assertEquals(sqlTime(now),after.get("update_time"));assertEquals("business-reviewer",after.get("reviewer_name"));assertEquals(sqlTime(new Date(200000)),after.get("reviewed_at"));assertEquals(1L,((Number)after.get("version")).longValue());assertEquals(0,mapper.reviewIfPending(review,0,1));
+        }
+    }
+    @Test void reviewBatchAndOfflineNoteKeepDedicatedHistoricalCreatedFields() {
+        try(SqlSession session=factory.openSession(true)) {
+            var b=new BizWorkloadReviewBatch();b.setSummaryId(1L);b.setReviewBatchNo("batch-history");b.setSummaryDataVersion(1L);b.setUserId(1003L);b.setSemester("2097-2098-1");b.setFormatVersion(1);b.setSnapshotJson("{}");b.setDataHash("a".repeat(64));b.setCreatedBy("original-review");b.setCreatedAt(new Date(100000));session.getMapper(BizWorkloadReviewBatchMapper.class).insert(b);
+            var n=new BizOfflineAdjustmentNote();n.setSummaryId(1L);n.setUserId(1003L);n.setSemester("2097-2098-1");n.setRequestKey("history-note");n.setAdjustmentAmount(BigDecimal.ONE);n.setReason("历史处理");n.setHandledAt(LocalDate.of(2001,2,3));n.setHandledById(77L);n.setHandledBy("original-handler");n.setCreatedBy("original-note");n.setCreatedAt(new Date(200000));session.getMapper(BizOfflineAdjustmentNoteMapper.class).insert(n);
+            assertEquals("original-review",jdbc.queryForObject("SELECT created_by FROM biz_workload_review_batch",String.class));assertEquals(sqlTime(new Date(100000)),jdbc.queryForMap("SELECT created_at FROM biz_workload_review_batch").get("created_at"));assertEquals("original-note",jdbc.queryForObject("SELECT created_by FROM biz_offline_adjustment_note",String.class));assertEquals(LocalDate.of(2001,2,3),session.getMapper(BizOfflineAdjustmentNoteMapper.class).selectById(n.getId()).getHandledAt());
+        }
     }
     @Test void directInsertAndUpdateKeepNullableAndFixedCreationHistory() {
         try(SqlSession session=factory.openSession(true)) {

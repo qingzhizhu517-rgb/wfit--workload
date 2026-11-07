@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.workload.system.mapper.BizOfflineAdjustmentNoteMapper">
+    <resultMap id="row" type="BizOfflineAdjustmentNote">
+        <result property="id" column="id"/>
+        <result property="summaryId" column="summary_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="semester" column="semester"/>
+        <result property="requestKey" column="request_key"/>
+        <result property="adjustmentAmount" column="adjustment_amount"/>
+        <result property="reason" column="reason"/>
+        <result property="handledAt" column="handled_at"/>
+        <result property="handledById" column="handled_by_id"/>
+        <result property="handledBy" column="handled_by"/>
+        <result property="referenceNo" column="reference_no"/>
+        <result property="noteText" column="note_text"/>
+        <result property="attachmentRef" column="attachment_ref"/>
+        <result property="settlementSnapshotId" column="settlement_snapshot_id"/>
+        <result property="settlementSnapshotHash" column="settlement_snapshot_hash"/>
+        <result property="createdBy" column="created_by"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+    <sql id="columns">id,summary_id,user_id,semester,request_key,adjustment_amount,reason,handled_at,handled_by_id,handled_by,reference_no,note_text,attachment_ref,settlement_snapshot_id,settlement_snapshot_hash,created_by,created_at</sql>
+    <select id="selectById" resultMap="row">select <include refid="columns"/> from biz_offline_adjustment_note where id=#{id}</select>
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        insert into biz_offline_adjustment_note(summary_id,user_id,semester,request_key,adjustment_amount,reason,handled_at,handled_by_id,handled_by,reference_no,note_text,attachment_ref,settlement_snapshot_id,settlement_snapshot_hash,created_by,created_at)
+        values(#{summaryId},#{userId},#{semester},#{requestKey},#{adjustmentAmount},#{reason},#{handledAt},#{handledById},#{handledBy},#{referenceNo},#{noteText},#{attachmentRef},#{settlementSnapshotId},#{settlementSnapshotHash},#{createdBy},#{createdAt})
+    </insert>
+    <select id="selectByRequest" resultMap="row" flushCache="true" useCache="false">select <include refid="columns"/> from biz_offline_adjustment_note where summary_id=#{summaryId} and request_key=#{key} for update</select>
+    <select id="selectPage" resultMap="row">select <include refid="columns"/> from biz_offline_adjustment_note where summary_id=#{summaryId} order by id limit #{size} offset #{offset}</select>
+    <select id="countPage" resultType="long">select count(*) from biz_offline_adjustment_note where summary_id=#{summaryId}</select>
+</mapper>

@@ -130,13 +130,14 @@ class SummaryCalcServiceImplTest
         BizWorkloadItem roleItem = item("G11", "90"); roleItem.setAssignmentId(92L); roleItem.setStatus(3);
         when(bizWorkloadItemMapper.selectBizWorkloadItemList(any())).thenReturn(java.util.List.of(taskItem, roleItem));
         when(complianceChecker.check(any(), anyString(), any())).thenReturn(result(false));
+        org.mockito.Mockito.doAnswer(call->{var inserted=(BizWorkloadSummary)call.getArgument(0);inserted.setId(10L);inserted.setDataVersion(1L);when(bizWorkloadSummaryMapper.selectByUserSemesterForUpdate(USER,SEMESTER)).thenReturn(inserted);return 1;}).when(bizWorkloadSummaryMapper).insertBizWorkloadSummary(any());
 
         BizWorkloadSummary result = service.recalcSummary(USER, SEMESTER, true);
 
         assertThat(result.getTotalWorkload()).isEqualByComparingTo("0");
         assertThat(result.getNeedsRecalculation()).isZero();
         verify(bizWorkloadSummaryMapper).insertBizWorkloadSummary(result);
-        verify(payCalcService).recalcPay(USER, SEMESTER);
+        verify(payCalcService).recalcPayFromSummary(USER, SEMESTER);
     }
 
     @Test
@@ -154,7 +155,7 @@ class SummaryCalcServiceImplTest
         order.verify(bizWorkloadSummaryMapper).updateCalculatedFieldsIfStatus(
                 org.mockito.ArgumentMatchers.argThat(saved -> Integer.valueOf(0).equals(saved.getNeedsRecalculation())
                         && saved.getTotalWorkload().compareTo(new BigDecimal("30")) == 0), eq(0));
-        order.verify(payCalcService).recalcPay(USER, SEMESTER);
+        order.verify(payCalcService).recalcPayFromSummary(USER, SEMESTER);
     }
 
     @Test
@@ -164,7 +165,7 @@ class SummaryCalcServiceImplTest
         when(bizWorkloadSummaryMapper.selectByUserSemesterForUpdate(USER, SEMESTER)).thenReturn(draft);
         when(bizWorkloadSummaryMapper.updateCalculatedFieldsIfStatus(any(), eq(0))).thenReturn(1);
         when(complianceChecker.check(any(), anyString(), any())).thenReturn(result(false));
-        when(payCalcService.recalcPay(USER, SEMESTER))
+        when(payCalcService.recalcPayFromSummary(USER, SEMESTER))
                 .thenThrow(new com.workload.common.exception.ServiceException("酬金同步失败"));
 
         assertThatThrownBy(() -> service.recalcSummary(USER, SEMESTER, true))
@@ -358,7 +359,7 @@ class SummaryCalcServiceImplTest
 
         assertThatThrownBy(() -> service.recalcSummary(USER, SEMESTER, true))
                 .isInstanceOf(com.workload.common.exception.ServiceException.class)
-                .hasMessageContaining("禁止重算");
+                .hasMessageContaining("禁止重算").extracting("code").isEqualTo(409);
     }
 
     @Test
@@ -394,7 +395,7 @@ class SummaryCalcServiceImplTest
 
         assertThatThrownBy(() -> service.recalcSummary(USER, SEMESTER, true))
                 .isInstanceOf(com.workload.common.exception.ServiceException.class)
-                .hasMessageContaining("禁止重算");
+                .hasMessageContaining("禁止重算").extracting("code").isEqualTo(409);
     }
 
     @ParameterizedTest(name = "{0}")

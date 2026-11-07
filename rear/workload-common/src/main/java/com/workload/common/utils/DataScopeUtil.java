@@ -1,6 +1,7 @@
 package com.workload.common.utils;
 
 import java.util.List;
+import com.workload.common.constant.HttpStatus;
 import com.workload.common.core.domain.entity.SysRole;
 import com.workload.common.exception.ServiceException;
 
@@ -67,7 +68,7 @@ public class DataScopeUtil
         }
         if (targetUserId == null || !targetUserId.equals(SecurityUtils.getUserId()))
         {
-            throw new ServiceException("无权访问他人数据");
+            throw new ServiceException("无权访问他人数据", HttpStatus.FORBIDDEN);
         }
     }
 

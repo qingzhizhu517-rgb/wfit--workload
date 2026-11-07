@@ -20,6 +20,7 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import com.workload.common.constant.HttpStatus;
 import com.workload.common.exception.ServiceException;
 import com.workload.common.utils.DateUtils;
 import com.workload.system.calc.rule.ComplianceChecker;
@@ -107,7 +108,7 @@ public class SummaryCalcServiceImpl implements SummaryCalcService
         if(persist && settlementSnapshots!=null) settlementSnapshots.assertRecalculationBoundary(summary);
         if (persist && summary != null && WorkloadSummaryStatus.isWriteFrozen(summary.getStatus()))
         {
-            throw new ServiceException("学期汇总已进入审批流程，禁止重算");
+            throw new ServiceException("学期汇总已进入审批流程，禁止重算", HttpStatus.CONFLICT);
         }
         boolean isNew = summary == null;
         if (isNew)
@@ -204,6 +205,7 @@ public class SummaryCalcServiceImpl implements SummaryCalcService
         // 4. 落库（并发撞 uk_user_sem 唯一键时降级为更新，消除 check-then-act 竞态）
         if (persist)
         {
+            summary.setLastCalculatedAt(new java.util.Date(System.currentTimeMillis()/1000*1000));
             if (isNew)
             {
                 summary.setCreateTime(DateUtils.getNowDate());
@@ -232,13 +234,19 @@ public class SummaryCalcServiceImpl implements SummaryCalcService
                 updateDraftSummary(summary);
             }
             // 汇总与酬金必须一起提交；下游失败时回滚新鲜度和全部金额。
-            if (evidenceContext == null) payCalcService.recalcPay(userId, semester);
+            if (evidenceContext == null) payCalcService.recalcPayFromSummary(userId, semester);
             else {
                 SettlementEvidence.SummaryEvidence evidence=settlementSnapshots.summary(summary,profile,items,evidenceContext,rateRow,cap200,compliance.isThreeTheoryCourses(),warnings);
                 var pay=payCalcService.recalcPayWithEvidence(userId,semester,evidence);
                 summary.setSettlementSnapshotId(pay.getSettlementSnapshotId());
                 settlementSnapshots.decorate(summary);
             }
+        }
+        if(persist) {
+            var saved=bizWorkloadSummaryMapper.selectByUserSemesterForUpdate(userId,semester);
+            if(saved==null)throw new ServiceException("汇总保存后读取失败",409);
+            summary.setDataVersion(saved.getDataVersion());
+            summary.setLastCalculatedAt(saved.getLastCalculatedAt());
         }
         return summary;
     }

@@ -53,7 +53,11 @@ class WorkloadWriteGuardTest
         when(mapper.selectByUserSemesterForUpdate(USER, SEMESTER)).thenReturn(summary);
         assertThatThrownBy(() -> guard.lockDraftOrAbsent(USER, SEMESTER))
                 .isInstanceOf(ServiceException.class)
-                .hasMessageContaining("已进入审批流程");
+                .hasMessageContaining("已进入审批流程").extracting("code").isEqualTo(409);
+        var order = org.mockito.Mockito.inOrder(mapper);
+        order.verify(mapper).lockPeriod(USER, SEMESTER);
+        order.verify(mapper).selectByUserSemesterForUpdate(USER, SEMESTER);
+        org.mockito.Mockito.verifyNoMoreInteractions(mapper);
     }
 
     @Test

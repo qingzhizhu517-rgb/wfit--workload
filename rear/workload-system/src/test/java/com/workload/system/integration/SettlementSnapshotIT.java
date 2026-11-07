@@ -20,10 +20,11 @@ class SettlementSnapshotIT {
  BizWorkloadSummary calculate()throws Exception{imported();return f.summary.recalcSummary(1003L,SEM,true);}
  BizWorkloadSummary summary(){return f.mapper(BizWorkloadSummaryMapper.class).selectByUserSemesterForUpdate(1003L,SEM);}
  BizPayRecord pay(){return f.pay.currentPay(1003L,SEM);}
+ void passReviews(Long summaryId){var rows=f.jdbc.queryForList("SELECT id,version FROM biz_workload_item_review WHERE summary_id=?",summaryId);for(var row:rows)((com.workload.system.review.ItemReviewService)f.beans.get(com.workload.system.review.ItemReviewService.class)).review(((Number)row.get("id")).longValue(),"PASS",new com.workload.system.review.ReviewCommands.Review(((Number)row.get("version")).longValue(),null));}
  @Test void strictQaCapturesOneImmutableSettlementAndConfirmationStillSubmits()throws Exception{
-  var i=imported();var run=f.calc.run(new CalculationRunRequest(1003L,SEM,false));var s=run.getSummary();assertThat(s.getSettlementSnapshotId()).isNotNull();assertThat(f.count("biz_workload_settlement_snapshot")).isEqualTo(1);assertThat(pay().getSettlementSnapshotId()).isEqualTo(s.getSettlementSnapshotId());
+  var i=imported();var run=f.calc.run(new CalculationRunRequest(1003L,SEM,false));var s=run.getSummary();assertThat(s.getDataVersion()).isEqualTo(1L);assertThat(s.getLastCalculatedAt()).isNotNull();assertThat(s.getSettlementSnapshotId()).isNotNull();assertThat(f.count("biz_workload_settlement_snapshot")).isEqualTo(1);assertThat(pay().getSettlementSnapshotId()).isEqualTo(s.getSettlementSnapshotId());
   evidence.decorate(s);assertThat(s.getSettlementMode()).isEqualTo("ISOLATED_VERIFICATION_ONLY");assertThat(s.getSettlementSubmittable()).isTrue();
-  var now=f.mapper(BizWorkloadItemMapper.class).selectBizWorkloadItemById(i.getId());WorkloadMysqlFixture.authenticated(()->{f.items.confirm(i.getId(),now.getCalculationVersion(),now.getCalculatedWorkload());f.audit.submit(s.getId());f.audit.approve(s.getId());return null;});assertThat(summary().getStatus()).isEqualTo(2);assertThat(f.count("biz_workload_settlement_snapshot")).isEqualTo(1);
+  var now=f.mapper(BizWorkloadItemMapper.class).selectBizWorkloadItemById(i.getId());WorkloadMysqlFixture.authenticated(()->{f.items.confirm(i.getId(),now.getCalculationVersion(),now.getCalculatedWorkload());f.audit.submit(s.getId());passReviews(s.getId());f.audit.approve(s.getId());return null;});assertThat(summary().getStatus()).isEqualTo(2);assertThat(f.count("biz_workload_settlement_snapshot")).isEqualTo(1);
  }
  @ParameterizedTest @NullSource @ValueSource(strings={"行政","兼岗","unknown","外聘","校企"}) void nonExplicitFullTimeCannotPersist(String nature)throws Exception{
   imported();f.jdbc.update("UPDATE biz_teacher_profile SET teacher_nature=? WHERE user_id=1003",nature);
@@ -52,12 +53,12 @@ class SettlementSnapshotIT {
   var p=f.pay.recalcPay(1003L,SEM);assertThat(p.getCourseHourPay()).isEqualByComparingTo(old.getCourseHourPay());assertThat(f.count("biz_workload_settlement_snapshot")).isEqualTo(2);var original=f.mapper(BizWorkloadSettlementSnapshotMapper.class).selectById(row.getId());assertThat(original.getPayloadJson()).isEqualTo(json);assertThat(original.getHash()).isEqualTo(hash);evidence.decorate(summary());assertThat(summary().getTitle()).isEqualTo("讲师");
  }
  @Test void independentPayUsesCurrentAllowanceAndAppendsOnlyOnce()throws Exception{
-  calculate();var a=new BizAllowanceItem();a.setUserId(1003L);a.setSemester(SEM);a.setFeeType("E");a.setDurationHours(new BigDecimal("1.25"));a.setStatus(1);WorkloadMysqlFixture.authenticated(()->source.allowances.insertBizAllowanceItem(a));
+  var initial=calculate();assertThat(initial.getDataVersion()).isEqualTo(1L);var calculatedAt=initial.getLastCalculatedAt();var a=new BizAllowanceItem();a.setUserId(1003L);a.setSemester(SEM);a.setFeeType("E");a.setDurationHours(new BigDecimal("1.25"));a.setStatus(1);WorkloadMysqlFixture.authenticated(()->source.allowances.insertBizAllowanceItem(a));
   assertThat(summary().getNeedsRecalculation()).isZero();
   var stale=summary();evidence.decorate(stale);assertThat(stale.getSettlementEvidenceStatus()).isEqualTo("STALE");assertThat(stale.getSettlementSubmittable()).isFalse();
   assertThatThrownBy(()->f.tx.execute(status->{evidence.assertSubmittable(summary());return null;})).hasMessageContaining("其他酬金集合");
   var original=f.mapper(BizWorkloadSettlementSnapshotMapper.class).selectById(stale.getSettlementSnapshotId());var summaryHash=SettlementEvidence.decode(original.getPayloadJson(),original.getHash()).summary().hash();
-  var p=f.pay.recalcPay(1003L,SEM);assertThat(p.getOtherPayTotal()).isEqualByComparingTo("75");
+  var p=f.pay.recalcPay(1003L,SEM);assertThat(summary().getDataVersion()).isEqualTo(2L);assertThat(summary().getLastCalculatedAt()).isEqualTo(calculatedAt);assertThat(p.getOtherPayTotal()).isEqualByComparingTo("75");
   var next=f.mapper(BizWorkloadSettlementSnapshotMapper.class).selectById(p.getSettlementSnapshotId());assertThat(SettlementEvidence.decode(next.getPayloadJson(),next.getHash()).summary().hash()).isEqualTo(summaryHash);assertThat(f.count("biz_workload_settlement_snapshot")).isEqualTo(2);evidence.assertSubmittable(summary());
  }
  @Test void mismatchedPointerFailsSubmitAndIndependentPay()throws Exception{
@@ -131,7 +132,7 @@ class SettlementSnapshotIT {
  }
  @Test void trueLegacyPendingWithoutAnySettlementHistoryCanFinishAfterActivation()throws Exception {
   f.calc.recalcAll(1003L,WorkloadMysqlFixture.SEM);var old=f.mapper(BizWorkloadItemMapper.class).selectBizWorkloadItemById(9L);WorkloadMysqlFixture.authenticated(()->{f.items.confirm(9L,old.getCalculationVersion(),old.getCalculatedWorkload());f.audit.submit(f.summaryId());return null;});
-  scope.setFormalStartSemester(WorkloadMysqlFixture.SEM);WorkloadMysqlFixture.authenticated(()->{f.audit.approve(f.summaryId());return null;});assertThat(f.jdbc.queryForObject("SELECT status FROM biz_workload_summary WHERE id=?",Integer.class,f.summaryId())).isEqualTo(2);assertThat(f.count("biz_workload_settlement_snapshot")).isZero();
+  scope.setFormalStartSemester(WorkloadMysqlFixture.SEM);WorkloadMysqlFixture.authenticated(()->{passReviews(f.summaryId());f.audit.approve(f.summaryId());return null;});assertThat(f.jdbc.queryForObject("SELECT status FROM biz_workload_summary WHERE id=?",Integer.class,f.summaryId())).isEqualTo(2);assertThat(f.count("biz_workload_settlement_snapshot")).isZero();
  }
  @Test void corruptedInnerHashAndResignedWrongAmountFailWithoutDatabaseReconstruction()throws Exception {
   var s=calculate();review();var mapper=f.mapper(BizWorkloadSettlementSnapshotMapper.class);var original=mapper.selectById(s.getSettlementSnapshotId());var json=new com.fasterxml.jackson.databind.ObjectMapper();var tree=json.readTree(original.getPayloadJson());

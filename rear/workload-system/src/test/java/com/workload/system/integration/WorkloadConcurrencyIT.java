@@ -80,7 +80,9 @@ class WorkloadConcurrencyIT {
     @Test void calculationWaitingForCompletionMustRejectLatestFrozenState() throws Exception {
         f.calc.recalcAll(1003L, f.SEM);
         f.jdbc.update("UPDATE biz_workload_item SET status=1 WHERE id=9");
-        f.jdbc.update("UPDATE biz_workload_summary SET status=1");
+        WorkloadMysqlFixture.authenticated(()->{f.audit.submit(f.summaryId());return null;});
+        long reviewId=f.jdbc.queryForObject("SELECT id FROM biz_workload_item_review",Long.class);
+        WorkloadMysqlFixture.authenticated(()->{((com.workload.system.review.ItemReviewService)f.beans.get(com.workload.system.review.ItemReviewService.class)).review(reviewId,"PASS",new com.workload.system.review.ReviewCommands.Review(0,null));return null;});
         CountDownLatch changed = new CountDownLatch(1), release = new CountDownLatch(1);
         Future<?> first = pool.submit(() -> f.tx.execute(s -> {
             try { WorkloadMysqlFixture.authenticated(() -> { f.audit.approve(f.summaryId()); return null; }); }

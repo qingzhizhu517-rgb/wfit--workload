@@ -22,6 +22,7 @@ class BizAuditServiceImplTest
 {
     @org.mockito.Mock private com.workload.system.calc.WorkloadWriteGuard writeGuard;
 
+    @Mock private com.workload.system.review.ReviewBatchService reviewBatches;
     @InjectMocks private BizAuditServiceImpl service;
     @Mock private BizWorkloadSummaryMapper summaryMapper;
     @Mock private BizAuditLogMapper auditLogMapper;
@@ -29,12 +30,28 @@ class BizAuditServiceImplTest
     @Mock private com.workload.system.mapper.BizWorkloadItemMapper itemMapper;
     @Mock private com.workload.system.mapper.BizCoefficientAdjustmentMapper adjustmentMapper;
 
+    @Test
+    void historicalPendingWithoutReviewBatchCannotBeApproved()
+    {
+        BizWorkloadSummary summary = new BizWorkloadSummary();
+        summary.setId(7L); summary.setUserId(1003L); summary.setSemester("2025-2026-1"); summary.setStatus(1);
+        when(summaryMapper.selectBizWorkloadSummaryById(7L)).thenReturn(summary);
+        when(summaryMapper.selectByUserSemesterForUpdate(1003L, "2025-2026-1")).thenReturn(summary);
+        org.mockito.Mockito.lenient().when(summaryMapper.approveSummary(7L, 1, 2, "qa", "qa")).thenReturn(1);
+        try (var security = org.mockito.Mockito.mockStatic(com.workload.common.utils.SecurityUtils.class))
+        {
+            security.when(com.workload.common.utils.SecurityUtils::getUsername).thenReturn("qa");
+            assertThatThrownBy(() -> service.approve(7L)).isInstanceOf(ServiceException.class)
+                    .hasMessageContaining("重新核算").extracting("code").isEqualTo(409);
+        }
+    }
+
     @org.junit.jupiter.params.ParameterizedTest
     @org.junit.jupiter.params.provider.ValueSource(ints = {0, 1})
     void pendingCoefficientBlocksSubmissionAndFinalApproval(int status)
     {
         BizWorkloadSummary summary = new BizWorkloadSummary();
-        summary.setId(7L); summary.setUserId(1003L); summary.setSemester("2025-2026-1"); summary.setStatus(status);
+        summary.setId(7L); summary.setUserId(1003L); summary.setSemester("2025-2026-1"); summary.setStatus(status);summary.setDataVersion(1L);summary.setReviewBatchNo("batch-qa");
         when(summaryMapper.selectBizWorkloadSummaryById(7L)).thenReturn(summary);
         when(summaryMapper.selectByUserSemesterForUpdate(1003L, "2025-2026-1")).thenReturn(summary);
         when(adjustmentMapper.selectPendingIdsForUpdate(1003L, "2025-2026-1")).thenReturn(java.util.List.of(81L));
@@ -55,7 +72,7 @@ class BizAuditServiceImplTest
     void noPendingCoefficientAllowsExistingTransition(int status)
     {
         BizWorkloadSummary summary = new BizWorkloadSummary();
-        summary.setId(7L); summary.setUserId(1003L); summary.setSemester("2025-2026-1"); summary.setStatus(status);
+        summary.setId(7L); summary.setUserId(1003L); summary.setSemester("2025-2026-1"); summary.setStatus(status);summary.setDataVersion(1L);summary.setReviewBatchNo("batch-qa");
         when(summaryMapper.selectBizWorkloadSummaryById(7L)).thenReturn(summary);
         when(summaryMapper.selectByUserSemesterForUpdate(1003L, "2025-2026-1")).thenReturn(summary);
         when(adjustmentMapper.selectPendingIdsForUpdate(1003L, "2025-2026-1")).thenReturn(java.util.List.of());
@@ -67,8 +84,8 @@ class BizAuditServiceImplTest
             security.when(com.workload.common.utils.SecurityUtils::getUsername).thenReturn("qa");
             if (status == 0) service.submit(7L); else service.approve(7L);
         }
-        if (status == 0) verify(summaryMapper).updateStatusIf(7L, 0, 1, "qa");
-        else verify(summaryMapper).approveSummary(7L, 1, 2, "qa", "qa");
+        if (status == 0) {verify(reviewBatches).create(summary);verify(summaryMapper).updateStatusIf(7L, 0, 1, "qa");}
+        else {verify(reviewBatches).assertCurrent(summary,true);verify(summaryMapper).approveSummary(7L, 1, 2, "qa", "qa");}
     }
 
     @org.junit.jupiter.params.ParameterizedTest
@@ -76,7 +93,7 @@ class BizAuditServiceImplTest
     void unreviewedItemsBlockSubmissionAndFinalApproval(int status)
     {
         BizWorkloadSummary summary = new BizWorkloadSummary();
-        summary.setId(7L); summary.setUserId(1003L); summary.setSemester("2025-2026-1"); summary.setStatus(status);
+        summary.setId(7L); summary.setUserId(1003L); summary.setSemester("2025-2026-1"); summary.setStatus(status);summary.setDataVersion(1L);summary.setReviewBatchNo("batch-qa");
         when(summaryMapper.selectBizWorkloadSummaryById(7L)).thenReturn(summary);
         when(summaryMapper.selectByUserSemesterForUpdate(1003L, "2025-2026-1")).thenReturn(summary);
         when(itemMapper.selectUnreviewedIdsForUpdate(1003L, "2025-2026-1"))

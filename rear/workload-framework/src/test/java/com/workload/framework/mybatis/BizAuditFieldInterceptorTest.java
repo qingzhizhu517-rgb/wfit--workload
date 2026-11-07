@@ -65,7 +65,7 @@ class BizAuditFieldInterceptorTest {
     }
     @Test void snapshotAndPeriodStatementsRemainOutsideAllowlist() {
         assertFalse(BizAuditFieldInterceptor.statementIds().contains("com.workload.system.mapper.BizWorkloadSummaryMapper.lockPeriod"));
-        assertTrue(BizAuditFieldInterceptor.statementIds().stream().noneMatch(id->id.contains("Snapshot")||id.contains("ReviewBatch")||id.contains("Offline")));
+        assertTrue(BizAuditFieldInterceptor.statementIds().stream().noneMatch(id->id.contains(".BizWorkloadCalcSnapshotMapper.")||id.contains(".BizWorkloadSettlementSnapshotMapper.")||id.contains(".BizWorkloadReviewBatchMapper.")||id.contains(".BizOfflineAdjustmentNoteMapper.")));
     }
     @Test void sharedFactoryRejectsFakeReservedMapAndDefendsDateMutability() {
         assertThrows(IllegalArgumentException.class,()->com.workload.common.core.domain.audit.AuditFields.resolve(Map.of("_auditFields",Map.of("by","forged"))));

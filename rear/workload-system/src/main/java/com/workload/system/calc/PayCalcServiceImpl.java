@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.workload.common.constant.HttpStatus;
 import com.workload.common.exception.ServiceException;
 import com.workload.common.utils.DateUtils;
 import com.workload.system.domain.BizAllowanceItem;
@@ -51,17 +52,21 @@ public class PayCalcServiceImpl implements PayCalcService
     @Transactional(rollbackFor = Exception.class)
     public BizPayRecord recalcPay(Long userId, String semester)
     {
-        return calculate(userId,semester,null);
+        return calculate(userId,semester,null,true);
     }
 
     @Override @Transactional(rollbackFor=Exception.class)
     public BizPayRecord recalcPayWithEvidence(Long userId,String semester,SettlementEvidence.SummaryEvidence evidence) {
         if(!settlementScope.required(semester)||evidence==null) throw new ServiceException("结算来源上下文缺失");
-        return calculate(userId,semester,evidence);
+        return calculate(userId,semester,evidence,false);
     }
 
-    private BizPayRecord calculate(Long userId,String semester,SettlementEvidence.SummaryEvidence evidence) {
-        boolean independent=evidence==null;
+    @Override @Transactional(rollbackFor=Exception.class)
+    public BizPayRecord recalcPayFromSummary(Long userId,String semester) {
+        return calculate(userId,semester,null,false);
+    }
+
+    private BizPayRecord calculate(Long userId,String semester,SettlementEvidence.SummaryEvidence evidence,boolean independent) {
         writeGuard.lockDraftOrAbsent(userId, semester);
         // 写前锁定读：FOR UPDATE 行锁读取汇总并复核冻结状态，关闭"初查草稿 → 审批置待审
         // → 酬金仍按旧状态写入"的并发窗口。锁定顺序固定为 summary → allowance → pay_record，
@@ -79,13 +84,19 @@ public class PayCalcServiceImpl implements PayCalcService
         }
         if (WorkloadSummaryStatus.isWriteFrozen(summary.getStatus()))
         {
-            throw new ServiceException("学期汇总已进入审批流程，酬金已冻结");
+            throw new ServiceException("学期汇总已进入审批流程，酬金已冻结", HttpStatus.CONFLICT);
         }
 
         if (Integer.valueOf(1).equals(summary.getNeedsRecalculation()))
         {
             throw new ServiceException("源数据已变更，请先重新核算汇总和酬金");
         }
+
+        // Independent pay cannot turn a historical amount into a genuine summary calculation.
+        // Summary orchestration supplies a persisted calculation time before its first pay/version write.
+        if (summary.getLastCalculatedAt() == null || independent
+                && (summary.getDataVersion() == null || summary.getDataVersion() <= 0))
+            throw new ServiceException("历史汇总尚未完成新版计算，请先重新核算汇总",409);
 
         if(settlementScope.required(semester)) {
             if(evidence==null) evidence=settlementSnapshots.savedSummary(summary);
@@ -146,6 +157,8 @@ public class PayCalcServiceImpl implements PayCalcService
             updateDraftRecord(record);
         }
         if(settlementScope.required(semester)) {settlementSnapshots.append(summary,record,evidence,allowances);settlementSnapshots.decorate(record);}
+        if(bizWorkloadSummaryMapper.advanceDataVersion(summary.getId())!=1)
+            throw new ServiceException("汇总版本推进失败，请重新核算",409);
         return record;
     }
 
@@ -166,7 +179,7 @@ public class PayCalcServiceImpl implements PayCalcService
         BizWorkloadSummary summary = findSummary(userId, semester);
         if (summary != null && WorkloadSummaryStatus.isWriteFrozen(summary.getStatus()))
         {
-            throw new ServiceException("学期汇总已进入审批流程，其他酬金禁止修改");
+            throw new ServiceException("学期汇总已进入审批流程，其他酬金禁止修改", HttpStatus.CONFLICT);
         }
     }
 

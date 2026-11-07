@@ -23,4 +23,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         insert into biz_audit_log (summary_id, action, from_status, to_status, operator_id, operator_name, reason, create_by, create_time, update_by, update_time)
         values (#{summaryId}, #{action}, #{fromStatus}, #{toStatus}, #{operatorId}, #{operatorName}, #{reason}, #{createBy}, #{createTime}, #{updateBy}, #{updateTime})
     </insert>
+    <select id="selectPage" resultMap="BizAuditLogResult">select * from biz_audit_log where summary_id=#{summaryId} order by id limit #{size} offset #{offset}</select>
+    <select id="countPage" resultType="long">select count(*) from biz_audit_log where summary_id=#{summaryId}</select>
 </mapper>

@@ -12,6 +12,8 @@ import com.workload.system.domain.BizWorkloadSummary;
  */
 public interface BizWorkloadSummaryMapper
 {
+    int setReviewBatch(@Param("id") Long id,@Param("dataVersion") Long dataVersion,@Param("batchNo") String batchNo);
+    int advanceDataVersion(@Param("id") Long id);
     int updateSettlementPointer(@org.apache.ibatis.annotations.Param("id") Long id, @org.apache.ibatis.annotations.Param("snapshotId") Long snapshotId);
     int lockPeriod(@Param("userId") Long userId, @Param("semester") String semester);
     int markNeedsRecalculation(@Param("userId") Long userId, @Param("semester") String semester);

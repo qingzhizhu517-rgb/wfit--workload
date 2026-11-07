@@ -3,6 +3,7 @@ package com.workload.system.service.impl;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -61,7 +62,7 @@ public class BizAuditServiceImpl implements BizAuditService
     /** 错误码：审批状态冲突 */
     private static final int CODE_STATUS_CONFLICT = HttpStatus.CONFLICT;
 
-    @Autowired private com.workload.system.calc.SettlementSnapshotService settlementSnapshots;
+    @Autowired private com.workload.system.review.ReviewBatchService reviewBatches;
 
     @Autowired
     private BizWorkloadSummaryMapper bizWorkloadSummaryMapper;
@@ -94,8 +95,8 @@ public class BizAuditServiceImpl implements BizAuditService
         assertFresh(summary);
         assertItemsReviewed(summary);
         assertNoPendingCoefficients(summary);
-        if(settlementSnapshots != null) settlementSnapshots.assertSubmittable(summary);
 
+        reviewBatches.create(summary);
         String username = SecurityUtils.getUsername();
         int rows = bizWorkloadSummaryMapper.updateStatusIf(id, WorkloadSummaryStatus.DRAFT, WorkloadSummaryStatus.PENDING_AUDIT, username);
         assertUpdated(rows, id, WorkloadSummaryStatus.DRAFT, WorkloadSummaryStatus.PENDING_AUDIT);
@@ -111,8 +112,10 @@ public class BizAuditServiceImpl implements BizAuditService
         assertFresh(summary);
         assertItemsReviewed(summary);
         assertNoPendingCoefficients(summary);
-        if(settlementSnapshots != null) settlementSnapshots.assertSubmittable(summary);
 
+        if (summary.getReviewBatchNo() == null)
+            throw new ServiceException("历史待审缺少审核批次，请先驳回、重新核算再提交", CODE_STATUS_CONFLICT);
+        reviewBatches.assertCurrent(summary, true);
         String username = SecurityUtils.getUsername();
         // 教务处审核通过即终态：置已完结(2)，同时写 academic_assistant_sign 与 lock_time
         int rows = bizWorkloadSummaryMapper.approveSummary(id, WorkloadSummaryStatus.PENDING_AUDIT, WorkloadSummaryStatus.FINISHED, username, username);
@@ -124,6 +127,8 @@ public class BizAuditServiceImpl implements BizAuditService
     @Transactional(rollbackFor = Exception.class)
     public void reject(Long id, String reason)
     {
+        if (reason == null || reason.length() > 500 || reason.trim().isEmpty())
+            throw new ServiceException("驳回原因必填且最多500字",400);
         BizWorkloadSummary summary = requireLockedSummary(id);
         // 简化两级审批后只剩一个审批环节（教务处待审 1），故驳回只支持 1 → 0
         Integer current = summary.getStatus();
@@ -134,7 +139,7 @@ public class BizAuditServiceImpl implements BizAuditService
         }
 
         String username = SecurityUtils.getUsername();
-        // 驳回原因写入审批日志；同时兼容写入 remark（reason 为空时保持原 remark，维持现有行为）
+        // 驳回原因原文写入审批日志和备注；trim只用于判空，不改写业务文本。
         String remark = reason != null ? reason : summary.getRemark();
         int rows = bizWorkloadSummaryMapper.rejectSummary(id, current, WorkloadSummaryStatus.DRAFT, remark, username);
         assertUpdated(rows, id, current, WorkloadSummaryStatus.DRAFT);
@@ -178,6 +183,18 @@ public class BizAuditServiceImpl implements BizAuditService
     @Override
     public Map<String, Object> batchSubmit(Long[] ids)
     {
+        if (ids == null || ids.length == 0 || ids.length > 100)
+        {
+            throw new ServiceException("批量必须为1至100项", HttpStatus.BAD_REQUEST);
+        }
+        var seen = new HashSet<Long>();
+        for (Long id : ids)
+        {
+            if (id == null || id <= 0 || !seen.add(id))
+            {
+                throw new ServiceException("批量ID须为正整数且不重复", HttpStatus.BAD_REQUEST);
+            }
+        }
         // 逐条独立事务（经代理调用 submit，每条成功即提交、失败即回滚），
         // 因此本方法不开启整体事务，避免一条失败导致整批回滚
         BizAuditService proxy = (BizAuditService) AopContext.currentProxy();

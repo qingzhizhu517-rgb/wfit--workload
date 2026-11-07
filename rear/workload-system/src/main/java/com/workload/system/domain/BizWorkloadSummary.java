@@ -17,6 +17,18 @@ import com.workload.common.core.domain.BaseEntity;
 public class BizWorkloadSummary extends BaseEntity
 {
     private static final long serialVersionUID = 1L;
+    private Long dataVersion;
+    private String reviewBatchNo;
+    private Date lastCalculatedAt;
+    public Long getDataVersion(){return dataVersion;}
+    @com.fasterxml.jackson.annotation.JsonProperty(access=com.fasterxml.jackson.annotation.JsonProperty.Access.READ_ONLY)
+    public void setDataVersion(Long value){dataVersion=value;}
+    public String getReviewBatchNo(){return reviewBatchNo;}
+    @com.fasterxml.jackson.annotation.JsonProperty(access=com.fasterxml.jackson.annotation.JsonProperty.Access.READ_ONLY)
+    public void setReviewBatchNo(String value){reviewBatchNo=value;}
+    public Date getLastCalculatedAt(){return lastCalculatedAt;}
+    @com.fasterxml.jackson.annotation.JsonProperty(access=com.fasterxml.jackson.annotation.JsonProperty.Access.READ_ONLY)
+    public void setLastCalculatedAt(Date value){lastCalculatedAt=value;}
     private Long settlementSnapshotId;
     public Long getSettlementSnapshotId(){return settlementSnapshotId;}
     @com.fasterxml.jackson.annotation.JsonProperty(access=com.fasterxml.jackson.annotation.JsonProperty.Access.READ_ONLY)

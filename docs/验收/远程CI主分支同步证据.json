@@ -1,0 +1,220 @@
+{
+  "date": "2026-11-06",
+  "repository": "qingzhizhu517-rgb/wfit--workload",
+  "pushed_branch": "main",
+  "before": "220d75dea7153c6ea28b77f0b534ee0b7b414489",
+  "after": "748e3c202fa01311757244dfe1712b7b828327dc",
+  "pushed_local_commits": 13,
+  "force": false,
+  "run_id": 42183485996,
+  "run_url": "https://github.com/qingzhizhu517-rgb/wfit--workload/actions/runs/42183485996",
+  "workflow": "Verify",
+  "event": "push",
+  "conclusion": "success",
+  "jobs": [
+    {
+      "id": 127778254558,
+      "name": "backend",
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 42183485996,
+      "logs_url": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Run actions/setup-java@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3
+        },
+        {
+          "name": "Run mvn -f rear/pom.xml -B -ntp test",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5
+        },
+        {
+          "name": "Post Run actions/setup-java@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11
+        }
+      ]
+    },
+    {
+      "id": 127778254832,
+      "name": "whitespace",
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 42183485996,
+      "logs_url": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Check introduced whitespace",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7
+        }
+      ]
+    },
+    {
+      "id": 127778254867,
+      "name": "frontend",
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 42183485996,
+      "logs_url": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3
+        },
+        {
+          "name": "Run npm ci --no-audit --no-fund",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4
+        },
+        {
+          "name": "Run npm run test:unit && npm run test:tooling",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5
+        },
+        {
+          "name": "Run npm run build:prod",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6
+        },
+        {
+          "name": "Reject new lint violations",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7
+        },
+        {
+          "name": "Full lint debt (known failing baseline)",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 8
+        },
+        {
+          "name": "Publish debt summary",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10
+        },
+        {
+          "name": "Post Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 19
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 20
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 21
+        }
+      ]
+    }
+  ],
+  "full_frontend_lint": {
+    "passed": false,
+    "errors": 3246,
+    "warnings": 86,
+    "continue_on_error": true,
+    "new_violations": 0,
+    "removed_violations": 15
+  },
+  "frontend_tests": {
+    "unit": 4,
+    "tooling": 5
+  },
+  "backend_regular_tests": 751,
+  "mysql_integration_in_CI": false,
+  "deployed": false,
+  "original_worktree_head": "dcb452e",
+  "original_files_verified": 43,
+  "original_database_touched": false
+}
