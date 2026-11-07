@@ -1,0 +1,287 @@
+{
+  "date": "2026-11-07",
+  "base_commit": "014c30a69d59580d0eb1987b0a9a81442df46288",
+  "frontend_manifest": {
+    "node": "v24.16.0",
+    "npm": "11.13.0",
+    "files": {
+      "src/api/system/itemReview.js": "3d315ceb80264ccf6934d34c58a55e8c87acd5e8ded699a5e2dfe46618396c35",
+      "src/api/system/workloadSummary.js": "88adf6586995916c4a43a87d3df51e4a1549aa5175a4336181bb511e79c8dd71",
+      "src/router/index.js": "b982169bad5a725f86e08373440e23c8db39627f7d19d29495949991b6298068",
+      "src/utils/request.js": "7b3a74be5f57450f5c3c2880fcd9d5d2e9c2dd46eef11addbf20d0e88c40bf48",
+      "src/utils/businessError.js": "09d927593e56e70d8056fcbd432fc7da67422b19bc845bdcd4874d01d82459ab",
+      "src/utils/reviewUi.js": "7ae56dc9ba8464e77ca9c5ec51d07f2b400baecf52f089017f0d52d810c1a658",
+      "src/views/system/auditCenter/index.vue": "94f700d24affa2acbcf35a4dd5e5193ca3850be7a661bb06ce24b2ab99d2d3c7",
+      "src/views/system/auditCenter/ReviewEvidenceTable.vue": "ce3dddd2cd1b8b8bcb90464ff7d6c526a5c220b7f74b06bb6e70a06aa16e8536",
+      "src/views/system/workloadSummary/SummaryAuditDrawer.vue": "26bbc134cede0687963eabfeb38fac9978809d559087672de1c1fbeafff2451d",
+      "src/views/system/workloadSummary/index.vue": "8999326192d524e2ba7c9f6e1f68741649e1969ee711449c541194c3258251b6",
+      "tests/reviewUi.test.mjs": "b0eb6f7d8d3741e35179c7cd050380153cc5ab87ee6fc8cc5155f1964ca4dd7a"
+    }
+  },
+  "frontend_tests": 22,
+  "tooling_tests": 5,
+  "new_lint_violations": 0,
+  "removed_vs_fixed_baseline": 15,
+  "full_lint_clean": false,
+  "unchanged_line_ending_differences": 0,
+  "log_sha256": {
+    "unit.log": "c759f1ed09e9e91480b84172ec142a4e971c559fb3039289a2592beaaf02451c",
+    "tooling.log": "5f6435d98b4071d0ccbcacb7064de2fb526ba566ab32dbd9a8013dad629239f7",
+    "build.log": "d02811ab1b2e96e5ca418049c74b321a1d00822cca1d5234c4d730b2c8b0615c",
+    "lintbaseline.log": "c87eae13f27e7bf91d6f83277a881d6f820b7fb9972ce353c3a9148963693d44",
+    "batch-conflict-red.log": "6824b24a3174d5ebde4c4f9cba17403c86e217dec0cfcbb8064df55c011c04f7",
+    "note-reopen-red.log": "2729c656c26e33f6c42924c8fa19fa165163d3ff90b0ec8b6a229fcfca5d6616",
+    "note-reactivity-red.log": "be9a00cff1e92b0f051d408a633f08b3852b016b21e525d5a27736b273add2d7",
+    "note-retry-probe-assertion.log": "94d8c422963e0f5778cdea18d2b429b82c52bc6fa0a86441e3387627cc6218e0"
+  },
+  "independent_spec": "PASS; static only",
+  "independent_quality": "PASS; static only",
+  "readonly_role_report": "# T08 独立真实浏览器只读验收\n\n使用隔离服务 127.0.0.1:13000，经真实登录表单登录 teacher_test / leader_test。未操作父 wfit-t08 session，未改 repo 代码或 DB，未点击任何提交、确认、审核、驳回、豁免、追加说明或导出。\n\n## PASS\n- 教师清空学期筛选后列表 total=11，实际首屏10行 response 均 userId=1003；无教师筛选器，无审核中心菜单。分页第二页未点击。\n- 教师 summary117 / 2106-2107-1 详情实际打开，标题教师测试；只读逐条审核3条、操作时间线11条及补差说明2条可读取。详情、reviews、auditLogs、offlineAdjustmentNotes 均 GET 200。无逐项审核、豁免、追加说明按钮。\n- 教师直接访问 /workload/auditCenter?summaryId=118，真实渲染404，未出现审核数据。\n- 领导汇总页无审核中心菜单；实际分别打开草稿2026-2027-1、待审核2102-2103-1行更多菜单，均只含导出附件1，无重算、删除或审核入口。\n- 领导实际打开 summary117 详情，4个GET均200，3条只读审核记录、时间线、2条补差说明可读，无审核、豁免、追加按钮。\n- 两角色 console error 均 Total messages:2，Errors:0，Warnings:0。\n- 已亲看 output/playwright/t08-teacher-readonly.png 及 t08-leader-readonly.png，抽屉上部在1200x672视口正常渲染。\n\n## 限制及非阻断观察\n- 未点击教师第二页，数据边界由首屏返回 userId 单一及界面本人模式佐证；未作越权API探测。\n- summary118列表状态已看到填报中/退回说明，未打开118详情；已完结详情使用117验证。父负责118后续真实提交与确认。\n- 领导详情沿用标题“逐条审核（本人只读）”，领导读他人时“本人”措辞不准确；未改源码。\n- 仅亲看抽屉首屏渲染，下方时间线/说明通过浏览器snapshot验证，未逐区滚动截图。\n\n## Session交回\n- wfit-t08-teacher 保留在 /workload/workloadSummary，默认学期2026-2027-1，父可清空学期搜索后操作118。\n- wfit-t08-leader 保留在 summary117详情抽屉。均未关闭。\n\n证据同目录 teacher-summary.txt、teacher-detail.txt、teacher-list-response.txt、teacher-route-denied.txt、teacher-network.txt、teacher-console.txt、leader-summary.txt、leader-draft-menu.txt、leader-reviewing-menu.txt、leader-detail.txt、leader-network.txt、leader-console.txt。\n",
+  "final_business": {
+    "protected_t07_source_business_tables": 27,
+    "protected_t07_source_unchanged": true,
+    "summary118": {
+      "id": 118,
+      "pay": 85.0,
+      "status": 2,
+      "batchNo": "56330a5e-95c1-42e5-b89d-8434734667d5",
+      "dataVersion": 2,
+      "teacherSign": "teacher_test",
+      "assistantSign": "jiaowu_test"
+    },
+    "reviews118": [
+      {
+        "id": 21,
+        "reason": "独立审批员先处理",
+        "result": "PASS",
+        "batchNo": "62246cc9-e984-4211-b8cc-96bbdbcaea6f",
+        "reviewer": "jiaowu_test"
+      },
+      {
+        "id": 22,
+        "reason": " 页面验收：保留批量原因 ",
+        "result": "PASS",
+        "batchNo": "62246cc9-e984-4211-b8cc-96bbdbcaea6f",
+        "reviewer": "admin_test"
+      },
+      {
+        "id": 23,
+        "reason": " 页面验收：教务逐项通过 ",
+        "result": "PASS",
+        "batchNo": "56330a5e-95c1-42e5-b89d-8434734667d5",
+        "reviewer": "jiaowu_test"
+      },
+      {
+        "id": 24,
+        "reason": " 页面验收：管理员授权豁免 ",
+        "result": "WAIVE",
+        "batchNo": "56330a5e-95c1-42e5-b89d-8434734667d5",
+        "reviewer": "admin_test"
+      }
+    ],
+    "browser_added_notes": [
+      {
+        "id": 7,
+        "key": "24a8db6d-1b7b-43cb-96e9-fcc799bb515e",
+        "amount": 7.25,
+        "reason": " 页面验收：丢失响应后安全重试 ",
+        "summaryId": 117,
+        "referenceNo": "T08-BROWSER-RETRY"
+      },
+      {
+        "id": 8,
+        "key": "2109af6e-079d-4cbb-84f4-e364f221b5ef",
+        "amount": -1.25,
+        "reason": " 页面验收：负金额线下说明，不改原结算 ",
+        "summaryId": 118,
+        "referenceNo": "T08-NEGATIVE"
+      }
+    ],
+    "original_3306_touched": false
+  },
+  "positive_retry_before": {
+    "frozen": {
+      "biz_workload_summary": {
+        "rows": 1,
+        "sha256": "a20e01eeae836b1bf574fd8d9b757ed0663867820cf867e931f94b092cb7538c"
+      },
+      "biz_pay_record": {
+        "rows": 1,
+        "sha256": "9371e93b11553a50cfb7a560789ce31032071bc8fd29bde5a80315e49187b124"
+      },
+      "biz_workload_item": {
+        "rows": 3,
+        "sha256": "b68adb586800e0cd3ba6fe3972b0a5a10ff398f2cb309762f7be258db8d90f5f"
+      },
+      "biz_workload_review_batch": {
+        "rows": 2,
+        "sha256": "7e09efeaca39f81b585648392e2f1b13eabf105812e3ab5067635aa8e9bdc035"
+      },
+      "biz_workload_item_review": {
+        "rows": 5,
+        "sha256": "495b90dc9a4bddb0911dacf1603d1380af75686ea431f97a45ba1766af4075ae"
+      },
+      "biz_workload_settlement_snapshot": {
+        "rows": 3,
+        "sha256": "d0eb370f9a5ead84b46bcd028ddee7ec2debb794cb9c51c1812dec7d55782d4f"
+      },
+      "biz_workload_calc_snapshot": {
+        "rows": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    "notes_count": 2
+  },
+  "positive_retry_after": {
+    "frozen": {
+      "biz_workload_summary": {
+        "rows": 1,
+        "sha256": "a20e01eeae836b1bf574fd8d9b757ed0663867820cf867e931f94b092cb7538c"
+      },
+      "biz_pay_record": {
+        "rows": 1,
+        "sha256": "9371e93b11553a50cfb7a560789ce31032071bc8fd29bde5a80315e49187b124"
+      },
+      "biz_workload_item": {
+        "rows": 3,
+        "sha256": "b68adb586800e0cd3ba6fe3972b0a5a10ff398f2cb309762f7be258db8d90f5f"
+      },
+      "biz_workload_review_batch": {
+        "rows": 2,
+        "sha256": "7e09efeaca39f81b585648392e2f1b13eabf105812e3ab5067635aa8e9bdc035"
+      },
+      "biz_workload_item_review": {
+        "rows": 5,
+        "sha256": "495b90dc9a4bddb0911dacf1603d1380af75686ea431f97a45ba1766af4075ae"
+      },
+      "biz_workload_settlement_snapshot": {
+        "rows": 3,
+        "sha256": "d0eb370f9a5ead84b46bcd028ddee7ec2debb794cb9c51c1812dec7d55782d4f"
+      },
+      "biz_workload_calc_snapshot": {
+        "rows": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    "notes_count": 3
+  },
+  "negative_before": {
+    "frozen": {
+      "biz_workload_summary": {
+        "rows": 1,
+        "sha256": "967e58871d63fa17198713804712e14a2a0153b4406a11adb3cca838395e9d5f"
+      },
+      "biz_pay_record": {
+        "rows": 1,
+        "sha256": "56ca52583a49660e29716069f55a2e7f16ae6924976347a1f4d921ee63268120"
+      },
+      "biz_workload_item": {
+        "rows": 2,
+        "sha256": "7ec211690951e9095ea6872f07b2722b65110d0676bed3930d494f568ed873d2"
+      },
+      "biz_workload_review_batch": {
+        "rows": 2,
+        "sha256": "5a435610729a4ae2b2907a67bcb2096f2cd7625bc735ea0d4bc821e6d2572b9b"
+      },
+      "biz_workload_item_review": {
+        "rows": 4,
+        "sha256": "174bb92d387d3dede1dee383ede54116d45b83e52d501d778d392ca0afb119c1"
+      },
+      "biz_workload_settlement_snapshot": {
+        "rows": 2,
+        "sha256": "4fbf4921d397068070163956af281652aa5288c946853df10f8f93ebcbca3ac5"
+      },
+      "biz_workload_calc_snapshot": {
+        "rows": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    "notes_count": 0
+  },
+  "negative_after": {
+    "frozen": {
+      "biz_workload_summary": {
+        "rows": 1,
+        "sha256": "967e58871d63fa17198713804712e14a2a0153b4406a11adb3cca838395e9d5f"
+      },
+      "biz_pay_record": {
+        "rows": 1,
+        "sha256": "56ca52583a49660e29716069f55a2e7f16ae6924976347a1f4d921ee63268120"
+      },
+      "biz_workload_item": {
+        "rows": 2,
+        "sha256": "7ec211690951e9095ea6872f07b2722b65110d0676bed3930d494f568ed873d2"
+      },
+      "biz_workload_review_batch": {
+        "rows": 2,
+        "sha256": "5a435610729a4ae2b2907a67bcb2096f2cd7625bc735ea0d4bc821e6d2572b9b"
+      },
+      "biz_workload_item_review": {
+        "rows": 4,
+        "sha256": "174bb92d387d3dede1dee383ede54116d45b83e52d501d778d392ca0afb119c1"
+      },
+      "biz_workload_settlement_snapshot": {
+        "rows": 2,
+        "sha256": "4fbf4921d397068070163956af281652aa5288c946853df10f8f93ebcbca3ac5"
+      },
+      "biz_workload_calc_snapshot": {
+        "rows": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    "notes_count": 1
+  },
+  "formal_settlement_enabled": false,
+  "deployed": false,
+  "limitations": [
+    "Browser validation on dedicated MySQL9 clone only; MySQL8 backend compatibility evidence belongs to T07",
+    "Draft recovery within component lifetime only; no persistence across page unload",
+    "One intentional network error injected after real successful note save; route removed before retry",
+    "This is T08 technical acceptance, not whole-project business sign-off"
+  ],
+  "cleanup": {
+    "own_browser_sessions_closed": [
+      "wfit-t08",
+      "wfit-t08-teacher",
+      "wfit-t08-jiaowu",
+      "wfit-t08-leader"
+    ],
+    "own_backend_pid_stopped": 60573,
+    "own_frontend_pid_stopped": 60558,
+    "ports_closed": [
+      13000,
+      18084
+    ],
+    "original_ports_not_touched": [
+      3000,
+      8084,
+      3306
+    ],
+    "screenshots_sha256": {
+      "t08-final-history.png": "47dc56f2e63dd2e8b152dc504d00e83db8c67fce58c69881888baebf2f29ef7c",
+      "t08-approval-blocked.png": "f080f6b7352cfe5cbadc520e2d4b9e50a223dddb6dec65ff360872228c82f8d5",
+      "t08-partial-retains-reason.png": "b652f813cd32738ad1d7e022101def60d43f3b6f0d694acafa3f0b7daaea27e5",
+      "t08-leader-readonly.png": "3d9bb9aa4e9e781ec8f70e23c8f640269c2bfba58a4ec9d2dc3b8bad8a03af72",
+      "t08-offline-note-retry.png": "66af87f2c5ac2c3bcd45bed9ca5321250b71a41c98d02f46ed2c8cdf64016079",
+      "t08-legacy-missing.png": "b76d5894ad9b130a9a610d10e70ce3a44f3ab47cd34a00ec68c2a3e867e6778f",
+      "t08-admin-center.png": "8606060fefbf5503ec65f75a3587b23c1009946e871e1c488ae11a1080968a27",
+      "t08-teacher-readonly.png": "964b0e4c2234d2f2e2e2b5733a5cc7d1397c143ac0fb92aa4d612d2c5838efaa",
+      "t08-final-note-form.png": "57c4ecaacc7d225a11ee52be22a57a6737e76b87c8c814277c4c8ea708e0259f",
+      "t08-pending-detail.png": "b2aadc7d4e1e2251353cb185cfb91d58720c33d421b16dfc8664f307ecd99ee0",
+      "t08-expanded-original-reason.png": "4ba33780f1f1ed952c87aebf917b7adbdf3ec3cb0d9cce303d47d87768c9f062"
+    },
+    "empty_output_directories_preserved": true
+  },
+  "original_preservation": {
+    "head": "dcb452ea8e32324b745f8ddbb24337096e279b8a",
+    "files_checked": 43,
+    "files_unchanged": true,
+    "reference_schemas": [
+      "wfit_verify_20261025_150548",
+      "wfit_ui_20261028",
+      "wfit_t06_20261106_b"
+    ],
+    "reference_business_hashes_unchanged": true,
+    "t07_source_baseline_sha256": "c98a2f6e25e2efd67baf414336c51efc626d79529e7ba5d87088818f2e6f3746"
+  }
+}

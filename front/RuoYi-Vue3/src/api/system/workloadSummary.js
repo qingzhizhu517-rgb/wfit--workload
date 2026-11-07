@@ -42,3 +42,9 @@ export function delWorkloadSummary(id) {
     method: 'delete'
   })
 }
+
+export const getSummaryAuditDetail = id => request({ url: `/system/workloadSummary/${id}/detail`, method: 'get' })
+export const listSummaryEvidence = (id, section, params) => {
+  if (!['reviews', 'auditLogs', 'offlineAdjustmentNotes'].includes(section)) throw new Error('无效证据类型')
+  return request({ url: `/system/workloadSummary/${id}/${section}`, method: 'get', params })
+}

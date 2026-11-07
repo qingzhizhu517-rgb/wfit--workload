@@ -140,6 +140,18 @@ export const constantRoutes = [
 // 动态路由，基于用户权限动态去加载
 export const dynamicRoutes = [
   {
+    path: '/workload/auditCenter',
+    component: Layout,
+    hidden: true,
+    permissions: ['system:auditRecord:list'],
+    children: [{
+      path: '',
+      component: () => import('@/views/system/auditCenter/index.vue'),
+      name: 'WorkloadAuditCenter',
+      meta: { title: '工作量审核中心', activeMenu: '/workload/workloadSummary', noCache: true }
+    }]
+  },
+  {
     path: '/system/user-auth',
     component: Layout,
     hidden: true,

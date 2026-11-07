@@ -257,6 +257,19 @@
           </el-button>
         </el-tooltip>
       </el-col>
+      <el-col
+        v-if="!isTeacher && !isLeader"
+        :span="1.5"
+      >
+        <el-button
+          v-hasPermi="['system:auditRecord:list']"
+          type="primary"
+          plain
+          @click="router.push('/workload/auditCenter')"
+        >
+          审核中心
+        </el-button>
+      </el-col>
       <right-toolbar
         v-model:show-search="showSearch"
         @query-table="getList"
@@ -551,6 +564,7 @@
             </el-button>
             <!-- 更多操作下拉 -->
             <el-dropdown
+              v-if="checkPermi(['system:workloadSummary:edit', 'system:export:personal', 'system:workloadSummary:remove'])"
               trigger="click"
               @command="(cmd) => handleMoreCmd(cmd, scope.row)"
             >
@@ -562,21 +576,21 @@
               <template #dropdown>
                 <el-dropdown-menu>
                   <el-dropdown-item
-                    v-hasPermi="['system:workloadSummary:edit']"
+                    v-if="checkPermi(['system:workloadSummary:edit'])"
                     command="recalc"
                     icon="Refresh"
                   >
                     重算
                   </el-dropdown-item>
                   <el-dropdown-item
-                    v-hasPermi="['system:export:personal']"
+                    v-if="checkPermi(['system:export:personal'])"
                     command="exportItem"
                     icon="Document"
                   >
                     导出附件1
                   </el-dropdown-item>
                   <el-dropdown-item
-                    v-hasPermi="['system:workloadSummary:remove']"
+                    v-if="checkPermi(['system:workloadSummary:remove'])"
                     command="delete"
                     icon="Delete"
                     :disabled="!!scope.row.settlementSnapshotId"
@@ -600,119 +614,52 @@
       @pagination="getList"
     />
 
-    <!-- 汇总详情抽屉 -->
-    <el-drawer
-      v-model="detailOpen"
-      title="学期汇总详情"
-      :size="detailDrawerSize"
+    <el-dialog
+      v-model="rejectOpen"
+      title="驳回汇总"
+      width="540px"
+      :close-on-click-modal="false"
+      :before-close="closeReject"
     >
+      <p>原因保留到本次页面退出；重新打开同一汇总可继续填写。</p>
+      <el-form label-position="top">
+        <el-form-item label="驳回原因（必填，原文最多500字）">
+          <el-input
+            v-model="rejectReason"
+            type="textarea"
+            :rows="4"
+            maxlength="500"
+            show-word-limit
+            :disabled="rejectBusy"
+          />
+        </el-form-item>
+      </el-form>
       <el-alert
-        v-if="detailRow"
-        :title="settlementLabel(detailRow)"
-        :description="settlementHint(detailRow)"
-        :type="settlementTagType(detailRow)"
-        show-icon
-        :closable="false"
-        class="mb8"
-      />
-      <el-alert
-        v-if="detailRow?.needsRecalculation === 1"
-        title="来源数据已变化，请由教务重新核算汇总后再提交审核。"
-        type="warning"
-        show-icon
+        v-if="rejectError"
+        :title="rejectError"
+        type="error"
         :closable="false"
       />
-      <el-descriptions
-        v-if="detailRow"
-        :column="detailColumns"
-        border
-      >
-        <el-descriptions-item label="教师">
-          {{ userName(detailRow.userId) }}
-        </el-descriptions-item>
-        <el-descriptions-item label="工号">
-          {{ userCode(detailRow.userId) }}
-        </el-descriptions-item>
-        <el-descriptions-item label="学年学期">
-          {{ detailRow.semester }}
-        </el-descriptions-item>
-        <el-descriptions-item label="职称快照">
-          {{ detailRow.title || '-' }}
-        </el-descriptions-item>
-        <el-descriptions-item label="结算快照">
-          {{ detailRow.settlementSnapshotId ?? '历史依据缺失' }}
-        </el-descriptions-item>
-        <el-descriptions-item label="人员性质快照">
-          {{ detailRow.teacherNature || '历史字段缺失' }}
-        </el-descriptions-item>
-        <el-descriptions-item label="绩效封顶值快照">
-          {{ detailRow.workloadCap ?? '历史阈值缺失' }}
-        </el-descriptions-item>
-        <el-descriptions-item label="单位酬金快照">
-          {{ detailRow.payRate ?? '-' }} 元
-        </el-descriptions-item>
-        <el-descriptions-item label="G7 第一课堂">
-          {{ detailRow.G7 }}
-        </el-descriptions-item>
-        <el-descriptions-item label="G8 第二课堂">
-          {{ detailRow.G8 }}
-        </el-descriptions-item>
-        <el-descriptions-item label="G9 其他">
-          {{ detailRow.G9 }}
-        </el-descriptions-item>
-        <el-descriptions-item label="G10 教学合计">
-          {{ detailRow.G10 }}
-        </el-descriptions-item>
-        <el-descriptions-item label="G11 管理服务">
-          {{ detailRow.G11 }}
-        </el-descriptions-item>
-        <el-descriptions-item label="总工作量">
-          {{ detailRow.totalWorkload }}
-        </el-descriptions-item>
-        <el-descriptions-item label="额定工作量">
-          {{ detailRow.ratedWorkload }}
-        </el-descriptions-item>
-        <el-descriptions-item label="超额工作量">
-          {{ detailRow.excessWorkload }}
-        </el-descriptions-item>
-        <el-descriptions-item label="绩效酬金">
-          {{ formatAmount(detailRow.performancePay) }} 元
-        </el-descriptions-item>
-        <el-descriptions-item label="是否触顶">
-          <biz-tag
-            :value="detailRow.isCapped"
-            :map="yesNoMap"
-          />
-        </el-descriptions-item>
-        <el-descriptions-item label="达标标准">
-          {{ detailRow.basicTeachingStandard ?? '-' }}
-        </el-descriptions-item>
-        <el-descriptions-item label="是否达标">
-          <biz-tag
-            :value="detailRow.basicTeachingMet"
-            :map="metStatusMap"
-          />
-        </el-descriptions-item>
-        <el-descriptions-item label="状态">
-          <biz-tag
-            :value="detailRow.status"
-            :map="summaryStatusMap"
-          />
-        </el-descriptions-item>
-        <el-descriptions-item label="教师确认">
-          {{ detailRow.teacherSign || '未确认' }}<span v-if="detailRow.teacherSignTime">（{{ parseTime(detailRow.teacherSignTime, '{y}-{m}-{d}') }}）</span>
-        </el-descriptions-item>
-        <el-descriptions-item label="教务确认">
-          {{ detailRow.academicAssistantSign || '未确认' }}<span v-if="detailRow.academicAssistantSignTime">（{{ parseTime(detailRow.academicAssistantSignTime, '{y}-{m}-{d}') }}）</span>
-        </el-descriptions-item>
-        <el-descriptions-item label="锁定时间">
-          {{ detailRow.lockTime ? parseTime(detailRow.lockTime) : '未锁定' }}
-        </el-descriptions-item>
-        <el-descriptions-item label="备注">
-          {{ detailRow.remark || '-' }}
-        </el-descriptions-item>
-      </el-descriptions>
-    </el-drawer>
+      <template #footer>
+        <el-button
+          :disabled="rejectBusy"
+          @click="rejectOpen = false"
+        >
+          保留原因并关闭
+        </el-button><el-button
+          type="primary"
+          :loading="rejectBusy"
+          :disabled="rejectCurrentStatus !== 1"
+          @click="submitReject"
+        >
+          确认驳回
+        </el-button>
+      </template>
+    </el-dialog>
+    <summary-audit-drawer
+      v-model="detailOpen"
+      :summary-id="detailRow?.id"
+    />
 
     <!-- 汇总预览对话框 -->
     <el-dialog
@@ -965,6 +912,10 @@
 </template>
 
 <script setup name="WorkloadSummary">
+import { checkPermi } from '@/utils/permission'
+import SummaryAuditDrawer from './SummaryAuditDrawer.vue'
+import { getSummaryAuditDetail } from '@/api/system/workloadSummary'
+import { approvalBlock, createReasonDrafts, createSubmitGuard, sendReasonDraft } from '@/utils/reviewUi'
 import TeacherOverview from '@/components/TeacherOverview'
 import { settlementLabel, settlementTagType, settlementHint, settlementSubmitBlocked } from '@/utils/settlementEvidence'
 import { listWorkloadSummary, delWorkloadSummary } from '@/api/system/workloadSummary'
@@ -977,17 +928,13 @@ import { auditSubmit, auditApprove, auditReject, auditBatchSubmit, auditTeacherC
 import UserSelect from '@/components/UserSelect/index.vue'
 import SemesterSelect from '@/components/SemesterSelect/index.vue'
 import { useUserMap } from '@/utils/userCache'
-import { useWindowSize } from '@vueuse/core'
 import { useRoute, useRouter } from 'vue-router'
-import { summaryStatusMap, yesNoMap, formatAmount, formatNumber, getCurrentSemester } from '@/utils/bizDict'
+import { summaryStatusMap, formatAmount, formatNumber, getCurrentSemester } from '@/utils/bizDict'
 import useUserStore from '@/store/modules/user'
 
 const { proxy } = getCurrentInstance()
 const route = useRoute()
 const router = useRouter()
-const { width: windowWidth } = useWindowSize()
-const detailColumns = computed(() => windowWidth.value < 640 ? 1 : 2)
-const detailDrawerSize = computed(() => windowWidth.value < 700 ? '94%' : '640px')
 const { userLabel, userName, userCode } = useUserMap()
 const userStore = useUserStore()
 
@@ -1493,28 +1440,54 @@ function handleTeacherConfirm(row) {
 }
 
 /** 审核通过（即完结） */
-function handleApprove(row) {
-  proxy.$modal.confirm(`确认审核通过「${userLabel(row.userId)}」${row.semester} 的工作量汇总？通过后汇总即完结锁定。`).then(() => {
-    return auditApprove(row.id)
-  }).then(() => {
+const approving = ref(false)
+async function handleApprove(row) {
+  if (approving.value) return
+  approving.value = true
+  try {
+    const detail = (await getSummaryAuditDetail(row.id)).data
+    const block = approvalBlock(detail)
+    const counts = detail.reviewCounts || {}
+    if (block) { proxy.$modal.alertWarning(`未处理 ${counts.PENDING || 0} 条，已驳回 ${counts.REJECT || 0} 条。${block}`); return }
+    await proxy.$modal.confirm(`未处理 ${counts.PENDING || 0} 条，已驳回 ${counts.REJECT || 0} 条。确认终审「${userLabel(row.userId)}」${row.semester}？通过后永久完结锁定；服务端仍将校验全部证据。`)
+    await auditApprove(row.id)
     getList()
     proxy.$modal.msgSuccess('审核通过，汇总已完结')
-  }).catch(() => {})
+  } catch (error) {
+    if (error !== 'cancel' && error !== 'close') proxy.$modal.msgError(error?.message || '终审失败，请刷新查看审核证据')
+  } finally { approving.value = false }
 }
 
-/** 驳回 */
+/** 驳回：每条汇总独立保留原因，失败刷新状态且不关闭表单。 */
+const rejectOpen = ref(false), rejectBusy = ref(false), rejectError = ref(''), rejectId = ref(null), rejectCurrentStatus = ref(1)
+const rejectionDrafts = createReasonDrafts(reactive({}))
+const rejectReason = computed({ get: () => rejectionDrafts.get(rejectId.value), set: value => rejectionDrafts.set(rejectId.value, value) })
+const rejectGuard = createSubmitGuard()
+function closeReject(done) { if (!rejectBusy.value) done() }
 function handleReject(row) {
-  proxy.$modal.prompt('请输入驳回原因（可选）', '驳回', {
-    confirmButtonText: '确定驳回',
-    cancelButtonText: '取消',
-    inputPattern: null,
-    inputErrorMessage: ''
-  }).then(({ value }) => {
-    return auditReject(row.id, value || '')
-  }).then(() => {
-    getList()
-    proxy.$modal.msgSuccess('已驳回，退回填报中')
-  }).catch(() => {})
+  if (rejectBusy.value) return
+  rejectId.value = row.id; rejectCurrentStatus.value = Number(row.status); rejectError.value = ''; rejectOpen.value = true
+}
+async function submitReject() {
+  await rejectGuard(async () => {
+    const reason = rejectReason.value, id = rejectId.value
+    if (!reason.trim() || reason.length > 500) { rejectError.value = '原因必填，原文最多500字'; return }
+    if (rejectCurrentStatus.value !== 1) return
+    rejectBusy.value = true; rejectError.value = ''
+    try {
+      await sendReasonDraft(rejectionDrafts, id, auditReject)
+      rejectOpen.value = false
+      getList(); proxy.$modal.msgSuccess('已驳回，退回填报中')
+    } catch (error) {
+      rejectError.value = `${error?.code === 409 || error?.response?.status === 409 ? '汇总状态已变化' : error?.message || '驳回失败'}；原因原文已保留，请核对最新状态后重试。`
+      getList()
+      try {
+        const latest = (await getSummaryAuditDetail(id)).data.summary
+        rejectCurrentStatus.value = Number(latest.status)
+        rejectError.value += ` 最新状态：${summaryStatusMap[latest.status]?.label || latest.status}。`
+      } catch { rejectError.value += ' 最新详情刷新失败，请关闭后从列表重新打开。'; rejectCurrentStatus.value = null }
+    } finally { rejectBusy.value = false }
+  })
 }
 
 /** 更多操作下拉命令 */
